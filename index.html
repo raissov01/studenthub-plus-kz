@@ -817,6 +817,35 @@ h3 { font-size: 1rem; }
 .pin.on text { fill: #FFFFFF; }
 .pin .pin-halo { fill: rgba(255, 255, 255, .55); stroke: #141A33; stroke-width: 4; }
 .pin:focus-visible circle { stroke: #141A33; stroke-width: 9; }
+
+/* map tools, zoom, my position, nearby markers */
+.map-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.map-tools .btn { min-height: 44px; padding: 8px 14px; }
+#geoBtn[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.geo-status { font-size: .92rem; background: var(--primary-soft); color: var(--text); border-radius: 12px; padding: 10px 12px; }
+.plan-wrap { position: relative; }
+.plan-box { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.plan-box.zoomed { touch-action: none; cursor: grab; }
+.map-ctl { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.map-ctl button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); display: grid; place-items: center; padding: 0; }
+.map-ctl button:active { background: var(--surface-2); }
+.me-acc { fill: rgba(47, 87, 232, .16); stroke: rgba(47, 87, 232, .5); stroke-width: 3; }
+.me-dot { fill: #2F57E8; stroke: #FFFFFF; stroke-width: 6; }
+.me-route { stroke: #141A33; stroke-width: 6; stroke-dasharray: 16 12; stroke-linecap: round; }
+.np circle { stroke: #FFFFFF; stroke-width: 4; }
+.np svg { color: #FFFFFF; pointer-events: none; }
+.np-stop circle { fill: #2F57E8; } .np-food circle { fill: #E5484D; } .np-shop circle { fill: #12A594; } .np-pharm circle { fill: #17804D; }
+.np-print circle { fill: #6B45CF; } .np-money circle { fill: #8A5E00; } .np-health circle { fill: #C9372C; } .np-post circle { fill: #0E7490; } .np-sport circle { fill: #F2A516; }
+.next-class { gap: 6px; border-color: var(--primary); }
+.nc-top { display: flex; justify-content: space-between; align-items: baseline; }
+.nc-top b { font-family: var(--font-display); font-size: 1.2rem; }
+.next-class .btn { margin-top: 6px; min-height: 44px; }
+
+.ent line { stroke: #17804D; stroke-width: 8; stroke-linecap: round; }
+.ent polygon { fill: #17804D; stroke: #FFFFFF; stroke-width: 3; stroke-linejoin: round; }
+.ent.dim { opacity: .3; }
+.ent.on line { stroke-width: 10; }
+.ent-key { display: inline-block; width: 18px; height: 6px; border-radius: 3px; background: #17804D; vertical-align: middle; margin-right: 2px; }
 </style>
 <header class="top" id="top">
   <div class="top-row">
@@ -3578,7 +3607,7 @@ const save = () => lsSet(JSON.stringify(S));
 const ui = {
   oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, oppType: 'all', evCat: 'all', courseMine: false,
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, ivStart: 0, chatBusy: false,
-  chatErr: '', study: null, mapSel: null, mapTab: 'campus', nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false, matchId: 'j8', oppCheck: {}
+  chatErr: '', study: null, mapSel: null, geoWatch: null, geoState: 'off', me: null, vb: null, mapNear: false, geoAuto: false, mapTab: 'campus', nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false, matchId: 'j8', oppCheck: {}
 };
 
 /* ================= i18n helpers ================= */
@@ -3839,6 +3868,7 @@ function mineCount() {
 
 function render() {
   const [name, param] = parse(cur.v);
+  if (name !== 'map' && ui.geoWatch != null) stopGeo();
   const fn = VIEWS[name] || VIEWS.home;
   let view;
   try { view = fn(param); } catch (err) { console.error(err); view = VIEWS.home(''); }
@@ -4126,6 +4156,7 @@ VIEWS.home = () => {
 
       <section class="section">
         ${sectionHead(tt('Бүгінгі сабақтар', 'Пары сегодня'), `<span class="tiny muted">${WD[S.lang][now.getDay()]}</span>`)}
+        ${nextClassCard()}
         <div class="group">${SCHEDULE.map(c => `<button class="row" type="button" data-act="findRoom" data-q="${c.room}">
           <span class="up-when"><b class="num">${c.t}</b><span class="num">${c.end}</span></span>
           <span class="row-main"><span class="row-title">${esc(L(c.name))}</span><span class="row-sub">${L(c.kind)}, ${tt('аудитория', 'аудитория')} ${c.room}</span></span>
@@ -5043,12 +5074,15 @@ function planSvg(hl) {
     return `<g class="pin pin-${b.kind}${on ? ' on' : ''}${hl.length && !on ? ' dim' : ''}" data-act="mapPick" data-id="${b.id}" role="button" tabindex="0" aria-label="${esc(b.n + '. ' + L(b.name))}">
       ${on ? `<circle class="pin-halo" cx="${x}" cy="${y}" r="52"/>` : ''}<circle cx="${x}" cy="${y}" r="32"/><text x="${x}" y="${y + 11}">${b.n}</text></g>`;
   }).join('');
-  return `<svg class="plan" viewBox="0 0 1672 941" role="group" aria-label="${tt('Кампус картасы', 'Карта кампуса')}">
+  return `<svg class="plan" viewBox="${mapVb().map(n => n.toFixed(1)).join(' ')}" role="group" aria-label="${tt('Кампус картасы', 'Карта кампуса')}">
     <image href="campus-map.jpg" x="0" y="0" width="1672" height="941"/>
     <text class="pl-street" x="44" y="470" transform="rotate(-90 44 470)">${tt('Жеңіс даңғылы', 'пр. Победы')}</text>
     <text class="pl-street" x="1628" y="470" transform="rotate(90 1628 470)">${tt('Бейбітшілік көшесі', 'ул. Бейбитшилик')}</text>
     <text class="pl-street" x="836" y="913">${tt('Әлия Молдағұлова көшесі', 'ул. Алии Молдагуловой')}</text>
+    ${nearLayer()}
+    ${entrLayer(hl)}
     ${pins}
+    <g id="geoLayer">${geoLayer()}</g>
   </svg>`;
 }
 
@@ -5069,6 +5103,7 @@ function bCard(b) {
       <div class="row-main"><span class="row-title">${esc(L(b.name))}</span><span class="row-sub">${tt(...KIND_L[b.kind])}</span></div></div>
     <p class="small">${esc(L(b.has))}</p>
     ${b.a ? `<a class="small" href="https://2gis.kz/astana/search/${encodeURIComponent('Сейфуллин ' + b.a)}" target="_blank" rel="noopener">${ico('pin', 14)} ${esc(b.a)}</a>` : ''}
+    ${ENTR[b.id] ? `<p class="tiny"><span class="ent-key"></span> ${tt('Кіреберіс картада жасыл көрсеткімен белгіленген (2GIS бойынша).', 'Вход отмечен на карте зелёной стрелкой (по 2GIS).')}</p>` : ''}
     ${b.corp ? `<p class="tiny muted">${tt(`Аудитория нөмірі ${b.corp}-ден басталады, мысалы ${b.corp}-214.`, `Номера аудиторий начинаются с ${b.corp}, например ${b.corp}-214.`)}</p>` : ''}
   </div>`;
 }
@@ -5100,6 +5135,7 @@ function mapRefresh() {
   const plan = document.getElementById('planBox'), res = document.getElementById('mapRes');
   if (plan) plan.innerHTML = planSvg(mapHighlight());
   if (res) res.innerHTML = mapResults();
+  geoPaint();
 }
 /* Places around the campus. src 'osm' = OpenStreetMap (distance measured), '2gis' = 2GIS address (distance estimated). */
 const NEARBY = [{"c": "stop", "n": "Улица А. Молдагуловой", "d": 190, "dir": "sw", "h": "", "lat": 51.18542, "lon": 71.41039, "src": "osm"}, {"c": "stop", "n": "Казахский Агротехнический университет имени С. Сейфулина", "d": 250, "dir": "e", "h": "", "lat": 51.18719, "lon": 71.41533, "src": "osm"}, {"c": "stop", "n": "Агротехнический университет", "d": 280, "dir": "e", "h": "", "lat": 51.18671, "lon": 71.41576, "src": "osm"}, {"c": "stop", "n": "Ильяса Есенберлина", "d": 300, "dir": "ne", "h": "", "lat": 51.18935, "lon": 71.41351, "src": "osm"}, {"c": "stop", "n": "Театр Жастар", "d": 400, "dir": "nw", "h": "", "lat": 51.18936, "lon": 71.40755, "src": "osm"}, {"c": "stop", "n": "Ә. Молдағұлова көшесі", "d": 440, "dir": "sw", "h": "", "lat": 51.18485, "lon": 71.40645, "src": "osm"}, {"c": "food", "n": "Центр Лагмана и Плова", "d": 210, "dir": "ne", "h": "24/7", "lat": 51.18813, "lon": 71.41407, "src": "osm"}, {"c": "food", "n": "Цезарь", "d": 240, "dir": "ne", "h": "", "lat": 51.1882, "lon": 71.41456, "src": "osm"}, {"c": "food", "n": "Столовая (№5 жатақхана)", "a": "Молдағұлова к., 29в", "d": 250, "dir": "se", "h": "", "src": "2gis", "note": "Орташа чек ~1400 ₸"}, {"c": "food", "n": "КФС", "d": 310, "dir": "sw", "h": "Mo-Su 10:00-24:00", "lat": 51.18559, "lon": 71.40789, "src": "osm"}, {"c": "food", "n": "Happy Cake", "d": 330, "dir": "sw", "h": "", "lat": 51.18501, "lon": 71.40811, "src": "osm"}, {"c": "food", "n": "Зоис", "d": 340, "dir": "sw", "h": "", "lat": 51.18489, "lon": 71.40814, "src": "osm"}, {"c": "food", "n": "Абат", "d": 370, "dir": "n", "h": "", "lat": 51.19027, "lon": 71.41202, "src": "osm"}, {"c": "food", "n": "Тағам асханасы", "a": "Жеңіс даңғылы, 72", "d": 450, "dir": "w", "h": "", "src": "2gis", "note": "Орташа чек ~2000 ₸"}, {"c": "food", "n": "Эфир", "d": 460, "dir": "s", "h": "Mo-Su,PH 10:00-02:00", "lat": 51.18298, "lon": 71.40957, "src": "osm"}, {"c": "food", "n": "Ас асханасы", "a": "Бейбітшілік к., 58", "d": 500, "dir": "e", "h": "", "src": "2gis", "note": "Орташа чек ~2000 ₸"}, {"c": "food", "n": "Мюнхен", "d": 520, "dir": "sw", "h": "", "lat": 51.18258, "lon": 71.40883, "src": "osm"}, {"c": "food", "n": "Soldi", "d": 580, "dir": "se", "h": "", "lat": 51.18254, "lon": 71.41632, "src": "osm"}, {"c": "food", "n": "Dido", "d": 590, "dir": "se", "h": "", "lat": 51.18205, "lon": 71.41502, "src": "osm"}, {"c": "food", "n": "Бекен", "d": 620, "dir": "s", "h": "Mo-Su,PH 09:00-22:00", "lat": 51.1817, "lon": 71.4087, "src": "osm"}, {"c": "food", "n": "Ажар", "d": 650, "dir": "s", "h": "", "lat": 51.1814, "lon": 71.40876, "src": "osm"}, {"c": "food", "n": "Retro", "d": 690, "dir": "sw", "h": "", "lat": 51.18126, "lon": 71.40773, "src": "osm"}, {"c": "food", "n": "Bauyrdaq", "d": 700, "dir": "s", "h": "24/7", "lat": 51.18084, "lon": 71.40931, "src": "osm"}, {"c": "food", "n": "Кофейня", "d": 700, "dir": "sw", "h": "", "lat": 51.18152, "lon": 71.40666, "src": "osm"}, {"c": "shop", "n": "Исток", "d": 260, "dir": "n", "h": "", "lat": 51.18924, "lon": 71.41184, "src": "osm"}, {"c": "shop", "n": "Апрель", "d": 300, "dir": "w", "h": "", "lat": 51.18596, "lon": 71.40772, "src": "osm"}, {"c": "shop", "n": "Юлия", "d": 300, "dir": "n", "h": "", "lat": 51.18963, "lon": 71.41147, "src": "osm"}, {"c": "shop", "n": "Small", "d": 300, "dir": "w", "h": "Mo-Su 09:00-23:00", "lat": 51.18589, "lon": 71.4078, "src": "osm"}, {"c": "shop", "n": "Саулет", "d": 420, "dir": "nw", "h": "Mo-Su 08:00-23:00", "lat": 51.19036, "lon": 71.40927, "src": "osm"}, {"c": "shop", "n": "Бахыт", "d": 430, "dir": "sw", "h": "", "lat": 51.18367, "lon": 71.40844, "src": "osm"}, {"c": "shop", "n": "Ассорти", "d": 500, "dir": "sw", "h": "", "lat": 51.18305, "lon": 71.40826, "src": "osm"}, {"c": "shop", "n": "Ideal", "d": 550, "dir": "n", "h": "24/7", "lat": 51.19172, "lon": 71.40989, "src": "osm"}, {"c": "shop", "n": "Светофор", "d": 610, "dir": "ne", "h": "", "lat": 51.18934, "lon": 71.4196, "src": "osm"}, {"c": "shop", "n": "Маяк", "d": 630, "dir": "s", "h": "", "lat": 51.18166, "lon": 71.40843, "src": "osm"}, {"c": "shop", "n": "Magnum", "d": 680, "dir": "s", "h": "Mo-Su 08:00-23:00", "lat": 51.18099, "lon": 71.40921, "src": "osm"}, {"c": "pharm", "n": "Центральная", "d": 260, "dir": "ne", "h": "", "lat": 51.18833, "lon": 71.41482, "src": "osm"}, {"c": "pharm", "n": "Феникс", "d": 260, "dir": "ne", "h": "09:00- 21:00", "lat": 51.18803, "lon": 71.41499, "src": "osm"}, {"c": "pharm", "n": "Альфа Мед", "d": 290, "dir": "se", "h": "Mo-Su,PH 08:00-23:00", "lat": 51.18583, "lon": 71.41553, "src": "osm"}, {"c": "pharm", "n": "Гиппократ", "d": 370, "dir": "n", "h": "Mo-Su 09:00-13:00, 13:30-21:00", "lat": 51.19007, "lon": 71.41013, "src": "osm"}, {"c": "pharm", "n": "Аптека", "d": 480, "dir": "e", "h": "Mo-Su 09:00-21:00", "lat": 51.18855, "lon": 71.41818, "src": "osm"}, {"c": "print", "n": "Лик полиграфия", "a": "Бейбітшілік к., 71", "d": 380, "dir": "e", "h": "", "src": "2gis"}, {"c": "print", "n": "CadPrint көшірме орталығы", "a": "Бейбітшілік к., 62", "d": 420, "dir": "e", "h": "", "src": "2gis"}, {"c": "money", "n": "Alatau City Bank", "d": 180, "dir": "nw", "h": "Mo-Su 09:00-18:00", "lat": 51.18787, "lon": 71.40977, "src": "osm"}, {"c": "money", "n": "Народный банк", "d": 240, "dir": "ne", "h": "", "lat": 51.18816, "lon": 71.41456, "src": "osm"}, {"c": "money", "n": "Alatau City Bank", "d": 250, "dir": "e", "h": "Mo-Su 09:00-18:00", "lat": 51.18656, "lon": 71.41536, "src": "osm"}, {"c": "money", "n": "Банк ЦентрКредит", "d": 320, "dir": "ne", "h": "Mo-Su 08:00-23:00", "lat": 51.18916, "lon": 71.41457, "src": "osm"}, {"c": "money", "n": "Банк ЦентрКредит", "d": 420, "dir": "nw", "h": "Mo-Fr 09:00-18:00", "lat": 51.18965, "lon": 71.40757, "src": "osm"}, {"c": "money", "n": "Halyk Bank", "d": 470, "dir": "nw", "h": "Mo-Fr 09:00-19:00; Sa 09:00-14:00", "lat": 51.19016, "lon": 71.40735, "src": "osm"}, {"c": "money", "n": "Kaspi.kz", "d": 530, "dir": "nw", "h": "Mo-Su 09:00-18:00", "lat": 51.19089, "lon": 71.40763, "src": "osm"}, {"c": "money", "n": "Евразийский банк", "d": 650, "dir": "se", "h": "Mo-Fr 09:00-18:00; Sa 10:00-15:00; Su off", "lat": 51.1823, "lon": 71.41738, "src": "osm"}, {"c": "money", "n": "Народный банк", "d": 660, "dir": "nw", "h": "", "lat": 51.19225, "lon": 71.40758, "src": "osm"}, {"c": "health", "n": "Городская поликлиника №14", "d": 480, "dir": "nw", "h": "", "lat": 51.18969, "lon": 71.40649, "src": "osm"}, {"c": "health", "n": "№3 көпбейінді қалалық аурухана", "d": 590, "dir": "se", "h": "", "lat": 51.18292, "lon": 71.41742, "src": "osm"}, {"c": "health", "n": "Молодежный центр здоровья «Жас толкын»", "d": 720, "dir": "nw", "h": "", "lat": 51.19248, "lon": 71.40657, "src": "osm"}, {"c": "post", "n": "CDEK", "d": 170, "dir": "n", "h": "Mo-Fr 10:00-20:00;Sa-Su 10:00-18:00", "lat": 51.18843, "lon": 71.41107, "src": "osm"}, {"c": "post", "n": "Отделение №11", "d": 330, "dir": "n", "h": "", "lat": 51.18984, "lon": 71.41225, "src": "osm"}, {"c": "post", "n": "КСЭ", "d": 630, "dir": "ne", "h": "Mo-Fr 09:00-18:00", "lat": 51.19167, "lon": 71.41657, "src": "osm"}, {"c": "sport", "n": "Спорткомплекс Динамо", "d": 560, "dir": "w", "h": "", "lat": 51.18728, "lon": 71.4037, "src": "osm"}];
@@ -5141,6 +5177,194 @@ function nearHtml() {
       <div class="group">${UNI_SITES.map(u => `<a class="row" href="https://2gis.kz/astana/search/${encodeURIComponent('Сейфуллин ' + L(u.a))}" target="_blank" rel="noopener"><span class="bnum bnum-other">${ico('pin', 16)}</span><span class="row-main"><span class="row-title">${esc(L(u.n))}</span><span class="row-sub">${esc(L(u.a))}</span></span><span class="chev">${ico('ext', 18)}</span></a>`).join('')}</div></section>`;
 }
 
+/* GPS on the illustrated map: affine fit of 14 OSM building centres to image pixels (mean error ~11 m) */
+const GEO = { lon0: 71.412, lat0: 51.187, cx: [19.257, 7.528, 863.963], cy: [2.533, -28.531, 498.069], pxPerM: 2.705, w: 1672, h: 941 };
+function geoToPx(lat, lon) {
+  const u = (lon - GEO.lon0) * 1e4, v = (lat - GEO.lat0) * 1e4;
+  return [GEO.cx[0] * u + GEO.cx[1] * v + GEO.cx[2], GEO.cy[0] * u + GEO.cy[1] * v + GEO.cy[2]];
+}
+function metresBetween(lat1, lon1, lat2, lon2) {
+  const R = 6371000, r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+const onCampus = me => me && me.x > -60 && me.x < GEO.w + 60 && me.y > -60 && me.y < GEO.h + 60;
+const walkTxt = m => tt(`~${Math.max(1, Math.round(m / 80))} мин жаяу`, `~${Math.max(1, Math.round(m / 80))} мин пешком`);
+const distTxt = m => m >= 1000 ? `${(m / 1000).toFixed(1).replace('.', ',')} км` : `${Math.round(m / 10) * 10} м`;
+
+function startGeo() {
+  if (!('geolocation' in navigator)) { toast(tt('Бұл құрылғыда геолокация жоқ', 'На этом устройстве нет геолокации')); return; }
+  if (ui.geoWatch != null) return;
+  ui.geoState = 'wait'; geoPaint();
+  ui.geoWatch = navigator.geolocation.watchPosition(pos => {
+    const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+    const [x, y] = geoToPx(lat, lon);
+    ui.me = { lat, lon, x, y, acc: accuracy };
+    ui.geoState = 'on'; geoPaint();
+  }, err => {
+    ui.geoState = 'off'; stopGeo();
+    toast(err.code === 1 ? tt('Орныңызды көрсету үшін браузерде геолокацияға рұқсат беріңіз', 'Разрешите геолокацию в браузере, чтобы показать ваше место')
+      : tt('Орныңызды анықтау мүмкін болмады. Ашық жерде қайталап көріңіз.', 'Не удалось определить место. Попробуйте на открытом месте.'));
+  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+}
+function stopGeo() {
+  if (ui.geoWatch != null) { try { navigator.geolocation.clearWatch(ui.geoWatch); } catch (e) { /* ignore */ } }
+  ui.geoWatch = null; ui.me = null;
+  if (ui.geoState !== 'off') ui.geoState = 'off';
+  geoPaint();
+}
+/* the building the student is heading to: a searched room, a picked building, or nothing */
+function geoTarget() {
+  const r = mapSearch(ui.mapQ || '');
+  if (r && r.room && r.b) return r.b;
+  if (r && r.list && r.list.length === 1) return r.list[0];
+  if (!r && ui.mapSel) return BUILDINGS.find(b => b.id === ui.mapSel);
+  return null;
+}
+function geoLayer() {
+  const me = ui.me;
+  if (!onCampus(me)) return '';
+  const t = geoTarget(), tp = t && (entrPx(t.id) || PINS[t.id]);
+  return `${tp ? `<line class="me-route" x1="${me.x.toFixed(0)}" y1="${me.y.toFixed(0)}" x2="${tp[0]}" y2="${tp[1]}"/>` : ''}
+    <circle class="me-acc" cx="${me.x.toFixed(0)}" cy="${me.y.toFixed(0)}" r="${Math.min(400, Math.max(24, me.acc * GEO.pxPerM)).toFixed(0)}"/>
+    <circle class="me-dot" cx="${me.x.toFixed(0)}" cy="${me.y.toFixed(0)}" r="17"/>`;
+}
+function geoStatus() {
+  if (ui.geoState === 'wait') return tt('Орныңыз анықталып жатыр…', 'Определяем ваше место…');
+  const me = ui.me;
+  if (!me) return '';
+  if (!onCampus(me)) {
+    return tt(`Сіз кампустан ${distTxt(metresBetween(me.lat, me.lon, 51.18692, 71.41178))} қашықтықтасыз.`, `Вы в ${distTxt(metresBetween(me.lat, me.lon, 51.18692, 71.41178))} от кампуса.`)
+      + ` <a href="https://2gis.kz/astana/search/${encodeURIComponent('Сейфуллин университет')}" target="_blank" rel="noopener">${tt('2GIS-те бағыт', 'Маршрут в 2GIS')}</a>`;
+  }
+  const t = geoTarget();
+  if (t) {
+    const tp = entrPx(t.id) || PINS[t.id], m = Math.hypot(tp[0] - me.x, tp[1] - me.y) / GEO.pxPerM;
+    const door = ENTR[t.id] ? tt(' кіреберісіне', ' (до входа)') : '';
+    return m < 25 ? tt(`Сіз ${esc(L(t.name))} жанындасыз.`, `Вы рядом: ${esc(L(t.name))}.`)
+      : tt(`${esc(L(t.name))}${door} дейін ${distTxt(m)}, ${walkTxt(m)}.`, `До: ${esc(L(t.name))}${door} — ${distTxt(m)}, ${walkTxt(m)}.`);
+  }
+  let best = null, bd = 1e9;
+  BUILDINGS.forEach(b => { const d = Math.hypot(PINS[b.id][0] - me.x, PINS[b.id][1] - me.y); if (d < bd) { bd = d; best = b; } });
+  return tt(`Ең жақын нысан: ${best.n}. ${esc(L(best.name))}, ${distTxt(bd / GEO.pxPerM)}. Баратын корпусты таңдаңыз.`,
+    `Ближе всего: ${best.n}. ${esc(L(best.name))}, ${distTxt(bd / GEO.pxPerM)}. Выберите, куда идти.`);
+}
+function geoPaint() {
+  const layer = document.getElementById('geoLayer'), st = document.getElementById('geoStatus'), btn = document.getElementById('geoBtn');
+  if (layer) layer.innerHTML = geoLayer();
+  if (st) { const h = geoStatus(); st.innerHTML = h; st.hidden = !h; }
+  if (btn) {
+    const on = ui.geoWatch != null;
+    btn.setAttribute('aria-pressed', String(on));
+    btn.innerHTML = `${ico('pin', 18)} ${on ? tt('Орнымды жасыру', 'Скрыть моё место') : tt('Мен қайдамын?', 'Где я?')}`;
+  }
+}
+
+/* next class on home */
+function nextClass() {
+  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  return SCHEDULE.find(c => toMin(c.end) > mins) || null;
+}
+function classWhere(c) {
+  const r = mapSearch(c.room);
+  if (!r || !r.room || !r.b) return tt(`${c.room} аудитория`, `аудитория ${c.room}`);
+  return tt(`${r.b.corp}-корпус, ${r.floor}-қабат, ${c.room} аудитория`, `${r.b.corp}-й корпус, ${r.floor} этаж, ауд. ${c.room}`);
+}
+function nextClassCard() {
+  const c = nextClass();
+  if (!c) return `<div class="card next-class"><span class="row-title">${tt('Бүгінгі сабақтар бітті', 'Пары на сегодня закончились')}</span><span class="row-sub">${tt('Ертеңгі кесте осында шығады.', 'Завтрашнее расписание появится здесь.')}</span></div>`;
+  const now = new Date(), [h, m] = c.t.split(':').map(Number), start = new Date(now); start.setHours(h, m, 0, 0);
+  const left = Math.round((start - now) / 60000);
+  const when = left > 0 ? tt(`${left} минуттан кейін`, `через ${left} мин`) : tt('қазір жүріп жатыр', 'идёт сейчас');
+  return `<div class="card next-class">
+    <span class="nc-top"><span class="tiny muted">${tt('Келесі сабақ', 'Следующая пара')}, ${when}</span><b class="num">${c.t}</b></span>
+    <span class="row-title">${esc(L(c.name))}</span>
+    <span class="row-sub">${L(c.kind)}, ${classWhere(c)}</span>
+    <button class="btn" type="button" data-act="routeTo" data-q="${c.room}">${ico('pin', 18)} ${tt('Картадан жолды көру', 'Показать путь на карте')}</button>
+  </div>`;
+}
+
+/* nearby places that fall inside the illustrated area */
+/* building entrances from 2GIS ("Показать вход"): [lat, lon, fromLat, fromLon] — the arrow points from "from" to the door */
+const ENTR = {
+  b1: [51.186966, 71.409004, 51.18695, 71.408863], b2: [51.187752, 71.409921, 51.187664, 71.409945],
+  b3: [51.187587, 71.411469, 51.187507, 71.411405], b4: [51.186853, 71.410703, 51.186813, 71.410831],
+  b5: [51.187356, 71.411608, 51.187396, 71.41148], b7: [51.186209, 71.410625, 51.186288, 71.410691],
+  b8: [51.186216, 71.415358, 51.186127, 71.415383], b9: [51.186381, 71.414356, 51.186365, 71.414215],
+  b10: [51.186343, 71.414044, 51.186359, 71.414185], b11: [51.186406, 71.413436, 51.186421, 71.413577],
+  b12: [51.186263, 71.412768, 51.186279, 71.412909], b13: [51.186908, 71.413178, 51.186923, 71.413319]
+};
+const entrPx = id => ENTR[id] ? geoToPx(ENTR[id][0], ENTR[id][1]) : null;
+function entrLayer(hl) {
+  return Object.entries(ENTR).map(([id, e]) => {
+    const [x, y] = geoToPx(e[0], e[1]), [fx, fy] = geoToPx(e[2], e[3]);
+    let dx = x - fx, dy = y - fy; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
+    const on = hl.includes(id), len = on ? 46 : 34, sx = x - dx * len, sy = y - dy * len;
+    const hx = x - dx * 14, hy = y - dy * 14, px = -dy * 10, py = dx * 10;
+    return `<g class="ent${on ? ' on' : ''}${hl.length && !on ? ' dim' : ''}" aria-hidden="true">
+      <line x1="${sx.toFixed(0)}" y1="${sy.toFixed(0)}" x2="${hx.toFixed(0)}" y2="${hy.toFixed(0)}"/>
+      <polygon points="${x.toFixed(0)},${y.toFixed(0)} ${(hx + px).toFixed(0)},${(hy + py).toFixed(0)} ${(hx - px).toFixed(0)},${(hy - py).toFixed(0)}"/></g>`;
+  }).join('');
+}
+
+function nearLayer() {
+  if (!ui.mapNear) return '';
+  return NEARBY.filter(p => p.lat).map(p => {
+    const [x, y] = geoToPx(p.lat, p.lon);
+    if (x < 24 || x > GEO.w - 24 || y < 24 || y > GEO.h - 24) return '';
+    const c = NEAR_CATS[p.c], href = `https://2gis.kz/astana/search/${encodeURIComponent(p.n)}?m=${p.lon}%2C${p.lat}%2F18`;
+    return `<a class="np np-${p.c}" href="${href}" target="_blank" rel="noopener" aria-label="${esc(p.n + ', ' + tt(c[0], c[1]))}"><title>${esc(p.n)}</title>
+      <circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="21"/>${ico(c[2], 22).replace('<svg ', `<svg x="${(x - 11).toFixed(0)}" y="${(y - 11).toFixed(0)}" `)}</a>`;
+  }).join('');
+}
+const nearOnMapCount = () => NEARBY.filter(p => { if (!p.lat) return false; const [x, y] = geoToPx(p.lat, p.lon); return x >= 24 && x <= GEO.w - 24 && y >= 24 && y <= GEO.h - 24; }).length;
+
+/* pinch / wheel zoom and drag pan by moving the SVG viewBox */
+function mapVb() { return ui.vb || [0, 0, GEO.w, GEO.h]; }
+function setMapVb(box, v) {
+  const w = Math.min(GEO.w, Math.max(GEO.w / 6, v[2])), h = w * GEO.h / GEO.w;
+  const x = Math.min(GEO.w - w, Math.max(0, v[0])), y = Math.min(GEO.h - h, Math.max(0, v[1]));
+  ui.vb = w >= GEO.w - 0.5 ? null : [x, y, w, h];
+  const svg = box.querySelector('svg');
+  if (svg) svg.setAttribute('viewBox', mapVb().map(n => n.toFixed(1)).join(' '));
+  box.classList.toggle('zoomed', !!ui.vb);
+}
+function zoomMapAt(box, cx, cy, f) {
+  const svg = box.querySelector('svg'); if (!svg) return;
+  const r = svg.getBoundingClientRect(), v = mapVb();
+  const sx = v[0] + (cx - r.left) / r.width * v[2], sy = v[1] + (cy - r.top) / r.height * v[3];
+  const w = Math.min(GEO.w, Math.max(GEO.w / 6, v[2] / f)), k = w / v[2];
+  setMapVb(box, [sx - (sx - v[0]) * k, sy - (sy - v[1]) * k, w, w * GEO.h / GEO.w]);
+}
+function bindMapZoom(box) {
+  const pts = new Map();
+  let pan = null, pinch = null, moved = false;
+  box.classList.toggle('zoomed', !!ui.vb);
+  box.addEventListener('pointerdown', e => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) { pan = { x: e.clientX, y: e.clientY, vb: mapVb().slice() }; moved = false; }
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); pan = null; }
+  });
+  box.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomMapAt(box, (a.x + b.x) / 2, (a.y + b.y) / 2, d / pinch); pinch = d; moved = true; e.preventDefault();
+    } else if (pan && ui.vb) {
+      const r = box.querySelector('svg').getBoundingClientRect(), dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+      if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+      setMapVb(box, [pan.vb[0] - dx / r.width * pan.vb[2], pan.vb[1] - dy / r.height * pan.vb[3], pan.vb[2], pan.vb[3]]);
+    }
+  });
+  const end = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) pan = null; };
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => box.addEventListener(t, end));
+  box.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  box.addEventListener('wheel', e => { e.preventDefault(); zoomMapAt(box, e.clientX, e.clientY, e.deltaY < 0 ? 1.25 : 0.8); }, { passive: false });
+  box.addEventListener('dblclick', e => { e.preventDefault(); zoomMapAt(box, e.clientX, e.clientY, 2); });
+}
+
 VIEWS.map = (t) => {
   if (t) ui.mapTab = t;
   const tabs = seg([['campus', tt('Кампус', 'Кампус')], ['near', tt('Жақын маңда', 'Рядом')]], ui.mapTab, 'mapTab');
@@ -5150,10 +5374,28 @@ VIEWS.map = (t) => {
   html: `${tabs}
     <div class="search">${ico('search', 18)}<input class="input" id="mapQ" type="search" placeholder="${tt('Аудитория (4-214) не нысан атауы', 'Аудитория (4-214) или название здания')}" value="${esc(ui.mapQ || '')}" data-on="mapQ" autocomplete="off"></div>
     <div class="chips">${[['study', tt('Оқу корпустары', 'Учебные корпуса')], ['dorm', tt('Жатақханалар', 'Общежития')], ['other', tt('Басқа', 'Другое')]].map(([k, l]) => `<button class="chip legend lg-${k}" type="button" data-act="mapQuick" data-q="${esc(tt(...KIND_L[k]))}"><i></i>${l}</button>`).join('')}</div>
-    <div class="plan-box" id="planBox">${planSvg(mapHighlight())}</div>
+    <div class="map-tools">
+      <button class="btn secondary" type="button" id="geoBtn" data-act="geoToggle" aria-pressed="false">${ico('pin', 18)} ${tt('Мен қайдамын?', 'Где я?')}</button>
+      <button class="chip" type="button" data-act="nearToggle" aria-pressed="${!!ui.mapNear}">${tt(`Жақын орындар (${nearOnMapCount()})`, `Места рядом (${nearOnMapCount()})`)}</button>
+    </div>
+    <p class="geo-status" id="geoStatus" hidden></p>
+    <div class="plan-wrap">
+      <div class="plan-box" id="planBox">${planSvg(mapHighlight())}</div>
+      <div class="map-ctl">
+        <button type="button" data-act="mapZoom" data-z="in" aria-label="${tt('Үлкейту', 'Приблизить')}">${ico('plus', 20)}</button>
+        <button type="button" data-act="mapZoom" data-z="out" aria-label="${tt('Кішірейту', 'Отдалить')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <button type="button" data-act="mapZoom" data-z="reset" aria-label="${tt('Бастапқы көрініс', 'Исходный вид')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+    </div>
+    <p class="tiny muted">${tt('Екі саусақпен үлкейтіп, жылжытуға болады.', 'Карту можно приближать двумя пальцами и двигать.')}</p>
     <div id="mapRes" class="section">${mapResults()}</div>
     ${note(tt('Сызба университеттің жоспары бойынша шамамен салынған, атаулары мен мекенжайлары 2GIS бойынша. Аудитория нөмірінің бірінші саны — корпус, екіншісі — қабат.', 'Схема нарисована по плану университета приблизительно, названия и адреса — по 2GIS. Первая цифра аудитории — корпус, вторая — этаж.'))}
-    <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=Seifullin+University+Astana" target="_blank" rel="noopener">${ico('ext', 18)} ${tt('Google картасынан ашу', 'Открыть в Google Картах')}</a>`
+    <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=Seifullin+University+Astana" target="_blank" rel="noopener">${ico('ext', 18)} ${tt('Google картасынан ашу', 'Открыть в Google Картах')}</a>`,
+    mount() {
+      bindMapZoom(document.getElementById('planBox'));
+      geoPaint();
+      if (ui.geoAuto) { ui.geoAuto = false; startGeo(); }
+    }
   };
 };
 
@@ -5360,6 +5602,14 @@ const ACT = {
     const inp = document.getElementById('mapQ'); if (inp) inp.value = ui.mapQ;
     mapRefresh();
   },
+  geoToggle() { if (ui.geoWatch != null) { ui.geoState = 'off'; stopGeo(); } else startGeo(); },
+  nearToggle(el) { ui.mapNear = !ui.mapNear; el.setAttribute('aria-pressed', String(ui.mapNear)); mapRefresh(); },
+  mapZoom(el) {
+    const box = document.getElementById('planBox'), r = box.getBoundingClientRect(), z = el.dataset.z;
+    if (z === 'reset') setMapVb(box, [0, 0, GEO.w, GEO.h]);
+    else zoomMapAt(box, r.left + r.width / 2, r.top + r.height / 2, z === 'in' ? 1.6 : 1 / 1.6);
+  },
+  routeTo(el) { ui.mapQ = el.dataset.q; ui.mapSel = null; ui.mapTab = 'campus'; ui.geoAuto = true; go('map:campus'); },
   mapTab(el) { ui.mapTab = el.dataset.v; go('map:' + el.dataset.v, { replace: true }); },
   nearCat(el) { ui.nearCat = el.dataset.v; render(); },
   mapPick(el) {
