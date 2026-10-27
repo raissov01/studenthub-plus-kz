@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@500;600;700&display=swap">
 <meta name="description" content="Student Hub — студентке арналған бәрі бір қосымшада: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.">
-<meta name="theme-color" content="#F3F4F2">
+<meta name="theme-color" content="#F5F8FE">
 <style>
 @font-face {
   font-family: 'Geologica';
@@ -530,26 +530,6 @@ h3 { font-size: 1.15rem; line-height: 1.25; }
 .hero-stat span { color: var(--sw-ink); font-size: .8rem; }
 button.hero-stat:active { background: var(--sw-mist); }
 
-/* home search */
-.home-search .input { min-height: 52px; border-radius: 12px; }
-
-/* section swatches — the signature */
-.swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-@media (min-width: 520px) { .swatches { grid-template-columns: repeat(3, 1fr); } }
-.sw {
-  border: 0; border-radius: var(--r-sw); min-height: 96px; padding: 12px 14px; color: var(--sw-ink);
-  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 14px; text-align: left; min-width: 0;
-}
-.sw-0 { background: var(--sw-sage); }
-.sw-1 { background: var(--sw-mauve); }
-.sw-2 { background: var(--sw-taupe); }
-.sw-3 { background: var(--sw-mist); }
-.sw-4 { background: var(--sw-ice); }
-.sw:active { box-shadow: inset 0 0 0 2px var(--sw-ink); }
-.sw:focus-visible { outline: 2px solid var(--sw-ink); outline-offset: 2px; }
-.sw-ico { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, .5); }
-.sw-label { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; line-height: 1.1; overflow-wrap: anywhere; }
-
 /* quieter supporting surfaces */
 .ico { border-radius: 10px; }
 .btn { border-radius: 12px; }
@@ -561,21 +541,251 @@ button.hero-stat:active { background: var(--sw-mist); }
 .big-num { font-weight: 600; }
 .msg.me { border-bottom-right-radius: 4px; }
 .sheet-back { background: rgba(34, 37, 42, .4); }
+
+/* ---------- Student Hub screens (client layout: home, search, notifications, profile) ---------- */
+:root {
+  --t-sage: #E6ECE3; --t-sage-ink: #4F6B4C;
+  --t-mauve: #F0E7EE; --t-mauve-ink: #75596E;
+  --t-taupe: #F0EBE2; --t-taupe-ink: #6F6249;
+  --t-ice: #E5EDEF; --t-ice-ink: #4A626B;
+  --t-mist: #EEECED; --t-mist-ink: #5C575D;
+  --heart: #8E5378;
+}
+:root[data-theme="dark"] {
+  --t-sage: #2A3528; --t-sage-ink: #B7CDB3; --t-mauve: #372D35; --t-mauve-ink: #DCC6D6;
+  --t-taupe: #36312A; --t-taupe-ink: #D8CBB2; --t-ice: #263034; --t-ice-ink: #BFD0D6;
+  --t-mist: #2E2C2F; --t-mist-ink: #D2CDD2; --heart: #E3A6CC;
+}
+
+.greet { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.greet h1 { font-size: 2.1rem; }
+
+/* promo banner: the one bold block on home */
+.promo {
+  display: grid; grid-template-columns: 1fr 96px; gap: 12px; align-items: center;
+  background: var(--primary); color: var(--on-primary); border-radius: 18px; padding: 20px 18px; overflow: hidden;
+}
+.promo h2 { font-size: 1.65rem; line-height: 1.05; }
+.promo p { font-size: .9rem; line-height: 1.4; margin-top: 6px; opacity: .92; }
+.promo-btn { margin-top: 14px; min-height: 44px; padding: 10px 16px; background: #FFFFFF; color: var(--t-sage-ink); }
+.promo-btn:active { background: var(--t-sage); }
+.promo-art { position: relative; height: 120px; }
+.promo-art i { position: absolute; width: 58px; height: 74px; border-radius: 8px; }
+.promo-art i:nth-child(1) { background: var(--sw-sage); left: 0; top: 0; border: 2px solid var(--primary); }
+.promo-art i:nth-child(2) { background: var(--sw-mauve); left: 14px; top: 10px; border: 2px solid var(--primary); }
+.promo-art i:nth-child(3) { background: var(--sw-taupe); left: 28px; top: 20px; border: 2px solid var(--primary); }
+.promo-art i:nth-child(4) { background: var(--sw-mist); left: 38px; top: 30px; border: 2px solid var(--primary); }
+.promo-art i:nth-child(5) { background: var(--sw-ice); left: 48px; top: 40px; border: 2px solid var(--primary); }
+
+/* six service tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tile {
+  border: 0; border-radius: 16px; min-height: 108px; padding: 14px 6px 12px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  font-size: .86rem; font-weight: 600; line-height: 1.2; text-align: center; color: var(--text);
+}
+.tile span:last-child { overflow-wrap: anywhere; }
+.tile-ico { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--surface); }
+.tile-0 { background: var(--t-sage); } .tile-0 .tile-ico { color: var(--t-sage-ink); }
+.tile-1 { background: var(--t-mauve); } .tile-1 .tile-ico { color: var(--t-mauve-ink); }
+.tile-2 { background: var(--t-taupe); } .tile-2 .tile-ico { color: var(--t-taupe-ink); }
+.tile-3 { background: var(--t-ice); } .tile-3 .tile-ico { color: var(--t-ice-ink); }
+.tile-4 { background: var(--t-mist); } .tile-4 .tile-ico { color: var(--t-mist-ink); }
+.tile:active { box-shadow: inset 0 0 0 2px var(--line); }
+
+/* news */
+.row.news { align-items: center; }
+.thumb { flex: none; width: 64px; height: 52px; border-radius: 10px; display: grid; place-items: center; color: var(--sw-ink); }
+.thumb-0, .mk-0, .nico-0 { background: var(--sw-sage); }
+.thumb-1, .mk-1, .nico-1 { background: var(--sw-mauve); }
+.thumb-2, .mk-2, .nico-2 { background: var(--sw-taupe); }
+.thumb-3, .mk-3, .nico-3 { background: var(--sw-mist); }
+.thumb-4, .mk-4, .nico-4 { background: var(--sw-ice); }
+
+/* search */
+.search-bar { display: flex; gap: 8px; align-items: center; }
+.search-bar .search { flex: 1; min-width: 0; }
+.filter-btn { width: 50px; height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+.sr { display: flex; align-items: center; }
+.sr + .sr { border-top: 1px solid var(--line); }
+.sr-main {
+  flex: 1; min-width: 0; display: flex; gap: 12px; align-items: flex-start; padding: 14px 6px 14px 14px;
+  border: 0; background: transparent; text-align: left; color: inherit;
+}
+.sr-main:active { background: var(--surface-2); }
+.sr-role { font-size: .92rem; line-height: 1.35; }
+.sr-end { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding: 12px 8px 10px 0; align-self: stretch; justify-content: space-between; }
+.mk {
+  flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; color: var(--sw-ink);
+}
+.tag { font-size: .74rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; max-width: 116px; overflow: hidden; text-overflow: ellipsis; }
+.tag-new { background: var(--t-sage); color: var(--t-sage-ink); }
+.tag-pick { background: var(--t-mauve); color: var(--t-mauve-ink); }
+.tag-warn { background: var(--danger-soft); color: var(--danger); }
+.tag-deal { background: var(--t-taupe); color: var(--t-taupe-ink); }
+.heart { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.heart[aria-pressed="true"] { color: var(--heart); }
+.heart[aria-pressed="true"] svg { fill: currentColor; }
+.heart:active { background: var(--surface-2); }
+
+/* notifications */
+.nrow {
+  display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 14px; border: 0; background: transparent;
+  text-align: left; color: inherit;
+}
+.nrow + .nrow { border-top: 1px solid var(--line); }
+.nrow:active { background: var(--surface-2); }
+.nrow .row-main { gap: 3px; }
+.nrow:not(.unread) .row-title { font-weight: 500; }
+.nico { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--sw-ink); }
+.ndot { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+.nrow.unread .ndot { background: var(--primary); }
+
+/* profile */
+.me { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding-top: 6px; }
+.me-photo { position: relative; margin-bottom: 8px; }
+.me-avatar {
+  width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; background: var(--sw-mauve);
+  color: var(--sw-ink); font-family: var(--font-display); font-weight: 600; font-size: 2.8rem;
+}
+.me-edit {
+  position: absolute; right: -2px; bottom: 2px; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--bg);
+  background: var(--primary); color: var(--on-primary); display: grid; place-items: center; padding: 0;
+}
+.me h1 { font-size: 1.9rem; }
+.fill { gap: 10px; }
+.fill-head { display: flex; justify-content: space-between; align-items: baseline; }
+.fill-head b { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; color: var(--primary); }
+.fill .meter > i { background: var(--primary); }
+
+/* header bell + four-tab bar */
+#mine-btn .count { background: var(--heart); color: #FFFFFF; }
+.tabbar-in { grid-template-columns: repeat(4, 1fr); }
+
+/* ---------- client palette (from the Student Hub mockup): light blue page, royal-blue actions,
+   one tinted tile colour per service. Overrides the earlier pastel layer. ---------- */
+:root:not([data-theme="dark"]) {
+  --bg: #F5F8FE; --surface: #FFFFFF; --surface-2: #EEF2FB; --tint: #E8EEFE; --line: #E3E8F3;
+  --text: #141A33; --muted: #646C8A;
+  --primary: #2F57E8; --primary-press: #2446C9; --on-primary: #FFFFFF; --primary-soft: #E8EEFE;
+  --accent: #EFE8FF; --accent-soft: #F5F1FF;
+  --deep: #FFFFFF; --on-deep: #141A33; --on-deep-muted: #646C8A;
+  --danger: #D03A30; --danger-soft: #FFE6E3;
+}
+:root[data-theme="dark"] {
+  --bg: #0E1324; --surface: #161C31; --surface-2: #1D2440; --tint: #1E2A52; --line: #283152;
+  --text: #E9ECF8; --muted: #A3AAC6; --primary: #8EA6FF; --primary-press: #A8BAFF; --on-primary: #0B1430;
+  --primary-soft: #1E2A52; --deep: #161C31; --on-deep: #E9ECF8; --on-deep-muted: #A3AAC6;
+}
+:root {
+  --font-display: "Geologica", "Golos Text", system-ui, sans-serif;
+  /* five accent hues for letter marks, news thumbs and notification icons */
+  --c0: #2F57E8; --c1: #8B5CF6; --c2: #12A594; --c3: #EF5A4C; --c4: #F2A516;
+  --heart: #E5484D;
+  --t-sage: #EEF1FE; --t-sage-ink: #3558DB;      /* tile 0: blue */
+  --t-mauve: #E4F7F5; --t-mauve-ink: #0E9F9C;    /* tile 1: teal */
+  --t-taupe: #FFF7DC; --t-taupe-ink: #23983A;    /* tile 2: yellow + green */
+  --t-ice: #EAF2FE; --t-ice-ink: #2E6FE0;        /* tile 3: sky */
+  --t-mist: #EFEDFE; --t-mist-ink: #3A2DB0;      /* tile 4: indigo */
+}
+h1, h2, h3, .top-title { font-weight: 700; letter-spacing: -.01em; }
+h1 { font-size: 1.6rem; line-height: 1.2; }
+h2 { font-size: 1.15rem; line-height: 1.3; }
+h3 { font-size: 1rem; }
+.top-title { font-size: 1.25rem; }
+.greet h1 { font-size: 1.65rem; }
+
+/* brand: blue square with a cap + wordmark */
+.brand { font-size: 1.15rem; gap: 9px; letter-spacing: 0; color: var(--text); }
+.brand .mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: grid; place-items: center; gap: 0; }
+.brand .mark b { display: none; }
+.brand .mark::before {
+  content: ""; width: 20px; height: 20px; background: #FFFFFF;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 9l10-5 10 5-10 5z'/%3E%3Cpath d='M6 11v5c3 2.5 9 2.5 12 0v-5'/%3E%3Cpath d='M22 9v6'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 9l10-5 10 5-10 5z'/%3E%3Cpath d='M6 11v5c3 2.5 9 2.5 12 0v-5'/%3E%3Cpath d='M22 9v6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* search fields */
+.search .input, .input { border-color: var(--line); }
+.search .input { border-radius: 14px; }
+
+/* banner */
+.promo { background: var(--primary); border-radius: 20px; }
+.promo h2 { font-size: 1.3rem; line-height: 1.2; }
+.promo-btn { color: var(--primary); border-radius: 12px; font-size: .9rem; }
+.promo-btn:active { background: var(--tint); }
+.promo-art i { border-color: var(--primary) !important; border-radius: 10px; }
+.promo-art i:nth-child(1) { background: #B9C8FF; }
+.promo-art i:nth-child(2) { background: #CBBDFE; }
+.promo-art i:nth-child(3) { background: #A6E4DD; }
+.promo-art i:nth-child(4) { background: #FFE39A; }
+.promo-art i:nth-child(5) { background: #FFFFFF; }
+
+/* tiles */
+.tile { border-radius: 18px; color: var(--text); font-weight: 600; }
+.tile-ico { background: transparent; width: 40px; height: 40px; }
+.tile-ico svg { width: 30px; height: 30px; stroke-width: 2; }
+
+/* coloured marks: white glyph on a solid accent */
+.thumb-0, .mk-0, .nico-0 { background: var(--c0); }
+.thumb-1, .mk-1, .nico-1 { background: var(--c1); }
+.thumb-2, .mk-2, .nico-2 { background: var(--c2); }
+.thumb-3, .mk-3, .nico-3 { background: var(--c3); }
+.thumb-4, .mk-4, .nico-4 { background: var(--c4); }
+.thumb, .mk, .nico { color: #FFFFFF; }
+.mk { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; border-radius: 12px; }
+
+/* tags in the search list */
+.tag-new { background: #DDF6EA; color: #17804D; }
+.tag-pick { background: #EEE6FF; color: #6B45CF; }
+.tag-warn { background: #FFE4E1; color: #C9372C; }
+.tag-deal { background: #FFF2D4; color: #8A5E00; }
+
+/* chips: filled blue when selected */
+.chip { border-color: var(--line); }
+.chip[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+/* profile */
+.me-avatar { background: var(--primary-soft); color: var(--primary); font-family: var(--font-display); font-weight: 700; }
+.fill-head b { font-family: var(--font-body); font-size: 1rem; font-weight: 700; color: var(--text); }
+.meter { background: var(--primary-soft); }
+.ico { background: var(--primary-soft); color: var(--primary); }
+
+/* other screens: plain white hero, light-blue stat boxes */
+.hero::before { display: none; }
+.hero { padding-top: 18px; }
+.hero h1 { font-size: 1.6rem; }
+.avatar { background: var(--primary-soft); color: var(--primary); font-family: var(--font-display); font-weight: 700; }
+.hero-stat:nth-child(n) { background: var(--primary-soft); color: var(--text); }
+.hero-stat b { font-size: 1.3rem; font-weight: 700; }
+.hero-stat span { color: var(--muted); }
+.date small { background: var(--primary); color: var(--on-primary); }
+.deal-pct { font-size: 1.35rem; font-weight: 700; color: var(--primary); }
+
+/* tab bar like the mockup: blue icon + label, no pill */
+.tab[aria-current="page"] { color: var(--primary); }
+.tab[aria-current="page"] .pill { background: transparent; color: var(--primary); }
+#mine-btn .count { background: var(--heart); }
+.sheet-back { background: rgba(20, 26, 51, .4); }
+/* banner exactly as in the mockup: blue to violet */
+.promo { background: linear-gradient(115deg, #3A5CE6 0%, #5B6CF0 55%, #8A7CF6 100%); }
+.greet .wave { font-family: system-ui, sans-serif; }
+.sr-end .tag { max-width: 120px; }
 </style>
 <header class="top" id="top">
   <div class="top-row">
     <button class="icon-btn" id="back" type="button" data-act="back" aria-label="Артқа / Назад" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="top-title" id="title"><span class="brand"><i class="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span></div>
-    <button class="icon-btn" id="mine-btn" type="button" data-go="mine" aria-label="Менің тізімім / Мой список"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span class="count" id="mine-count" hidden></span></button>
+    <button class="icon-btn" id="mine-btn" type="button" data-go="notif" aria-label="Хабарламалар / Уведомления"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="count" id="mine-count" hidden></span></button>
   </div>
 </header>
 <main id="main" aria-live="polite"></main>
 <nav class="tabbar" aria-label="Student Hub">
   <div class="tabbar-in">
     <button class="tab" type="button" data-tab="home" data-go="home"></button>
-    <button class="tab" type="button" data-tab="opps" data-go="opps"></button>
-    <button class="tab" type="button" data-tab="ai" data-go="ai"></button>
-    <button class="tab" type="button" data-tab="bonus" data-go="bonus"></button>
+    <button class="tab" type="button" data-tab="search" data-go="search"></button>
+    <button class="tab" type="button" data-tab="notif" data-go="notif"></button>
     <button class="tab" type="button" data-tab="profile" data-go="profile"></button>
   </div>
 </nav>
@@ -3310,7 +3520,7 @@ function defaults() {
               : '«Дала» кафесінде даяшы, 3 ай (2026 жылдың жазы)\nҚалалық жастар форумында ерікті',
       about: '', phone: '', email: '', demo: true
     },
-    applied: {}, saved: {}, oppDocs: {},
+    applied: {}, saved: {}, oppDocs: {}, fav: {}, read: {},
     events: { p1: { code: 'EV-P1-4821' }, p2: { code: 'EV-P2-1937' } },
     remind: {}, done: {}, certs: [],
     plans: [], decks: [], hideDemoDeck: false,
@@ -3340,7 +3550,7 @@ const save = () => lsSet(JSON.stringify(S));
 const ui = {
   oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, oppType: 'all', evCat: 'all', courseMine: false,
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, ivStart: 0, chatBusy: false,
-  chatErr: '', study: null, matchId: 'j8', oppCheck: {}
+  chatErr: '', study: null, sq: '', sk: 'all', nk: 'all', sqFocus: false, matchId: 'j8', oppCheck: {}
 };
 
 /* ================= i18n helpers ================= */
@@ -3393,6 +3603,9 @@ const IC = {
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
   send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/>',
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  heart: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0112 7a4.3 4.3 0 017.5 2.8C19.5 15.4 12 20 12 20z"/>',
+  filter: '<path d="M4 5h16l-6.5 7.5V18l-3 2v-7.5z"/>',
   bell: '<path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>',
   cards: '<rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 012 2v12"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
@@ -3560,7 +3773,8 @@ function resumeText(lang) {
 /* ================= router ================= */
 let cur = { v: 'home' };
 let sheetOpen = false;
-const ROOTS = ['home', 'opps', 'ai', 'bonus', 'profile'];
+const ROOTS = ['home', 'search', 'notif', 'profile'];
+const TAB_OF = { opps: 'search', bonus: 'search', ai: 'home' };
 const parse = v => { const i = v.indexOf(':'); return i < 0 ? [v, ''] : [v.slice(0, i), v.slice(i + 1)]; };
 const scrollMem = {};
 
@@ -3606,18 +3820,25 @@ function render() {
   document.getElementById('title').innerHTML = name === 'home' ? '<span class="brand"><i class="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>' : view.title;
   document.title = name === 'home' ? 'Student Hub' : view.title.replace(/<[^>]+>/g, '') + ' — Student Hub';
   document.getElementById('main').innerHTML = view.html;
-  const tabRoot = view.tab || (root ? name : '');
+  const tabRoot = TAB_OF[view.tab] || view.tab || (root ? name : TAB_OF[name] || '');
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tabRoot) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
-  const n = mineCount(), badge = document.getElementById('mine-count'), mb = document.getElementById('mine-btn');
+  const n = unreadCount(), badge = document.getElementById('mine-count'), mb = document.getElementById('mine-btn');
   if (badge) { badge.textContent = n; badge.hidden = !n; }
-  if (mb) { mb.hidden = name === 'mine'; mb.setAttribute('aria-label', tt('Менің тізімім', 'Мой список')); }
+  if (mb) {
+    const onProfile = name === 'profile';
+    mb.hidden = !(name === 'home' || onProfile);
+    mb.dataset.go = onProfile ? 'settings' : 'notif';
+    mb.querySelector('svg').innerHTML = onProfile ? IC.gear : IC.bell;
+    if (badge) badge.hidden = onProfile || !n;
+    mb.setAttribute('aria-label', onProfile ? tt('Параметрлер', 'Параметры') : tt('Хабарламалар', 'Уведомления'));
+  }
   document.getElementById('back').setAttribute('aria-label', tt('Артқа', 'Назад'));
   renderTabs();
   if (view.mount) view.mount();
 }
 
 function renderTabs() {
-  const tabs = [['home', 'home', tt('Басты', 'Главная')], ['opps', 'compass', tt('Мүмкіндіктер', 'Возможности')], ['ai', 'spark', 'AI'], ['bonus', 'gift', tt('Бонустар', 'Бонусы')], ['profile', 'user', tt('Профиль', 'Профиль')]];
+  const tabs = [['home', 'home', tt('Басты бет', 'Главная')], ['search', 'search', tt('Іздеу', 'Поиск')], ['notif', 'bell', tt('Хабарламалар', 'Уведомления')], ['profile', 'user', tt('Профиль', 'Профиль')]];
   tabs.forEach(([k, i, l]) => {
     const b = document.querySelector(`.tab[data-tab="${k}"]`);
     if (b) b.innerHTML = `<span class="pill">${ico(i, 22)}</span><span>${l}</span>`;
@@ -3692,55 +3913,186 @@ function upRow(x) {
     <span class="chev">${ico('chev', 18)}</span></button>`;
 }
 
-VIEWS.home = () => {
+/* ---------- Student Hub shell: home, search, notifications, profile ---------- */
+const firstName = () => (P().name || '').trim().split(/\s+/)[0] || tt('студент', 'студент');
+const plainOrg = s => String(s).replace(/[«»"]/g, '').trim();
+function hue(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 5; }
+const mark = (id, label) => `<span class="mk mk-${hue(id)}" aria-hidden="true">${esc(plainOrg(label).charAt(0).toUpperCase())}</span>`;
+const agoTxt = h => h < 24 ? tt(`${h} сағ бұрын`, `${h} ч назад`) : tt(`${Math.round(h / 24)} күн бұрын`, `${Math.round(h / 24)} дн. назад`);
+
+/* one list for jobs, internships and deals */
+function searchItems() {
+  const items = [];
+  JOBS.forEach((j, i) => items.push({
+    k: 'jobs', id: j.id, go: 'job:' + j.id, org: L(j.org), title: L(j.title),
+    meta: `${L(CITIES[j.city])} · ${tt('Жұмыс', 'Работа')}`,
+    badge: j.today ? [tt('Бүгін', 'Сегодня'), 'new'] : i < 6 ? [tt('Жаңа', 'Новое'), 'new'] : null,
+    fav: !!S.fav[j.id]
+  }));
+  OPPS.forEach(o => items.push({
+    k: 'intern', id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title),
+    meta: `${tt('Стажировка', 'Стажировка')} · ${typeLabel(o.type)}`,
+    badge: o.deadline <= 14 ? [daysLeftTxt(o.deadline), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null,
+    fav: !!S.saved[o.id]
+  }));
+  DEALS.forEach(d => items.push({
+    k: 'deals', id: d.id, act: 'deal', org: L(d.name), title: L(d.what),
+    meta: L(DEAL_CATS[d.cat]), badge: [d.pct, 'deal'], fav: !!S.fav[d.id]
+  }));
+  return items;
+}
+function searchRow(it) {
+  const main = `${mark(it.id, it.org)}<span class="row-main"><span class="row-title">${esc(it.org)}</span><span class="sr-role">${esc(it.title)}</span><span class="row-sub">${esc(it.meta)}</span></span>`;
+  const open = it.go ? `data-go="${it.go}"` : `data-act="${it.act}" data-id="${it.id}"`;
+  return `<div class="sr">
+    <button class="sr-main" type="button" ${open}>${main}</button>
+    <span class="sr-end">
+      ${it.badge ? `<span class="tag tag-${it.badge[1]}">${esc(it.badge[0])}</span>` : ''}
+      <button class="heart" type="button" data-act="fav" data-k="${it.k}" data-id="${it.id}" aria-pressed="${it.fav}" aria-label="${it.fav ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}">${ico('heart', 20)}</button>
+    </span>
+  </div>`;
+}
+function searchList() {
+  const q = (ui.sq || '').trim().toLowerCase();
+  const list = searchItems().filter(it => (ui.sk === 'all' || it.k === ui.sk) && (!q || [it.org, it.title, it.meta].join(' ').toLowerCase().includes(q)));
+  if (!list.length) return `<div class="empty">${ico('search', 28)}<span>${tt('Ештеңе табылмады. Басқа сөзбен іздеп көріңіз.', 'Ничего не нашлось. Попробуйте другое слово.')}</span>${q ? `<button class="btn ghost" type="button" data-act="sClear">${tt('Іздеуді тазалау', 'Очистить поиск')}</button>` : ''}</div>`;
+  return `<p class="tiny muted">${tt(`Табылды: ${list.length}`, `Найдено: ${list.length}`)}</p><div class="group">${list.map(searchRow).join('')}</div>`;
+}
+VIEWS.search = (k) => {
+  if (k) ui.sk = k;
+  const kinds = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['intern', tt('Стажировка', 'Стажировки')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
+  const adv = { jobs: 'opps:jobs', intern: 'opps:intern', deals: 'bonus', all: 'opps:jobs' }[ui.sk];
+  return {
+    title: tt('Іздеу', 'Поиск'),
+    html: `
+      <div class="search-bar">
+        <div class="search">${ico('search', 18)}<input class="input" id="sq" type="search" enterkeyhint="search" autocomplete="off" placeholder="${tt('Жұмыс, компания, дағды…', 'Работа, компания, навык…')}" value="${esc(ui.sq || '')}" aria-label="${tt('Іздеу', 'Поиск')}"></div>
+        <button class="icon-btn filter-btn" type="button" data-go="${adv}" aria-label="${tt('Толық сүзгілер', 'Все фильтры')}">${ico('filter', 22)}</button>
+      </div>
+      <div class="chips">${kinds.map(([v, l]) => chip(l, ui.sk === v, 'sKind', `data-v="${v}"`)).join('')}</div>
+      <div id="sList" class="section">${searchList()}</div>`,
+    mount() {
+      const inp = document.getElementById('sq');
+      inp.addEventListener('input', () => { ui.sq = inp.value; document.getElementById('sList').innerHTML = searchList(); });
+      if (ui.sqFocus) { ui.sqFocus = false; inp.focus(); }
+    }
+  };
+};
+
+/* notifications are derived from the student's own data, so they stay truthful */
+function notifs() {
+  const p = P(), out = [];
+  const fitJobs = JOBS.filter(j => j.spec.includes('all') || j.spec.includes(p.spec)).slice(0, 2);
+  fitJobs.forEach((j, i) => out.push({ id: 'nj-' + j.id, k: 'jobs', icon: 'briefcase', tone: 0, go: 'job:' + j.id, h: 2 + i * 5,
+    title: tt('Жаңа жұмыс мүмкіндігі', 'Новая вакансия для вас'), text: tt(`${plainOrg(L(j.org))}: «${L(j.title)}», сізге сәйкес келеді`, `${plainOrg(L(j.org))}: «${L(j.title)}» подходит вам`) }));
+  EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).forEach((e, i) => out.push({ id: 'ne-' + e.id, k: 'events', icon: 'calendar', tone: 1, go: 'event:' + e.id, h: 20 + i * 14,
+    title: S.events[e.id] ? tt('Сіз тіркелген іс-шара жақында', 'Скоро ваше мероприятие') : tt('Іс-шара есігінде', 'Скоро мероприятие'),
+    text: `${L(e.title)}, ${fDate(dOff(e.day))}, ${e.time}` }));
+  Object.keys(S.applied).forEach(id => { const j = JOBS.find(x => x.id === id); if (j) out.push({ id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1,
+    title: tt('Өтінім жіберілді', 'Отклик отправлен'), text: tt(`«${L(j.title)}» бойынша жұмыс берушінің жауабын күтіңіз`, `Ждите ответа работодателя по вакансии «${L(j.title)}»`) }); });
+  DEALS.slice(0, 2).forEach((d, i) => out.push({ id: 'nd-' + d.id, k: 'deals', icon: 'tag', tone: 2, act: 'deal', data: d.id, h: 26 + i * 22,
+    title: tt('Жеңілдік жаңартылды', 'Скидка обновлена'), text: `${plainOrg(L(d.name))}: ${d.pct}, ${L(d.what).toLowerCase()}` }));
+  OPPS.filter(o => o.deadline <= 21).slice(0, 1).forEach(o => out.push({ id: 'no-' + o.id, k: 'jobs', icon: 'clock', tone: 3, go: 'opp:' + o.id, h: 30,
+    title: tt('Өтінім мерзімі жақын', 'Скоро дедлайн'), text: `${L(o.title)}: ${daysLeftTxt(o.deadline).toLowerCase()}` }));
+  out.push({ id: 'nm-study', k: 'study', icon: 'book', tone: 4, go: 'materials', h: 72,
+    title: tt('Жаңа оқу материалы', 'Новые учебные материалы'), text: tt('Емтиханға дайындық пен карточкалар бөлімін қараңыз', 'Загляните в подготовку к экзаменам и карточки') });
+  return out.sort((a, b) => a.h - b.h);
+}
+const unreadCount = () => notifs().filter(n => !S.read[n.id]).length;
+function notifRow(n) {
+  return `<button class="nrow ${S.read[n.id] ? '' : 'unread'}" type="button" data-act="nOpen" data-nid="${n.id}">
+    <span class="nico nico-${n.tone}">${ico(n.icon, 22)}</span>
+    <span class="row-main"><span class="row-title">${esc(n.title)}</span><span class="row-sub">${esc(n.text)}</span><span class="tiny muted">${agoTxt(n.h)}</span></span>
+    <span class="ndot" aria-label="${S.read[n.id] ? '' : tt('Оқылмаған', 'Непрочитано')}"></span>
+  </button>`;
+}
+VIEWS.notif = () => {
+  const kinds = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['events', tt('Іс-шаралар', 'События')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
+  const list = notifs().filter(n => ui.nk === 'all' || n.k === ui.nk);
+  const unread = unreadCount();
+  return {
+    title: tt('Хабарламалар', 'Уведомления'),
+    html: `
+      <div class="chips">${kinds.map(([v, l]) => chip(l, ui.nk === v, 'nKind', `data-v="${v}"`)).join('')}</div>
+      ${list.length ? `<div class="group">${list.map(notifRow).join('')}</div>` : `<div class="empty">${ico('bell', 28)}<span>${tt('Бұл санатта хабарлама жоқ.', 'В этой категории уведомлений нет.')}</span></div>`}
+      ${unread ? `<button class="link-btn" type="button" data-act="nReadAll" style="align-self:flex-start">${tt('Барлығын оқылды деп белгілеу', 'Отметить все прочитанными')}</button>` : ''}`
+  };
+};
+
+/* hubs reached from home tiles */
+VIEWS.services = () => ({
+  title: tt('Университет қызметтері', 'Услуги университета'), tab: 'home',
+  html: `<div class="group">
+    ${row({ go: 'docs', icon: 'file', title: tt('Анықтамалар мен құжаттар', 'Справки и документы'), sub: tt('Оқу орнынан анықтама, транскрипт, 073/у', 'Справка с места учёбы, транскрипт, 073/у') })}
+    ${row({ go: 'gpa', icon: 'chart', title: tt('GPA және шәкіртақы', 'GPA и стипендия'), sub: tt('Калькулятор, мақсатты GPA', 'Калькулятор, целевой GPA') })}
+    ${row({ go: 'pay', icon: 'tenge', title: tt('Оқу ақысы', 'Оплата обучения'), sub: tt('Мерзімдер мен төлем тарихы', 'Сроки и история платежей') })}
+    ${row({ go: 'map', icon: 'map', title: tt('Кампус картасы', 'Карта кампуса'), sub: tt('Аудитория, деканат, асхана', 'Аудитория, деканат, столовая') })}
+    ${row({ go: 'opps:events', icon: 'calendar', title: tt('Іс-шаралар', 'Мероприятия'), sub: tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы') })}
+    ${row({ go: 'admission', icon: 'cap', title: tt('Түсу', 'Поступление'), sub: tt('Бакалавриат, магистратура, докторантура', 'Бакалавриат, магистратура, докторантура') })}
+  </div>`
+});
+VIEWS.materials = () => ({
+  title: tt('Оқу материалдары', 'Учебные материалы'), tab: 'home',
+  html: `<div class="group">
+    ${row({ go: 'cards', icon: 'cards', title: tt('Карточкалар мен тесттер', 'Карточки и тесты'), sub: tt('Дәріс мәтінінен жиын құру', 'Набор из текста лекции') })}
+    ${row({ go: 'exam', icon: 'calendar', title: tt('Емтиханға дайындық', 'Подготовка к экзамену'), sub: tt('Күн бойынша жоспар', 'План по дням') })}
+    ${row({ go: 'opps:courses', icon: 'book', title: tt('Курстар мен сертификаттар', 'Курсы и сертификаты'), sub: tt('Мамандығыңызға арналған тегін курстар', 'Бесплатные курсы по специальности') })}
+    ${row({ go: 'interview', icon: 'mic', title: tt('Сұхбатқа дайындық', 'Подготовка к собеседованию') })}
+  </div>`
+});
+VIEWS.saved = () => {
+  const list = searchItems().filter(it => it.fav);
+  return {
+    title: tt('Сақталғандар', 'Сохранённое'), tab: 'profile',
+    html: list.length ? `<div class="group">${list.map(searchRow).join('')}</div>`
+      : `<div class="empty">${ico('heart', 28)}<span>${tt('Әзірге ештеңе сақталмаған. Іздеудегі жүрекшені басыңыз.', 'Пока ничего не сохранено. Нажмите на сердечко в поиске.')}</span><button class="btn secondary" type="button" data-go="search">${tt('Іздеуге өту', 'Перейти к поиску')}</button></div>`
+  };
+};
+
+function profileFill() {
   const p = P();
+  const checks = [!!p.name, !!p.phone, !!p.email, !!(p.about || '').trim(), !!(p.exp || '').trim(), p.skills.length >= 3, p.credits > 0, certificates().length > 0, !p.demo, !!p.en];
+  return Math.round(checks.filter(Boolean).length / checks.length * 100);
+}
+
+VIEWS.home = () => {
   const now = new Date();
-  const myJobs = JOBS.filter(j => specOk(j.spec));
-  const fitOpps = OPPS.filter(o => specOk(o.spec) && qualify(o).ok);
-  const myCourses = COURSES.filter(c => c.spec.includes(p.spec));
-  const upcomingEv = EVENTS.filter(e => !e.past);
-  const todayJobs = JOBS.filter(j => j.today);
-  const ups = upcomingItems();
-  const cat = [
-    ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')], ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
-    ['opps:events', 'calendar', tt('Іс-шаралар', 'События')], ['opps:courses', 'book', tt('Курстар', 'Курсы')],
-    ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')], ['ai', 'spark', tt('AI-көмекші', 'AI-помощник')],
-    ['docs', 'file', tt('Анықтамалар', 'Справки')], ['admission', 'cap', tt('Түсу', 'Поступление')],
-    ['gpa', 'chart', tt('Менің оқуым', 'Моя учёба')], ['map', 'map', tt('Карта', 'Карта')],
-    ['pay', 'tenge', tt('Төлем', 'Оплата')], ['portfolio', 'folder', tt('Портфолио', 'Портфолио')]
+  const tiles = [
+    ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
+    ['opps:intern', 'globe', tt('Стажировка', 'Стажировки')],
+    ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')],
+    ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
+    ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
+    ['ai', 'spark', tt('AI көмекші', 'AI-помощник')]
   ];
-  const greet = now.getHours() < 12 ? tt('Қайырлы таң', 'Доброе утро') : now.getHours() < 18 ? tt('Қайырлы күн', 'Добрый день') : tt('Қайырлы кеш', 'Добрый вечер');
-  const picks = [
-    ['opps:jobs', myJobs.length, tt('жұмыс', plural(myJobs.length, ['вакансия', 'вакансии', 'вакансий']))],
-    ['opps:intern', fitOpps.length, tt('сәйкес бағдарлама', plural(fitOpps.length, ['подходящая программа', 'подходящие программы', 'подходящих программ']))],
-    ['opps:courses', myCourses.length, tt('курс', plural(myCourses.length, ['курс', 'курса', 'курсов']))],
-    ['opps:events', upcomingEv.length, tt('іс-шара', plural(upcomingEv.length, ['событие', 'события', 'событий']))]
+  const news = [
+    ...EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar', id: e.id, title: L(e.title), sub: `${fDate(dOff(e.day))}, ${L(e.place)}` })),
+    ...OPPS.slice(0, 2).map(o => ({ go: 'opp:' + o.id, icon: 'globe', id: o.id, title: L(o.title), sub: tt(`Өтінім мерзімі: ${fDate(dOff(o.deadline))}`, `Приём заявок до ${fDate(dOff(o.deadline))}`) }))
   ];
   return {
     title: 'Student Hub',
     html: `
-      ${S.noteSeen ? '' : `<div class="demo-note">${ico('bolt', 18)}<span class="grow">${tt('Бұл — алғашқы нұсқа. Вакансиялар, серіктестер мен іс-шаралар үлгі ретінде берілген.', 'Это первая версия. Вакансии, партнёры и события даны как примеры.')}</span><button type="button" data-act="noteSeen">${tt('Түсінікті', 'Понятно')}</button></div>`}
-      <section class="hero" aria-label="${tt('Профиль', 'Профиль')}">
-        <div class="hero-top">
-          <div class="avatar">${esc((p.name || 'S').trim().charAt(0).toUpperCase())}</div>
-          <div style="min-width:0">
-            <p class="muted small">${greet},</p>
-            <h1>${esc(p.name)}</h1>
-            <p class="muted small">${esc(L(SPECS[p.spec]))}, ${tt(`${p.course}-курс`, `${p.course} курс`)}</p>
-          </div>
-        </div>
-        <div class="hero-stats">
-          <button class="hero-stat" type="button" data-go="gpa"><b>${p.gpa.toFixed(2)}</b><span>GPA</span></button>
-          <button class="hero-stat" type="button" data-go="mine"><b>${Object.keys(S.applied).length}</b><span>${tt('өтінім', 'отклики')}</span></button>
-          <button class="hero-stat" type="button" data-go="portfolio"><b>${certificates().length}</b><span>${tt('сертификат', 'сертификаты')}</span></button>
-        </div>
+      <section class="greet">
+        <h1>${tt(`Сәлем, ${esc(firstName())}!`, `Привет, ${esc(firstName())}!`)} <span class="wave" aria-hidden="true">👋</span></h1>
+        <p class="muted">${tt('Бүгінгі күнің сәтті болсын!', 'Пусть день будет удачным!')}</p>
       </section>
 
-      <form class="search home-search" id="homeSearch" role="search">${ico('search', 18)}<input class="input" id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="${tt('Вакансия, курс, іс-шара іздеу', 'Найти вакансию, курс, событие')}" aria-label="${tt('Іздеу', 'Поиск')}"></form>
+      <form class="search" id="homeSearch" role="search">${ico('search', 18)}<input class="input" id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="${tt('Не іздейсің?', 'Что ищешь?')}" aria-label="${tt('Іздеу', 'Поиск')}"></form>
+
+      <section class="promo">
+        <div class="promo-text">
+          <h2>${tt('Жаңа мүмкіндіктер сені күтеді!', 'Новые возможности ждут тебя!')}</h2>
+          <p>${tt('Жұмыс, тағылымдама, жеңілдіктер және тағы басқалары!', 'Работа, стажировки, скидки и многое другое!')}</p>
+          <button class="btn promo-btn" type="button" data-go="search:all">${tt('Мүмкіндіктерді қарау', 'Смотреть возможности')}</button>
+        </div>
+        <div class="promo-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </section>
+
+      <div class="tiles">${tiles.map(([g, i, l], n) => `<button class="tile tile-${n % 5}" type="button" data-go="${g}"><span class="tile-ico">${ico(i, 26)}</span><span>${l}</span></button>`).join('')}</div>
 
       <section class="section">
-        <h2>${tt('Бөлімдер', 'Разделы')}</h2>
-        <div class="swatches">${cat.map(([g, i, l], n) => `<button class="sw sw-${n % 5}" type="button" data-go="${g}"><span class="sw-ico">${ico(i, 22)}</span><span class="sw-label">${l}</span></button>`).join('')}</div>
+        ${sectionHead(tt('Жаңалықтар', 'Новости'), `<button class="link-btn" type="button" data-go="opps:events">${tt('Барлығын қарау', 'Смотреть все')}</button>`)}
+        <div class="group">${news.map(n => `<button class="row news" type="button" data-go="${n.go}"><span class="thumb thumb-${hue(n.id)}">${ico(n.icon, 24)}</span><span class="row-main"><span class="row-title">${esc(n.title)}</span><span class="row-sub">${esc(n.sub)}</span></span></button>`).join('')}</div>
       </section>
 
       <section class="section">
@@ -3749,34 +4101,20 @@ VIEWS.home = () => {
           <span class="up-when"><b class="num">${c.t}</b><span class="num">${c.end}</span></span>
           <span class="row-main"><span class="row-title">${esc(L(c.name))}</span><span class="row-sub">${L(c.kind)}, ${tt('аудитория', 'аудитория')} ${c.room}</span></span>
           <span class="chev">${ico('pin', 18)}</span></button>`).join('')}</div>
-        <p class="note">${tt('Кесте — үлгі. Аудиторияны басып, картадан табыңыз.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию.')}</p>
-      </section>
-
-      <section class="section">
-        ${sectionHead(tt('Алдағы', 'Скоро'), `<button class="link-btn" type="button" data-go="mine">${tt('Менің тізімім', 'Мой список')}</button>`)}
-        <div class="group">${ups.slice(0, 4).map(upRow).join('')}</div>
-        ${ups.length < 3 ? `<p class="note">${tt('Іс-шараға тіркелсеңіз немесе бағдарламаны сақтасаңыз, мерзімдері осында шығады.', 'Записывайтесь на события и сохраняйте программы — их сроки появятся здесь.')}</p>` : ''}
-      </section>
-
-
-      <section class="section">
-        ${sectionHead(tt('Бүгінгі жұмыс', 'Работа на сегодня'), `<button class="link-btn" type="button" data-act="todayJobs">${tt('Барлығы', 'Все')}</button>`)}
-        <div class="group">${todayJobs.slice(0, 3).map(jobRow).join('')}</div>
-      </section>
-
-      <section class="section">
-        ${sectionHead(tt('Сен үшін іріктеме', 'Подборка для тебя'), `<span class="tiny muted">${esc(L(SPECS[p.spec]))}</span>`)}
-        <div class="chips">${picks.map(([g, n, l]) => `<button class="chip" type="button" data-go="${g}"><b class="num">${n}</b> ${l}</button>`).join('')}</div>
+        <p class="note">${tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
       </section>`,
     mount() {
-      const f = document.getElementById('homeSearch');
-      f.addEventListener('submit', ev => {
+      document.getElementById('homeSearch').addEventListener('submit', ev => {
         ev.preventDefault();
-        const q = document.getElementById('hq').value.trim();
-        if (!q) return;
-        ui.q = q; ui.oppTab = 'jobs';
-        go('opps:jobs');
+        ui.sq = document.getElementById('hq').value.trim();
+        ui.sk = 'all';
+        go('search');
       });
+      document.getElementById('hq').addEventListener('focus', ev => {
+        if (ev.target.value) return;
+        ui.sq = ''; ui.sk = 'all'; ui.sqFocus = true;
+        go('search');
+      }, { once: true });
     }
   };
 };
@@ -4436,38 +4774,34 @@ VIEWS.bonus = () => {
 
 /* ---------- profile and sub pages ---------- */
 VIEWS.profile = () => {
-  const p = P();
+  const p = P(), fill = profileFill();
   return {
     title: tt('Профиль', 'Профиль'),
     html: `
-      <section class="hero">
-        <div class="hero-top"><div class="avatar">${esc((p.name || 'S').charAt(0).toUpperCase())}</div>
-          <div style="min-width:0"><h1>${esc(p.name)}</h1><p class="muted small">${tt('Сейфуллин университеті', 'Университет им. С. Сейфуллина')}</p><p class="muted small">${esc(L(SPECS[p.spec]))}, ${tt(`${p.course}-курс`, `${p.course} курс`)}</p></div></div>
-        <div class="hero-stats">
-          <div class="hero-stat"><b>${p.gpa.toFixed(2)}</b><span>GPA</span></div>
-          <div class="hero-stat"><b>${p.en}</b><span>${tt('Ағылшын', 'Английский')}</span></div>
-          <div class="hero-stat"><b>${p.skills.length}</b><span>${tt('дағды', 'навыков')}</span></div>
+      <section class="me">
+        <div class="me-photo">
+          <span class="me-avatar">${esc((p.name || 'S').trim().charAt(0).toUpperCase())}</span>
+          <button class="me-edit" type="button" data-go="edit" aria-label="${tt('Профильді өзгерту', 'Изменить профиль')}">${ico('edit', 16)}</button>
         </div>
-        <button class="btn sun" type="button" data-go="edit">${ico('edit', 18)} ${tt('Профильді өзгерту', 'Изменить профиль')}</button>
+        <h1>${esc(p.name)}</h1>
+        <p class="muted">${tt('Студент · Сейфуллин университеті', 'Студент · Университет им. С. Сейфуллина')}</p>
+        <p class="muted small">${esc(L(SPECS[p.spec]))}, ${tt(`${p.course}-курс`, `${p.course} курс`)}, GPA ${p.gpa.toFixed(2)}</p>
       </section>
-      ${p.demo ? note(tt('Бұл — үлгі профиль. Өз деректеріңізді енгізіңіз, сонда іріктеме мен түйіндеме сізге бейімделеді.', 'Это пример профиля. Укажите свои данные, и подборка с резюме подстроятся под вас.')) : ''}
-      <section class="section"><h2>${tt('Оқу', 'Учёба')}</h2><div class="group">
-        ${row({ go: 'gpa', icon: 'chart', title: tt('GPA, бағалар, шәкіртақы', 'GPA, оценки, стипендия'), sub: tt('Калькулятор және мақсатты GPA', 'Калькулятор и целевой GPA') })}
-        ${row({ go: 'portfolio', icon: 'folder', title: tt('Портфолио', 'Портфолио'), sub: tt(`${certificates().length} сертификат`, `Сертификатов: ${certificates().length}`) })}
-        ${row({ go: 'resume', icon: 'doc', title: tt('Түйіндеме', 'Резюме'), sub: tt('Профильден жасау', 'Собрать из профиля') })}
-      </div></section>
-      <section class="section"><h2>${tt('Университет', 'Университет')}</h2><div class="group">
-        ${row({ go: 'docs', icon: 'file', title: tt('Құжаттар мен анықтамалар', 'Документы и справки') })}
-        ${row({ go: 'admission', icon: 'cap', title: tt('Түсу: бакалавриат, магистратура, докторантура', 'Поступление: бакалавриат, магистратура, докторантура') })}
-        ${row({ go: 'map', icon: 'map', title: tt('Кампус картасы', 'Карта кампуса') })}
-        ${row({ go: 'pay', icon: 'tenge', title: tt('Оқу ақысы', 'Оплата обучения') })}
-      </div></section>
-      <section class="section"><h2>${tt('Менің тізімім', 'Мой список')}</h2><div class="group">
-        ${row({ go: 'mine', icon: 'check', title: tt('Өтінімдер, сақталғандар, іс-шаралар', 'Отклики, сохранённое, мероприятия'), end: mineCount() ? `<span class="badge b-ok num">${mineCount()}</span>` : '' })}
-      </div></section>
-      <section class="section"><h2>${tt('Тіл', 'Язык')}</h2>${seg([['kk', 'Қазақша'], ['ru', 'Русский']], S.lang, 'setLang')}</section>
-      <section class="section"><div class="group">${row({ go: 'settings', icon: 'gear', title: tt('Баптаулар', 'Настройки'), sub: tt('Тақырып, AI кілті, деректер', 'Тема, AI-ключ, данные') })}</div>
-        <p class="note">${tt('Деректеріңіз тек осы құрылғыда сақталады.', 'Ваши данные хранятся только на этом устройстве.')}</p></section>`
+      <button class="card fill" type="button" data-go="edit">
+        <span class="fill-head"><span class="row-title">${tt('Профиль толықтығы', 'Заполненность профиля')}</span><b class="num">${fill}%</b></span>
+        <span class="meter" role="progressbar" aria-valuenow="${fill}" aria-valuemin="0" aria-valuemax="100"><i style="width:${fill}%"></i></span>
+        ${fill < 100 ? `<span class="row-sub">${tt('Телефон, тәжірибе мен өзіңіз туралы толтырсаңыз, түйіндеме мен іріктеме дәлірек болады.', 'Заполните телефон, опыт и «о себе», чтобы резюме и подборка были точнее.')}</span>` : ''}
+      </button>
+      ${p.demo ? note(tt('Бұл — үлгі профиль. Өз деректеріңізді енгізіңіз.', 'Это пример профиля. Укажите свои данные.')) : ''}
+      <div class="group">
+        ${row({ go: 'edit', icon: 'user', title: tt('Жеке ақпарат', 'Личные данные') })}
+        ${row({ go: 'gpa', icon: 'cap', title: tt('Білім туралы', 'Об учёбе') })}
+        ${row({ go: 'portfolio', icon: 'award', title: tt('Жетістіктер', 'Достижения') })}
+        ${row({ go: 'mine', icon: 'clock', title: tt('Іс-әрекет тарихы', 'История действий') })}
+        ${row({ go: 'saved', icon: 'bookmark', title: tt('Сақталғандар', 'Сохранённое') })}
+        ${row({ go: 'settings', icon: 'gear', title: tt('Параметрлер', 'Параметры') })}
+      </div>
+      <p class="note">${tt('Деректеріңіз тек осы құрылғыда сақталады.', 'Ваши данные хранятся только на этом устройстве.')}</p>`
   };
 };
 
@@ -4711,6 +5045,23 @@ VIEWS.settings = () => ({
 
 /* ================= actions ================= */
 const ACT = {
+  fav(el) {
+    const id = el.dataset.id, box = el.dataset.k === 'intern' ? S.saved : S.fav;
+    if (box[id]) delete box[id]; else box[id] = Date.now();
+    save(); toast(box[id] ? tt('Сақталды', 'Сохранено') : tt('Сақталғаннан алынды', 'Убрано из сохранённых'));
+    const list = document.getElementById('sList');
+    if (list) list.innerHTML = searchList(); else render();
+  },
+  sKind(el) { ui.sk = el.dataset.v; render(); },
+  sClear() { ui.sq = ''; render(); },
+  nKind(el) { ui.nk = el.dataset.v; render(); },
+  nOpen(el) {
+    const n = notifs().find(x => x.id === el.dataset.nid);
+    if (!n) return;
+    S.read[n.id] = Date.now(); save();
+    if (n.go) go(n.go); else { render(); ACT[n.act]({ dataset: { id: n.data } }); }
+  },
+  nReadAll() { notifs().forEach(n => { S.read[n.id] = S.read[n.id] || Date.now(); }); save(); render(); },
   lang(el) { S.lang = el.dataset.v; save(); render(); },
   setLang(el) { S.lang = el.dataset.v; save(); render(); },
   setTheme(el) { S.theme = el.dataset.v; save(); applyTheme(); render(); },
