@@ -4840,14 +4840,14 @@ VIEWS.profile = () => {
   };
 };
 
-function profileForm(compact) {
+function profileForm(compact, blank) {
   const p = P();
   return `
-    <div class="field"><label for="fName">${tt('Аты-жөні', 'Имя и фамилия')}</label><input class="input" id="fName" value="${esc(p.name)}" required></div>
-    <div class="field"><label for="fSpec">${tt('Мамандық', 'Специальность')}</label><select class="input" id="fSpec">${Object.entries(SPECS).map(([k, s]) => `<option value="${k}" ${p.spec === k ? 'selected' : ''}>${L(s)}</option>`).join('')}</select></div>
+    <div class="field"><label for="fName">${tt('Аты-жөні', 'Имя и фамилия')}</label><input class="input" id="fName" value="${blank ? '' : esc(p.name)}" placeholder="${tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')}" autocomplete="name" required></div>
+    <div class="field"><label for="fSpec">${tt('Факультет / мамандық', 'Факультет / специальность')}</label><select class="input" id="fSpec" required>${blank ? `<option value="" selected disabled>${tt('Таңдаңыз', 'Выберите')}</option>` : ''}${Object.entries(SPECS).map(([k, s]) => `<option value="${k}" ${!blank && p.spec === k ? 'selected' : ''}>${L(s)}</option>`).join('')}</select></div>
     <div class="grid-2">
       <div class="field"><label for="fCourse">${tt('Курс', 'Курс')}</label><select class="input" id="fCourse">${[1, 2, 3, 4].map(n => `<option ${p.course === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="field"><label for="fGpa">GPA (0–4)</label><input class="input num" id="fGpa" type="text" inputmode="decimal" value="${p.gpa}"></div>
+      <div class="field"><label for="fGpa">GPA (0–4)</label><input class="input num" id="fGpa" type="text" inputmode="decimal" value="${blank ? '' : p.gpa}" placeholder="${tt('мысалы, 3.2', 'например, 3.2')}" ${blank ? 'required' : ''}></div>
     </div>
     <div class="grid-2">
       <div class="field"><label for="fEn">${tt('Ағылшын деңгейі', 'Уровень английского')}</label><select class="input" id="fEn">${LEVELS.map(l => `<option ${p.en === l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
@@ -5449,7 +5449,7 @@ function onboardingHtml() {
     ${seg([['kk', 'Қазақша'], ['ru', 'Русский']], S.lang, 'obLang')}
     <h1>${tt('Қош келдіңіз!', 'Добро пожаловать!')}</h1>
     <p class="small muted">${tt('Мамандығыңыз бен курсыңызды көрсетіңіз. Жұмыс, тағылымдама, курстар мен жеңілдіктерді соған қарай іріктейміз. Кейін профильден өзгертуге болады.', 'Укажите специальность и курс — подберём работу, стажировки, курсы и скидки под вас. Потом это можно изменить в профиле.')}</p>
-    <form class="form" id="obForm">${profileForm(true)}
+    <form class="form" id="obForm">${profileForm(true, true)}
       <button class="btn" type="submit">${tt('Бастау', 'Начать')}</button>
       <button class="btn ghost" type="button" id="obDemo">${tt('Үлгі профильмен қарау', 'Посмотреть с примером профиля')}</button>
     </form>`;
