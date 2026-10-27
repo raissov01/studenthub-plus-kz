@@ -1,7 +1,9 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>STUDYGO</title>
-<meta name="description" content="STUDYGO — студентке арналған бәрі бір қосымшада: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.">
-<meta name="theme-color" content="#7A6274">
+<title>Student Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@500;600;700&display=swap">
+<meta name="description" content="Student Hub — студентке арналған бәрі бір қосымшада: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.">
+<meta name="theme-color" content="#F3F4F2">
 <style>
 @font-face {
   font-family: 'Geologica';
@@ -135,15 +137,6 @@
   --warn: var(--danger); --warn-soft: var(--danger-soft);
   --bad: var(--danger); --bad-soft: var(--danger-soft);
   --head-bg: var(--deep); --head-fg: var(--on-deep); --head-muted: var(--on-deep-muted);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #161417; --surface: #1F1C20; --surface-2: #28242A; --tint: #2A3228; --line: #36313A;
-    --text: #EEE9EC; --muted: #B3AAB0; --primary: #A9C4A5; --primary-press: #BCD3B8; --on-primary: #1A2418;
-    --primary-soft: #2D3A2B; --accent: #6A5464; --accent-soft: #3A2F38; --deep: #3E3240; --on-deep: #F3ECF1; --on-deep-muted: #CDBDC8;
-    --danger: #F2B8B5; --danger-soft: #3D1A18;
-    color-scheme: dark;
-  }
 }
 :root[data-theme="dark"] {
   --bg: #161417; --surface: #1F1C20; --surface-2: #28242A; --tint: #2A3228; --line: #36313A;
@@ -485,16 +478,99 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
   .tab .pill { width: 44px; }
 }
 
+
+/* ---------- Student Hub layer ----------
+   Palette taken straight from the "In color balance" swatches: sage, mauve, taupe, mist, ice.
+   Swatch colours are used as solid fills (tiles, stats, the brand mark); dark sage ink is the
+   only action colour. Flat: solid fills + 1px lines, no shadows, no gradients. */
+:root {
+  --sw-sage: #8FA68C; --sw-mauve: #B39AAD; --sw-taupe: #A99A7F; --sw-mist: #CCC8CB; --sw-ice: #DCE3E5;
+  --sw-ink: #22252A;
+  --font-display: "Fira Sans Extra Condensed", "Golos Text", system-ui, sans-serif;
+  --r: 14px; --r-sm: 10px; --r-sw: 6px;
+}
+:root:not([data-theme="dark"]) {
+  --bg: #F3F4F2; --surface: #FFFFFF; --surface-2: #ECEDEA; --tint: #E3E9E1; --line: #DEDFDB;
+  --text: #2B2A2E; --muted: #615D65;
+  --primary: #4F6B4C; --primary-press: #405A3D; --on-primary: #FFFFFF; --primary-soft: #E2EADF;
+  --accent: #E8DDE5; --accent-soft: #F3EDF1;
+  --deep: #FFFFFF; --on-deep: #2B2A2E; --on-deep-muted: #615D65;
+  color-scheme: light;
+}
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0; }
+h1 { font-size: 2rem; line-height: 1.1; }
+h2 { font-size: 1.4rem; line-height: 1.2; }
+h3 { font-size: 1.15rem; line-height: 1.25; }
+.top-title { font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; }
+
+/* brand: five-band palette mark + condensed wordmark */
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); letter-spacing: 0; font-size: 1.5rem; }
+.brand .mark { display: inline-flex; gap: 2px; height: 22px; }
+.brand .mark b { width: 5px; border-radius: 1px; background: var(--sw-sage); }
+.brand .mark b:nth-child(2) { background: var(--sw-mauve); }
+.brand .mark b:nth-child(3) { background: var(--sw-taupe); }
+.brand .mark b:nth-child(4) { background: var(--sw-mist); }
+.brand .mark b:nth-child(5) { background: var(--sw-ice); }
+
+/* hero: white sheet topped with the palette band */
+.hero { position: relative; overflow: hidden; border: 1px solid var(--line); padding-top: 26px; }
+.hero::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 8px;
+  background: linear-gradient(90deg, var(--sw-sage) 0 20%, var(--sw-mauve) 20% 40%, var(--sw-taupe) 40% 60%, var(--sw-mist) 60% 80%, var(--sw-ice) 80% 100%);
+}
+.hero h1 { font-size: 2.2rem; }
+.avatar { background: var(--sw-mauve); color: var(--sw-ink); font-family: var(--font-display); font-size: 1.5rem; }
+.hero .btn.sun, .hero .btn.on-deep { background: var(--primary); color: var(--on-primary); }
+.hero-stat { border-radius: var(--r-sw); color: var(--sw-ink); min-height: 70px; }
+.hero-stat:nth-child(3n+1) { background: var(--sw-sage); }
+.hero-stat:nth-child(3n+2) { background: var(--sw-mauve); }
+.hero-stat:nth-child(3n) { background: var(--sw-taupe); }
+.hero-stat b { font-size: 1.6rem; font-weight: 600; }
+.hero-stat span { color: var(--sw-ink); font-size: .8rem; }
+button.hero-stat:active { background: var(--sw-mist); }
+
+/* home search */
+.home-search .input { min-height: 52px; border-radius: 12px; }
+
+/* section swatches — the signature */
+.swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 520px) { .swatches { grid-template-columns: repeat(3, 1fr); } }
+.sw {
+  border: 0; border-radius: var(--r-sw); min-height: 96px; padding: 12px 14px; color: var(--sw-ink);
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 14px; text-align: left; min-width: 0;
+}
+.sw-0 { background: var(--sw-sage); }
+.sw-1 { background: var(--sw-mauve); }
+.sw-2 { background: var(--sw-taupe); }
+.sw-3 { background: var(--sw-mist); }
+.sw-4 { background: var(--sw-ice); }
+.sw:active { box-shadow: inset 0 0 0 2px var(--sw-ink); }
+.sw:focus-visible { outline: 2px solid var(--sw-ink); outline-offset: 2px; }
+.sw-ico { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, .5); }
+.sw-label { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; line-height: 1.1; overflow-wrap: anywhere; }
+
+/* quieter supporting surfaces */
+.ico { border-radius: 10px; }
+.btn { border-radius: 12px; }
+.seg button[aria-pressed="true"] { color: var(--text); }
+.date small { background: var(--sw-sage); color: var(--sw-ink); }
+.tab[aria-current="page"] { color: var(--text); }
+.tab[aria-current="page"] .pill { background: var(--sw-sage); color: var(--sw-ink); }
+.deal-pct { font-size: 1.6rem; font-weight: 600; }
+.big-num { font-weight: 600; }
+.msg.me { border-bottom-right-radius: 4px; }
+.sheet-back { background: rgba(34, 37, 42, .4); }
 </style>
 <header class="top" id="top">
   <div class="top-row">
     <button class="icon-btn" id="back" type="button" data-act="back" aria-label="Артқа / Назад" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <div class="top-title" id="title"><span class="brand">STUDY<b>GO</b></span></div>
+    <div class="top-title" id="title"><span class="brand"><i class="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span></div>
     <button class="icon-btn" id="mine-btn" type="button" data-go="mine" aria-label="Менің тізімім / Мой список"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span class="count" id="mine-count" hidden></span></button>
   </div>
 </header>
 <main id="main" aria-live="polite"></main>
-<nav class="tabbar" aria-label="STUDYGO">
+<nav class="tabbar" aria-label="Student Hub">
   <div class="tabbar-in">
     <button class="tab" type="button" data-tab="home" data-go="home"></button>
     <button class="tab" type="button" data-tab="opps" data-go="opps"></button>
@@ -2805,7 +2881,7 @@ var qrcode = function() {
 
 </script>
 <script>
-/* STUDYGO demo data. Every vacancy, partner, event and figure below is an example
+/* Student Hub demo data. Every vacancy, partner, event and figure below is an example
    for the prototype, not a real offer. Dates are offsets in days from "today". */
 'use strict';
 
@@ -3106,7 +3182,7 @@ const DOCS = [
     why: { kk: 'Жатақханаға, практикаға, спорт секциясына, шетелдік бағдарламаларға.', ru: 'Для общежития, практики, спортивных секций, зарубежных программ.' },
     where: { kk: 'Тіркелген емханаңыз немесе уәкілетті медициналық ұйым. Кейбір анықтамаларды (мысалы, диспансерлік есепте тұрмағаны туралы) eGov.kz береді.', ru: 'Ваша поликлиника по прикреплению или уполномоченная медорганизация. Некоторые справки (например, об отсутствии на диспансерном учёте) выдаёт eGov.kz.' },
     need: [{ kk: 'Жеке куәлік', ru: 'Удостоверение личности' }, { kk: 'Анықтама нысаны мен мақсаты (оны сұрап отырған ұйымнан нақтылаңыз)', ru: 'Форма и цель справки (уточните у организации, которая её требует)' }],
-    online: { kk: 'STUDYGO анықтама бермейді, тек қайдан алуға болатынын көрсетеді', ru: 'STUDYGO не выдаёт справки, а подсказывает, где их получить' } },
+    online: { kk: 'Student Hub анықтама бермейді, тек қайдан алуға болатынын көрсетеді', ru: 'Student Hub не выдаёт справки, а подсказывает, где их получить' } },
   { id: 'mobility', title: { kk: 'Академиялық ұтқырлыққа құжаттар', ru: 'Документы для академической мобильности' },
     why: { kk: 'Шетелде немесе басқа ЖОО-да бір семестр оқу үшін.', ru: 'Для семестра обучения за рубежом или в другом вузе.' },
     where: { kk: 'Академиялық ұтқырлық бөлімі', ru: 'Отдел академической мобильности' },
@@ -3211,7 +3287,7 @@ const DEMO_DECK = {
   ]
 };
 
-/* STUDYGO — student super-app prototype. Vanilla JS, works offline; data stays on the device. */
+/* Student Hub — student super-app prototype. Vanilla JS, works offline; data stays on the device. */
 'use strict';
 
 /* ================= state ================= */
@@ -3226,7 +3302,7 @@ function lsSet(v) { try { window.localStorage.setItem(KEY, v); } catch (e) { /* 
 function defaults() {
   const ru = /^ru/i.test(navigator.language || '');
   return {
-    v: 1, lang: ru ? 'ru' : 'kk', onboarded: false, theme: 'auto', noteSeen: false,
+    v: 1, lang: ru ? 'ru' : 'kk', onboarded: false, theme: 'light', noteSeen: false,
     profile: {
       name: ru ? 'Куралай' : 'Құралай', spec: 'econ', course: 2, gpa: 3.13, credits: 60, en: 'B1',
       city: 'astana', skills: ['excel', 'comm', 'service', 'kz', 'ru', 'econ'],
@@ -3527,8 +3603,8 @@ function render() {
   document.documentElement.lang = S.lang === 'ru' ? 'ru' : 'kk';
   const root = ROOTS.includes(name);
   document.getElementById('back').hidden = root;
-  document.getElementById('title').innerHTML = name === 'home' ? '<span class="brand">STUDY<b>GO</b></span>' : view.title;
-  document.title = 'STUDYGO';
+  document.getElementById('title').innerHTML = name === 'home' ? '<span class="brand"><i class="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>' : view.title;
+  document.title = name === 'home' ? 'Student Hub' : view.title.replace(/<[^>]+>/g, '') + ' — Student Hub';
   document.getElementById('main').innerHTML = view.html;
   const tabRoot = view.tab || (root ? name : '');
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tabRoot) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
@@ -3641,7 +3717,7 @@ VIEWS.home = () => {
     ['opps:events', upcomingEv.length, tt('іс-шара', plural(upcomingEv.length, ['событие', 'события', 'событий']))]
   ];
   return {
-    title: 'STUDYGO',
+    title: 'Student Hub',
     html: `
       ${S.noteSeen ? '' : `<div class="demo-note">${ico('bolt', 18)}<span class="grow">${tt('Бұл — алғашқы нұсқа. Вакансиялар, серіктестер мен іс-шаралар үлгі ретінде берілген.', 'Это первая версия. Вакансии, партнёры и события даны как примеры.')}</span><button type="button" data-act="noteSeen">${tt('Түсінікті', 'Понятно')}</button></div>`}
       <section class="hero" aria-label="${tt('Профиль', 'Профиль')}">
@@ -3660,6 +3736,13 @@ VIEWS.home = () => {
         </div>
       </section>
 
+      <form class="search home-search" id="homeSearch" role="search">${ico('search', 18)}<input class="input" id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="${tt('Вакансия, курс, іс-шара іздеу', 'Найти вакансию, курс, событие')}" aria-label="${tt('Іздеу', 'Поиск')}"></form>
+
+      <section class="section">
+        <h2>${tt('Бөлімдер', 'Разделы')}</h2>
+        <div class="swatches">${cat.map(([g, i, l], n) => `<button class="sw sw-${n % 5}" type="button" data-go="${g}"><span class="sw-ico">${ico(i, 22)}</span><span class="sw-label">${l}</span></button>`).join('')}</div>
+      </section>
+
       <section class="section">
         ${sectionHead(tt('Бүгінгі сабақтар', 'Пары сегодня'), `<span class="tiny muted">${WD[S.lang][now.getDay()]}</span>`)}
         <div class="group">${SCHEDULE.map(c => `<button class="row" type="button" data-act="findRoom" data-q="${c.room}">
@@ -3675,10 +3758,6 @@ VIEWS.home = () => {
         ${ups.length < 3 ? `<p class="note">${tt('Іс-шараға тіркелсеңіз немесе бағдарламаны сақтасаңыз, мерзімдері осында шығады.', 'Записывайтесь на события и сохраняйте программы — их сроки появятся здесь.')}</p>` : ''}
       </section>
 
-      <section class="section">
-        <h2>${tt('Бөлімдер', 'Разделы')}</h2>
-        <div class="catalog">${cat.map(([g, i, l]) => `<button class="cat" type="button" data-go="${g}"><span class="ico">${ico(i, 24)}</span><span>${l}</span></button>`).join('')}</div>
-      </section>
 
       <section class="section">
         ${sectionHead(tt('Бүгінгі жұмыс', 'Работа на сегодня'), `<button class="link-btn" type="button" data-act="todayJobs">${tt('Барлығы', 'Все')}</button>`)}
@@ -3688,7 +3767,17 @@ VIEWS.home = () => {
       <section class="section">
         ${sectionHead(tt('Сен үшін іріктеме', 'Подборка для тебя'), `<span class="tiny muted">${esc(L(SPECS[p.spec]))}</span>`)}
         <div class="chips">${picks.map(([g, n, l]) => `<button class="chip" type="button" data-go="${g}"><b class="num">${n}</b> ${l}</button>`).join('')}</div>
-      </section>`
+      </section>`,
+    mount() {
+      const f = document.getElementById('homeSearch');
+      f.addEventListener('submit', ev => {
+        ev.preventDefault();
+        const q = document.getElementById('hq').value.trim();
+        if (!q) return;
+        ui.q = q; ui.oppTab = 'jobs';
+        go('opps:jobs');
+      });
+    }
   };
 };
 
@@ -3917,7 +4006,7 @@ VIEWS.event = (id) => {
       ${reg ? `
         <div class="card" style="align-items:center;text-align:center">
           <span class="eyebrow">${tt('Электрондық билет', 'Электронный билет')}</span>
-          <div class="qr">${qrSvg(`STUDYGO|${e.id}|${reg.code}|${P().name}`)}</div>
+          <div class="qr">${qrSvg(`STUDENTHUB|${e.id}|${reg.code}|${P().name}`)}</div>
           <span class="code">${esc(reg.code)}</span>
           <span class="tiny muted">${tt('Кіреберісте көрсетіңіз', 'Покажите на входе')}</span>
         </div>
@@ -3949,7 +4038,7 @@ VIEWS.ai = () => {
     html: `
       <section class="hero">
         <div class="hero-top"><span class="avatar">${ico('spark', 26)}</span>
-          <div style="min-width:0"><h1>STUDYGO AI</h1><p class="muted small">${hasKey ? tt('Чат қосулы', 'Чат подключён') : ''}</p></div></div>
+          <div style="min-width:0"><h1>Student Hub AI</h1><p class="muted small">${hasKey ? tt('Чат қосулы', 'Чат подключён') : ''}</p></div></div>
         <p class="small" style="color:var(--head-muted)">${tt('Түйіндеме, сұхбат, дәріс конспектісі және емтиханға дайындық — бір жерде.', 'Резюме, собеседование, конспекты лекций и подготовка к экзамену — в одном месте.')}</p>
         <button class="btn sun" type="button" data-go="chat">${ico('chat', 18)} ${tt('Чатты ашу', 'Открыть чат')}</button>
       </section>
@@ -3987,7 +4076,7 @@ VIEWS.chat = () => {
     title: tt('AI чат', 'AI-чат'), tab: 'ai',
     html: `
       <div class="chat" id="chat">
-        ${msgs.length ? '' : `<div class="msg ai">${tt(`Сәлем, ${esc(P().name)}! Мен STUDYGO AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.`, `Привет, ${esc(P().name)}! Я STUDYGO AI. Спрашивай про резюме, собеседование, учёбу или карьеру.`)}</div>`}
+        ${msgs.length ? '' : `<div class="msg ai">${tt(`Сәлем, ${esc(P().name)}! Мен Student Hub AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.`, `Привет, ${esc(P().name)}! Я Student Hub AI. Спрашивай про резюме, собеседование, учёбу или карьеру.`)}</div>`}
         ${msgs.map(m => `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${m.role === 'user' ? esc(m.content) : mdLite(m.content)}</div>`).join('')}
         ${ui.chatBusy ? `<div class="msg ai"><span class="typing"><i></i><i></i><i></i></span></div>` : ''}
         ${ui.chatErr ? `<div class="msg err">${esc(ui.chatErr)}</div>` : ''}
@@ -4035,7 +4124,7 @@ async function sendChat(text) {
   S.chat.push({ role: 'user', content: text });
   ui.chatDraft = ''; ui.chatErr = ''; ui.chatBusy = true; save(); render();
   const p = P();
-  const system = `You are STUDYGO AI, an assistant inside a student app for S. Seifullin Kazakh Agrotechnical Research University (Astana, Kazakhstan). Reply in ${S.lang === 'ru' ? 'Russian' : 'Kazakh'} unless the student writes in another language. Be concise, warm and practical; use short paragraphs and simple lists. Student profile: name ${p.name}; specialty ${SPECS[p.spec].en}; year ${p.course}; GPA ${p.gpa} on a 4.0 scale (Kazakhstan credit system, letters A to F); English ${p.en}; skills ${p.skills.map(k => SKILLS[k].en).join(', ')}; experience: ${(p.exp || 'none').replace(/\n/g, '; ')}. Never invent specific real vacancies, deadlines, prices or official rules; when something depends on the university or an official body, tell the student to check the official source.`;
+  const system = `You are Student Hub AI, an assistant inside a student app for S. Seifullin Kazakh Agrotechnical Research University (Astana, Kazakhstan). Reply in ${S.lang === 'ru' ? 'Russian' : 'Kazakh'} unless the student writes in another language. Be concise, warm and practical; use short paragraphs and simple lists. Student profile: name ${p.name}; specialty ${SPECS[p.spec].en}; year ${p.course}; GPA ${p.gpa} on a 4.0 scale (Kazakhstan credit system, letters A to F); English ${p.en}; skills ${p.skills.map(k => SKILLS[k].en).join(', ')}; experience: ${(p.exp || 'none').replace(/\n/g, '; ')}. Never invent specific real vacancies, deadlines, prices or official rules; when something depends on the university or an official body, tell the student to check the official source.`;
   let msgs = S.chat.slice(-16).map(m => ({ role: m.role, content: m.content }));
   while (msgs.length && msgs[0].role !== 'user') msgs.shift();
   try {
@@ -4610,14 +4699,13 @@ VIEWS.settings = () => ({
   title: tt('Баптаулар', 'Настройки'), tab: 'profile',
   html: `
     <section class="section"><h2>${tt('Тіл', 'Язык')}</h2>${seg([['kk', 'Қазақша'], ['ru', 'Русский']], S.lang, 'setLang')}</section>
-    <section class="section"><h2>${tt('Тақырып', 'Тема')}</h2>${seg([['auto', tt('Жүйе бойынша', 'Как в системе')], ['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]], S.theme || 'auto', 'setTheme')}
-      <p class="note">${tt('«Жүйе бойынша» телефонның түнгі режиміне қарай ауысады.', '«Как в системе» переключается вместе с ночным режимом телефона.')}</p></section>
+    <section class="section"><h2>${tt('Тақырып', 'Тема')}</h2>${seg([['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]], S.theme === 'dark' ? 'dark' : 'light', 'setTheme')}</section>
     <section class="section"><h2>${tt('Деректер', 'Данные')}</h2>
       <div class="group">
         ${row({ act: 'clearChat', icon: 'chat', title: tt('Чат тарихын тазалау', 'Очистить историю чата'), chev: false })}
         ${row({ act: 'resetAll', icon: 'trash', tone: 'bad', title: tt('Барлық деректерді өшіру', 'Удалить все данные'), sub: tt('Профиль, өтінімдер, жоспарлар, карточкалар', 'Профиль, отклики, планы, карточки'), chev: false })}
       </div></section>
-    <p class="note">STUDYGO 1.1. ${tt('Алғашқы нұсқа (MVP). Барлық деректер осы құрылғыда сақталады.', 'Первая версия (MVP). Все данные хранятся на этом устройстве.')}</p>`,
+    <p class="note">Student Hub 1.2. ${tt('Алғашқы нұсқа (MVP). Барлық деректер осы құрылғыда сақталады.', 'Первая версия (MVP). Все данные хранятся на этом устройстве.')}</p>`,
   mount: mountKeyForm
 });
 
@@ -4684,7 +4772,7 @@ const ACT = {
       <span class="badge b-line" style="align-self:flex-start">${L(DEAL_CATS[d.cat])}</span>
       <div class="card-row" style="justify-content:space-between;align-items:baseline"><h2>${esc(L(d.name))}</h2><span class="deal-pct">${d.pct}</span></div>
       <p>${esc(L(d.what))}</p>
-      <div class="qr">${qrSvg('STUDYGO-DEAL|' + code)}</div>
+      <div class="qr">${qrSvg('STUDENTHUB-DEAL|' + code)}</div>
       <p style="text-align:center"><span class="code">${esc(code)}</span></p>
       <div class="group">${row({ icon: 'check', tone: 'ok', title: tt('Шарттары', 'Условия'), sub: esc(L(d.cond)), chev: false })}</div>
       <p class="tiny muted">${tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз. Серіктес — үлгі.', 'Покажите QR-код или студенческий статус на кассе. Партнёр — пример.')}</p>`);
@@ -4695,7 +4783,7 @@ const ACT = {
       <span class="eyebrow">${tt('Цифрлық студенттік', 'Цифровой студенческий')}</span>
       <h2>${esc(p.name)}</h2>
       <p class="muted small">${tt('Сейфуллин университеті', 'Университет им. С. Сейфуллина')} · ${esc(L(SPECS[p.spec]))} · ${tt(`${p.course}-курс`, `${p.course} курс`)}</p>
-      <div class="qr">${qrSvg(`STUDYGO-STUDENT|${studentCode()}|${p.name}|${p.spec}|${p.course}`)}</div>
+      <div class="qr">${qrSvg(`STUDENTHUB-STUDENT|${studentCode()}|${p.name}|${p.spec}|${p.course}`)}</div>
       <p style="text-align:center"><span class="code">${studentCode()}</span></p>
       <p class="tiny muted">${tt('Прототипте QR-код студент мәртебесін көрсету үшін ғана. Ресми растау университет жүйесі қосылғанда іске қосылады.', 'В прототипе QR-код только демонстрирует статус студента. Официальная проверка появится после подключения системы университета.')}</p>`);
   },
