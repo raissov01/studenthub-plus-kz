@@ -772,6 +772,37 @@ h3 { font-size: 1rem; }
 .promo { background: linear-gradient(115deg, #3A5CE6 0%, #5B6CF0 55%, #8A7CF6 100%); }
 .greet .wave { font-family: system-ui, sans-serif; }
 .sr-end .tag { max-width: 120px; }
+
+/* campus plan */
+.plan-box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; overflow: hidden; }
+.plan { display: block; width: 100%; height: auto; }
+.pl-ground { fill: #E9EEF8; }
+.pl-green { fill: #CFEBD6; }
+.pl-minor { fill: #C3CBDD; }
+.pl-street { font: 600 22px var(--font-body); fill: var(--muted); text-anchor: middle; }
+.pb { cursor: pointer; outline: none; }
+.pb rect, .pb polygon { fill: #8EA0C8; stroke: #FFFFFF; stroke-width: 2; }
+.pb-study rect, .pb-study polygon { fill: #2F57E8; }
+.pb-dorm rect, .pb-dorm polygon { fill: #8B5CF6; }
+.pb-other rect, .pb-other polygon { fill: #F2A516; }
+.pb circle { fill: #FFFFFF; stroke: var(--text); stroke-width: 2; }
+.pb text { font: 700 22px var(--font-display); fill: var(--text); text-anchor: middle; pointer-events: none; }
+.pb.dim { opacity: .3; }
+.pb.on circle { fill: var(--text); }
+.pb.on text { fill: #FFFFFF; }
+.pb.on rect, .pb.on polygon { stroke: var(--text); stroke-width: 4; }
+.pb:focus-visible circle { stroke: var(--primary); stroke-width: 5; }
+.bnum { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 700 .95rem var(--font-display); color: #FFFFFF; }
+.bnum-study { background: #2F57E8; } .bnum-dorm { background: #8B5CF6; } .bnum-other { background: #F2A516; color: var(--text); }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.lg-study i { background: #2F57E8; } .lg-dorm i { background: #8B5CF6; } .lg-other i { background: #F2A516; }
+
+/* profile photo */
+.me-photo { cursor: pointer; display: block; }
+.me-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.me-avatar { overflow: hidden; }
+.me-photo input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.me-photo:focus-within .me-edit { outline: 2px solid var(--primary); outline-offset: 2px; }
 </style>
 <header class="top" id="top">
   <div class="top-row">
@@ -3400,23 +3431,6 @@ const DOCS = [
     online: { kk: 'Бөлімнің бекітілген тізімін тексеріңіз', ru: 'Сверьтесь с утверждённым списком отдела' } }
 ];
 
-const BUILDINGS = [
-  { id: 'b1', n: 1, name: { kk: '1-корпус (бас ғимарат)', ru: '1-й корпус (главный)' }, floors: 5,
-    has: { kk: 'Ректорат, тіркеу кеңсесі, акт залы, конференц-зал', ru: 'Ректорат, офис регистратора, актовый зал, конференц-зал' } },
-  { id: 'b2', n: 2, name: { kk: '2-корпус', ru: '2-й корпус' }, floors: 4,
-    has: { kk: 'Экономика факультеті, деканат, 108 және 210 аудиториялар', ru: 'Экономический факультет, деканат, ауд. 108 и 210' } },
-  { id: 'b3', n: 3, name: { kk: '3-корпус', ru: '3-й корпус' }, floors: 4,
-    has: { kk: 'Ақпараттық технологиялар факультеті, компьютер сыныптары', ru: 'Факультет IT, компьютерные классы' } },
-  { id: 'b4', n: 4, name: { kk: '4-корпус', ru: '4-й корпус' }, floors: 3,
-    has: { kk: 'Агрономия және ветеринария, зертханалар', ru: 'Агрономия и ветеринария, лаборатории' } },
-  { id: 'lib', name: { kk: 'Кітапхана', ru: 'Библиотека' }, floors: 3,
-    has: { kk: 'Оқу залдары, коворкинг аймағы, «Print Point»', ru: 'Читальные залы, зона коворкинга, «Print Point»' } },
-  { id: 'food', name: { kk: 'Асхана', ru: 'Столовая' }, floors: 1, has: { kk: '«Бауырсақ» асханасы, 08:00–17:00', ru: 'Столовая «Бауырсақ», 08:00–17:00' } },
-  { id: 'med', name: { kk: 'Медпункт', ru: 'Медпункт' }, floors: 1, has: { kk: '1-корпус, 1-қабат, 105 бөлме', ru: '1-й корпус, 1 этаж, каб. 105' } },
-  { id: 'dorm', name: { kk: 'Жатақханалар №1–3', ru: 'Общежития №1–3' }, floors: 9, has: { kk: 'Кампустың шығыс бөлігі', ru: 'Восточная часть кампуса' } },
-  { id: 'sport', name: { kk: 'Спорт кешені', ru: 'Спортивный комплекс' }, floors: 2, has: { kk: 'Спорт залы, бассейн', ru: 'Спортзал, бассейн' } }
-];
-
 const SCHEDULE = [
   { t: '09:00', end: '09:50', name: { kk: 'Микроэкономика', ru: 'Микроэкономика' }, room: '2-214', kind: { kk: 'Дәріс', ru: 'Лекция' } },
   { t: '10:50', end: '11:40', name: { kk: 'Ағылшын тілі', ru: 'Английский язык' }, room: '1-305', kind: { kk: 'Практика', ru: 'Практика' } },
@@ -3550,7 +3564,7 @@ const save = () => lsSet(JSON.stringify(S));
 const ui = {
   oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, oppType: 'all', evCat: 'all', courseMine: false,
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, ivStart: 0, chatBusy: false,
-  chatErr: '', study: null, sq: '', sk: 'all', nk: 'all', sqFocus: false, matchId: 'j8', oppCheck: {}
+  chatErr: '', study: null, mapSel: null, mapTab: 'campus', nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false, matchId: 'j8', oppCheck: {}
 };
 
 /* ================= i18n helpers ================= */
@@ -4023,10 +4037,11 @@ VIEWS.notif = () => {
 VIEWS.services = () => ({
   title: tt('Университет қызметтері', 'Услуги университета'), tab: 'home',
   html: `<div class="group">
+    ${row({ go: 'map', icon: 'map', title: tt('Кампус картасы', 'Карта кампуса'), sub: tt('15 нысан: корпустар, жатақханалар, аудитория іздеу', '15 зданий: корпуса, общежития, поиск аудитории') })}
+    ${row({ go: 'map:near', icon: 'pin', title: tt('Жақын маңда', 'Рядом с кампусом'), sub: tt('Аялдама, асхана, дәріхана, басып шығару, банкомат', 'Остановки, столовые, аптеки, печать, банкоматы') })}
     ${row({ go: 'docs', icon: 'file', title: tt('Анықтамалар мен құжаттар', 'Справки и документы'), sub: tt('Оқу орнынан анықтама, транскрипт, 073/у', 'Справка с места учёбы, транскрипт, 073/у') })}
     ${row({ go: 'gpa', icon: 'chart', title: tt('GPA және шәкіртақы', 'GPA и стипендия'), sub: tt('Калькулятор, мақсатты GPA', 'Калькулятор, целевой GPA') })}
     ${row({ go: 'pay', icon: 'tenge', title: tt('Оқу ақысы', 'Оплата обучения'), sub: tt('Мерзімдер мен төлем тарихы', 'Сроки и история платежей') })}
-    ${row({ go: 'map', icon: 'map', title: tt('Кампус картасы', 'Карта кампуса'), sub: tt('Аудитория, деканат, асхана', 'Аудитория, деканат, столовая') })}
     ${row({ go: 'opps:events', icon: 'calendar', title: tt('Іс-шаралар', 'Мероприятия'), sub: tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы') })}
     ${row({ go: 'admission', icon: 'cap', title: tt('Түсу', 'Поступление'), sub: tt('Бакалавриат, магистратура, докторантура', 'Бакалавриат, магистратура, докторантура') })}
   </div>`
@@ -4779,13 +4794,15 @@ VIEWS.profile = () => {
     title: tt('Профиль', 'Профиль'),
     html: `
       <section class="me">
-        <div class="me-photo">
-          <span class="me-avatar">${esc((p.name || 'S').trim().charAt(0).toUpperCase())}</span>
-          <button class="me-edit" type="button" data-go="edit" aria-label="${tt('Профильді өзгерту', 'Изменить профиль')}">${ico('edit', 16)}</button>
-        </div>
+        <label class="me-photo" title="${tt('Сурет қою', 'Поставить фото')}">
+          <span class="me-avatar">${S.photo ? `<img src="${S.photo}" alt="">` : esc((p.name || 'S').trim().charAt(0).toUpperCase())}</span>
+          <span class="me-edit" aria-hidden="true">${ico('edit', 16)}</span>
+          <input type="file" id="photoIn" accept="image/*" aria-label="${tt('Профиль суретін таңдау', 'Выбрать фото профиля')}">
+        </label>
         <h1>${esc(p.name)}</h1>
         <p class="muted">${tt('Студент · Сейфуллин университеті', 'Студент · Университет им. С. Сейфуллина')}</p>
         <p class="muted small">${esc(L(SPECS[p.spec]))}, ${tt(`${p.course}-курс`, `${p.course} курс`)}, GPA ${p.gpa.toFixed(2)}</p>
+        ${S.photo ? `<button class="link-btn" type="button" data-act="photoDel">${tt('Суретті өшіру', 'Удалить фото')}</button>` : ''}
       </section>
       <button class="card fill" type="button" data-go="edit">
         <span class="fill-head"><span class="row-title">${tt('Профиль толықтығы', 'Заполненность профиля')}</span><b class="num">${fill}%</b></span>
@@ -4801,7 +4818,25 @@ VIEWS.profile = () => {
         ${row({ go: 'saved', icon: 'bookmark', title: tt('Сақталғандар', 'Сохранённое') })}
         ${row({ go: 'settings', icon: 'gear', title: tt('Параметрлер', 'Параметры') })}
       </div>
-      <p class="note">${tt('Деректеріңіз тек осы құрылғыда сақталады.', 'Ваши данные хранятся только на этом устройстве.')}</p>`
+      <p class="note">${tt('Деректеріңіз бен суретіңіз тек осы құрылғыда сақталады.', 'Ваши данные и фото хранятся только на этом устройстве.')}</p>`,
+    mount() {
+      document.getElementById('photoIn').addEventListener('change', ev => {
+        const f = ev.target.files && ev.target.files[0];
+        if (!f) return;
+        if (!/^image\//.test(f.type)) { toast(tt('Сурет файлын таңдаңыз', 'Выберите файл изображения')); return; }
+        const img = new Image(), url = URL.createObjectURL(f);
+        img.onload = () => {
+          const side = Math.min(img.naturalWidth, img.naturalHeight), size = 320;
+          const c = document.createElement('canvas'); c.width = c.height = size;
+          c.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+          S.photo = c.toDataURL('image/jpeg', 0.85);
+          save(); toast(tt('Сурет сақталды', 'Фото сохранено')); render();
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); toast(tt('Суретті ашу мүмкін болмады', 'Не удалось открыть изображение')); };
+        img.src = url;
+      });
+    }
   };
 };
 
@@ -4947,46 +4982,188 @@ VIEWS.admission = () => {
   };
 };
 
+/* Campus of S. Seifullin University, traced from the university's own site plan (approximate).
+   n = number on the plan; corp = teaching building number used in room codes like 2-214. */
+const BUILDINGS = [
+  { id: 'b1', a: 'Жеңіс даңғылы, 62', n: 1, corp: 1, kind: 'study', name: { kk: 'Бас корпус', ru: 'Главный корпус' },
+    has: { kk: 'Кампустың батыс жағы. Ішінде: экономика және энергетика факультеттері, кадр бөлімі', ru: 'Западная часть кампуса. Внутри: экономический и энергетический факультеты, отдел кадров' } },
+  { id: 'b2', n: 2, corp: 2, kind: 'study', name: { kk: 'Биология корпусы', ru: 'Биологический корпус' },
+    has: { kk: 'Солтүстік-батыс, бас корпустың жанында', ru: 'Северо-запад, рядом с главным корпусом' } },
+  { id: 'b3', a: 'Жеңіс даңғылы, 62Б / 62В', n: 3, corp: 3, kind: 'study', name: { kk: 'Техникалық факультет корпусы', ru: 'Корпус технического факультета' },
+    has: { kk: 'Кампустың солтүстігі, 5-корпустың үстінде', ru: 'Север кампуса, над 5-м корпусом' } },
+  { id: 'b4', a: 'Жеңіс даңғылы, 62А', n: 4, corp: 4, kind: 'study', name: { kk: 'Әскери кафедра корпусы', ru: 'Корпус военной кафедры' },
+    has: { kk: 'Орталық, бас корпус пен 5-корпустың арасы', ru: 'Центр, между главным и 5-м корпусом' } },
+  { id: 'b5', a: 'Жеңіс даңғылы, 62Б / 62В', n: 5, corp: 5, kind: 'study', name: { kk: 'Техникалық факультеттің жаңа корпусы', ru: 'Новый корпус технического факультета' },
+    has: { kk: 'Кампустың дәл ортасы, ішкі ауласы бар', ru: 'Самый центр кампуса, с внутренним двором' } },
+  { id: 'b6', n: 6, corp: 6, kind: 'study', name: { kk: 'Техникалық механика кафедрасының корпусы', ru: 'Корпус кафедры технической механики' },
+    has: { kk: 'Орталық, 5-корпустың оңтүстік-шығысы', ru: 'Центр, юго-восточнее 5-го корпуса' } },
+  { id: 'b7', a: 'Молдағұлова к., 27', n: 7, corp: 7, kind: 'study', name: { kk: 'Агрономия факультетінің корпусы', ru: 'Корпус агрономического факультета' },
+    has: { kk: 'Оңтүстік-батыс, Молдағұлова көшесі жағы', ru: 'Юго-запад, со стороны ул. Молдагуловой' } },
+  { id: 'b8', a: 'Бейбітшілік к., 73', n: 8, corp: 8, kind: 'study', name: { kk: 'Жерге орналастыру факультетінің корпусы', ru: 'Корпус землеустроительного факультета' },
+    has: { kk: 'Оңтүстік-шығыс бұрыш, Бейбітшілік пен Молдағұлова көшелері', ru: 'Юго-восточный угол, ул. Бейбитшилик и Молдагуловой' } },
+  { id: 'b9', a: 'Молдағұлова к., 29г', n: 9, kind: 'dorm', name: { kk: '№4 жатақхана', ru: 'Общежитие № 4' },
+    has: { kk: 'Оңтүстік-шығыс, 8-корпустың жанында', ru: 'Юго-восток, рядом с 8-м корпусом' } },
+  { id: 'b10', a: 'Молдағұлова к., 29в', n: 10, kind: 'dorm', name: { kk: '№5 жатақхана', ru: 'Общежитие № 5' },
+    has: { kk: 'Молдағұлова көшесі бойында. Ішінде асхана бар (2GIS бойынша, орташа чек ~1400 ₸)', ru: 'Вдоль ул. Молдагуловой. Внутри столовая (по 2GIS, средний чек ~1400 ₸)' } },
+  { id: 'b11', n: 11, kind: 'dorm', name: { kk: '№9 жатақхана', ru: 'Общежитие № 9' },
+    has: { kk: 'Молдағұлова көшесі бойында, 2б жатақханасының астында', ru: 'Вдоль ул. Молдагуловой, ниже общежития 2б' } },
+  { id: 'b12', a: 'Молдағұлова к., 29', n: 12, kind: 'dorm', name: { kk: '№7 жатақхана', ru: 'Общежитие № 7' },
+    has: { kk: 'Оңтүстік, 6-корпустың астында', ru: 'Юг, ниже 6-го корпуса' } },
+  { id: 'b13', a: 'Молдағұлова к., 29Б', n: 13, kind: 'dorm', name: { kk: '№2б жатақхана', ru: 'Общежитие № 2б' },
+    has: { kk: 'Орталықтың шығысы, «Жастар» клубының жанында', ru: 'Восточнее центра, рядом с клубом «Жастар»' } },
+  { id: 'b14', n: 14, kind: 'other', name: { kk: '«Жастар» студенттік клубы', ru: 'Студенческий клуб «Жастар»' },
+    has: { kk: 'Орталық, 5-корпус пен 2б жатақханасының арасы', ru: 'Центр, между 5-м корпусом и общежитием 2б' } },
+  { id: 'b15', n: 15, kind: 'other', name: { kk: 'Гараж, қойма, ұстахана', ru: 'Гараж, склад, столярка' },
+    has: { kk: 'Орталық, 4-корпустың оңтүстік-шығысы', ru: 'Центр, юго-восточнее 4-го корпуса' } }
+];
+const KIND_L = { study: ['Оқу корпусы', 'Учебный корпус'], dorm: ['Жатақхана', 'Общежитие'], other: ['Басқа нысан', 'Другое'] };
+
+/* footprints in plan coordinates (viewBox 0 0 1040 640); r = rect [x, y, w, h], p = polygon */
+const PLAN = {
+  b1: { s: [{ r: [130, 205, 34, 255] }, { r: [228, 200, 34, 175] }, { r: [164, 268, 64, 82] }], l: [188, 312] },
+  b2: { s: [{ r: [260, 130, 140, 42] }], l: [334, 151] },
+  b3: { s: [{ p: '420,198 452,150 480,166 460,198 540,245 556,222 612,256 584,298 525,262 508,262' }], l: [494, 226] },
+  b4: { s: [{ p: '280,438 400,262 440,290 320,466' }], l: [392, 318] },
+  b5: { s: [{ p: '470,268 545,320 505,385 430,333' }], l: [487, 326] },
+  b6: { s: [{ r: [515, 432, 52, 26] }], l: [541, 420] },
+  b7: { s: [{ p: '192,490 214,470 262,510 282,498 378,575 360,612 335,598 262,552 246,562 212,525' }], l: [288, 548] },
+  b8: { s: [{ r: [915, 482, 105, 22] }, { r: [996, 482, 24, 145] }, { r: [915, 585, 105, 42] }], l: [968, 604] },
+  b9: { s: [{ r: [818, 488, 34, 116] }], l: [850, 545] },
+  b10: { s: [{ r: [750, 488, 34, 120] }], l: [767, 545] },
+  b11: { s: [{ r: [658, 483, 36, 128] }], l: [676, 545] },
+  b12: { s: [{ r: [575, 472, 38, 138] }], l: [594, 545] },
+  b13: { s: [{ r: [638, 345, 38, 128] }], l: [657, 405] },
+  b14: { s: [{ p: '570,372 602,322 630,338 598,385' }], l: [598, 352] },
+  b15: { s: [{ p: '342,465 420,362 442,378 364,480' }, { p: '425,470 490,385 515,402 450,488' }], l: [420, 428] }
+};
+const PLAN_MINOR = [[113, 137, 45, 65], [458, 85, 36, 52], [652, 235, 30, 45], [63, 517, 73, 30], [137, 563, 50, 45], [453, 540, 67, 38]];
+const PLAN_GREEN = [[60, 105, 40, 170, 18], [60, 340, 40, 120, 18], [195, 115, 60, 35, 14], [505, 10, 400, 110, 30], [745, 255, 175, 165, 30], [295, 270, 75, 110, 22], [508, 468, 55, 62, 18], [400, 560, 45, 62, 18], [200, 548, 62, 52, 18], [882, 512, 70, 50, 16]];
+
+function planSvg(hl) {
+  const shape = sh => sh.r ? `<rect x="${sh.r[0]}" y="${sh.r[1]}" width="${sh.r[2]}" height="${sh.r[3]}" rx="3"/>` : `<polygon points="${sh.p}"/>`;
+  const bld = BUILDINGS.map(b => {
+    const pl = PLAN[b.id], on = hl.includes(b.id);
+    return `<g class="pb pb-${b.kind}${on ? ' on' : ''}${hl.length && !on ? ' dim' : ''}" data-act="mapPick" data-id="${b.id}" role="button" tabindex="0" aria-label="${esc(b.n + '. ' + L(b.name))}">
+      ${pl.s.map(shape).join('')}
+      <circle cx="${pl.l[0]}" cy="${pl.l[1]}" r="19"/><text x="${pl.l[0]}" y="${pl.l[1] + 6}">${b.n}</text></g>`;
+  }).join('');
+  return `<svg class="plan" viewBox="0 0 1080 700" role="group" aria-label="${tt('Кампус сызбасы', 'Схема кампуса')}">
+    <rect class="pl-ground" x="40" y="0" width="1000" height="650" rx="8"/>
+    ${PLAN_GREEN.map(([x, y, w, h, r]) => `<rect class="pl-green" x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}"/>`).join('')}
+    ${PLAN_MINOR.map(([x, y, w, h]) => `<rect class="pl-minor" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`).join('')}
+    ${bld}
+    <text class="pl-street" x="22" y="330" transform="rotate(-90 22 330)">${tt('Жеңіс даңғылы', 'пр. Победы')}</text>
+    <text class="pl-street" x="1060" y="330" transform="rotate(90 1060 330)">${tt('Бейбітшілік к.', 'ул. Бейбитшилик')}</text>
+    <text class="pl-street" x="540" y="684">${tt('Ә. Молдағұлова к.', 'ул. А. Молдагуловой')}</text>
+  </svg>`;
+}
+
 function mapSearch(q) {
   q = q.trim();
   if (!q) return null;
   const m = q.match(/^(\d)\s*[-–]?\s*(\d)(\d{2})$/) || q.match(/^(\d)(\d)(\d{2})$/);
   if (m) {
-    const corp = +m[1], floor = +m[2], b = BUILDINGS.find(x => x.n === corp);
+    const corp = +m[1], floor = +m[2], b = BUILDINGS.find(x => x.corp === corp);
     return { room: true, corp, floor, num: `${m[1]}-${m[2]}${m[3]}`, b };
   }
   const ql = q.toLowerCase();
-  return { list: BUILDINGS.filter(b => (L(b.name) + ' ' + L(b.has)).toLowerCase().includes(ql)) };
+  return { list: BUILDINGS.filter(b => (b.n + ' ' + L(b.name) + ' ' + L(b.has) + ' ' + tt(...KIND_L[b.kind])).toLowerCase().includes(ql)) };
+}
+function bCard(b) {
+  return `<div class="card bcard">
+    <div class="card-row" style="align-items:center"><span class="bnum bnum-${b.kind}">${b.n}</span>
+      <div class="row-main"><span class="row-title">${esc(L(b.name))}</span><span class="row-sub">${tt(...KIND_L[b.kind])}</span></div></div>
+    <p class="small">${esc(L(b.has))}</p>
+    ${b.a ? `<a class="small" href="https://2gis.kz/astana/search/${encodeURIComponent('Сейфуллин ' + b.a)}" target="_blank" rel="noopener">${ico('pin', 14)} ${esc(b.a)}</a>` : ''}
+    ${b.corp ? `<p class="tiny muted">${tt(`Аудитория нөмірі ${b.corp}-ден басталады, мысалы ${b.corp}-214.`, `Номера аудиторий начинаются с ${b.corp}, например ${b.corp}-214.`)}</p>` : ''}
+  </div>`;
+}
+function mapHighlight() {
+  const r = mapSearch(ui.mapQ || '');
+  if (r && r.room) return r.b ? [r.b.id] : [];
+  if (r) return r.list.map(b => b.id);
+  return ui.mapSel ? [ui.mapSel] : [];
 }
 function mapResults() {
-  const r = mapSearch(ui.mapQ);
-  let res = '';
+  const r = mapSearch(ui.mapQ || '');
   if (r && r.room) {
-    res = r.b ? `<div class="card">
-      <span class="eyebrow">${tt('Табылды', 'Найдено')}</span>
+    return r.b ? `<div class="card">
       <h2>${tt(`${r.num} аудитория`, `Аудитория ${r.num}`)}</h2>
-      <dl class="kv"><dt>${tt('Корпус', 'Корпус')}</dt><dd>${esc(L(r.b.name))}</dd><dt>${tt('Қабат', 'Этаж')}</dt><dd>${r.floor}</dd></dl>
+      <dl class="kv"><dt>${tt('Корпус', 'Корпус')}</dt><dd>${r.b.n}. ${esc(L(r.b.name))}</dd><dt>${tt('Қабат', 'Этаж')}</dt><dd>${r.floor}</dd></dl>
       <ol class="steps">
-        <li><span>${tt(`${esc(L(r.b.name))} бас кіреберісінен кіріңіз`, `Войдите через главный вход: ${esc(L(r.b.name))}`)}</span></li>
-        ${r.floor > 1 ? `<li><span>${tt(`Баспалдақпен немесе лифтпен ${r.floor}-қабатқа көтеріліңіз`, `Поднимитесь на ${r.floor} этаж по лестнице или на лифте`)}</span></li>` : ''}
+        <li><span>${tt(`Картадағы ${r.b.n}-нысанды табыңыз: ${esc(L(r.b.has)).toLowerCase()}`, `Найдите на схеме здание ${r.b.n}: ${esc(L(r.b.has)).toLowerCase()}`)}</span></li>
+        ${r.floor > 1 ? `<li><span>${tt(`${r.floor}-қабатқа көтеріліңіз`, `Поднимитесь на ${r.floor} этаж`)}</span></li>` : ''}
         <li><span>${tt('Дәліздегі көрсеткіштер бойынша аудиторияны табыңыз', 'Найдите аудиторию по указателям в коридоре')}</span></li>
       </ol></div>`
-      : `<div class="empty">${tt('Мұндай корпус жоқ. 1–4 корпустарды іздеңіз.', 'Такого корпуса нет. Ищите в корпусах 1–4.')}</div>`;
-  } else if (r) {
-    res = r.list.length ? `<div class="group">${r.list.map(b => row({ icon: 'pin', title: esc(L(b.name)), sub: esc(L(b.has)), chev: false })).join('')}</div>` : `<div class="empty">${tt('Ештеңе табылмады', 'Ничего не найдено')}</div>`;
+      : `<div class="empty">${tt('Мұндай корпус жоқ. Оқу корпустары: 1–8.', 'Такого корпуса нет. Учебные корпуса: 1–8.')}</div>`;
   }
-  if (!r) res = `<section class="section"><h2>${tt('Ғимараттар', 'Здания')}</h2><div class="group">${BUILDINGS.map(b => row({ icon: b.n ? 'home' : 'pin', title: esc(L(b.name)), sub: esc(L(b.has)), end: `<span class="tiny muted">${b.floors} ${tt('қабат', plural(b.floors, ['этаж', 'этажа', 'этажей']))}</span>`, chev: false })).join('')}</div></section>`;
-  return res;
+  if (r) return r.list.length ? `<div class="list">${r.list.map(bCard).join('')}</div>` : `<div class="empty">${tt('Ештеңе табылмады.', 'Ничего не найдено.')}</div>`;
+  const sel = BUILDINGS.find(b => b.id === ui.mapSel);
+  return `${sel ? bCard(sel) : ''}
+    <section class="section"><h2>${tt('Барлық нысандар', 'Все здания')}</h2><div class="group">${BUILDINGS.map(b => `<button class="row" type="button" data-act="mapPick" data-id="${b.id}"><span class="bnum bnum-${b.kind}">${b.n}</span><span class="row-main"><span class="row-title">${esc(L(b.name))}</span><span class="row-sub">${esc(L(b.has))}</span></span></button>`).join('')}</div></section>`;
 }
-VIEWS.map = () => ({
-  title: tt('Кампус картасы', 'Карта кампуса'), tab: 'profile',
-  html: `
-    <div class="search">${ico('search', 18)}<input class="input" id="mapQ" type="search" placeholder="${tt('Аудитория (2214 немесе 2-214) не ғимарат', 'Аудитория (2214 или 2-214) или здание')}" value="${esc(ui.mapQ)}" data-on="mapQ" autocomplete="off"></div>
-    <div class="chips">${['2-214', tt('Кітапхана', 'Библиотека'), tt('Асхана', 'Столовая'), tt('Медпункт', 'Медпункт'), tt('Деканат', 'Деканат')].map(s => `<button class="chip" type="button" data-act="mapQuick" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+function mapRefresh() {
+  const plan = document.getElementById('planBox'), res = document.getElementById('mapRes');
+  if (plan) plan.innerHTML = planSvg(mapHighlight());
+  if (res) res.innerHTML = mapResults();
+}
+/* Places around the campus. src 'osm' = OpenStreetMap (distance measured), '2gis' = 2GIS address (distance estimated). */
+const NEARBY = [{"c": "stop", "n": "Улица А. Молдагуловой", "d": 190, "dir": "sw", "h": "", "lat": 51.18542, "lon": 71.41039, "src": "osm"}, {"c": "stop", "n": "Казахский Агротехнический университет имени С. Сейфулина", "d": 250, "dir": "e", "h": "", "lat": 51.18719, "lon": 71.41533, "src": "osm"}, {"c": "stop", "n": "Агротехнический университет", "d": 280, "dir": "e", "h": "", "lat": 51.18671, "lon": 71.41576, "src": "osm"}, {"c": "stop", "n": "Ильяса Есенберлина", "d": 300, "dir": "ne", "h": "", "lat": 51.18935, "lon": 71.41351, "src": "osm"}, {"c": "stop", "n": "Театр Жастар", "d": 400, "dir": "nw", "h": "", "lat": 51.18936, "lon": 71.40755, "src": "osm"}, {"c": "stop", "n": "Ә. Молдағұлова көшесі", "d": 440, "dir": "sw", "h": "", "lat": 51.18485, "lon": 71.40645, "src": "osm"}, {"c": "food", "n": "Центр Лагмана и Плова", "d": 210, "dir": "ne", "h": "24/7", "lat": 51.18813, "lon": 71.41407, "src": "osm"}, {"c": "food", "n": "Цезарь", "d": 240, "dir": "ne", "h": "", "lat": 51.1882, "lon": 71.41456, "src": "osm"}, {"c": "food", "n": "Столовая (№5 жатақхана)", "a": "Молдағұлова к., 29в", "d": 250, "dir": "se", "h": "", "src": "2gis", "note": "Орташа чек ~1400 ₸"}, {"c": "food", "n": "КФС", "d": 310, "dir": "sw", "h": "Mo-Su 10:00-24:00", "lat": 51.18559, "lon": 71.40789, "src": "osm"}, {"c": "food", "n": "Happy Cake", "d": 330, "dir": "sw", "h": "", "lat": 51.18501, "lon": 71.40811, "src": "osm"}, {"c": "food", "n": "Зоис", "d": 340, "dir": "sw", "h": "", "lat": 51.18489, "lon": 71.40814, "src": "osm"}, {"c": "food", "n": "Абат", "d": 370, "dir": "n", "h": "", "lat": 51.19027, "lon": 71.41202, "src": "osm"}, {"c": "food", "n": "Тағам асханасы", "a": "Жеңіс даңғылы, 72", "d": 450, "dir": "w", "h": "", "src": "2gis", "note": "Орташа чек ~2000 ₸"}, {"c": "food", "n": "Эфир", "d": 460, "dir": "s", "h": "Mo-Su,PH 10:00-02:00", "lat": 51.18298, "lon": 71.40957, "src": "osm"}, {"c": "food", "n": "Ас асханасы", "a": "Бейбітшілік к., 58", "d": 500, "dir": "e", "h": "", "src": "2gis", "note": "Орташа чек ~2000 ₸"}, {"c": "food", "n": "Мюнхен", "d": 520, "dir": "sw", "h": "", "lat": 51.18258, "lon": 71.40883, "src": "osm"}, {"c": "food", "n": "Soldi", "d": 580, "dir": "se", "h": "", "lat": 51.18254, "lon": 71.41632, "src": "osm"}, {"c": "food", "n": "Dido", "d": 590, "dir": "se", "h": "", "lat": 51.18205, "lon": 71.41502, "src": "osm"}, {"c": "food", "n": "Бекен", "d": 620, "dir": "s", "h": "Mo-Su,PH 09:00-22:00", "lat": 51.1817, "lon": 71.4087, "src": "osm"}, {"c": "food", "n": "Ажар", "d": 650, "dir": "s", "h": "", "lat": 51.1814, "lon": 71.40876, "src": "osm"}, {"c": "food", "n": "Retro", "d": 690, "dir": "sw", "h": "", "lat": 51.18126, "lon": 71.40773, "src": "osm"}, {"c": "food", "n": "Bauyrdaq", "d": 700, "dir": "s", "h": "24/7", "lat": 51.18084, "lon": 71.40931, "src": "osm"}, {"c": "food", "n": "Кофейня", "d": 700, "dir": "sw", "h": "", "lat": 51.18152, "lon": 71.40666, "src": "osm"}, {"c": "shop", "n": "Исток", "d": 260, "dir": "n", "h": "", "lat": 51.18924, "lon": 71.41184, "src": "osm"}, {"c": "shop", "n": "Апрель", "d": 300, "dir": "w", "h": "", "lat": 51.18596, "lon": 71.40772, "src": "osm"}, {"c": "shop", "n": "Юлия", "d": 300, "dir": "n", "h": "", "lat": 51.18963, "lon": 71.41147, "src": "osm"}, {"c": "shop", "n": "Small", "d": 300, "dir": "w", "h": "Mo-Su 09:00-23:00", "lat": 51.18589, "lon": 71.4078, "src": "osm"}, {"c": "shop", "n": "Саулет", "d": 420, "dir": "nw", "h": "Mo-Su 08:00-23:00", "lat": 51.19036, "lon": 71.40927, "src": "osm"}, {"c": "shop", "n": "Бахыт", "d": 430, "dir": "sw", "h": "", "lat": 51.18367, "lon": 71.40844, "src": "osm"}, {"c": "shop", "n": "Ассорти", "d": 500, "dir": "sw", "h": "", "lat": 51.18305, "lon": 71.40826, "src": "osm"}, {"c": "shop", "n": "Ideal", "d": 550, "dir": "n", "h": "24/7", "lat": 51.19172, "lon": 71.40989, "src": "osm"}, {"c": "shop", "n": "Светофор", "d": 610, "dir": "ne", "h": "", "lat": 51.18934, "lon": 71.4196, "src": "osm"}, {"c": "shop", "n": "Маяк", "d": 630, "dir": "s", "h": "", "lat": 51.18166, "lon": 71.40843, "src": "osm"}, {"c": "shop", "n": "Magnum", "d": 680, "dir": "s", "h": "Mo-Su 08:00-23:00", "lat": 51.18099, "lon": 71.40921, "src": "osm"}, {"c": "pharm", "n": "Центральная", "d": 260, "dir": "ne", "h": "", "lat": 51.18833, "lon": 71.41482, "src": "osm"}, {"c": "pharm", "n": "Феникс", "d": 260, "dir": "ne", "h": "09:00- 21:00", "lat": 51.18803, "lon": 71.41499, "src": "osm"}, {"c": "pharm", "n": "Альфа Мед", "d": 290, "dir": "se", "h": "Mo-Su,PH 08:00-23:00", "lat": 51.18583, "lon": 71.41553, "src": "osm"}, {"c": "pharm", "n": "Гиппократ", "d": 370, "dir": "n", "h": "Mo-Su 09:00-13:00, 13:30-21:00", "lat": 51.19007, "lon": 71.41013, "src": "osm"}, {"c": "pharm", "n": "Аптека", "d": 480, "dir": "e", "h": "Mo-Su 09:00-21:00", "lat": 51.18855, "lon": 71.41818, "src": "osm"}, {"c": "print", "n": "Лик полиграфия", "a": "Бейбітшілік к., 71", "d": 380, "dir": "e", "h": "", "src": "2gis"}, {"c": "print", "n": "CadPrint көшірме орталығы", "a": "Бейбітшілік к., 62", "d": 420, "dir": "e", "h": "", "src": "2gis"}, {"c": "money", "n": "Alatau City Bank", "d": 180, "dir": "nw", "h": "Mo-Su 09:00-18:00", "lat": 51.18787, "lon": 71.40977, "src": "osm"}, {"c": "money", "n": "Народный банк", "d": 240, "dir": "ne", "h": "", "lat": 51.18816, "lon": 71.41456, "src": "osm"}, {"c": "money", "n": "Alatau City Bank", "d": 250, "dir": "e", "h": "Mo-Su 09:00-18:00", "lat": 51.18656, "lon": 71.41536, "src": "osm"}, {"c": "money", "n": "Банк ЦентрКредит", "d": 320, "dir": "ne", "h": "Mo-Su 08:00-23:00", "lat": 51.18916, "lon": 71.41457, "src": "osm"}, {"c": "money", "n": "Банк ЦентрКредит", "d": 420, "dir": "nw", "h": "Mo-Fr 09:00-18:00", "lat": 51.18965, "lon": 71.40757, "src": "osm"}, {"c": "money", "n": "Halyk Bank", "d": 470, "dir": "nw", "h": "Mo-Fr 09:00-19:00; Sa 09:00-14:00", "lat": 51.19016, "lon": 71.40735, "src": "osm"}, {"c": "money", "n": "Kaspi.kz", "d": 530, "dir": "nw", "h": "Mo-Su 09:00-18:00", "lat": 51.19089, "lon": 71.40763, "src": "osm"}, {"c": "money", "n": "Евразийский банк", "d": 650, "dir": "se", "h": "Mo-Fr 09:00-18:00; Sa 10:00-15:00; Su off", "lat": 51.1823, "lon": 71.41738, "src": "osm"}, {"c": "money", "n": "Народный банк", "d": 660, "dir": "nw", "h": "", "lat": 51.19225, "lon": 71.40758, "src": "osm"}, {"c": "health", "n": "Городская поликлиника №14", "d": 480, "dir": "nw", "h": "", "lat": 51.18969, "lon": 71.40649, "src": "osm"}, {"c": "health", "n": "№3 көпбейінді қалалық аурухана", "d": 590, "dir": "se", "h": "", "lat": 51.18292, "lon": 71.41742, "src": "osm"}, {"c": "health", "n": "Молодежный центр здоровья «Жас толкын»", "d": 720, "dir": "nw", "h": "", "lat": 51.19248, "lon": 71.40657, "src": "osm"}, {"c": "post", "n": "CDEK", "d": 170, "dir": "n", "h": "Mo-Fr 10:00-20:00;Sa-Su 10:00-18:00", "lat": 51.18843, "lon": 71.41107, "src": "osm"}, {"c": "post", "n": "Отделение №11", "d": 330, "dir": "n", "h": "", "lat": 51.18984, "lon": 71.41225, "src": "osm"}, {"c": "post", "n": "КСЭ", "d": 630, "dir": "ne", "h": "Mo-Fr 09:00-18:00", "lat": 51.19167, "lon": 71.41657, "src": "osm"}, {"c": "sport", "n": "Спорткомплекс Динамо", "d": 560, "dir": "w", "h": "", "lat": 51.18728, "lon": 71.4037, "src": "osm"}];
+const NEAR_CATS = {
+  stop: ['Аялдамалар', 'Остановки', 'pin'], food: ['Тамақ', 'Еда', 'tag'], shop: ['Дүкендер', 'Магазины', 'gift'],
+  pharm: ['Дәріхана', 'Аптеки', 'plus'], print: ['Басып шығару', 'Печать', 'doc'], money: ['Банк, банкомат', 'Банки, банкоматы', 'tenge'],
+  health: ['Емхана', 'Поликлиники', 'shield'], post: ['Пошта', 'Почта', 'send'], sport: ['Спорт', 'Спорт', 'award']
+};
+const DIR_L = { n: ['солтүстікте', 'на севере'], ne: ['солтүстік-шығыста', 'на северо-востоке'], e: ['шығыста', 'на востоке'], se: ['оңтүстік-шығыста', 'на юго-востоке'], s: ['оңтүстікте', 'на юге'], sw: ['оңтүстік-батыста', 'на юго-западе'], w: ['батыста', 'на западе'], nw: ['солтүстік-батыста', 'на северо-западе'] };
+/* university sites that are not on the main campus plan (from 2GIS) */
+const UNI_SITES = [
+  { n: { kk: 'Ветеринария және мал шаруашылығы факультеті, Компьютерлік жүйелер факультеті, Гуманитарлық факультет, Биотехнология платформасы', ru: 'Факультеты ветеринарии, компьютерных систем, гуманитарный; платформа биотехнологии' }, a: { kk: 'Ыбырай Алтынсарин к., 2', ru: 'ул. Ыбырая Алтынсарина, 2' } },
+  { n: { kk: 'Біліктілікті арттыру институты, №8 жатақхана, ЦОО', ru: 'Институт повышения квалификации, общежитие №8, ЦОО' }, a: { kk: 'Молдағұлова к., 27д', ru: 'ул. Молдагуловой, 27д' } },
+  { n: { kk: 'Әкімшілік ғимарат', ru: 'Административное здание' }, a: { kk: 'Жеңіс даңғылы, 62/1', ru: 'пр. Женис, 62/1' } },
+  { n: { kk: '№1А жатақхана', ru: 'Общежитие №1А' }, a: { kk: 'Сарыарқа даңғылы, 38', ru: 'пр. Сарыарка, 38' } },
+  { n: { kk: 'Сәулет факультеті', ru: 'Факультет архитектуры' }, a: { kk: 'Абай даңғылы, 15', ru: 'пр. Абая, 15' } }
+];
+const walkMin = m => Math.max(1, Math.round(m / 80));
+function nearRow(p) {
+  const c = NEAR_CATS[p.c], approx = p.src === '2gis' ? '~' : '';
+  const where = p.a ? `${p.a}, ` : '';
+  const sub = `${where}${approx}${p.d} ${tt('м', 'м')}, ${tt(`${approx}${walkMin(p.d)} мин жаяу`, `${approx}${walkMin(p.d)} мин пешком`)}, ${tt(...DIR_L[p.dir])}`;
+  const q = encodeURIComponent(p.n);
+  const href = p.lat ? `https://2gis.kz/astana/search/${q}?m=${p.lon}%2C${p.lat}%2F18` : `https://2gis.kz/astana/search/${encodeURIComponent(p.n + ' ' + (p.a || ''))}`;
+  return `<a class="row" href="${href}" target="_blank" rel="noopener">
+    <span class="nico nico-${Object.keys(NEAR_CATS).indexOf(p.c) % 5}">${ico(c[2], 20)}</span>
+    <span class="row-main"><span class="row-title">${esc(p.n)}</span><span class="row-sub">${esc(sub)}</span>${p.h || p.note ? `<span class="tiny muted">${esc(p.h === '24/7' ? tt('Тәулік бойы', 'Круглосуточно') : p.h || p.note)}</span>` : ''}</span>
+    <span class="chev">${ico('ext', 18)}</span></a>`;
+}
+function nearList() {
+  const list = NEARBY.filter(p => ui.nearCat === 'all' || p.c === ui.nearCat);
+  return `<div class="group">${list.map(nearRow).join('')}</div>`;
+}
+function nearHtml() {
+  const cats = [['all', tt('Барлығы', 'Все')], ...Object.entries(NEAR_CATS).map(([k, c]) => [k, tt(c[0], c[1])])];
+  return `
+    <div class="chips">${cats.map(([k, l]) => chip(l, ui.nearCat === k, 'nearCat', `data-v="${k}"`)).join('')}</div>
+    <div id="nearList" class="section">${nearList()}</div>
+    ${note(tt('Қашықтық кампус ортасынан түзу сызықпен есептелген. Басқанда 2GIS ашылады. Дереккөз: OpenStreetMap және 2GIS.', 'Расстояние — по прямой от центра кампуса. Нажмите, чтобы открыть 2GIS. Источники: OpenStreetMap и 2GIS.'))}
+    <section class="section"><h2>${tt('Университеттің басқа ғимараттары', 'Другие здания университета')}</h2>
+      <div class="group">${UNI_SITES.map(u => `<a class="row" href="https://2gis.kz/astana/search/${encodeURIComponent('Сейфуллин ' + L(u.a))}" target="_blank" rel="noopener"><span class="bnum bnum-other">${ico('pin', 16)}</span><span class="row-main"><span class="row-title">${esc(L(u.n))}</span><span class="row-sub">${esc(L(u.a))}</span></span><span class="chev">${ico('ext', 18)}</span></a>`).join('')}</div></section>`;
+}
+
+VIEWS.map = (t) => {
+  if (t) ui.mapTab = t;
+  const tabs = seg([['campus', tt('Кампус', 'Кампус')], ['near', tt('Жақын маңда', 'Рядом')]], ui.mapTab, 'mapTab');
+  if (ui.mapTab === 'near') return { title: tt('Жақын маңда', 'Рядом с кампусом'), tab: 'home', html: tabs + nearHtml() };
+  return {
+  title: tt('Кампус картасы', 'Карта кампуса'), tab: 'home',
+  html: `${tabs}
+    <div class="search">${ico('search', 18)}<input class="input" id="mapQ" type="search" placeholder="${tt('Аудитория (2-214) не нысан атауы', 'Аудитория (2-214) или название здания')}" value="${esc(ui.mapQ || '')}" data-on="mapQ" autocomplete="off"></div>
+    <div class="chips">${[['study', tt('Оқу корпустары', 'Учебные корпуса')], ['dorm', tt('Жатақханалар', 'Общежития')], ['other', tt('Басқа', 'Другое')]].map(([k, l]) => `<button class="chip legend lg-${k}" type="button" data-act="mapQuick" data-q="${esc(tt(...KIND_L[k]))}"><i></i>${l}</button>`).join('')}</div>
+    <div class="plan-box" id="planBox">${planSvg(mapHighlight())}</div>
     <div id="mapRes" class="section">${mapResults()}</div>
-    ${note(tt('Үлгі ереже: бірінші сан — корпус, екіншісі — қабат. Нақты сызбалар университетпен бірге енгізіледі.', 'Пример правила: первая цифра — корпус, вторая — этаж. Реальные схемы вносятся вместе с университетом.'))}
-    <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=Seifullin+University+Astana" target="_blank" rel="noopener">${ico('ext', 18)} ${tt('Университетті картадан ашу', 'Открыть университет на карте')}</a>`
-});
+    ${note(tt('Сызба университеттің жоспары бойынша шамамен салынған. Аудитория нөмірінің бірінші саны — корпус, екіншісі — қабат.', 'Схема нарисована по плану университета, приблизительно. Первая цифра аудитории — корпус, вторая — этаж.'))}
+    <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=Seifullin+University+Astana" target="_blank" rel="noopener">${ico('ext', 18)} ${tt('Google картасынан ашу', 'Открыть в Google Картах')}</a>`
+  };
+};
 
 VIEWS.pay = () => {
   const y = PAYMENT, rest = y.year - y.paid, pct = Math.round(100 * y.paid / y.year), due = dOff(y.nextDue);
@@ -5186,8 +5363,22 @@ const ACT = {
   delPlan(el) { confirmSheet(tt('Жоспарды жою керек пе?', 'Удалить план?'), () => { S.plans = S.plans.filter(x => x.id !== el.dataset.id); save(); go('exam', { replace: true }); }); },
   gpaAdd() { S.gpaPlan.push({ n: tt('Жаңа пән', 'Новый предмет'), cr: 5, g: 'B' }); save(); render(); },
   gpaDel(el) { S.gpaPlan.splice(+el.dataset.i, 1); save(); render(); },
-  mapQuick(el) { ui.mapQ = el.dataset.q; render(); },
-  findRoom(el) { ui.mapQ = el.dataset.q; go('map'); },
+  mapQuick(el) {
+    ui.mapQ = el.dataset.q; ui.mapSel = null;
+    const inp = document.getElementById('mapQ'); if (inp) inp.value = ui.mapQ;
+    mapRefresh();
+  },
+  mapTab(el) { ui.mapTab = el.dataset.v; go('map:' + el.dataset.v, { replace: true }); },
+  nearCat(el) { ui.nearCat = el.dataset.v; render(); },
+  mapPick(el) {
+    ui.mapSel = el.dataset.id; ui.mapQ = '';
+    if (parse(cur.v)[0] !== 'map' || ui.mapTab !== 'campus') { ui.mapTab = 'campus'; go('map:campus'); return; }
+    const inp = document.getElementById('mapQ'); if (inp) inp.value = '';
+    mapRefresh();
+    const box = document.getElementById('planBox'); if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  },
+  photoDel() { delete S.photo; save(); toast(tt('Сурет өшірілді', 'Фото удалено')); render(); },
+  findRoom(el) { ui.mapQ = el.dataset.q; ui.mapTab = 'campus'; go('map:campus'); },
   addCert() {
     openSheet(`<h2>${tt('Сертификат қосу', 'Добавить сертификат')}</h2>
       <form class="form" id="certForm">
@@ -5230,7 +5421,7 @@ const ON = {
   gTarget(el, type) { const v = parseFloat(String(el.value).replace(',', '.')); if (!isNaN(v)) ui.target = Math.max(0, Math.min(4, v)); if (type === 'change') render(); },
   gNext(el, type) { const v = parseInt(el.value, 10); if (v > 0) ui.nextCr = v; if (type === 'change') render(); },
   oq(el) { ui.q = el.value; const box = document.getElementById('oppList'); if (box) box.innerHTML = oppList(ui.oppTab); },
-  mapQ(el) { ui.mapQ = el.value; const box = document.getElementById('mapRes'); if (box) box.innerHTML = mapResults(); }
+  mapQ(el) { ui.mapQ = el.value; ui.mapSel = null; mapRefresh(); }
 };
 
 document.addEventListener('click', e => {
@@ -5238,6 +5429,10 @@ document.addEventListener('click', e => {
   if (g) { e.preventDefault(); go(g.dataset.go); return; }
   const a = e.target.closest('[data-act]');
   if (a && ACT[a.dataset.act]) { e.preventDefault(); ACT[a.dataset.act](a, e); }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.getAttribute && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON') { e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
 });
 ['change', 'input'].forEach(type => document.addEventListener(type, e => {
   const el = e.target.closest && e.target.closest('[data-on]');
