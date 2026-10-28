@@ -1,6 +1,6 @@
 'use client';
 /* Detail screens: vacancy, opportunity, event. Job and opportunity pages carry the trust block. */
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { CommunityReport } from '@/components/views/ambassador';
 import { track } from '@/features/analytics/track';
@@ -9,12 +9,14 @@ import { featureOn, useConfig } from '@/lib/config';
 import { openTelegramLink, useTelegram } from '@/lib/telegram';
 import { DemoBadge, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import { VerifiedSheet } from '@/components/views/sheets';
+import { EmployerApplyCta, EmployerJobInfo, JobReportButton, LiveEmployerJob, OfficialBadge } from '@/components/views/jobs-b2b';
+import { isEmployerJob, jobDbId } from '@/lib/b2b';
 import { reportHref } from '@/lib/config';
 import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
-import type { Provenance } from '@/lib/types';
+import type { Job, Provenance } from '@/lib/types';
 
 /** one view event per screen opening (effects may run twice for the same mount in development) */
 let lastView = { key: '', at: 0 };
@@ -40,7 +42,7 @@ function VerifiedBadge({ item, kind, id }: { item: Provenance; kind: string; id:
 const hostOf = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; } };
 
 /** source, dates, contacts and the report link, in the card/kv style of the rest of the page */
-function TrustBlock({ item, kind, id }: { item: Provenance; kind: string; id: string }) {
+function TrustBlock({ item, kind, id, report }: { item: Provenance; kind: string; id: string; report?: ReactNode }) {
   const { tt, fDateY, lang } = useApp();
   const c = item.contact || {};
   const url = window.location.origin + pathOf(`${kind}:${id}`);
@@ -59,20 +61,30 @@ function TrustBlock({ item, kind, id }: { item: Provenance; kind: string; id: st
           {c.email ? <><dt>Email</dt><dd><a href={`mailto:${c.email}`}>{c.email}</a></dd></> : null}
           {c.site ? <><dt>{tt('Сайт', 'Сайт')}</dt><dd><a href={c.site} target="_blank" rel="noopener">{hostOf(c.site)}</a></dd></> : null}
         </dl>
-        <a className="btn ghost" href={reportHref(id, kind, url, lang)} target="_blank" rel="noopener">
-          <Icon n="bell" s={18} /> {tt('Қате не алаяқтық туралы хабарлау', 'Сообщить об ошибке или мошенничестве')}
-        </a>
+        {report ?? (
+          <a className="btn ghost" href={reportHref(id, kind, url, lang)} target="_blank" rel="noopener">
+            <Icon n="bell" s={18} /> {tt('Қате не алаяқтық туралы хабарлау', 'Сообщить об ошибке или мошенничестве')}
+          </a>
+        )}
       </div>
     </section>
   );
 }
 
 export function JobView({ id }: { id: string }) {
-  const { S, tt, tp, L, I, go, update, toast, content } = useApp();
+  const { content } = useApp();
   const j = content.jobs.find(x => x.id === id);
-  const found = !!j;
+  const found = !!j || !!jobDbId(id);
   useEffect(() => { if (found) trackView('job_view', id); }, [found, id]);
-  if (!j) return null;
+  // an employer job that is not in the cached content yet (or hidden for this viewer's age) comes from the API
+  if (!j) return jobDbId(id) ? <LiveEmployerJob id={id} render={x => <JobBody j={x} />} /> : null;
+  return <JobBody j={j} />;
+}
+
+function JobBody({ j }: { j: Job }) {
+  const { S, tt, tp, L, I, go, update, toast } = useApp();
+  const real = isEmployerJob(j);
+  const perHour = hourly(j);
   const pt = payText(j, I), applied = !!S.applied[j.id];
   return (
     <>
@@ -84,26 +96,31 @@ export function JobView({ id }: { id: string }) {
         </div>
         <h1>{L(j.title)}</h1>
         <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} kind="job" id={j.id} />
-        <p className="muted">{L(j.org)} <VerifiedBadge item={j} kind="job" id={j.id} /></p>
+        <p className="muted">{L(j.org)} {real ? null : <VerifiedBadge item={j} kind="job" id={j.id} />}</p>
       </div>
       <div className="card">
         <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num">{pt.main}</span><span className="muted small">{pt.sub}</span></div>
         <dl className="kv">
-          <dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {money(hourly(j))}</dd>
+          {Number.isFinite(perHour) && perHour > 0 ? <><dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {money(perHour)}</dd></> : null}
           <dt>{tt('Кесте', 'График')}</dt><dd>{L(j.sched)}</dd>
           <dt>{tt('Қала', 'Город')}</dt><dd>{L(CITIES[j.city])}</dd>
         </dl>
       </div>
-      <section className="section"><h2>{tt('Не істеу керек', 'Что нужно делать')}</h2><p>{L(j.desc)}</p></section>
-      <section className="section"><h2>{tt('Талаптар', 'Требования')}</h2><ul className="bullets">{j.req.map((r, i) => <li key={i}>{L(r)}</li>)}</ul></section>
+      <EmployerJobInfo j={j} />
+      <section className="section"><h2>{tt('Не істеу керек', 'Что нужно делать')}</h2><p style={real ? { whiteSpace: 'pre-line', overflowWrap: 'anywhere' } : undefined}>{L(j.desc)}</p></section>
+      {j.req.length ? <section className="section"><h2>{tt('Талаптар', 'Требования')}</h2><ul className="bullets">{j.req.map((r, i) => <li key={i}>{L(r)}</li>)}</ul></section> : null}
       <div className="demo-note"><Icon n="shield" s={18} /><span>{tt('Қауіпсіздік: жұмысқа орналасу үшін алдын ала ақша төлемеңіз. Төлем мен жұмыс уақыты алдын ала жазылуы тиіс.', 'Безопасность: не платите деньги за трудоустройство. Оплата и время работы должны быть указаны заранее.')}</span></div>
-      <TrustBlock item={j} kind="job" id={j.id} />
-      <div className="sticky-cta">
+      <TrustBlock item={j} kind="job" id={j.id} report={real ? <JobReportButton j={j} /> : undefined} />
+      {real ? (
+        <EmployerApplyCta j={j}>
+          <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
+        </EmployerApplyCta>
+      ) : <div className="sticky-cta">
         {applied
           ? <button className="btn secondary" type="button" onClick={() => { update(s => { delete s.applied[j.id]; }); toast(tt('Өтінім кері қайтарылды', 'Отклик отозван')); }}><Icon n="check" s={18} /> {tt('Өтінім жіберілді', 'Отклик отправлен')}</button>
           : <button className="btn" type="button" onClick={() => { update(s => { s.applied[j.id] = Date.now(); }); toast(tt('Өтінім жіберілді', 'Отклик отправлен')); }}><Icon n="send" s={18} /> {tt('Өтінім жіберу', 'Откликнуться')}</button>}
         <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
-      </div>
+      </div>}
     </>
   );
 }
@@ -130,6 +147,7 @@ export function OppView({ id }: { id: string }) {
         <div className="badges">
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-ok">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
+          <OfficialBadge o={o} />
           <DemoBadge show={o.is_demo} />
         </div>
         <h1>{L(o.title)}</h1>

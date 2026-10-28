@@ -213,7 +213,7 @@ func OriginAllowed(r *http.Request) bool {
 
 // Routes wires the login and logout endpoints (Telegram and email) and the signed-in
 // password/email settings.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("POST /api/auth/telegram/webapp", Write(webappLogin))
 	mux.HandleFunc("POST /api/auth/telegram/widget", Write(widgetLogin))
 	mux.HandleFunc("POST /api/auth/logout", Write(logout))

@@ -40,6 +40,7 @@ type Content struct {
 	Opportunities []Record `json:"opportunities"`
 	Jobs          []Record `json:"jobs"`
 	Discounts     []Record `json:"discounts"`
+	Events        []Record `json:"events,omitempty"` // optional extra source; omitted when empty
 	Places        []Record `json:"places,omitempty"` // only from extra sources (extra.go)
 	Source        string   `json:"source"`
 	UpdatedAt     *string  `json:"updated_at"`
@@ -342,6 +343,9 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 		if recs := FilterActive(extra["jobs"], today); len(recs) > 0 {
 			out.Jobs = append(out.Jobs, recs...)
 		}
+		if recs := FilterActive(extra["events"], today); len(recs) > 0 {
+			out.Events = recs
+		}
 		if recs := FilterActive(extra["discounts"], today); len(recs) > 0 {
 			out.Discounts = append(out.Discounts, recs...)
 		}
@@ -352,5 +356,6 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 		out.Jobs = l.dedupe("jobs", out.Jobs)
 		out.Discounts = l.dedupe("discounts", out.Discounts)
 	}
+	l.filterDemo(ctx, &out)
 	return out
 }

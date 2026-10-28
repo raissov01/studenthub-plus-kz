@@ -19,7 +19,12 @@ const META: Record<string, Meta> = {
   services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
   materials: { title: (_, x) => t('Оқу материалдары', 'Учебные материалы')(x), tab: 'home' },
   saved: { title: (_, x) => t('Сақталғандар', 'Сохранённое')(x), tab: 'profile' },
-  opps: { title: (_, x) => t('Мүмкіндіктер', 'Возможности')(x) },
+  // the search screen under the old URLs; the header shows «Іздеу», the page <title> names the category
+  opps: {
+    title: (prm, x) => ({
+      intern: t('Тағылымдама', 'Стажировки')(x), events: t('Іс-шаралар', 'Мероприятия')(x), courses: t('Курстар', 'Курсы')(x),
+    } as Record<string, string>)[prm] ?? t('Жұмыс', 'Работа')(x),
+  },
   mine: { title: (_, x) => t('Менің тізімім', 'Мой список')(x) },
   job: { title: (_, x) => t('Вакансия', 'Вакансия')(x), tab: 'opps' },
   opp: { title: (_, x) => t('Мүмкіндік', 'Возможность')(x), tab: 'opps' },
@@ -45,7 +50,7 @@ const META: Record<string, Meta> = {
     tab: 'ai',
   },
   match: { title: (_, x) => t('Вакансияға сәйкестік', 'Совпадение с вакансией')(x), tab: 'ai' },
-  bonus: { title: (_, x) => t('Бонустар мен жеңілдіктер', 'Бонусы и скидки')(x) },
+  bonus: { title: (_, x) => t('Жеңілдіктер', 'Скидки')(x) },
   profile: { title: (_, x) => t('Профиль', 'Профиль')(x) },
   edit: { title: (_, x) => t('Профильді өзгерту', 'Изменить профиль')(x), tab: 'profile' },
   gpa: { title: (_, x) => t('Менің оқуым', 'Моя учёба')(x), tab: 'profile' },
@@ -62,6 +67,7 @@ const META: Record<string, Meta> = {
     title: (prm, x) => ({
       queue: t('Модерация кезегі', 'Очередь модерации')(x), reports: t('Шағымдар', 'Жалобы')(x), mentors: t('Менторларды жұптау', 'Подбор менторов')(x),
       ambassadors: t('Амбассадорлар', 'Амбассадоры')(x), market: t('Тегін заттар: модерация', 'Отдам даром: модерация')(x),
+      employers: t('Жұмыс берушілер', 'Работодатели')(x), staff: t('Университет қызметкерлері', 'Сотрудники университетов')(x),
     } as Record<string, string>)[prm] ?? 'Student Hub',
     tab: 'profile',
   },
@@ -79,6 +85,14 @@ const META: Record<string, Meta> = {
     tab: 'profile',
   },
   certificate: { title: (_, x) => t('Сертификат', 'Сертификат')(x) },
+  employer: {
+    title: (prm, x) => (prm === 'apply' ? t('Компанияны тіркеу', 'Регистрация компании')(x) : prm.startsWith('join/') ? t('Компанияға қосылу', 'Вступить в компанию')(x)
+      : prm === 'jobs/new' ? t('Жаңа вакансия', 'Новая вакансия')(x) : /^jobs\/\d+\/edit$/.test(prm) ? t('Вакансияны өзгерту', 'Изменить вакансию')(x)
+        : /^jobs\/\d+$/.test(prm) ? t('Өтінімдер', 'Отклики')(x) : t('Жұмыс беруші кабинеті', 'Кабинет работодателя')(x)),
+    tab: 'profile',
+  },
+  university: { title: (_, x) => t('Университет кабинеті', 'Кабинет университета')(x), tab: 'profile' },
+  announcements: { title: (_, x) => t('Ресми хабарландырулар', 'Официальные объявления')(x), tab: 'home' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

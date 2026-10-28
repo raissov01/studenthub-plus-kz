@@ -46,7 +46,7 @@ func today() string { return content.AlmatyToday(Now()) }
 func init() { registerContent() }
 
 // Routes wires /api/admin/content*.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	admin := func(h auth.Handler) http.HandlerFunc { return auth.NeedRole(h, "admin") }
 	write := func(h auth.Handler) http.HandlerFunc { return auth.Write(auth.NeedRole(h, "admin")) }
 	mux.HandleFunc("GET /api/admin/content", admin(list))

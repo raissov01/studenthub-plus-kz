@@ -16,8 +16,8 @@ import { getState } from '@/lib/store';
 /** where an item's «link» leads in the app */
 const LINKS: Record<RoadmapLink, { view: string; oppType?: string }> = {
   internships: { view: 'opps:intern', oppType: 'all' },
-  mobility: { view: 'opps:intern', oppType: 'mobility' },
-  grants: { view: 'opps:intern', oppType: 'grant' },
+  mobility: { view: 'search:mobility' },
+  grants: { view: 'search:grant' },
   courses: { view: 'opps:courses' },
   events: { view: 'opps:events' },
   jobs: { view: 'opps:jobs' },

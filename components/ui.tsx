@@ -111,15 +111,33 @@ export function ShareRow({ path, title, kind, id }: { path: string; title: strin
 }
 
 /** «Иә, жою» confirmation sheet */
-export function ConfirmSheet({ msg, yes }: { msg: string; yes: () => void }) {
+export function ConfirmSheet({ msg, yes, yesLabel }: { msg: string; yes: () => void; yesLabel?: string }) {
   const { tt, closeSheet, closeSheetDom } = useApp();
   return (
     <>
       <h2>{msg}</h2>
       <div className="btn-row">
         <button className="btn ghost" type="button" onClick={closeSheet}>{tt('Жоқ', 'Нет')}</button>
-        <button className="btn danger" type="button" onClick={() => { closeSheetDom(); yes(); }}>{tt('Иә, жою', 'Да, удалить')}</button>
+        <button className="btn danger" type="button" onClick={() => { closeSheetDom(); yes(); }}>{yesLabel ?? tt('Иә, жою', 'Да, удалить')}</button>
       </div>
     </>
+  );
+}
+
+/** ♥ save toggle: opportunities go to «saved» (their deadlines show in «Менің тізімім»), the rest to favourites */
+export function Heart({ id, opp }: { id: string; opp: boolean }) {
+  const { S, tt, update, toast } = useApp();
+  const on = !!(opp ? S.saved : S.fav)[id];
+  const flip = () => {
+    update(s => {
+      const box = opp ? s.saved : s.fav;
+      if (box[id]) delete box[id]; else box[id] = Date.now();
+    });
+    toast(on ? tt('Сақталғаннан алынды', 'Убрано из сохранённых') : tt('Сақталды', 'Сохранено'));
+  };
+  return (
+    <button className="heart" type="button" onClick={flip} aria-pressed={on} aria-label={on ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}>
+      <Icon n="heart" s={20} />
+    </button>
   );
 }

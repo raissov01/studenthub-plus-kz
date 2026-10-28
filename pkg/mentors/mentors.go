@@ -92,7 +92,7 @@ func init() {
 
 // Routes wires /api/mentors/*, /api/admin/mentors*, /api/ambassador/mentors* and the cron
 // job. Everything answers 404 while FEATURE_MENTORS is off.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	w := func(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.Need(fn)) }
 

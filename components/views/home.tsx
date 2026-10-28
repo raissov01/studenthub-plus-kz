@@ -1,18 +1,17 @@
 'use client';
-/* Shell screens: home, search, notifications, saved, and the two hubs reached from home tiles. */
-import { useEffect, useRef } from 'react';
+/* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
+import { useRef } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, DemoBadge, Empty, Icon, Row, SectionHead } from '@/components/ui';
+import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { RoadmapBoard } from '@/components/views/roadmap';
 import { ServicesCommunity } from '@/components/views/entries';
-import { MarketSearchResults } from '@/components/views/market';
-import { useFeature } from '@/components/views/common';
-import { DealSheet } from '@/components/views/sheets';
+import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
 import { EVENTS, SCHEDULE } from '@/lib/data/static';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
 import { dOff } from '@/lib/format';
+import { buildScheduleIcs } from '@/lib/ics';
 import type { IconName } from '@/lib/types';
 
 const firstName = (name: string, fb: string) => (name || '').trim().split(/\s+/)[0] || fb;
@@ -50,6 +49,32 @@ function NextClassCard() {
   );
 }
 
+/** F5 «Кестені күнтізбеге қосу»: the timetable as an .ics file, made on the device (lib/ics.ts) */
+function ScheduleIcsButton() {
+  const { tt, L, I, lang, toast } = useApp();
+  const save = () => {
+    const text = buildScheduleIcs(SCHEDULE.map(c => ({
+      key: `${c.name.kk}|${c.t}|${c.room}`, start: c.t, end: c.end,
+      summary: `${L(c.name)} (${L(c.kind)})`, location: classWhere(c, I),
+      description: tt('Student Hub сабақ кестесі (үлгі).', 'Расписание из Student Hub (пример).'),
+    })), { now: new Date(), calName: tt('Сабақ кестесі — Student Hub', 'Расписание — Student Hub'), lang });
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/calendar;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'studenthub-schedule.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
+  };
+  return (
+    <button className="btn ghost block" type="button" id="scheduleIcs" onClick={save}>
+      <Icon n="calendar" s={18} /> {tt('Кестені күнтізбеге қосу', 'Добавить расписание в календарь')}
+    </button>
+  );
+}
+
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
   const tg = useTelegram();
@@ -82,17 +107,19 @@ export function Home() {
       <form className="search" id="homeSearch" role="search" onSubmit={e => {
         e.preventDefault();
         const inp = e.currentTarget.querySelector('input');
-        setUi({ sq: (inp?.value || '').trim(), sk: 'all' });
+        setUi({ sq: (inp?.value || '').trim(), sk: 'all', sqFocus: true });
         go('search');
       }}>
         <Icon n="search" s={18} />
         <input className="input" id="hq" type="search" enterKeyHint="search" autoComplete="off" placeholder={tt('Не іздейсің?', 'Что ищешь?')} aria-label={tt('Іздеу', 'Поиск')}
           onFocus={e => {
-            if (focused.current || e.target.value) return;
+            // the search screen takes over with whatever was typed so far, and keeps the keyboard focus
+            if (focused.current) return;
             focused.current = true;
-            setUi({ sq: '', sk: 'all', sqFocus: true });
+            setUi({ sq: e.target.value, sk: 'all', sqFocus: true });
             go('search');
-          }} />
+          }}
+          onChange={e => setUi({ sq: e.target.value })} />
       </form>
 
       <section className="promo">
@@ -136,6 +163,7 @@ export function Home() {
             </button>
           ))}
         </div>
+        <ScheduleIcsButton />
         <p className="note">{tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
       </section>
     </>
@@ -144,17 +172,8 @@ export function Home() {
 
 /* ---------- search ---------- */
 export function SearchRow({ it }: { it: SearchItem }) {
-  const { tt, go, openSheet, update, toast } = useApp();
-  const open = () => (it.go ? go(it.go) : openSheet(<DealSheet id={it.id} />));
-  const fav = () => {
-    let on = false;
-    update(S => {
-      const box = OPP_KINDS.includes(it.k) ? S.saved : S.fav;
-      if (box[it.id]) delete box[it.id]; else box[it.id] = Date.now();
-      on = !!box[it.id];
-    });
-    toast(on ? tt('Сақталды', 'Сохранено') : tt('Сақталғаннан алынды', 'Убрано из сохранённых'));
-  };
+  const { go, openSheet } = useApp();
+  const open = () => (it.go ? go(it.go) : openSheet(it.act === 'course' ? <CourseSheet id={it.id} /> : <DealSheet id={it.id} />));
   return (
     <div className="sr">
       <button className="sr-main" type="button" onClick={open}>
@@ -168,46 +187,9 @@ export function SearchRow({ it }: { it: SearchItem }) {
       </button>
       <span className="sr-end">
         {it.badge ? <span className={`tag tag-${it.badge[1]}`}>{it.badge[0]}</span> : null}
-        <button className="heart" type="button" onClick={fav} aria-pressed={it.fav} aria-label={it.fav ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}><Icon n="heart" s={20} /></button>
+        {it.noFav ? null : <Heart id={it.id} opp={OPP_KINDS.includes(it.k)} />}
       </span>
     </div>
-  );
-}
-
-export function Search() {
-  const { S, ui, I, tt, go, setUi, content } = useApp();
-  const inp = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (ui.sqFocus) { setUi({ sqFocus: false }); inp.current?.focus(); }
-  }, [ui.sqFocus, setUi]);
-  const marketOn = useFeature('market');
-  const kinds: [string, string][] = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['intern', tt('Тағылымдама', 'Стажировки')], ['grant', tt('Грант / байқау', 'Гранты / конкурсы')], ['mobility', tt('Академиялық ұтқырлық', 'Академическая мобильность')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
-  if (marketOn) kinds.push(['market', tt('Тегін заттар', 'Отдам даром')]);
-  const marketOnly = marketOn && ui.sk === 'market';
-  const adv = ({ jobs: 'opps:jobs', intern: 'opps:intern', grant: 'opps:intern', mobility: 'opps:intern', deals: 'bonus', all: 'opps:jobs', market: 'market' } as Record<string, string>)[ui.sk] || 'opps:jobs';
-  const q = (ui.sq || '').trim().toLowerCase();
-  const list = searchItems(S, I, content).filter(it => (ui.sk === 'all' || it.k === ui.sk) && (!q || [it.org, it.title, it.meta].join(' ').toLowerCase().includes(q)));
-  return (
-    <>
-      <div className="search-bar">
-        <div className="search"><Icon n="search" s={18} /><input ref={inp} className="input" id="sq" type="search" enterKeyHint="search" autoComplete="off" placeholder={tt('Жұмыс, компания, дағды…', 'Работа, компания, навык…')} value={ui.sq} onChange={e => setUi({ sq: e.target.value })} aria-label={tt('Іздеу', 'Поиск')} /></div>
-        <button className="icon-btn filter-btn" type="button" onClick={() => go(adv)} aria-label={tt('Толық сүзгілер', 'Все фильтры')}><Icon n="filter" s={22} /></button>
-      </div>
-      <div className="chips">{kinds.map(([v, l]) => <Chip key={v} pressed={ui.sk === v} onClick={() => setUi({ sk: v })}>{l}</Chip>)}</div>
-      {marketOn && (ui.sk === 'all' || marketOnly) ? <MarketSearchResults q={ui.sq} /> : null}
-      {marketOnly ? (ui.sq.trim() ? null : <p className="note">{tt('Затты атауымен іздеңіз.', 'Ищите вещь по названию.')}</p>) : <div id="sList" className="section">
-        {list.length ? (
-          <>
-            <p className="tiny muted">{tt(`Табылды: ${list.length}`, `Найдено: ${list.length}`)}</p>
-            <div className="group">{list.map(it => <SearchRow key={it.k + it.id} it={it} />)}</div>
-          </>
-        ) : (
-          <Empty icon="search" action={q ? <button className="btn ghost" type="button" onClick={() => setUi({ sq: '' })}>{tt('Іздеуді тазалау', 'Очистить поиск')}</button> : null}>
-            {tt('Ештеңе табылмады. Басқа сөзбен іздеп көріңіз.', 'Ничего не нашлось. Попробуйте другое слово.')}
-          </Empty>
-        )}
-      </div>}
-    </>
   );
 }
 

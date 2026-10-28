@@ -201,7 +201,7 @@ func registerExports() {
 // /api/announcements, the admin endpoints and the cron job — all behind the "b2b" switch.
 // Employer verification, the first 3 jobs and job reports are decided in the shared admin
 // queue (GET /api/admin/queue, pkg/moderation).
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	w := func(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.Need(fn)) }
 	admin := func(fn auth.Handler) http.HandlerFunc { return auth.NeedRole(fn, "admin") }

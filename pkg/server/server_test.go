@@ -9,6 +9,7 @@ import (
 // Building the handler panics on conflicting ServeMux patterns (e.g. two packages claiming
 // "POST /api/events"); the feature routes answer 404 while their switch is off.
 func TestHandlerBuildsAndSwitchesHide(t *testing.T) {
+	t.Setenv("RATE_WRITE_PER_MIN", "10000") // earlier tests in this package share the in-memory limiter
 	t.Setenv("FEATURE_EVENTS", "false")
 	t.Setenv("FEATURE_AMBASSADOR", "false")
 	h := Handler()

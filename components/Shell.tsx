@@ -26,11 +26,13 @@ export function Shell({ children }: { children: ReactNode }) {
   const v = viewOfPath(pathname) ?? 'home';
   const meta = screenMeta(v, { I, S, ui });
   const name = meta.name;
-  const root = ROOTS.includes(name);
+  // /jobs, /internships, /events, /courses, /discounts are the «Іздеу» screen with a category: same header and tab
+  const searchScreen = name === 'opps' || name === 'bonus';
+  const root = ROOTS.includes(name) || searchScreen;
 
   // the tab that lights up: fixed for root/profile/home screens, otherwise the tab the student came from
   const from = hydrated ? fromOf(pathname) : '';
-  const fixed = root ? name : (meta.tab === 'profile' || meta.tab === 'home') ? meta.tab : '';
+  const fixed = searchScreen ? 'search' : root ? name : (meta.tab === 'profile' || meta.tab === 'home') ? meta.tab : '';
   const tabRoot = fixed || (ROOTS.includes(from) && from) || TAB_OF[meta.tab] || meta.tab || TAB_OF[name] || '';
   useEffect(() => { setActiveTab(tabRoot); }, [tabRoot, setActiveTab]);
 
@@ -105,7 +107,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="top-title" id="title">
             {name === 'home'
               ? <span className="brand"><i className="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>
-              : meta.title}
+              : searchScreen ? screenMeta('search', { I, S, ui }).title : meta.title}
           </div>
           <button className="icon-btn" id="mine-btn" type="button" hidden={!(name === 'home' || onProfile)}
             onClick={() => go(onProfile ? 'settings' : 'notif')}

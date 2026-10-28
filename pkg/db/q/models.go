@@ -206,6 +206,11 @@ type AnalyticsEvent struct {
 	At     pgtype.Timestamptz `json:"at"`
 }
 
+type AppSetting struct {
+	Singleton bool `json:"singleton"`
+	ShowDemo  bool `json:"show_demo"`
+}
+
 type Application struct {
 	ID                int64              `json:"id"`
 	JobID             int64              `json:"job_id"`
@@ -257,6 +262,14 @@ type BotEvent struct {
 	At     pgtype.Timestamptz `json:"at"`
 }
 
+type ClientError struct {
+	ID        int64              `json:"id"`
+	Message   string             `json:"message"`
+	Screen    string             `json:"screen"`
+	Browser   string             `json:"browser"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type CommunityContent struct {
 	ID           int64              `json:"id"`
 	Kind         string             `json:"kind"`
@@ -268,6 +281,11 @@ type CommunityContent struct {
 	Deadline     pgtype.Date        `json:"deadline"`
 	Hidden       bool               `json:"hidden"`
 	PublishedAt  pgtype.Timestamptz `json:"published_at"`
+}
+
+type CronRun struct {
+	Endpoint      string             `json:"endpoint"`
+	LastSuccessAt pgtype.Timestamptz `json:"last_success_at"`
 }
 
 type DiscountCheck struct {
@@ -340,6 +358,7 @@ type Event struct {
 	FinishedAt       pgtype.Timestamptz `json:"finished_at"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	IsDemo           bool               `json:"is_demo"`
 }
 
 type EventCertificate struct {
@@ -555,6 +574,7 @@ type NotifySend struct {
 	UserID   int64              `json:"user_id"`
 	Category string             `json:"category"`
 	SentAt   pgtype.Timestamptz `json:"sent_at"`
+	ID       int64              `json:"id"`
 }
 
 type PortfolioItem struct {

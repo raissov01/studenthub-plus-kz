@@ -62,7 +62,7 @@ var (
 	checkPerIP    = limit{30, 15 * time.Minute}
 )
 
-func emailRoutes(mux *http.ServeMux) {
+func emailRoutes(mux httpx.Router) {
 	mux.HandleFunc("POST /api/auth/email/register", Write(emailRegister))
 	mux.HandleFunc("POST /api/auth/email/verify", Write(emailVerify))
 	mux.HandleFunc("POST /api/auth/email/login", Write(emailLogin))

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"github.com/raissov01/studenthub-plus-kz/pkg/jsx"
@@ -108,8 +109,8 @@ func load() settings {
 // Client calls the upstream API; tests may replace it.
 var Client = http.DefaultClient
 
-func Routes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/chat", Handle)
+func Routes(mux httpx.Router) {
+	mux.HandleFunc("POST /api/chat", auth.Write(Handle))
 }
 
 type message struct {
