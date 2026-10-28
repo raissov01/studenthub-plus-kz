@@ -36,6 +36,7 @@ export function NotifySection() {
 
 function NotifySection_() {
   const { tt, lang } = useApp();
+  const acc = useAccount();
   const cfg = useConfig();
   const { data, err } = useLoad<{ prefs: NotifyPrefs }>('/api/me/notifications');
   // the server's copy until the first change; after that the last PUT reply (or the optimistic value meanwhile)
@@ -62,6 +63,9 @@ function NotifySection_() {
   return (
     <section className="section" id="notify-settings"><h2>{tt('Хабарламалар', 'Уведомления')}</h2>
       <p className="small muted">{tt('Telegram ботынан келетін хабарламалар. Бұл баптаулар аккаунтта сақталады.', 'Сообщения от Telegram-бота. Настройки сохраняются в аккаунте.')}</p>
+      {acc.user && !acc.user.telegramId
+        ? <p className="note">{tt('Аккаунтқа Telegram байланыспаған, сондықтан бот хабарлама жібере алмайды. Жоғарыдағы «Аккаунт» бөлімінде Telegram-ды байланыстырыңыз.', 'К аккаунту не привязан Telegram, поэтому бот не может присылать сообщения. Привяжите Telegram в разделе «Аккаунт» выше.')}</p>
+        : null}
       {!prefs ? (err ? <ErrorLine err={err} /> : <Loading />) : (
         <>
           <div className="group">

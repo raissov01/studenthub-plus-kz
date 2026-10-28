@@ -85,21 +85,25 @@ Codes are 6 digits, valid 15 minutes, 5 wrong tries, then dead (request a new on
 
 ## Frontend checklist
 
-- [ ] Sign-in sheet with two tabs: **Telegram** (existing widget / Mini App) and **Email**
+Done in `components/views/account-email.tsx` (email tab, code screen, Settings sheets) and
+`components/views/account.tsx` (tabs, Settings rows, Telegram link); bot-dependent screens:
+the notifications section tells email-only users to link Telegram.
+
+- [x] Sign-in sheet with two tabs: **Telegram** (existing widget / Mini App) and **Email**
       (only when `config.emailAuth`). Inside the Mini App, keep Telegram as the default.
-- [ ] Email tab: sign in (email + password, "Forgot password?" link, "Create account" link).
-- [ ] Register: email, password (show the rules: 8+ characters, not a common one, not your
+- [x] Email tab: sign in (email + password, "Forgot password?" link, "Create account" link).
+- [x] Register: email, password (show the rules: 8+ characters, not a common one, not your
       email), language from the UI; then the code screen. Map `password_*` codes to inline errors.
-- [ ] Code screen: 6 digit inputs (`inputmode="numeric"`, `autocomplete="one-time-code"`),
+- [x] Code screen: 6 digit inputs (`inputmode="numeric"`, `autocomplete="one-time-code"`),
       "Resend" disabled with a countdown from `resendAfter`, then `POST /resend`;
       on `invalid_code` clear the inputs and say the code is wrong or expired.
-- [ ] After `verify` / `login`: same as Telegram — if `needsConsent`, show the consent screen.
-- [ ] Reset password: email → code + new password → signed in.
-- [ ] Settings → Security: change password (current + new) when `user.email` is set;
+- [x] After `verify` / `login`: same as Telegram — if `needsConsent`, show the consent screen.
+- [x] Reset password: email → code + new password → signed in.
+- [x] Settings → Security: change password (current + new) when `user.email` is set;
       "Add email" (email + new password → code) when `user.email` is null;
       "Change email" (new email + current password → code) when it is set.
-- [ ] Settings → Telegram: when `user.telegramId` is null, show "Link Telegram" (runs the
+- [x] Settings → Telegram: when `user.telegramId` is null, show "Link Telegram" (runs the
       Telegram sign-in while signed in); handle `409 telegram_taken` with the server message.
-- [ ] Anything that needs the bot (reminders, DMs) should tell email-only users to link
+- [x] Anything that needs the bot (reminders, DMs) should tell email-only users to link
       Telegram first: the bot cannot message an account without `telegramId`.
-- [ ] Never store the password, the code or the email in `localStorage`.
+- [x] Never store the password, the code or the email in `localStorage`.

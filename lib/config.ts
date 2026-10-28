@@ -11,6 +11,8 @@ export interface Config {
   suggestFormUrl: string;
   /** «Көшіп жатырсың ба?» period of the market (MARKET_SEASON), null when none */
   marketSeason: { from: string; to: string; active: boolean } | null;
+  /** email + password sign-in is offered (the server can deliver codes) */
+  emailAuth: boolean;
   features: {
     events: boolean;
     ambassador: boolean;
@@ -26,6 +28,7 @@ export const CONFIG: Config = {
   botUsername: '',
   suggestFormUrl: '',
   marketSeason: null,
+  emailAuth: false,
   features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false },
 };
 
@@ -63,6 +66,7 @@ export async function loadConfig(): Promise<void> {
       botUsername: str(j.botUsername, CONFIG.botUsername).replace(/^@/, ''),
       suggestFormUrl: str(j.suggestFormUrl, CONFIG.suggestFormUrl),
       marketSeason: season(j.marketSeason),
+      emailAuth: j.emailAuth === true,
       features,
     });
     snapshot = { ...CONFIG, features: { ...features } };

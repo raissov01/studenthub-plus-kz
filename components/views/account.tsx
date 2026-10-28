@@ -1,10 +1,11 @@
 'use client';
-/* Optional Telegram account: sign-in prompt (Login Widget outside Telegram, automatic inside the Mini App), the
-   consent screen, and the «Аккаунт» section of Settings (sync, export, sign out, delete). The device profile keeps
-   working without any of this. */
+/* Optional account: sign-in prompt (Telegram: Login Widget outside Telegram, a button inside the Mini App; Email when
+   the server offers it, see account-email.tsx), the consent screen, and the «Аккаунт» section of Settings (email,
+   password and Telegram link, sync, export, sign out, delete). The device profile keeps working without any of this. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { Icon, Row } from '@/components/ui';
+import { Icon, Row, Seg } from '@/components/ui';
+import { Addr, EmailSheet, EmailSignIn, PasswordSheet } from '@/components/views/account-email';
 import {
   ApiError, deleteAccount, downloadExport, giveConsent, signInWebApp, signInWidget, signOut, syncProfile, useAccount,
   type Role,
@@ -53,16 +54,14 @@ function LoginWidget({ bot, onUser }: { bot: string; onUser: (u: Record<string, 
   return <div className="tg-login" ref={box} />;
 }
 
-export function SignInSheet() {
-  const { tt, S, toast, closeSheet, openSheet } = useApp();
+/** Telegram sign-in (widget or Mini App button). Used by the sign-in sheet and, while signed in by email, to link
+    Telegram to the same account (the server attaches it; 409 telegram_taken comes back as a message). */
+function TelegramSignIn({ after, label }: { after: (needsConsent: boolean) => void; label?: string }) {
+  const { tt, S } = useApp();
   const cfg = useConfig();
   const tg = useTelegram();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const after = (needsConsent: boolean) => {
-    if (needsConsent) openSheet(<ConsentSheet />);
-    else { closeSheet(); toast(tt('Кірдіңіз', 'Вы вошли')); }
-  };
   const onWidget = async (u: Record<string, unknown>) => {
     setBusy(true); setErr('');
     try { const st = await signInWidget(u, S.lang); after(st.needsConsent); } catch (e) { setErr(errText(e, '')); } finally { setBusy(false); }
@@ -70,16 +69,12 @@ export function SignInSheet() {
   const onMiniApp = async () => {
     if (!tg.app) return;
     setBusy(true); setErr('');
-    try { const st = await signInWebApp(tg.app.initData); after(st.needsConsent); } catch (e) { setErr(errText(e, '')); } finally { setBusy(false); }
+    try { const st = await signInWebApp(tg.app.initData, S.lang); after(st.needsConsent); } catch (e) { setErr(errText(e, '')); } finally { setBusy(false); }
   };
   return (
     <>
-      <h2>{tt('Telegram арқылы кіру', 'Вход через Telegram')}</h2>
-      <p className="small muted">{tt(
-        'Кіру міндетті емес: профиль, жоспарлар мен сақталғандар осы құрылғыда кірмей-ақ жұмыс істейді. Аккаунт тек ортақ деректер керек әрекеттерге қажет.',
-        'Вход необязателен: профиль, планы и сохранённое работают на этом устройстве и без него. Аккаунт нужен только для действий с общими данными.')}</p>
       {tg.app
-        ? <button className="btn block" type="button" disabled={busy} onClick={onMiniApp}><Icon n="send" s={18} /> {tt('Telegram арқылы кір', 'Войти через Telegram')}</button>
+        ? <button className="btn block" type="button" disabled={busy} onClick={onMiniApp}><Icon n="send" s={18} /> {label || tt('Telegram арқылы кір', 'Войти через Telegram')}</button>
         : cfg.botUsername
           ? <LoginWidget bot={cfg.botUsername} onUser={onWidget} />
           : <p className="note">{tt('Telegram арқылы кіру әзірге қосылмаған.', 'Вход через Telegram пока не подключён.')}</p>}
@@ -90,9 +85,53 @@ export function SignInSheet() {
   );
 }
 
+export function SignInSheet() {
+  const { tt, toast, closeSheet, openSheet } = useApp();
+  const cfg = useConfig();
+  const tg = useTelegram();
+  // inside the Mini App Telegram stays the default; the Email tab exists only when the server can deliver codes
+  const [tab, setTab] = useState<'tg' | 'email'>('tg');
+  const [deep, setDeep] = useState(false);
+  const after = (needsConsent: boolean, note?: string) => {
+    if (needsConsent) { openSheet(<ConsentSheet />); if (note) toast(note); }
+    else { closeSheet(); toast(note || tt('Кірдіңіз', 'Вы вошли')); }
+  };
+  const email = cfg.emailAuth && tab === 'email';
+  return (
+    <>
+      <h2>{cfg.emailAuth ? tt('Аккаунтқа кіру', 'Вход в аккаунт') : tt('Telegram арқылы кіру', 'Вход через Telegram')}</h2>
+      {deep && email ? null : <p className="small muted">{tt(
+        'Кіру міндетті емес: профиль, жоспарлар мен сақталғандар осы құрылғыда кірмей-ақ жұмыс істейді. Аккаунт тек ортақ деректер керек әрекеттерге қажет.',
+        'Вход необязателен: профиль, планы и сохранённое работают на этом устройстве и без него. Аккаунт нужен только для действий с общими данными.')}</p>}
+      {cfg.emailAuth && !(deep && email)
+        ? <Seg items={[['tg', 'Telegram'], ['email', 'Email']]} cur={tab} onPick={k => setTab(k === 'email' ? 'email' : 'tg')} />
+        : null}
+      {email
+        ? <EmailSignIn onSignedIn={after} onDeep={setDeep} />
+        : <TelegramSignIn after={after} />}
+      {email && !deep && tg.app ? <p className="tiny muted">{tt('Telegram ішінде Telegram арқылы кірген ыңғайлы.', 'Внутри Telegram удобнее входить через Telegram.')}</p> : null}
+    </>
+  );
+}
+
+/* ---------- Settings: link Telegram to an email-only account ---------- */
+function LinkTelegramSheet() {
+  const { tt, toast, closeSheet } = useApp();
+  return (
+    <>
+      <h2>{tt('Telegram-ды байланыстыру', 'Привязать Telegram')}</h2>
+      <p className="small muted">{tt(
+        'Telegram қосылса, бот мерзімдерді еске салып, хабарламалар жібере алады, ал Telegram арқылы да кіре аласыз. Аккаунттар біріктірілмейді: Telegram басқа аккаунтта болса, байланыстыру болмайды.',
+        'С привязанным Telegram бот сможет напоминать о сроках и присылать уведомления, а входить можно будет и через Telegram. Аккаунты не объединяются: если этот Telegram уже в другом аккаунте, привязать не получится.')}</p>
+      <TelegramSignIn label={tt('Telegram-ды байланыстыру', 'Привязать Telegram')} after={() => { closeSheet(); toast(tt('Telegram байланыстырылды', 'Telegram привязан')); }} />
+    </>
+  );
+}
+
 /* ---------- consent ---------- */
 export function ConsentSheet() {
   const { tt, S, toast, closeSheet, go } = useApp();
+  const acc = useAccount();
   const tg = useTelegram();
   const [agree, setAgree] = useState(false);
   const [adult, setAdult] = useState<'' | 'yes' | 'no'>('');
@@ -112,6 +151,7 @@ export function ConsentSheet() {
       <h2>{tt('Аккаунт және деректеріңіз', 'Аккаунт и ваши данные')}</h2>
       <div className="consent">
         <h3>{tt('Не сақталады', 'Что хранится')}</h3>
+        {acc.user?.email ? <p className="small">{tt('Email адресіңіз және құпиясөздің хэші (құпиясөздің өзі сақталмайды).', 'Ваш email и хэш пароля (сам пароль не хранится).')}</p> : null}
         <p className="small">{tt(
           'Telegram id, username және аты; тіл; өзіңіз жіберсеңіз — университет, факультет, курс, қала; рөліңіз, келісім уақыты, соңғы кіру уақыты; ботқа қойған еске салуларыңыз.',
           'Telegram id, username и имя; язык; если вы сами отправите — вуз, факультет, курс, город; ваша роль, время согласия и последнего входа; напоминания, которые вы поставили в боте.')}</p>
@@ -176,6 +216,7 @@ function DeleteSheet() {
 export function AccountSection() {
   const { S, tt, L, toast, openSheet } = useApp();
   const acc = useAccount();
+  const cfg = useConfig();
   const [busy, setBusy] = useState('');
   const run = async (key: string, fn: () => Promise<void>, done: string) => {
     if (busy) return;
@@ -188,8 +229,11 @@ export function AccountSection() {
     return (
       <section className="section"><h2>{tt('Аккаунт', 'Аккаунт')}</h2>
         <div className="group">
-          <Row onClick={() => openSheet(<SignInSheet />)} icon="send" title={tt('Telegram арқылы кір', 'Войти через Telegram')}
-            sub={tt('Міндетті емес. Профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Необязательно. Профиль работает на этом устройстве и без входа.')} />
+          {cfg.emailAuth
+            ? <Row onClick={() => openSheet(<SignInSheet />)} icon="user" title={tt('Аккаунтқа кіру', 'Войти в аккаунт')}
+              sub={tt('Telegram немесе email арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Через Telegram или email. Необязательно: профиль работает на этом устройстве и без входа.')} />
+            : <Row onClick={() => openSheet(<SignInSheet />)} icon="send" title={tt('Telegram арқылы кір', 'Войти через Telegram')}
+              sub={tt('Міндетті емес. Профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Необязательно. Профиль работает на этом устройстве и без входа.')} />}
         </div>
       </section>
     );
@@ -202,7 +246,21 @@ export function AccountSection() {
   return (
     <section className="section"><h2>{tt('Аккаунт', 'Аккаунт')}</h2>
       <div className="group">
-        <Row icon="user" title={u.name || (u.username ? '@' + u.username : 'Telegram')} sub={[u.username ? '@' + u.username : '', roleLabel(u.role, tt)].filter(Boolean).join(' · ')} chev={false} />
+        <Row icon="user" title={u.name || (u.username ? '@' + u.username : u.email ? <Addr email={u.email} /> : 'Telegram')} sub={[u.username ? '@' + u.username : '', roleLabel(u.role, tt)].filter(Boolean).join(' · ')} chev={false} />
+        {/* email sign-in: shown only while the server offers it */}
+        {cfg.emailAuth
+          ? <Row onClick={() => openSheet(<EmailSheet />)} icon="chat" title={u.email ? tt('Email-ді өзгерту', 'Сменить email') : tt('Email қосу', 'Добавить email')}
+            sub={u.email
+              ? <><Addr email={u.email} /> <span className={`badge ${u.emailVerified ? 'b-ok' : 'b-sun'}`}>{u.emailVerified ? tt('расталған', 'подтверждён') : tt('расталмаған', 'не подтверждён')}</span></>
+              : tt('Email мен құпиясөз арқылы да кіру үшін', 'Чтобы входить и по email с паролем')} />
+          : null}
+        {cfg.emailAuth && u.email
+          ? <Row onClick={() => openSheet(<PasswordSheet />)} icon="shield" title={tt('Құпиясөзді өзгерту', 'Сменить пароль')} sub={tt('Басқа құрылғылардағы кірулер жабылады', 'Входы на других устройствах закроются')} />
+          : null}
+        {u.telegramId
+          ? (cfg.emailAuth ? <Row icon="send" title={tt('Telegram байланысқан', 'Telegram привязан')} sub={u.username ? '@' + u.username : tt('Бот хабарламалары қолжетімді', 'Сообщения бота доступны')} chev={false} /> : null)
+          : <Row onClick={() => openSheet(<LinkTelegramSheet />)} icon="send" tone="sun" title={tt('Telegram-ды байланыстыру', 'Привязать Telegram')}
+            sub={tt('Telegram жоқ: бот еске салу мен хабарлама жібере алмайды', 'Telegram не привязан: бот не сможет напоминать и присылать уведомления')} />}
         {acc.needsConsent
           ? <Row onClick={() => openSheet(<ConsentSheet />)} icon="shield" tone="sun" title={tt('Келісім беру', 'Дать согласие')} sub={tt('Аккаунтты қолдану үшін деректер туралы келісім керек', 'Чтобы пользоваться аккаунтом, нужно согласие на обработку данных')} />
           : <Row onClick={sync} icon="copy" title={tt('Аккаунтпен синхрондау', 'Синхронизировать с аккаунтом')}

@@ -828,6 +828,24 @@ body::before { height: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
 .consent-age { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .consent-age legend { padding: 0; margin-bottom: 8px; font-weight: 600; color: var(--muted); }
 .check input[type="radio"] { width: 22px; height: 22px; margin: 0; accent-color: var(--primary); flex: none; }
+/* email sign-in: password with show/hide, rule hints, 6 code boxes */
+.pw-field { position: relative; min-width: 0; }
+.pw-field .input { padding-right: 104px; }
+.pw-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--primary);
+  font-weight: 600; font-size: .86rem; min-height: 42px; padding: 0 12px; border-radius: 9px;
+}
+.pw-rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: .84rem; color: var(--muted); }
+.pw-rules li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; min-width: 0; }
+.pw-rules li svg { flex: none; margin-top: 2px; }
+.pw-rules li.ok { color: var(--primary); }
+.pw-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--line); margin: 7px 4px 0; }
+.code-boxes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; max-width: 360px; }
+.code-boxes .input { text-align: center; padding: 0; min-height: 54px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.auth-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; }
+.form > .link-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+.link-btn[disabled] { color: var(--muted); }
+.addr { overflow-wrap: break-word; word-break: normal; }
 .fb-score .chip { min-width: 48px; justify-content: center; }
 .suggest { margin-top: 12px; text-decoration: none; }
 

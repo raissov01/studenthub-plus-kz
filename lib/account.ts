@@ -1,4 +1,4 @@
-/* Optional Telegram account (docs/ACCOUNTS.md). The device profile works without it; the account only exists for
+/* Optional account (docs/ACCOUNTS.md): Telegram, or email + password (docs/api/email-auth.md). The device profile works without it; the account only exists for
    actions that need the shared database. Session: an HttpOnly cookie set by the API; inside a Telegram Mini App the
    cookie may be blocked, so the token returned by /api/auth/telegram/webapp is kept in memory only and sent as
    «Authorization: Bearer». */
@@ -7,7 +7,11 @@ import { useSyncExternalStore } from 'react';
 export type Role = 'student' | 'ambassador' | 'admin' | 'university_staff' | 'employer';
 export interface AccountUser {
   id: number;
-  telegramId: number;
+  /** null for an email-only account */
+  telegramId: number | null;
+  /** null until email sign-in is set up */
+  email: string | null;
+  emailVerified: boolean;
   username: string | null;
   name: string | null;
   lang: 'kk' | 'ru';
@@ -37,6 +41,8 @@ export function useAccount(): AccountState {
 }
 
 export class ApiError extends Error {
+  /** seconds from the Retry-After header of a 429, 0 otherwise */
+  retryAfter = 0;
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
 
@@ -56,7 +62,10 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    const ra = Number(r.headers.get('retry-after'));
+    if (Number.isFinite(ra) && ra > 0) err.retryAfter = Math.ceil(ra);
+    throw err;
   }
   return j as T;
 }
@@ -114,8 +123,8 @@ const refParam = () => {
 };
 
 /** Mini App: the initData Telegram signed. The referral the device came with goes along (server may record it). */
-export async function signInWebApp(initData: string): Promise<AccountState> {
-  const r = await api<MeResp>('/api/auth/telegram/webapp', { method: 'POST', body: { initData, ref: refParam() } });
+export async function signInWebApp(initData: string, lang?: 'kk' | 'ru'): Promise<AccountState> {
+  const r = await api<MeResp>('/api/auth/telegram/webapp', { method: 'POST', body: { initData, ref: refParam() }, lang });
   if (r.token) token = r.token;
   apply(r);
   return state;
@@ -129,6 +138,47 @@ export async function signInWidget(user: Record<string, unknown>, lang: 'kk' | '
   apply(r);
   return state;
 }
+
+/* ---------- email + password (docs/api/email-auth.md) ----------
+   Passwords, codes and the address live only in component state for the screen that needs them; nothing here is
+   stored. Email sign-in answers with the cookie only (no bearer token). */
+export type Lang = 'kk' | 'ru';
+export interface Sent { ok: true; resendAfter: number }
+export type CodePurpose = 'verify_email' | 'reset_password';
+
+/** sign-in endpoints answer {user, needsConsent} and set the cookie; a stale Mini App token must not shadow it */
+async function session(path: string, body: unknown, lang: Lang, dropToken = false): Promise<AccountState> {
+  const r = await api<MeResp>(path, { method: 'POST', body, lang });
+  if (dropToken) token = '';
+  apply(r);
+  return state;
+}
+
+export const emailRegister = (email: string, password: string, lang: Lang) => {
+  const ref = refParam();
+  return api<Sent>('/api/auth/email/register', { method: 'POST', body: ref ? { email, password, lang, ref } : { email, password, lang }, lang });
+};
+/** verify needs the password typed at registration (or at the login that found the address unconfirmed) */
+export const emailVerify = (email: string, code: string, password: string, lang: Lang) =>
+  session('/api/auth/email/verify', { email, code, password }, lang, true);
+/** 403 email_not_verified means the password was right and a fresh code went out */
+export const emailLogin = (email: string, password: string, lang: Lang) =>
+  session('/api/auth/email/login', { email, password }, lang, true);
+export const emailResend = (email: string, purpose: CodePurpose, lang: Lang) =>
+  api<Sent>('/api/auth/email/resend', { method: 'POST', body: { email, purpose }, lang });
+export const resetRequest = (email: string, lang: Lang) =>
+  api<Sent>('/api/auth/email/reset/request', { method: 'POST', body: { email }, lang });
+/** every other device is signed out; this one gets a new cookie */
+export const resetConfirm = (email: string, code: string, newPassword: string, lang: Lang) =>
+  session('/api/auth/email/reset/confirm', { email, code, newPassword }, lang, true);
+export const changePassword = (currentPassword: string, newPassword: string, lang: Lang) =>
+  session('/api/me/password', { currentPassword, newPassword }, lang, true);
+/** add the first address (sets a password) or change it (confirms the current password); a code goes to the address */
+export const linkEmail = (email: string, pw: { password: string } | { currentPassword: string }, lang: Lang) =>
+  api<Sent>('/api/me/email', { method: 'POST', body: { email, ...pw }, lang });
+/** replacing an earlier address signs out other devices (the old Mini App token dies too); adding the first does not */
+export const confirmEmail = (code: string, lang: Lang) =>
+  session('/api/me/email/confirm', { code }, lang, !!state.user?.email);
 
 export async function signOut(all: boolean, lang: 'kk' | 'ru'): Promise<void> {
   await api('/api/auth/logout', { method: 'POST', body: { all }, lang });
