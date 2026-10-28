@@ -10,7 +10,7 @@
     "api": "go run ./cmd/server",
     "db:migrate": "go run ./cmd/migrate",
     "test:go": "go test ./...",
-    "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts lib/ics.test.ts"
+    "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts lib/ics.test.ts lib/admincontent.test.ts"
   },
   "dependencies": {
     "next": "16.4.3",

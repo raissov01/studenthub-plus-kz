@@ -7,8 +7,6 @@ export interface Config {
   reportUrl: string;
   /** Telegram bot username without @, empty until the bot is public */
   botUsername: string;
-  /** form for suggesting a new opportunity, empty until it exists */
-  suggestFormUrl: string;
   /** «Көшіп жатырсың ба?» period of the market (MARKET_SEASON), null when none */
   marketSeason: { from: string; to: string; active: boolean } | null;
   /** email + password sign-in is offered (the server can deliver codes) */
@@ -26,7 +24,6 @@ export interface Config {
 export const CONFIG: Config = {
   reportUrl: 'https://t.me/raissov01',
   botUsername: '',
-  suggestFormUrl: '',
   marketSeason: null,
   emailAuth: false,
   features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false },
@@ -79,7 +76,6 @@ export async function loadConfig(): Promise<void> {
     Object.assign(CONFIG, {
       reportUrl: str(j.reportUrl, '') || CONFIG.reportUrl,
       botUsername: str(j.botUsername, CONFIG.botUsername).replace(/^@/, ''),
-      suggestFormUrl: str(j.suggestFormUrl, CONFIG.suggestFormUrl),
       marketSeason: season(j.marketSeason),
       emailAuth: j.emailAuth === true,
       features,

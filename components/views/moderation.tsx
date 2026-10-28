@@ -9,6 +9,7 @@ import { Chip, Icon, Row, Seg, SectionHead } from '@/components/ui';
 import { AdminOnly, ErrorLine, errText, Feature, Loading, ReasonSheet, useFeature, useLoad, ymd } from '@/components/views/common';
 import { api } from '@/lib/account';
 import { MARKET_CATS, MARKET_CONDITIONS, type AdminMarketItem } from '@/lib/market';
+import { QueueEditSheet } from '@/components/views/suggest';
 
 interface QueueItem {
   id: number; kind: string; payload: Record<string, unknown>; submitted_by: number | null; university: string | null;
@@ -126,6 +127,10 @@ function QueueCard({ it, onDone }: { it: QueueItem; onDone: () => void }) {
       ) : null}
       {it.status === 'pending' ? (
         <div className="btn-row">
+          {it.kind === 'opportunity' || it.kind === 'place' ? (
+            <button className="btn ghost" type="button" onClick={() => openSheet(<QueueEditSheet id={it.id} kind={it.kind === 'place' ? 'place' : 'opportunity'} payload={it.payload} onDone={onDone} />)}>
+              <Icon n="edit" s={18} /> {tt('Түзету', 'Исправить')}</button>
+          ) : null}
           <button className="btn danger" type="button" onClick={() => decide('reject')}>{tt('Қайтару', 'Отклонить')}</button>
           <button className="btn" type="button" onClick={() => decide('approve')}>{tt('Бекіту', 'Одобрить')}</button>
         </div>
@@ -330,6 +335,7 @@ export function ModerationLinks() {
     <section className="section">
       <SectionHead title={tt('Модерация', 'Модерация')} />
       <div className="group">
+        <Row go="admin:content" icon="file" title={tt('Контент', 'Контент')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
         <Row go="admin:queue" icon="shield" title={tt('Модерация кезегі', 'Очередь модерации')} end={pending ? <b className="num">{pending}</b> : undefined} />
         <Row go="admin:reports" icon="bell" title={tt('Шағымдар', 'Жалобы')} />
         {amb ? <Row go="admin:ambassadors" icon="award" title={tt('Амбассадорлар', 'Амбассадоры')} /> : null}

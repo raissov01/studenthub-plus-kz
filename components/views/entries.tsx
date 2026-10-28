@@ -34,6 +34,7 @@ export function ProfileCommunity() {
       ? <Row key="amb" go="ambassador" icon="award" title={tt('Амбассадор кабинеті', 'Кабинет амбассадора')} />
       : <Row key="amb" go="ambassador:apply" icon="award" title={tt('Амбассадор болу', 'Стать амбассадором')} sub={tt('Өз университетіңіздің командасы', 'Команда вашего университета')} />) : null,
     amb ? <RatingEntry key="rating" /> : null,
+    u ? <Row key="sugg" go="suggestions" icon="globe" title={tt('Менің ұсыныстарым', 'Мои предложения')} sub={tt('Ұсынған мүмкіндіктердің күйі', 'Статус предложенных возможностей')} /> : null,
     mentors && u ? <Row key="mentors" go="mentors:me" icon="cap" title={tt('Менің менторлығым', 'Моё менторство')} /> : null,
     events && canCreateEvents(u?.role) ? <Row key="org" go="organize" icon="calendar" title={tt('Ұйымдастырушы беті', 'Страница организатора')} /> : null,
     market && u ? <Row key="market" go="market:mine" icon="gift" title={tt('Менің заттарым', 'Мои вещи')} /> : null,

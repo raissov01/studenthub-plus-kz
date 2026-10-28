@@ -68,7 +68,9 @@ const META: Record<string, Meta> = {
       queue: t('Модерация кезегі', 'Очередь модерации')(x), reports: t('Шағымдар', 'Жалобы')(x), mentors: t('Менторларды жұптау', 'Подбор менторов')(x),
       ambassadors: t('Амбассадорлар', 'Амбассадоры')(x), market: t('Тегін заттар: модерация', 'Отдам даром: модерация')(x),
       employers: t('Жұмыс берушілер', 'Работодатели')(x), staff: t('Университет қызметкерлері', 'Сотрудники университетов')(x),
-    } as Record<string, string>)[prm] ?? 'Student Hub',
+      content: t('Контент', 'Контент')(x),
+    } as Record<string, string>)[prm.replace(/\?.*$/, '')]
+      ?? (/^content\/new(\?|$)/.test(prm) ? t('Жаңа жазба', 'Новая запись')(x) : prm.startsWith('content/') ? t('Жазбаны өзгерту', 'Изменить запись')(x) : 'Student Hub'),
     tab: 'profile',
   },
   market: {
@@ -93,6 +95,8 @@ const META: Record<string, Meta> = {
   },
   university: { title: (_, x) => t('Университет кабинеті', 'Кабинет университета')(x), tab: 'profile' },
   announcements: { title: (_, x) => t('Ресми хабарландырулар', 'Официальные объявления')(x), tab: 'home' },
+  suggest: { title: (_, x) => t('Мүмкіндік ұсыну', 'Предложить возможность')(x) },
+  suggestions: { title: (_, x) => t('Менің ұсыныстарым', 'Мои предложения')(x), tab: 'profile' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

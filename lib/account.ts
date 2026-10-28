@@ -45,7 +45,8 @@ export function useAccount(): AccountState {
 export class ApiError extends Error {
   /** seconds from the Retry-After header of a 429, 0 otherwise */
   retryAfter = 0;
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  /** `detail`: the whole `error` object, for the extra fields some endpoints add (admin content: `field`, `path`) */
+  constructor(public status: number, public code: string, message: string, public detail: Record<string, unknown> = {}) { super(message); }
 }
 
 /** the device knows it has no network: fail at once with a clear reason instead of a long timeout */
@@ -68,8 +69,8 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
-    const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
+    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {});
     const ra = Number(r.headers.get('retry-after'));
     if (Number.isFinite(ra) && ra > 0) err.retryAfter = Math.ceil(ra);
     throw err;
@@ -122,9 +123,6 @@ const apply = (r: MeResp) => set({ loaded: true, user: r.user, needsConsent: !!r
 /** GET /api/me once on start; failures mean «not signed in». A definite «nobody» from the server also drops the
     offline ticket copies (lib/tickets.ts); a network failure keeps them. */
 let loading: Promise<void> | null = null;
-/** Current account state outside React (e.g. right after loadMe()). */
-export const getAccount = (): AccountState => state;
-
 export function loadMe(force = false): Promise<void> {
   if (loading && !force) return loading;
   loading = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => set({ loaded: true, user: null, needsConsent: false }));
