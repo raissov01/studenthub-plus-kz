@@ -495,7 +495,8 @@ func TestLoadFallbackChain(t *testing.T) {
 			}
 		}
 		var warnings []string
-		l := newLoader(nil, func(k string) string { return "http://example.com/x.csv" }, func(m string) { warnings = append(warnings, m) })
+		var wmu sync.Mutex // the three lists load concurrently
+		l := newLoader(nil, func(k string) string { return "http://example.com/x.csv" }, func(m string) { wmu.Lock(); warnings = append(warnings, m); wmu.Unlock() })
 		if r := l.Load(ctx, now); r.Source != "fallback" || !slices.ContainsFunc(warnings, func(w string) bool {
 			return w == "[content] jobs: SHEET_JOBS_CSV https:// деп басталмайды — data/jobs.json қолданылады"
 		}) {

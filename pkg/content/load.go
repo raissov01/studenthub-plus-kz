@@ -339,6 +339,9 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 		if recs := FilterActive(extra["opportunities"], today); len(recs) > 0 {
 			out.Opportunities = append(out.Opportunities, recs...)
 		}
+		if recs := FilterActive(extra["jobs"], today); len(recs) > 0 {
+			out.Jobs = append(out.Jobs, recs...)
+		}
 		if recs := FilterActive(extra["places"], today); len(recs) > 0 {
 			out.Places = recs
 		}

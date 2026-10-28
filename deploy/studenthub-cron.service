@@ -1,5 +1,5 @@
 [Unit]
-Description=Student Hub daily jobs: deadline reminders first, then mentors and market digests
+Description=Student Hub daily jobs: deadline reminders first, then feature jobs (mentors, market, events, ambassador, b2b)
 
 [Service]
 Type=oneshot
@@ -10,3 +10,4 @@ ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" 
 ExecStart=-/bin/sh -c 'curl -fsS -m 300 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/market'
 ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/events'
 ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/ambassador'
+ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/b2b'

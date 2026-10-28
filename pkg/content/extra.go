@@ -10,7 +10,7 @@ import (
 
 // Extra sources merge database-backed records into /api/content without touching the
 // Sheets / data/*.json pipeline (prompt 06: approved ambassador submissions, source =
-// "ambassador"). A source returns records per list: "opportunities" and "places". They are
+// "ambassador"). A source returns records per list: "opportunities", "jobs" (prompt 10) and "places". They are
 // appended after the sheet records and go through the same deadline filter. A failing source
 // is logged and skipped, so /api/content never breaks because of it. With no sources
 // registered (or none returning records) the response is exactly what it was before.
