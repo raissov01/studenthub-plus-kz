@@ -7,7 +7,11 @@ import { AddCertSheet, DealSheet, StudentQrSheet } from '@/components/views/shee
 import { ADMISSION, CITIES, DEAL_CATS, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
 import { dOff, money } from '@/lib/format';
-import { resetState, update } from '@/lib/store';
+import { getState, resetState, update } from '@/lib/store';
+import { track } from '@/features/analytics/track';
+import { useTelegram } from '@/lib/telegram';
+import { AccountSection } from '@/components/views/account';
+import { RoadmapProgress } from '@/components/views/roadmap';
 import type { Profile as ProfileT } from '@/lib/types';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
@@ -92,7 +96,12 @@ export function Onboarding() {
       <Seg items={[['kk', 'Қазақша'], ['ru', 'Русский']]} cur={S.lang} onPick={v => update(s => { s.lang = v === 'ru' ? 'ru' : 'kk'; })} />
       <h1>{tt('Қош келдіңіз!', 'Добро пожаловать!')}</h1>
       <p className="small muted">{tt('Мамандығыңыз бен курсыңызды көрсетіңіз. Жұмыс, тағылымдама, курстар мен жеңілдіктерді соған қарай іріктейміз. Кейін профильден өзгертуге болады.', 'Укажите специальность и курс — подберём работу, стажировки, курсы и скидки под вас. Потом это можно изменить в профиле.')}</p>
-      <form className="form" id="obForm" onSubmit={e => { e.preventDefault(); readProfileForm(e.currentTarget); update(s => { s.onboarded = true; }); closeSheet(); }}>
+      <form className="form" id="obForm" onSubmit={e => {
+        e.preventDefault(); readProfileForm(e.currentTarget); update(s => { s.onboarded = true; }); closeSheet();
+        // category keys only: never the name, GPA or phone
+        const p = getState().profile;
+        track('onboarding_complete', { faculty: p.spec, course: p.course, city: p.city });
+      }}>
         <ProfileFields compact blank />
         <button className="btn" type="submit">{tt('Бастау', 'Начать')}</button>
         <button className="btn ghost" type="button" id="obDemo" onClick={() => { update(s => { s.onboarded = true; }); closeSheet(); }}>{tt('Үлгі профильмен қарау', 'Посмотреть с примером профиля')}</button>
@@ -141,6 +150,7 @@ export function Profile() {
         <span className="meter" role="progressbar" aria-valuenow={fill} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${fill}%` }}></i></span>
         {fill < 100 ? <span className="row-sub">{tt('Телефон, тәжірибе мен өзіңіз туралы толтырсаңыз, түйіндеме мен іріктеме дәлірек болады.', 'Заполните телефон, опыт и «о себе», чтобы резюме и подборка были точнее.')}</span> : null}
       </button>
+      <RoadmapProgress />
       {p.demo ? <Note>{tt('Бұл — үлгі профиль. Өз деректеріңізді енгізіңіз.', 'Это пример профиля. Укажите свои данные.')}</Note> : null}
       <div className="group">
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
@@ -365,10 +375,12 @@ export function Portfolio() {
 
 export function Settings() {
   const { S, tt, toast, setUi, openSheet, go } = useApp();
+  const tg = useTelegram();
   return (
     <>
       <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><Seg items={[['kk', 'Қазақша'], ['ru', 'Русский']]} cur={S.lang} onPick={v => update(s => { s.lang = v === 'ru' ? 'ru' : 'kk'; })} /></section>
-      <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>
+      {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
+      <AccountSection />
       <section className="section"><h2>{tt('Деректер', 'Данные')}</h2>
         <div className="group">
           <Row onClick={() => { update(s => { s.chat = []; }); setUi({ chatErr: '' }); toast(tt('Чат тазаланды', 'Чат очищен')); }} icon="chat" title={tt('Чат тарихын тазалау', 'Очистить историю чата')} chev={false} />
@@ -378,7 +390,8 @@ export function Settings() {
             setTimeout(() => openSheet(<Onboarding />), 60);
           }} />)} icon="trash" tone="bad" title={tt('Барлық деректерді өшіру', 'Удалить все данные')} sub={tt('Профиль, өтінімдер, жоспарлар, карточкалар', 'Профиль, отклики, планы, карточки')} chev={false} />
         </div></section>
-      <p className="note">Student Hub 1.2. {tt('Алғашқы нұсқа (MVP). Барлық деректер осы құрылғыда сақталады.', 'Первая версия (MVP). Все данные хранятся на этом устройстве.')}</p>
+      <div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div>
+      <p className="note">Student Hub 1.2. {tt('Алғашқы нұсқа (MVP). Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Первая версия (MVP). Профиль, GPA и телефон хранятся на этом устройстве.')}</p>
     </>
   );
 }

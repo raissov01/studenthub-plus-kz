@@ -6,6 +6,9 @@ import { Home, Materials, Notifications, Saved, Search, Services } from '@/compo
 import { MapView } from '@/components/views/map';
 import { Mine, Opps } from '@/components/views/opps';
 import { Admission, Bonus, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
+import { Admin } from '@/components/views/admin';
+import { Privacy } from '@/components/views/privacy';
+import { Roadmap } from '@/components/views/roadmap';
 import { parseView } from '@/lib/routes';
 
 export function Screen({ v }: { v: string }) {
@@ -42,6 +45,9 @@ export function Screen({ v }: { v: string }) {
     case 'pay': return <Pay />;
     case 'portfolio': return <Portfolio />;
     case 'settings': return <Settings />;
+    case 'roadmap': return <Roadmap />;
+    case 'privacy': return <Privacy />;
+    case 'admin': return <Admin />;
     default: return <Home />;
   }
 }

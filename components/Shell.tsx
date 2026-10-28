@@ -4,6 +4,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/components/app';
+import { Boot } from '@/components/Boot';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
 import { unreadCount } from '@/lib/domain';
@@ -11,6 +12,7 @@ import { IC } from '@/lib/icons';
 import { ROOTS, viewOfLegacyHash, viewOfPath } from '@/lib/routes';
 import { screenMeta } from '@/lib/screens';
 import { useHydrated } from '@/lib/store';
+import { useTelegram } from '@/lib/telegram';
 
 const TAB_OF: Record<string, string> = { opps: 'search', bonus: 'search', ai: 'home' };
 
@@ -18,6 +20,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const app = useApp();
   const { S, ui, I, tt, go, back, sheet, toastMsg, closeSheet, content, openSheet, setActiveTab, fromOf } = app;
   const hydrated = useHydrated();
+  const tg = useTelegram();
   const pathname = usePathname();
   const v = viewOfPath(pathname) ?? 'home';
   const meta = screenMeta(v, { I, S, ui });
@@ -33,6 +36,7 @@ export function Shell({ children }: { children: ReactNode }) {
   // old #/job/j1 links land on the real path (on load, and if such a link is followed inside the page)
   useEffect(() => {
     const redirect = () => {
+      if (/^#tgWebApp/.test(window.location.hash)) return; // Telegram's launch parameters, not an old link
       const hv = viewOfLegacyHash(window.location.hash);
       if (hv) go(hv, { replace: true });
     };
@@ -42,12 +46,14 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [go]);
 
   // language, theme and tab title follow the state
+  // inside Telegram the theme follows Telegram (features/telegram applies it)
   useEffect(() => {
     const r = document.documentElement;
     r.lang = S.lang === 'ru' ? 'ru' : 'kk';
+    if (tg.app) return;
     if (S.theme === 'light' || S.theme === 'dark') r.setAttribute('data-theme', S.theme);
     else r.removeAttribute('data-theme');
-  }, [S.lang, S.theme]);
+  }, [S.lang, S.theme, tg.app]);
   useEffect(() => {
     document.title = name === 'home' ? 'Student Hub' : `${meta.title} — Student Hub`;
   }, [name, meta.title]);
@@ -89,7 +95,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <>
       <header className={`top${scrolled ? ' scrolled' : ''}`} id="top">
         <div className="top-row">
-          <button className="icon-btn" id="back" type="button" onClick={back} aria-label={tt('Артқа', 'Назад')} hidden={root}>
+          <button className="icon-btn" id="back" type="button" onClick={back} aria-label={tt('Артқа', 'Назад')} hidden={root || !!tg.app}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
           </button>
           <div className="top-title" id="title">
@@ -107,6 +113,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main id="main" aria-live="polite">{hydrated ? children : null}</main>
+      {hydrated ? <Boot root={root} /> : null}
       <nav className="tabbar" aria-label="Student Hub">
         <div className="tabbar-in">
           {tabs.map(([k, i, l]) => (

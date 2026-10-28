@@ -56,6 +56,9 @@ const META: Record<string, Meta> = {
   pay: { title: (_, x) => t('Оқу ақысы', 'Оплата обучения')(x), tab: 'profile' },
   portfolio: { title: (_, x) => t('Портфолио', 'Портфолио')(x), tab: 'profile' },
   settings: { title: (_, x) => t('Баптаулар', 'Настройки')(x), tab: 'profile' },
+  roadmap: { title: (_, x) => t('Даму жоспары', 'План развития')(x), tab: 'home' },
+  privacy: { title: (_, x) => t('Құпиялылық саясаты', 'Конфиденциальность')(x), tab: 'profile' },
+  admin: { title: () => 'Student Hub', tab: 'profile' },
 };
 
 export function screenMeta(v: string, x: Ctx): { name: string; title: string; tab: string } {

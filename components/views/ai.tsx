@@ -2,6 +2,7 @@
 /* AI helper and offline study tools: chat, résumé, interview practice, exam plans, flashcards, job match. */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp, copyText, type App } from '@/components/app';
+import { track } from '@/features/analytics/track';
 import { ConfirmSheet, Icon, Row, Seg } from '@/components/ui';
 import { PlanRow } from '@/components/views/opps';
 import { CourseSheet } from '@/components/views/sheets';
@@ -18,6 +19,7 @@ export async function sendChat(text: string, lang: 'kk' | 'ru') {
   if (!text || getUi().chatBusy) return;
   const tt = (kk: string, ru: string) => (lang === 'ru' ? ru : kk);
   update(s => { s.chat.push({ role: 'user', content: text }); });
+  track('ai_message_sent'); // the count only, never the text
   setUi({ chatDraft: '', chatErr: '', chatBusy: true });
   const S = getState(), p = S.profile;
   const msgs = S.chat.slice(-16).map(m => ({ role: m.role, content: m.content }));

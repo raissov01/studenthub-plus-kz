@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Icon, Row, SectionHead } from '@/components/ui';
+import { RoadmapBoard } from '@/components/views/roadmap';
 import { DealSheet } from '@/components/views/sheets';
+import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
 import { EVENTS, SCHEDULE } from '@/lib/data/static';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
@@ -47,6 +49,8 @@ function NextClassCard() {
 
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
+  const tg = useTelegram();
+  const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const tiles: [string, IconName, string][] = [
     ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
@@ -68,7 +72,7 @@ export function Home() {
   return (
     <>
       <section className="greet">
-        <h1>{tt(`Сәлем, ${firstName(S.profile.name, 'студент')}!`, `Привет, ${firstName(S.profile.name, 'студент')}!`)} <span className="wave" aria-hidden="true">👋</span></h1>
+        <h1>{tt(`Сәлем, ${who}!`, `Привет, ${who}!`)} <span className="wave" aria-hidden="true">👋</span></h1>
         <p className="muted">{tt('Бүгінгі күнің сәтті болсын!', 'Пусть день будет удачным!')}</p>
       </section>
 
@@ -102,6 +106,8 @@ export function Home() {
           <button key={g} className={`tile tile-${n % 5}`} type="button" onClick={() => go(g)}><span className="tile-ico"><Icon n={i} s={26} /></span><span>{l}</span></button>
         ))}
       </div>
+
+      <RoadmapBoard />
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />

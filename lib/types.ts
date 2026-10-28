@@ -1,3 +1,4 @@
+import type { RoadmapState } from '@/features/roadmap/logic';
 import type { IconName } from '@/lib/icons';
 
 export type { IconName };
@@ -161,4 +162,6 @@ export interface AppState {
   chat: ChatMsg[];
   gpaPlan: { n: string; cr: number; g: string }[];
   photo?: string;
+  /** «Даму жоспары» (features/roadmap); added later, so load() fills it in for older stored data */
+  roadmap: RoadmapState;
 }

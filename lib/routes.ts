@@ -10,6 +10,7 @@ export const parseView = (v: string): [string, string] => {
 export const PLAIN = [
   'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
+  'roadmap', 'privacy', 'admin',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match'] as const;

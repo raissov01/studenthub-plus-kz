@@ -2,6 +2,7 @@
    users keep their data; a one-time move from the old "studygo.v1" key runs before the first read.
    A second, in-memory store keeps transient UI state (filters, search text, chat draft) for the session. */
 import { useSyncExternalStore } from 'react';
+import { emptyRoadmap, type RoadmapState } from '@/features/roadmap/logic';
 import type { AppState } from '@/lib/types';
 import { defaults, UI_INIT, type UiState } from '@/lib/defaults';
 
@@ -38,9 +39,25 @@ function load(): AppState {
   let s: Partial<AppState> & { ai?: unknown } | null = null;
   try { const raw = lsGet(); if (raw) s = JSON.parse(raw); } catch { s = null; }
   if (!s || typeof s !== 'object') return d;
-  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}) }) as AppState & { ai?: unknown };
+  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}), roadmap: cleanRoadmap(s.roadmap) }) as AppState & { ai?: unknown };
   delete merged.ai; // old client-side API key setting, no longer used
   return merged;
+}
+
+/** stored roadmap (absent in data saved before the feature) -> a valid RoadmapState */
+function cleanRoadmap(r: unknown): RoadmapState {
+  const e = emptyRoadmap();
+  if (!r || typeof r !== 'object') return e;
+  const x = r as Partial<RoadmapState>;
+  const strs = (a: unknown) => (Array.isArray(a) ? a.filter((v): v is string => typeof v === 'string') : []);
+  const done: RoadmapState['done'] = {};
+  if (x.done && typeof x.done === 'object') {
+    for (const [k, v] of Object.entries(x.done)) if (Array.isArray(v)) done[k] = v.filter((n): n is number => Number.isInteger(n));
+  }
+  return {
+    chosen: strs(x.chosen), done, activeWeeks: strs(x.activeWeeks), pausedWeeks: strs(x.pausedWeeks),
+    ...(typeof x.pausedUntil === 'string' ? { pausedUntil: x.pausedUntil } : {}),
+  };
 }
 
 /* ---------- persisted store ---------- */

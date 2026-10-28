@@ -807,3 +807,37 @@ button.badge.verified { border: 0; font: inherit; font-size: .76rem; font-weight
 /* narrow phones: segmented tabs keep whole words instead of an ellipsis */
 @media (max-width: 374px) { .seg { gap: 2px; padding: 3px; } .seg button { padding: 9px 3px; font-size: .8rem; letter-spacing: -.01em; } }
 @media (max-width: 340px) { .seg button { font-size: .74rem; padding: 9px 2px; } }
+
+/* ---------- Telegram Mini App: keep content below Telegram's own header (--tg-top is set by features/telegram) ---------- */
+:root { --tg-top: 0px; padding-top: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
+.top { top: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
+body::before { height: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
+
+/* ---------- Даму жоспары ---------- */
+.rm-step { padding-right: 6px; }
+.rm-check { flex: 1; min-width: 0; }
+.chips.wrap .chip svg { flex: none; }
+
+/* ---------- account, consent, feedback ---------- */
+.tg-login { min-height: 48px; display: flex; justify-content: center; }
+.tg-login iframe { max-width: 100%; }
+.consent { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.consent h3 { margin-top: 6px; }
+.consent h3:first-child { margin-top: 0; }
+.consent .link-btn { align-self: flex-start; }
+.consent-age { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.consent-age legend { padding: 0; margin-bottom: 8px; font-weight: 600; color: var(--muted); }
+.check input[type="radio"] { width: 22px; height: 22px; margin: 0; accent-color: var(--primary); flex: none; }
+.fb-score .chip { min-width: 48px; justify-content: center; }
+.suggest { margin-top: 12px; text-decoration: none; }
+
+/* ---------- privacy, admin ---------- */
+.draft-banner { border: 1px solid var(--danger); background: var(--danger-soft); color: var(--danger); border-radius: var(--r); padding: 12px 14px; font-weight: 700; }
+.legal { display: flex; flex-direction: column; gap: 18px; }
+.legal section { display: flex; flex-direction: column; gap: 8px; }
+.legal p, .legal li { line-height: 1.55; overflow-wrap: anywhere; }
+.legal ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stat b { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat span { font-size: .84rem; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }

@@ -1,6 +1,11 @@
 'use client';
 /* Detail screens: vacancy, opportunity, event. Job and opportunity pages carry the trust block. */
+import { useEffect } from 'react';
 import { useApp } from '@/components/app';
+import { track } from '@/features/analytics/track';
+import { remindLink } from '@/features/telegram/webapp';
+import { useConfig } from '@/lib/config';
+import { openTelegramLink, useTelegram } from '@/lib/telegram';
 import { DemoBadge, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import { VerifiedSheet } from '@/components/views/sheets';
 import { reportHref } from '@/lib/config';
@@ -9,6 +14,15 @@ import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
 import type { Provenance } from '@/lib/types';
+
+/** one view event per screen opening (effects may run twice for the same mount in development) */
+let lastView = { key: '', at: 0 };
+function trackView(name: 'job_view' | 'opportunity_view', id: string) {
+  const key = name + ':' + id, now = Date.now();
+  if (lastView.key === key && now - lastView.at < 1500) return;
+  lastView = { key, at: now };
+  track(name, { id });
+}
 
 /** «Тексерілген» badge; tapping it explains what was checked */
 function VerifiedBadge({ item, kind, id }: { item: Provenance; kind: string; id: string }) {
@@ -55,6 +69,8 @@ function TrustBlock({ item, kind, id }: { item: Provenance; kind: string; id: st
 export function JobView({ id }: { id: string }) {
   const { S, tt, tp, L, I, go, update, toast, content } = useApp();
   const j = content.jobs.find(x => x.id === id);
+  const found = !!j;
+  useEffect(() => { if (found) trackView('job_view', id); }, [found, id]);
   if (!j) return null;
   const pt = payText(j, I), applied = !!S.applied[j.id];
   return (
@@ -66,7 +82,7 @@ export function JobView({ id }: { id: string }) {
           <DemoBadge show={j.is_demo} />
         </div>
         <h1>{L(j.title)}</h1>
-        <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} />
+        <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} kind="job" id={j.id} />
         <p className="muted">{L(j.org)} <VerifiedBadge item={j} kind="job" id={j.id} /></p>
       </div>
       <div className="card">
@@ -94,7 +110,12 @@ export function JobView({ id }: { id: string }) {
 export function OppView({ id }: { id: string }) {
   const { S, ui, tt, L, I, setUi, update, toast, go, content } = useApp();
   const o = content.opportunities.find(x => x.id === id);
+  const found = !!o;
+  useEffect(() => { if (found) trackView('opportunity_view', id); }, [found, id]);
+  const cfg = useConfig();
+  const tg = useTelegram();
   if (!o) return null;
+  const remind = remindLink(cfg.botUsername, o.id);
   const showCheck = ui.oppCheck[id];
   const q = qualify(o, S.profile, I);
   const docs = S.oppDocs[id] || {};
@@ -110,7 +131,7 @@ export function OppView({ id }: { id: string }) {
           <DemoBadge show={o.is_demo} />
         </div>
         <h1>{L(o.title)}</h1>
-        <ShareRow path={pathOf('opp:' + o.id)} title={L(o.title)} />
+        <ShareRow path={pathOf('opp:' + o.id)} title={L(o.title)} kind="opp" id={o.id} />
         <p className="muted">{L(o.org)} <VerifiedBadge item={o} kind="opp" id={o.id} /></p>
         <p className={`small ${left <= 14 ? 'urgent' : ''}`}><Icon n="clock" s={14} /> {Number.isFinite(left)
           ? <>{tt('Қабылдау', 'Приём до')}: {I.fDate(dOff(left))} · {I.daysLeftTxt(left)}</>
@@ -147,10 +168,16 @@ export function OppView({ id }: { id: string }) {
       <div className="sticky-cta">
         <button className={`btn ${saved ? 'secondary' : ''} block`} type="button" onClick={() => {
           update(s => { if (s.saved[o.id]) delete s.saved[o.id]; else s.saved[o.id] = Date.now(); });
+          if (!saved) track('deadline_saved', { id: o.id });
           toast(!saved ? tt('Сақталды', 'Сохранено') : tt('Сақталғаннан алынды', 'Убрано из сохранённых'));
         }}>
           {saved ? <><Icon n="check" s={18} /> {tt('Сақталған', 'Сохранено')}</> : <><Icon n="bell" s={18} /> {tt('Сақтау және мерзімді бақылау', 'Сохранить и следить за сроком')}</>}
         </button>
+        {saved && remind ? (
+          <a className="btn ghost block" href={remind} target="_blank" rel="noopener" onClick={e => { if (tg.app) { e.preventDefault(); openTelegramLink(remind); } }}>
+            <Icon n="send" s={18} /> {tt('Telegram-да еске салу', 'Напомнить в Telegram')}
+          </a>
+        ) : null}
       </div>
     </>
   );

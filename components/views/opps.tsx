@@ -1,6 +1,7 @@
 'use client';
 /* «Мүмкіндіктер»: jobs, internships, events and courses tabs; «Менің тізімім». */
 import { useApp } from '@/components/app';
+import { useConfig } from '@/lib/config';
 import { Chip, DemoBadge, Empty, Icon, Row, Seg, SectionHead } from '@/components/ui';
 import { CourseSheet } from '@/components/views/sheets';
 import { CITIES, COURSES, EVENTS, EVENT_CATS, JOB_TAGS, OPP_TYPES } from '@/lib/data/static';
@@ -53,6 +54,18 @@ export function EventCard({ e }: { e: EventItem }) {
   );
 }
 
+/** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists; hidden until the form exists */
+function SuggestLink() {
+  const { tt } = useApp();
+  const { suggestFormUrl } = useConfig();
+  if (!suggestFormUrl) return null;
+  return (
+    <a className="btn ghost block suggest" href={suggestFormUrl} target="_blank" rel="noopener">
+      <Icon n="plus" s={18} /> {tt('Мүмкіндік білесің бе? Ұсын', 'Знаешь возможность? Предложи')}
+    </a>
+  );
+}
+
 function OppList({ t }: { t: string }) {
   const { S, ui, I, tt, L, setUi, openSheet, go, content } = useApp();
   const qm = (...parts: string[]) => !ui.q || parts.join(' ').toLowerCase().includes(ui.q.trim().toLowerCase());
@@ -67,12 +80,13 @@ function OppList({ t }: { t: string }) {
       <>
         <p className="tiny muted">{tt(`Табылды: ${list.length}`, `Найдено: ${list.length}`)}</p>
         {list.length ? <div className="group">{list.map(j => <JobRow key={j.id} j={j} />)}</div> : none('search', tt('Сәйкес вакансия жоқ. Сүзгіні азайтып көріңіз.', 'Подходящих вакансий нет. Попробуйте убрать фильтры.'))}
+        <SuggestLink />
       </>
     );
   }
   if (t === 'intern') {
     const list = content.opportunities.filter(o => (ui.oppType === 'all' || o.type === ui.oppType) && qm(L(o.title), L(o.org), L(o.desc))).sort((a, b) => oppLeft(a) - oppLeft(b));
-    if (!list.length) return none('globe', tt('Бағдарлама табылмады.', 'Программы не найдены.'));
+    if (!list.length) return <>{none('globe', tt('Бағдарлама табылмады.', 'Программы не найдены.'))}<SuggestLink /></>;
     return (
       <div className="list">
         {list.map(o => {
@@ -94,6 +108,7 @@ function OppList({ t }: { t: string }) {
             </button>
           );
         })}
+        <SuggestLink />
       </div>
     );
   }

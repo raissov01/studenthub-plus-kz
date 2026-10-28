@@ -1,4 +1,5 @@
 /* Default device state and transient UI state. No React here, so server code can use it too. */
+import { emptyRoadmap } from '@/features/roadmap/logic';
 import type { AppState, Lang } from '@/lib/types';
 
 export function defaults(lang?: Lang): AppState {
@@ -22,6 +23,7 @@ export function defaults(lang?: Lang): AppState {
       { n: 'Статистика', cr: 5, g: 'B' },
       { n: ru ? 'Английский язык' : 'Ағылшын тілі', cr: 4, g: 'A-' },
     ],
+    roadmap: emptyRoadmap(),
   };
 }
 

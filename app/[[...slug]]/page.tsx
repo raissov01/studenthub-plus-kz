@@ -26,7 +26,8 @@ export async function generateMetadata({ params }: PageProps<'/[[...slug]]'>): P
   if (v === 'home') return { ...pageMeta({ title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION, path: '/' }), title: { absolute: 'Student Hub' } };
   const kk = i18n('kk');
   const { title } = screenMeta(v, { I: kk, S: defaults('kk'), ui: UI_INIT });
-  return { ...pageMeta({ title: `${title} — Student Hub`, description: DEFAULT_DESCRIPTION, path }), title };
+  const robots = v === 'admin' ? { robots: { index: false, follow: false } } : {};
+  return { ...pageMeta({ title: `${title} — Student Hub`, description: DEFAULT_DESCRIPTION, path }), title, ...robots };
 }
 
 export default async function Page({ params }: PageProps<'/[[...slug]]'>) {

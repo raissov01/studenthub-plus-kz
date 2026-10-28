@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import qrcode from 'qrcode-generator';
 import { IC, type IconName } from '@/lib/icons';
 import { useApp, copyText } from '@/components/app';
+import { track, withShareRef } from '@/features/analytics/track';
 
 export function Icon({ n, s = 22, className }: { n: IconName; s?: number; className?: string }) {
   return (
@@ -85,21 +86,26 @@ export function Qr({ text }: { text: string }) {
   return <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-/** «Бөлісу» (native share on touch devices, otherwise copy) + Telegram, for the real URL of a screen */
-export function ShareRow({ path, title }: { path: string; title: string }) {
+/** «Бөлісу» (native share on touch devices, otherwise copy) + Telegram, for the real URL of a screen.
+    The shared link carries ?ref=share so visits from friends can be counted (anonymously). */
+export function ShareRow({ path, title, kind, id }: { path: string; title: string; kind: string; id: string }) {
   const { tt, toast } = useApp();
-  const url = (typeof window !== 'undefined' ? window.location.origin : '') + path;
+  const url = typeof window !== 'undefined' ? withShareRef(window.location.origin + path) : path;
   const text = title + ' — Student Hub';
   const tg = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
   const share = () => {
     if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+      track('share_click', { kind, id, channel: 'native' });
       navigator.share({ title: text, text, url }).catch(() => { /* cancelled */ });
-    } else copyText(url, toast, tt);
+    } else {
+      track('share_click', { kind, id, channel: 'copy' });
+      copyText(url, toast, tt);
+    }
   };
   return (
     <div className="share-row">
       <button className="chip" type="button" onClick={share}><Icon n="share" s={16} /> {tt('Бөлісу', 'Поделиться')}</button>
-      <a className="chip" href={tg} target="_blank" rel="noopener"><Icon n="send" s={16} /> Telegram</a>
+      <a className="chip" href={tg} target="_blank" rel="noopener" onClick={() => track('share_click', { kind, id, channel: 'telegram' })}><Icon n="send" s={16} /> Telegram</a>
     </div>
   );
 }
