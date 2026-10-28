@@ -12,7 +12,7 @@
    taps «Жаңарту» (message SKIP_WAITING); it never takes over a page on its own. */
 'use strict';
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev';
 const PREFIX = 'studenthub-';
 const PAGES = `${PREFIX}pages-${VERSION}-${BUILD}`;
@@ -156,7 +156,7 @@ function cacheablePage(url, res) {
   if (NEVER.test(url.pathname)) return false;
   if (!(res.headers.get('content-type') || '').includes('text/html')) return false;
   const cc = res.headers.get('cache-control') || '';
-  if (/no-store/i.test(cc) && !SHELL_DYNAMIC.test(url.pathname)) return false;
+  if (/no-store/i.test(cc) && !SHELL_PAGES.includes(url.pathname) && !SHELL_DYNAMIC.test(url.pathname)) return false;
   return true;
 }
 
@@ -176,8 +176,8 @@ async function storePage(path, assets) {
   try {
     const url = new URL(path, ORIGIN);
     if (url.origin !== ORIGIN || NEVER.test(url.pathname)) return;
-    const res = await fetch(url.pathname, { cache: 'no-cache', credentials: 'same-origin' });
-    if (!cacheablePage(url, res)) return;
+    const res = await fetch(url.pathname, { cache: 'no-cache', credentials: 'same-origin', signal: AbortSignal.timeout(NETWORK_TIMEOUT_MS) });
+    if (!cacheablePage(url, res)) { await res.body?.cancel(); return; }
     const html = await res.clone().text();
     await (await caches.open(PAGES)).put(pageKey(url), res);
     for (const m of html.matchAll(/\/_next\/static\/[^"'\s\\)<>]+/g)) assets.add(m[0]);

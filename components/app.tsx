@@ -63,6 +63,7 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
 
   const [sheet, setSheet] = useState<ReactNode>(null);
   const sheetOpen = useRef(false);
+  const sheetVersion = useRef(0);
   const [toastMsg, setToastMsg] = useState<{ text: string; key: number } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const navStarted = useRef(false);
@@ -90,6 +91,7 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
   }, [router, closeSheetDom]);
 
   const openSheet = useCallback((node: ReactNode) => {
+    sheetVersion.current++;
     setSheet(node);
     if (!sheetOpen.current) {
       try { window.history.pushState({ sheet: true }, ''); } catch { /* ignore */ }
@@ -99,9 +101,10 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
 
   const closeSheet = useCallback(() => {
     if (!sheetOpen.current) return;
+    const closingVersion = sheetVersion.current;
     try { window.history.back(); } catch { closeSheetDom(); return; }
     // some Android WebViews ignore history.back(); never leave a sheet stuck open
-    setTimeout(() => { if (sheetOpen.current) closeSheetDom(); }, 350);
+    setTimeout(() => { if (sheetOpen.current && sheetVersion.current === closingVersion) closeSheetDom(); }, 350);
   }, [closeSheetDom]);
 
   useEffect(() => {
@@ -147,7 +150,8 @@ export function useApp(): App {
   const ctx = useContext(AppCtx);
   if (!ctx) throw new Error('useApp outside AppProvider');
   const S = useAppState();
-  const ui = useUi();
+  const transient = useUi();
+  const ui = { ...transient, jf: { ...transient.jf, noexp: S.jobNoExperience ?? [1, 2].includes(S.profile.course) } };
   const I = useMemo(() => i18n(S.lang), [S.lang]);
   return { ...ctx, ...I, I, S, ui, update, setUi };
 }

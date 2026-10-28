@@ -1057,3 +1057,11 @@ fieldset.field > legend { padding: 0; margin-bottom: 6px; }
 .launch-admin .row-title, .launch-admin .row-sub { white-space: normal; overflow-wrap: anywhere; }
 .launch-admin .btn { white-space: normal; max-width: 100%; }
 .launch-admin > .section { margin-top: 22px; }
+
+/* Card facts are visible before opening; discount conditions expand in the existing sheet. */
+.card-detail { display: block; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.card .card-detail-truncate, .sr-main .card-detail-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-card > .card { min-width: 0; }
+/* Employer labels can be longer than a narrow job row; keep them clear of the save button. */
+.row .badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.row .badge svg { flex: none; }

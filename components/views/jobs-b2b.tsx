@@ -217,7 +217,7 @@ function ApplySheet({ j, onDone }: { j: Job; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   if (!u) return null;
-  const phoneOk = !f.phone || /^\+?[0-9 ()-]{7,20}$/.test(phone.trim());
+  const phoneOk = !f.phone || !phone.trim() || /^\+?[0-9 ()-]{7,20}$/.test(phone.trim());
   const any = f.name || f.course || f.telegram || f.skills || f.exp || (f.phone && phone.trim()) || letter.trim();
   const toggle = (k: keyof typeof f) => setF(x => ({ ...x, [k]: !x[k] }));
   const opt = (k: keyof typeof f, label: string, value: ReactNode, disabled?: boolean, hint?: string) => (

@@ -10,6 +10,9 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
+    "playwright-report/**",
+    "test-results/**",
+    ".fe-deps/**",
     "build/**",
     "next-env.d.ts",
     // the single-file app and its JS API, kept read-only as the reference for the port

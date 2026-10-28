@@ -185,6 +185,7 @@ export function SearchRow({ it }: { it: SearchItem }) {
           <span className="row-title">{it.org}</span>
           <span className="sr-role">{it.title}</span>
           <span className="row-sub">{it.meta}{it.demo ? <> <DemoBadge show /></> : null}</span>
+          {it.detail ? <span className={`row-sub card-detail${it.truncateDetail ? " card-detail-truncate" : ""}`} title={it.detail}>{it.detail}</span> : null}
           {it.badge ? <span className={`tag tag-${it.badge[1]} tag-inline`}>{it.badge[0]}</span> : null}
         </span>
       </button>
