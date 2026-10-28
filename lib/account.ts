@@ -122,6 +122,9 @@ const apply = (r: MeResp) => set({ loaded: true, user: r.user, needsConsent: !!r
 /** GET /api/me once on start; failures mean «not signed in». A definite «nobody» from the server also drops the
     offline ticket copies (lib/tickets.ts); a network failure keeps them. */
 let loading: Promise<void> | null = null;
+/** Current account state outside React (e.g. right after loadMe()). */
+export const getAccount = (): AccountState => state;
+
 export function loadMe(force = false): Promise<void> {
   if (loading && !force) return loading;
   loading = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => set({ loaded: true, user: null, needsConsent: false }));

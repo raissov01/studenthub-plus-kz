@@ -10,7 +10,7 @@ import { cleanMissing, emptyFeedback, FEEDBACK_KEY, FEEDBACK_TEXT, markAsked, MA
 import { almatyDate } from '@/features/roadmap/logic';
 import { bindBackButton, startParam } from '@/features/telegram/webapp';
 import { CHECKIN_KEY } from '@/lib/events';
-import { loadMe, signInWebApp } from '@/lib/account';
+import { getAccount, loadMe, signInWebApp } from '@/lib/account';
 import { loadConfig } from '@/lib/config';
 import { initTelegram, useTelegram } from '@/lib/telegram';
 
@@ -48,8 +48,13 @@ export function Boot({ root }: { root: boolean }) {
         try { first = window.sessionStorage.getItem('studenthub.ciUsed') !== sp; window.sessionStorage.setItem('studenthub.ciUsed', sp); window.sessionStorage.setItem(CHECKIN_KEY, sp); } catch { /* ignore */ }
         if (first) go('checkin', { replace: true });
       }
-      if (app?.initData) signInWebApp(app.initData).catch(() => loadMe());
-      else void loadMe();
+      // Already signed in (e.g. by email in this browser)? Keep that session: linking Telegram must be the
+      // user's explicit choice in Settings, never a side effect of opening the Mini App.
+      if (app?.initData) {
+        void loadMe()
+          .then(() => (getAccount().user ? undefined : signInWebApp(app.initData)))
+          .catch(() => loadMe());
+      } else void loadMe();
     });
   }, [go]);
 
