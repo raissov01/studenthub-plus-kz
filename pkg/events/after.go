@@ -234,7 +234,7 @@ func ics(w http.ResponseWriter, r *http.Request) {
 		loc = *ev.PlaceText
 	}
 	f := "20060102T150405Z"
-	body := strings.Join([]string{
+	lines := []string{
 		"BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Student Hub//Events//KK", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
 		"BEGIN:VEVENT",
 		fmt.Sprintf("UID:event-%d@studenthub", ev.ID),
@@ -245,8 +245,12 @@ func ics(w http.ResponseWriter, r *http.Request) {
 		"DESCRIPTION:" + esc(desc),
 		"LOCATION:" + esc(loc),
 		"URL:" + eventLink(ev.ID),
-		"END:VEVENT", "END:VCALENDAR", "",
-	}, "\r\n")
+		"END:VEVENT", "END:VCALENDAR",
+	}
+	for i, l := range lines {
+		lines[i] = foldICS(l)
+	}
+	body := strings.Join(lines, "\r\n") + "\r\n"
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="event-%d.ics"`, ev.ID))
 	_, _ = w.Write([]byte(body))
@@ -391,4 +395,26 @@ func cronHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, st)
+}
+
+// foldICS splits a content line into 75-octet pieces (RFC 5545 §3.1) without breaking a UTF-8
+// character; continuation lines start with a single space.
+func foldICS(line string) string {
+	if len(line) <= 75 {
+		return line
+	}
+	var b strings.Builder
+	limit := 75
+	for len(line) > limit {
+		cut := limit
+		for cut > 0 && !utf8.RuneStart(line[cut]) {
+			cut--
+		}
+		b.WriteString(line[:cut])
+		b.WriteString("\r\n ")
+		line = line[cut:]
+		limit = 74 // the leading space counts toward the next line's 75 octets
+	}
+	b.WriteString(line)
+	return b.String()
 }
