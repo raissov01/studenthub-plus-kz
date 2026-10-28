@@ -1,3 +1,4 @@
+'use client';
 /* Optional Telegram account (docs/ACCOUNTS.md). The device profile works without it; the account only exists for
    actions that need the shared database. Session: an HttpOnly cookie set by the API; inside a Telegram Mini App the
    cookie may be blocked, so the token returned by /api/auth/telegram/webapp is kept in memory only and sent as
@@ -79,6 +80,17 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
     throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
   }
   return j as T;
+}
+
+/** Authenticated binary reads (private quiz media also needs the Mini App Bearer token). */
+export async function apiBlob(path: string, lang: 'kk' | 'ru'): Promise<Blob> {
+  const headers: Record<string, string> = { 'accept-language': lang };
+  if (token) headers.authorization = `Bearer ${token}`;
+  let r: Response;
+  try { r = await fetch(path, { headers, credentials: 'same-origin' }); }
+  catch { throw new ApiError(0, 'network', lang === 'ru' ? 'Нет связи с сервером.' : 'Серверге қосылу мүмкін болмады.'); }
+  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось загрузить медиа.' : 'Медиа жүктелмеді.');
+  return r.blob();
 }
 
 /** a file the API serves only with the session (CSV export): fetched and saved through a blob link */

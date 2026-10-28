@@ -118,7 +118,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main id="main" aria-live="polite">{hydrated ? children : null}</main>
+      <main id="main" className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? children : null}</main>
       {hydrated ? <Boot root={root} /> : null}
       <nav className="tabbar" aria-label="Student Hub">
         <div className="tabbar-in">

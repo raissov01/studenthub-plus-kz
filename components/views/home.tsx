@@ -1,5 +1,6 @@
 'use client';
 /* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
+import { useConfig } from '@/lib/config';
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
@@ -78,6 +79,7 @@ function ScheduleIcsButton() {
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
   const tg = useTelegram();
+  const cfg = useConfig();
   const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const tiles: [string, IconName, string][] = [
@@ -88,6 +90,7 @@ export function Home() {
     ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
     ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
   ];
+  if (cfg.features.quiz) tiles.push(['quiz', 'cards', tt('Квиздер', 'Квизы')]);
   const news = [
     ...EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: e.id, title: L(e.title), sub: `${I.fDate(dOff(e.day))}, ${L(e.place)}` })),
     ...content.opportunities.slice(0, 2).map(o => {

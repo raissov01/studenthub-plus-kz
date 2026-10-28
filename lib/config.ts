@@ -18,6 +18,7 @@ export interface Config {
     market: boolean;
     portfolio: boolean;
     b2b: boolean;
+    quiz: boolean;
   };
 }
 
@@ -26,7 +27,7 @@ export const CONFIG: Config = {
   botUsername: '',
   suggestFormUrl: '',
   marketSeason: null,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false },
 };
 
 export type FeatureName = keyof Config['features'];
