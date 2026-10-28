@@ -9,7 +9,8 @@
     "lint": "eslint",
     "api": "go run ./cmd/server",
     "db:migrate": "go run ./cmd/migrate",
-    "test:go": "go test ./..."
+    "test:go": "go test ./...",
+    "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts"
   },
   "dependencies": {
     "next": "16.4.3",
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

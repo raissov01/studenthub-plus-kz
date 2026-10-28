@@ -84,11 +84,11 @@ export async function signInWebApp(initData: string): Promise<AccountState> {
   return state;
 }
 
-/** Login Widget: the object Telegram passed to data-onauth, unchanged (every field is part of its hash),
-    so the referral goes in the query string. */
+/** Login Widget: the object Telegram passed to data-onauth. The server removes our extra `ref`
+    field before checking Telegram's hash, so it can travel in the same body. */
 export async function signInWidget(user: Record<string, unknown>, lang: 'kk' | 'ru'): Promise<AccountState> {
   const ref = refParam();
-  const r = await api<MeResp>('/api/auth/telegram/widget' + (ref ? `?ref=${encodeURIComponent(ref)}` : ''), { method: 'POST', body: user, lang });
+  const r = await api<MeResp>('/api/auth/telegram/widget', { method: 'POST', body: ref ? { ...user, ref } : user, lang });
   apply(r);
   return state;
 }

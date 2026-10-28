@@ -29,7 +29,7 @@ export async function sendChat(text: string, lang: 'kk' | 'ru') {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ lang, messages: msgs, profile: { name: p.name, spec: p.spec, course: p.course, gpa: p.gpa, en: p.en, skills: p.skills, exp: p.exp } }),
+      body: JSON.stringify({ lang, messages: msgs, profile: { spec: p.spec, course: p.course, gpa: p.gpa, en: p.en, skills: p.skills, exp: p.exp } }),
     });
     const data: { text?: string; error?: { code?: string; message?: string } } = await r.json().catch(() => ({}));
     if (!r.ok) {

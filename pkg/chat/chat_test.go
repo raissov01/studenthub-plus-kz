@@ -128,13 +128,14 @@ func TestChat(t *testing.T) {
 		if sys["role"] != "system" || !strings.HasPrefix(prompt, "You are Student Hub AI") {
 			t.Fatalf("system %v", sys)
 		}
-		for _, want := range []string{"Reply in Russian", "name Айгерім; Б.;", "specialty Information Systems", "year 3;",
+		for _, want := range []string{"Reply in Russian", "specialty Information Systems", "year 3;",
 			"GPA 3.46 on", "English B2;", "skills Excel, Python;", "experience: кафе."} {
 			if !strings.Contains(prompt, want) {
 				t.Errorf("prompt lacks %q:\n%s", want, prompt)
 			}
 		}
-		for _, bad := range []string{"IGNORE", "evil", "admin", "hack"} {
+		// the student's name never leaves our server
+		for _, bad := range []string{"IGNORE", "evil", "admin", "hack", "Айгерім"} {
 			if strings.Contains(fmt.Sprint(msgs), bad) {
 				t.Errorf("upstream got %q", bad)
 			}
@@ -146,7 +147,7 @@ func TestChat(t *testing.T) {
 
 	t.Run("default profile values", func(t *testing.T) {
 		got := systemPrompt("kk", nil)
-		for _, want := range []string{"Reply in Kazakh", "name student;", "specialty Other;", "year unknown;", "GPA unknown on",
+		for _, want := range []string{"Reply in Kazakh", "specialty Other;", "year unknown;", "GPA unknown on",
 			"English unknown;", "skills not set;", "experience: none."} {
 			if !strings.Contains(got, want) {
 				t.Errorf("prompt lacks %q", want)
