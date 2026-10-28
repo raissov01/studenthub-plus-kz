@@ -10,6 +10,7 @@ import (
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
+	"github.com/raissov01/studenthub-plus-kz/pkg/mail"
 )
 
 // Names lists every switch in display order.
@@ -58,6 +59,8 @@ func Routes(mux *http.ServeMux) {
 			"botUsername":    strings.TrimPrefix(config.Str("BOT_USERNAME", ""), "@"),
 			"reportUrl":      config.Str("REPORT_URL", ""),
 			"suggestFormUrl": config.Str("SUGGEST_FORM_URL", ""),
+			// email + password sign-in is offered only when codes can actually be delivered
+			"emailAuth": mail.Enabled(),
 			// null unless MARKET_SEASON is set and the range is current or upcoming
 			"marketSeason": MarketSeason(time.Now()),
 		})

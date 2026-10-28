@@ -145,13 +145,17 @@ func pickDigest(u q.User, opps []Opp, saved map[string]bool, today string) []Opp
 
 // deliver sends one message under the day claim: "sent" | "claimed" | "blocked" | "failed".
 func (b *Bot) deliver(ctx context.Context, qs *q.Queries, u q.User, today, msg string, kb [][]Button) (string, error) {
+	if !u.TelegramID.Valid {
+		// an email-only account has no chat; BotListUsers already leaves them out
+		return "blocked", nil
+	}
 	day := pgDate(today)
 	if _, err := qs.BotClaimDay(ctx, q.BotClaimDayParams{UserID: u.ID, Day: day}); errors.Is(err, pgx.ErrNoRows) {
 		return "claimed", nil
 	} else if err != nil {
 		return "", err
 	}
-	err := b.send(ctx, u.TelegramID, msg, kb)
+	err := b.send(ctx, u.TelegramID.Int64, msg, kb)
 	if err == nil {
 		return "sent", nil
 	}
@@ -162,7 +166,7 @@ func (b *Bot) deliver(ctx context.Context, qs *q.Queries, u q.User, today, msg s
 	if rerr := qs.BotReleaseDay(ctx, q.BotReleaseDayParams{UserID: u.ID, Day: day}); rerr != nil {
 		return "", rerr
 	}
-	log.Printf("cron send failed %d: %v", u.TelegramID, err)
+	log.Printf("cron send failed %d: %v", u.TelegramID.Int64, err)
 	return "failed", nil
 }
 

@@ -85,7 +85,8 @@ func summary(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 
 type userRow struct {
 	ID         int64      `json:"id"`
-	TelegramID int64      `json:"telegramId"`
+	TelegramID *int64     `json:"telegramId"` // null for an email-only account
+	Email      *string    `json:"email"`
 	Username   *string    `json:"username"`
 	Name       *string    `json:"name"`
 	Role       string     `json:"role"`
@@ -94,7 +95,7 @@ type userRow struct {
 	CreatedAt  time.Time  `json:"createdAt"`
 }
 
-// users: ?q= matches name or username (substring) or an exact id / telegram id. Max 20 rows.
+// users: ?q= matches name, username or email (substring) or an exact id / telegram id. Max 20 rows.
 // analyticsReport returns anonymous usage numbers for the last ?days= days (default 30).
 func analyticsReport(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	days, err := strconv.Atoi(r.URL.Query().Get("days"))
@@ -120,10 +121,10 @@ func users(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	like := "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(strings.TrimPrefix(q, "@")) + "%"
 	out := []userRow{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select id, telegram_id, tg_username, name, role::text, university, consent_at, created_at
+		rows, err := tx.Query(ctx, `select id, telegram_id, email, tg_username, name, role::text, university, consent_at, created_at
 			from users
 			where deleted_at is null and ($1 = '' or id = $2 or telegram_id = $2
-				or name ilike $3 or tg_username ilike $3)
+				or name ilike $3 or tg_username ilike $3 or email ilike $3)
 			order by consent_at is null, created_at desc limit 20`, q, num, like)
 		if err != nil {
 			return err
@@ -131,7 +132,7 @@ func users(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 		defer rows.Close()
 		for rows.Next() {
 			var u userRow
-			if err := rows.Scan(&u.ID, &u.TelegramID, &u.Username, &u.Name, &u.Role, &u.University, &u.ConsentAt, &u.CreatedAt); err != nil {
+			if err := rows.Scan(&u.ID, &u.TelegramID, &u.Email, &u.Username, &u.Name, &u.Role, &u.University, &u.ConsentAt, &u.CreatedAt); err != nil {
 				return err
 			}
 			out = append(out, u)
@@ -163,7 +164,7 @@ func setRole(w http.ResponseWriter, r *http.Request, actor *auth.User) {
 	}
 	var target struct {
 		ID         int64  `json:"id"`
-		TelegramID int64  `json:"telegramId"`
+		TelegramID *int64 `json:"telegramId"`
 		Role       string `json:"role"`
 		Previous   string `json:"previousRole"`
 	}
@@ -189,7 +190,7 @@ func setRole(w http.ResponseWriter, r *http.Request, actor *auth.User) {
 var errSelf = errors.New("admin: cannot change own role")
 
 func changeRole(ctx context.Context, tx pgx.Tx, actorID, userID, telegramID int64, role, reason string,
-	id, tgID *int64, prev *string) error {
+	id *int64, tgID **int64, prev *string) error {
 	err := tx.QueryRow(ctx, `select id, telegram_id, role::text from users
 		where deleted_at is null and (id = $1 or telegram_id = $2) for update`, userID, telegramID).Scan(id, tgID, prev)
 	if err != nil {

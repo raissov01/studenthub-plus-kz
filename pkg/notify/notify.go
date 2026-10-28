@@ -1,5 +1,6 @@
 // Package notify sends a "direct" Telegram message to a user through the bot (moderation
-// decisions, reports, mentor matches). Users who blocked the bot are skipped and marked.
+// decisions, reports, mentor matches). Users who blocked the bot are skipped and marked;
+// email-only accounts (no telegram_id) are skipped silently.
 package notify
 
 import (
@@ -17,7 +18,8 @@ import (
 var client = &http.Client{Timeout: 10 * time.Second}
 
 // Direct sends text (HTML parse mode — escape user input) to the user's Telegram chat.
-// It returns nil without sending when no bot is configured, so features keep working in tests.
+// It returns nil without sending when no bot is configured, so features keep working in
+// tests, and when the account has no Telegram (signed up by email and never linked it).
 func Direct(ctx context.Context, userID int64, text string) error {
 	token := config.Str("BOT_TOKEN", "")
 	if token == "" {
@@ -27,15 +29,15 @@ func Direct(ctx context.Context, userID int64, text string) error {
 	if err != nil {
 		return err
 	}
-	var tgID int64
+	var tgID *int64
 	var inactive bool
 	if err := p.QueryRow(ctx, `select telegram_id, bot_inactive from users where id = $1 and deleted_at is null`, userID).Scan(&tgID, &inactive); err != nil {
 		return err
 	}
-	if inactive {
+	if inactive || tgID == nil {
 		return nil
 	}
-	body, _ := json.Marshal(map[string]any{"chat_id": tgID, "text": text, "parse_mode": "HTML", "disable_web_page_preview": true})
+	body, _ := json.Marshal(map[string]any{"chat_id": *tgID, "text": text, "parse_mode": "HTML", "disable_web_page_preview": true})
 	base := config.Str("TELEGRAM_API_BASE", "https://api.telegram.org")
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, base+"/bot"+token+"/sendMessage", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -52,4 +54,12 @@ func Direct(ctx context.Context, userID int64, text string) error {
 		return fmt.Errorf("telegram sendMessage: %s", res.Status)
 	}
 	return nil
+}
+
+// HasTelegram reports whether the account has a Telegram chat the bot could write to.
+// Send uses it so email-only accounts never fill the outbox or use up a daily cap.
+func HasTelegram(ctx context.Context, q Querier, userID int64) (bool, error) {
+	var ok bool
+	err := q.QueryRow(ctx, `select exists (select 1 from users where id = $1 and telegram_id is not null)`, userID).Scan(&ok)
+	return ok, err
 }

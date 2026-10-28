@@ -66,3 +66,33 @@ func TestConfigEndpoint(t *testing.T) {
 		t.Fatalf("config: %+v", out)
 	}
 }
+
+func TestConfigEmailAuth(t *testing.T) {
+	read := func() bool {
+		var out struct{ EmailAuth *bool }
+		w := get(server.Handler(), "/api/config")
+		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || out.EmailAuth == nil {
+			t.Fatalf("config: %s", w.Body)
+		}
+		return *out.EmailAuth
+	}
+	t.Setenv("RESEND_API_KEY", "")
+	t.Setenv("MAIL_FROM", "")
+	t.Setenv("MAIL_DEV_LOG", "")
+	if read() {
+		t.Fatal("emailAuth true without mail")
+	}
+	t.Setenv("RESEND_API_KEY", "re_x")
+	if read() {
+		t.Fatal("emailAuth true without MAIL_FROM")
+	}
+	t.Setenv("MAIL_FROM", "Student Hub <noreply@x.kz>")
+	if !read() {
+		t.Fatal("emailAuth false with Resend configured")
+	}
+	t.Setenv("RESEND_API_KEY", "")
+	t.Setenv("MAIL_DEV_LOG", "true")
+	if !read() {
+		t.Fatal("emailAuth false with MAIL_DEV_LOG")
+	}
+}

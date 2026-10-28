@@ -36,13 +36,19 @@ func Digest(ctx context.Context, userID int64, now time.Time, text string) (stri
 }
 
 // DigestAs is Digest for category c. Whoever inserts the day row owns the day; when the day
-// is taken, the category is off, it is quiet time or the daily cap is used up, nothing is
+// is taken, the category is off (or the account has no Telegram), it is quiet time or the
+// daily cap is used up, nothing is
 // sent and the caller retries on a later run (any status but DigestSent). A failed send
 // gives the day back.
 func DigestAs(ctx context.Context, userID int64, c Category, now time.Time, text string) (string, error) {
 	p, err := db.Pool(ctx)
 	if err != nil {
 		return "", err
+	}
+	if tg, err := HasTelegram(ctx, p, userID); err != nil {
+		return "", err
+	} else if !tg {
+		return DigestOff, nil // email-only account: no chat, and no day claim used up
 	}
 	if !c.Transactional() {
 		prefs, err := LoadPrefs(ctx, p, userID)

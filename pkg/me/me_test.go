@@ -365,3 +365,63 @@ func TestDeleteAccount(t *testing.T) {
 		t.Fatal("deleted user's token still valid")
 	}
 }
+
+// newEmailUser inserts an email-only account (no Telegram) with a password and a live code.
+func newEmailUser(t *testing.T, consent bool) (int64, string) {
+	t.Helper()
+	email := "me" + strconv.FormatInt(tgSeq.Add(1), 10) + "@example.kz"
+	var id int64
+	err := db.Tx(ctx(), func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx(), `insert into users (email, email_verified_at, name, consent_at)
+			values ($1, now(), 'Email Студент', case when $2 then now() end) returning id`, email, consent).Scan(&id); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx(), `insert into user_passwords (user_id, hash) values ($1, '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA')`, id); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx(), `insert into auth_codes (user_id, purpose, email, code_hash, expires_at)
+			values ($1, 'reset_password', $2, '\x00', now() + interval '15 minutes')`, id, email)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id, email
+}
+
+func TestEmailUserConsentExportDelete(t *testing.T) {
+	testdb.Need(t)
+	uid, email := newEmailUser(t, false)
+	// same consent gate as a Telegram sign-up
+	w := do(t, "GET", "/api/me", uid, nil)
+	if !strings.Contains(w.Body.String(), `"needsConsent":true`) || !strings.Contains(w.Body.String(), `"telegramId":null`) ||
+		!strings.Contains(w.Body.String(), `"email":"`+email+`"`) || !strings.Contains(w.Body.String(), `"emailVerified":true`) {
+		t.Fatalf("/api/me: %s", w.Body)
+	}
+	if w := do(t, "PATCH", "/api/me", uid, map[string]string{"name": "x"}); w.Code != 403 {
+		t.Fatalf("patch before consent: %d", w.Code)
+	}
+	if w := do(t, "POST", "/api/me/consent", uid, map[string]bool{"isAdult": true}); w.Code != 200 {
+		t.Fatalf("consent: %d %s", w.Code, w.Body)
+	}
+	// export: the address is there, the password hash and codes are not
+	w = do(t, "GET", "/api/me/export", uid, nil)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), email) || strings.Contains(w.Body.String(), "argon2") || strings.Contains(w.Body.String(), "code_hash") {
+		t.Fatalf("export: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "DELETE", "/api/me", uid, map[string]string{"confirm": "DELETE"}); w.Code != 200 {
+		t.Fatalf("delete: %d %s", w.Code, w.Body)
+	}
+	for _, q := range []string{
+		"select count(*) from users where id = $1",
+		"select count(*) from user_passwords where user_id = $1",
+		"select count(*) from auth_codes where user_id = $1",
+	} {
+		if n := count(t, q, uid); n != 0 {
+			t.Errorf("%s: %d rows left", q, n)
+		}
+	}
+	if n := count(t, "select count(*) from users where email = $1", email); n != 0 {
+		t.Fatal("address survived deletion")
+	}
+}

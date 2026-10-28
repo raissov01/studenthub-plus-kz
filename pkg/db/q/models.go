@@ -11,6 +11,93 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type EventStatus string
+
+const (
+	EventStatusDraft     EventStatus = "draft"
+	EventStatusPublished EventStatus = "published"
+	EventStatusFinished  EventStatus = "finished"
+	EventStatusCancelled EventStatus = "cancelled"
+)
+
+func (e *EventStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = EventStatus(s)
+	case string:
+		*e = EventStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for EventStatus: %T", src)
+	}
+	return nil
+}
+
+type NullEventStatus struct {
+	EventStatus EventStatus `json:"event_status"`
+	Valid       bool        `json:"valid"` // Valid is true if EventStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEventStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.EventStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.EventStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEventStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.EventStatus), nil
+}
+
+type SubmissionStatus string
+
+const (
+	SubmissionStatusPending  SubmissionStatus = "pending"
+	SubmissionStatusApproved SubmissionStatus = "approved"
+	SubmissionStatusRejected SubmissionStatus = "rejected"
+)
+
+func (e *SubmissionStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SubmissionStatus(s)
+	case string:
+		*e = SubmissionStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SubmissionStatus: %T", src)
+	}
+	return nil
+}
+
+type NullSubmissionStatus struct {
+	SubmissionStatus SubmissionStatus `json:"submission_status"`
+	Valid            bool             `json:"valid"` // Valid is true if SubmissionStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSubmissionStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.SubmissionStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SubmissionStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSubmissionStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SubmissionStatus), nil
+}
+
 type UserRole string
 
 const (
@@ -56,6 +143,85 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 	return string(ns.UserRole), nil
 }
 
+type AdminContent struct {
+	ID        int64              `json:"id"`
+	Kind      string             `json:"kind"`
+	Record    []byte             `json:"record"`
+	Status    string             `json:"status"`
+	Deadline  pgtype.Date        `json:"deadline"`
+	CreatedBy pgtype.Int8        `json:"created_by"`
+	UpdatedBy pgtype.Int8        `json:"updated_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AmbassadorApplication struct {
+	ID           int64              `json:"id"`
+	UserID       int64              `json:"user_id"`
+	University   string             `json:"university"`
+	Motivation   string             `json:"motivation"`
+	HoursPerWeek string             `json:"hours_per_week"`
+	Status       SubmissionStatus   `json:"status"`
+	Reason       pgtype.Text        `json:"reason"`
+	SubmissionID pgtype.Int8        `json:"submission_id"`
+	ReviewedBy   pgtype.Int8        `json:"reviewed_by"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type AmbassadorTerm struct {
+	ID            int64              `json:"id"`
+	UserID        int64              `json:"user_id"`
+	University    string             `json:"university"`
+	RoleInTeam    string             `json:"role_in_team"`
+	TermStart     pgtype.Date        `json:"term_start"`
+	TermEnd       pgtype.Date        `json:"term_end"`
+	HoursPerWeek  int16              `json:"hours_per_week"`
+	RefCode       string             `json:"ref_code"`
+	Status        string             `json:"status"`
+	PausedUntil   pgtype.Date        `json:"paused_until"`
+	RenewAnswer   pgtype.Bool        `json:"renew_answer"`
+	RenewAskedAt  pgtype.Timestamptz `json:"renew_asked_at"`
+	EndedAt       pgtype.Timestamptz `json:"ended_at"`
+	CertCode      pgtype.Text        `json:"cert_code"`
+	CertIssuedAt  pgtype.Timestamptz `json:"cert_issued_at"`
+	CertIssuedBy  pgtype.Int8        `json:"cert_issued_by"`
+	ApplicationID pgtype.Int8        `json:"application_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type AnalyticsDevice struct {
+	AnonID    pgtype.UUID        `json:"anon_id"`
+	FirstDay  pgtype.Date        `json:"first_day"`
+	Ref       pgtype.Text        `json:"ref"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type AnalyticsEvent struct {
+	ID     int64              `json:"id"`
+	AnonID pgtype.UUID        `json:"anon_id"`
+	Name   string             `json:"name"`
+	Props  []byte             `json:"props"`
+	Day    pgtype.Date        `json:"day"`
+	At     pgtype.Timestamptz `json:"at"`
+}
+
+type Application struct {
+	ID                int64              `json:"id"`
+	JobID             int64              `json:"job_id"`
+	EmployerID        int64              `json:"employer_id"`
+	UserID            int64              `json:"user_id"`
+	SharedFields      []byte             `json:"shared_fields"`
+	Status            string             `json:"status"`
+	InviteMessage     pgtype.Text        `json:"invite_message"`
+	ViewedAt          pgtype.Timestamptz `json:"viewed_at"`
+	RespondedAt       pgtype.Timestamptz `json:"responded_at"`
+	RemindedAt        pgtype.Timestamptz `json:"reminded_at"`
+	StudentNotifiedAt pgtype.Timestamptz `json:"student_notified_at"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type AuditLog struct {
 	ID        int64              `json:"id"`
 	ActorID   pgtype.Int8        `json:"actor_id"`
@@ -64,6 +230,19 @@ type AuditLog struct {
 	Reason    pgtype.Text        `json:"reason"`
 	Meta      []byte             `json:"meta"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type AuthCode struct {
+	ID           int64              `json:"id"`
+	UserID       int64              `json:"user_id"`
+	Purpose      string             `json:"purpose"`
+	Email        string             `json:"email"`
+	CodeHash     []byte             `json:"code_hash"`
+	PasswordHash pgtype.Text        `json:"password_hash"`
+	Attempts     int32              `json:"attempts"`
+	MaxAttempts  int32              `json:"max_attempts"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
 type BotDailySend struct {
@@ -76,6 +255,340 @@ type BotEvent struct {
 	Kind   string             `json:"kind"`
 	UserID pgtype.Int8        `json:"user_id"`
 	At     pgtype.Timestamptz `json:"at"`
+}
+
+type CommunityContent struct {
+	ID           int64              `json:"id"`
+	Kind         string             `json:"kind"`
+	Payload      []byte             `json:"payload"`
+	University   pgtype.Text        `json:"university"`
+	Source       string             `json:"source"`
+	AuthorID     pgtype.Int8        `json:"author_id"`
+	SubmissionID pgtype.Int8        `json:"submission_id"`
+	Deadline     pgtype.Date        `json:"deadline"`
+	Hidden       bool               `json:"hidden"`
+	PublishedAt  pgtype.Timestamptz `json:"published_at"`
+}
+
+type DiscountCheck struct {
+	ID         int64              `json:"id"`
+	DiscountID string             `json:"discount_id"`
+	UserID     int64              `json:"user_id"`
+	Worked     bool               `json:"worked"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type Employer struct {
+	ID              int64              `json:"id"`
+	OwnerUserID     pgtype.Int8        `json:"owner_user_id"`
+	Name            string             `json:"name"`
+	Bin             string             `json:"bin"`
+	Website         string             `json:"website"`
+	ContactName     string             `json:"contact_name"`
+	ContactPhone    string             `json:"contact_phone"`
+	Address         string             `json:"address"`
+	About           string             `json:"about"`
+	Status          string             `json:"status"`
+	StatusReason    pgtype.Text        `json:"status_reason"`
+	SubmissionID    pgtype.Int8        `json:"submission_id"`
+	VerifiedAt      pgtype.Timestamptz `json:"verified_at"`
+	VerifiedBy      pgtype.Int8        `json:"verified_by"`
+	LowRateWarnedAt pgtype.Timestamptz `json:"low_rate_warned_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type EmployerInvite struct {
+	Code       string             `json:"code"`
+	EmployerID int64              `json:"employer_id"`
+	CreatedBy  pgtype.Int8        `json:"created_by"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	UsedBy     pgtype.Int8        `json:"used_by"`
+	UsedAt     pgtype.Timestamptz `json:"used_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type EmployerMember struct {
+	EmployerID      int64              `json:"employer_id"`
+	UserID          int64              `json:"user_id"`
+	Role            string             `json:"role"`
+	RulesAcceptedAt pgtype.Timestamptz `json:"rules_accepted_at"`
+	AddedBy         pgtype.Int8        `json:"added_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type Event struct {
+	ID               int64              `json:"id"`
+	TitleKk          string             `json:"title_kk"`
+	TitleRu          pgtype.Text        `json:"title_ru"`
+	DescKk           pgtype.Text        `json:"desc_kk"`
+	DescRu           pgtype.Text        `json:"desc_ru"`
+	Cat              string             `json:"cat"`
+	StartsAt         pgtype.Timestamptz `json:"starts_at"`
+	EndsAt           pgtype.Timestamptz `json:"ends_at"`
+	University       string             `json:"university"`
+	BuildingID       pgtype.Text        `json:"building_id"`
+	PlaceText        pgtype.Text        `json:"place_text"`
+	Capacity         pgtype.Int4        `json:"capacity"`
+	WalkInAllowed    bool               `json:"walk_in_allowed"`
+	GivesCert        bool               `json:"gives_cert"`
+	TeamsEnabled     bool               `json:"teams_enabled"`
+	Status           EventStatus        `json:"status"`
+	CreatedBy        pgtype.Int8        `json:"created_by"`
+	CheckinKey       []byte             `json:"checkin_key"`
+	CheckinStartedAt pgtype.Timestamptz `json:"checkin_started_at"`
+	FinishedAt       pgtype.Timestamptz `json:"finished_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type EventCertificate struct {
+	ID       int64              `json:"id"`
+	EventID  int64              `json:"event_id"`
+	UserID   int64              `json:"user_id"`
+	IssuedAt pgtype.Timestamptz `json:"issued_at"`
+}
+
+type EventCheckinClaim struct {
+	ID        string             `json:"id"`
+	EventID   int64              `json:"event_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+}
+
+type EventReg struct {
+	EventID          int64              `json:"event_id"`
+	UserID           int64              `json:"user_id"`
+	Status           string             `json:"status"`
+	Ticket           string             `json:"ticket"`
+	RegisteredAt     pgtype.Timestamptz `json:"registered_at"`
+	CheckedInAt      pgtype.Timestamptz `json:"checked_in_at"`
+	CheckinMethod    pgtype.Text        `json:"checkin_method"`
+	CheckinRevokedAt pgtype.Timestamptz `json:"checkin_revoked_at"`
+	TeamNo           pgtype.Int2        `json:"team_no"`
+	PreferPrevTeam   bool               `json:"prefer_prev_team"`
+	FeedbackScore    pgtype.Int2        `json:"feedback_score"`
+	FeedbackText     pgtype.Text        `json:"feedback_text"`
+	FeedbackAt       pgtype.Timestamptz `json:"feedback_at"`
+	RemindedAt       pgtype.Timestamptz `json:"reminded_at"`
+	FeedbackAskedAt  pgtype.Timestamptz `json:"feedback_asked_at"`
+}
+
+type Job struct {
+	ID           int64              `json:"id"`
+	EmployerID   int64              `json:"employer_id"`
+	CreatedBy    pgtype.Int8        `json:"created_by"`
+	TitleKk      string             `json:"title_kk"`
+	TitleRu      string             `json:"title_ru"`
+	DescKk       string             `json:"desc_kk"`
+	DescRu       string             `json:"desc_ru"`
+	City         string             `json:"city"`
+	Remote       bool               `json:"remote"`
+	Address      string             `json:"address"`
+	Pay          pgtype.Numeric     `json:"pay"`
+	Per          string             `json:"per"`
+	Hours        pgtype.Numeric     `json:"hours"`
+	SchedKk      string             `json:"sched_kk"`
+	SchedRu      string             `json:"sched_ru"`
+	Tags         []string           `json:"tags"`
+	Skills       []string           `json:"skills"`
+	Spec         []string           `json:"spec"`
+	Req          []byte             `json:"req"`
+	ApplyKk      string             `json:"apply_kk"`
+	ApplyRu      string             `json:"apply_ru"`
+	MinorOk      bool               `json:"minor_ok"`
+	Status       string             `json:"status"`
+	HiddenReason pgtype.Text        `json:"hidden_reason"`
+	StatusReason pgtype.Text        `json:"status_reason"`
+	SubmissionID pgtype.Int8        `json:"submission_id"`
+	ApprovedAt   pgtype.Timestamptz `json:"approved_at"`
+	PublishedAt  pgtype.Timestamptz `json:"published_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	ClosedAt     pgtype.Timestamptz `json:"closed_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MarketBan struct {
+	UserID    int64              `json:"user_id"`
+	Until     pgtype.Timestamptz `json:"until"`
+	Reason    string             `json:"reason"`
+	CreatedBy pgtype.Int8        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type MarketDaily struct {
+	UserID int64       `json:"user_id"`
+	Day    pgtype.Date `json:"day"`
+	N      int32       `json:"n"`
+}
+
+type MarketItem struct {
+	ID           int64              `json:"id"`
+	UserID       int64              `json:"user_id"`
+	Title        string             `json:"title"`
+	Descr        string             `json:"descr"`
+	Category     string             `json:"category"`
+	Condition    string             `json:"condition"`
+	University   string             `json:"university"`
+	PickupText   string             `json:"pickup_text"`
+	Photos       []string           `json:"photos"`
+	Status       string             `json:"status"`
+	HiddenReason pgtype.Text        `json:"hidden_reason"`
+	SubmissionID pgtype.Int8        `json:"submission_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	RemindedAt   pgtype.Timestamptz `json:"reminded_at"`
+	GivenAt      pgtype.Timestamptz `json:"given_at"`
+}
+
+type MarketPhoto struct {
+	Name      string             `json:"name"`
+	UserID    int64              `json:"user_id"`
+	ItemID    pgtype.Int8        `json:"item_id"`
+	Bytes     int32              `json:"bytes"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type MarketRule struct {
+	UserID     int64              `json:"user_id"`
+	AcceptedAt pgtype.Timestamptz `json:"accepted_at"`
+}
+
+type MarketSeasonSend struct {
+	Season string             `json:"season"`
+	UserID int64              `json:"user_id"`
+	SentAt pgtype.Timestamptz `json:"sent_at"`
+}
+
+type Mentor struct {
+	UserID        int64              `json:"user_id"`
+	University    string             `json:"university"`
+	Faculty       pgtype.Text        `json:"faculty"`
+	Areas         []string           `json:"areas"`
+	Format        string             `json:"format"`
+	Capacity      int16              `json:"capacity"`
+	GroupCapacity int16              `json:"group_capacity"`
+	About         string             `json:"about"`
+	Alumni        bool               `json:"alumni"`
+	Status        string             `json:"status"`
+	SubmissionID  pgtype.Int8        `json:"submission_id"`
+	ApprovedAt    pgtype.Timestamptz `json:"approved_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MentorPair struct {
+	ID          int64              `json:"id"`
+	MentorID    int64              `json:"mentor_id"`
+	MenteeID    int64              `json:"mentee_id"`
+	RequestID   pgtype.Int8        `json:"request_id"`
+	MatchedBy   pgtype.Int8        `json:"matched_by"`
+	University  string             `json:"university"`
+	Need        string             `json:"need"`
+	StartedAt   pgtype.Timestamptz `json:"started_at"`
+	Check3At    pgtype.Timestamptz `json:"check3_at"`
+	MonthAt     pgtype.Timestamptz `json:"month_at"`
+	ContinuedAt pgtype.Timestamptz `json:"continued_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+	EndReason   pgtype.Text        `json:"end_reason"`
+	EndedBy     pgtype.Int8        `json:"ended_by"`
+	MenteeScore pgtype.Int2        `json:"mentee_score"`
+	MentorScore pgtype.Int2        `json:"mentor_score"`
+}
+
+type MentorPairPrompt struct {
+	PairID     int64              `json:"pair_id"`
+	UserID     int64              `json:"user_id"`
+	Kind       string             `json:"kind"`
+	SentAt     pgtype.Timestamptz `json:"sent_at"`
+	Met        pgtype.Bool        `json:"met"`
+	Score      pgtype.Int2        `json:"score"`
+	Continue   pgtype.Bool        `json:"continue_"`
+	AnsweredAt pgtype.Timestamptz `json:"answered_at"`
+}
+
+type MentorRequest struct {
+	ID         int64              `json:"id"`
+	UserID     int64              `json:"user_id"`
+	University string             `json:"university"`
+	Need       string             `json:"need"`
+	GoalText   string             `json:"goal_text"`
+	Expect     string             `json:"expect"`
+	Status     string             `json:"status"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	MatchedAt  pgtype.Timestamptz `json:"matched_at"`
+	ClosedAt   pgtype.Timestamptz `json:"closed_at"`
+}
+
+type NotifyOutbox struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Category  string             `json:"category"`
+	Text      string             `json:"text"`
+	NotBefore pgtype.Timestamptz `json:"not_before"`
+	State     string             `json:"state"`
+	Attempts  int32              `json:"attempts"`
+	ClaimedAt pgtype.Timestamptz `json:"claimed_at"`
+	DoneAt    pgtype.Timestamptz `json:"done_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type NotifyPref struct {
+	UserID       int64              `json:"user_id"`
+	Deadlines    bool               `json:"deadlines"`
+	Digest       bool               `json:"digest"`
+	Events       bool               `json:"events"`
+	Mentors      bool               `json:"mentors"`
+	Market       bool               `json:"market"`
+	Jobs         bool               `json:"jobs"`
+	QuietEnabled bool               `json:"quiet_enabled"`
+	QuietStart   pgtype.Time        `json:"quiet_start"`
+	QuietEnd     pgtype.Time        `json:"quiet_end"`
+	DailyCap     int16              `json:"daily_cap"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type NotifySend struct {
+	UserID   int64              `json:"user_id"`
+	Category string             `json:"category"`
+	SentAt   pgtype.Timestamptz `json:"sent_at"`
+}
+
+type PortfolioItem struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Kind      string             `json:"kind"`
+	Title     string             `json:"title"`
+	Org       string             `json:"org"`
+	Period    string             `json:"period"`
+	Descr     string             `json:"descr"`
+	Url       string             `json:"url"`
+	Position  int16              `json:"position"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PortfolioSetting struct {
+	UserID         int64              `json:"user_id"`
+	Enabled        bool               `json:"enabled"`
+	Slug           string             `json:"slug"`
+	DisplayName    pgtype.Text        `json:"display_name"`
+	Headline       pgtype.Text        `json:"headline"`
+	Bio            pgtype.Text        `json:"bio"`
+	ShowUniversity bool               `json:"show_university"`
+	ShowCourse     bool               `json:"show_course"`
+	ShowEvents     bool               `json:"show_events"`
+	ShowCerts      bool               `json:"show_certs"`
+	ShowExperience bool               `json:"show_experience"`
+	ShowSkills     bool               `json:"show_skills"`
+	ShowBadges     bool               `json:"show_badges"`
+	ShowContact    bool               `json:"show_contact"`
+	SyncConsentAt  pgtype.Timestamptz `json:"sync_consent_at"`
+	SlugRotatedAt  pgtype.Timestamptz `json:"slug_rotated_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type RateLimit struct {
@@ -95,9 +608,51 @@ type Reminder struct {
 	TitleRu       pgtype.Text        `json:"title_ru"`
 }
 
+type Report struct {
+	ID         int64              `json:"id"`
+	TargetKind string             `json:"target_kind"`
+	TargetID   string             `json:"target_id"`
+	ReporterID int64              `json:"reporter_id"`
+	Reason     string             `json:"reason"`
+	Dismissed  bool               `json:"dismissed"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type Submission struct {
+	ID          int64              `json:"id"`
+	Kind        string             `json:"kind"`
+	Payload     []byte             `json:"payload"`
+	SubmittedBy pgtype.Int8        `json:"submitted_by"`
+	University  pgtype.Text        `json:"university"`
+	Status      SubmissionStatus   `json:"status"`
+	Reason      pgtype.Text        `json:"reason"`
+	ReviewedBy  pgtype.Int8        `json:"reviewed_by"`
+	ReviewedAt  pgtype.Timestamptz `json:"reviewed_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type UniversityPost struct {
+	ID          int64              `json:"id"`
+	University  string             `json:"university"`
+	AuthorID    pgtype.Int8        `json:"author_id"`
+	Kind        string             `json:"kind"`
+	Payload     []byte             `json:"payload"`
+	Deadline    pgtype.Date        `json:"deadline"`
+	Hidden      bool               `json:"hidden"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UniversityStaff struct {
+	UserID     int64              `json:"user_id"`
+	University string             `json:"university"`
+	GrantedBy  pgtype.Int8        `json:"granted_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type User struct {
 	ID              int64              `json:"id"`
-	TelegramID      int64              `json:"telegram_id"`
+	TelegramID      pgtype.Int8        `json:"telegram_id"`
 	TgUsername      pgtype.Text        `json:"tg_username"`
 	Name            pgtype.Text        `json:"name"`
 	Lang            string             `json:"lang"`
@@ -116,7 +671,37 @@ type User struct {
 	DigestDirection pgtype.Text        `json:"digest_direction"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+	IsAdult         pgtype.Bool        `json:"is_adult"`
+	LastSeenAt      pgtype.Timestamptz `json:"last_seen_at"`
 	DigestAsked     bool               `json:"digest_asked"`
 	DigestWeek      pgtype.Date        `json:"digest_week"`
 	DigestSeen      []string           `json:"digest_seen"`
+	ReferredBy      pgtype.Text        `json:"referred_by"`
+	Email           pgtype.Text        `json:"email"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+}
+
+type UserBadge struct {
+	UserID    int64              `json:"user_id"`
+	Badge     string             `json:"badge"`
+	Verified  bool               `json:"verified"`
+	AwardedAt pgtype.Timestamptz `json:"awarded_at"`
+}
+
+type UserPassword struct {
+	UserID    int64              `json:"user_id"`
+	Hash      string             `json:"hash"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VerifiedAttendance struct {
+	UserID         int64              `json:"user_id"`
+	EventID        int64              `json:"event_id"`
+	TitleKk        string             `json:"title_kk"`
+	TitleRu        pgtype.Text        `json:"title_ru"`
+	Cat            string             `json:"cat"`
+	University     string             `json:"university"`
+	StartsAt       pgtype.Timestamptz `json:"starts_at"`
+	CheckedInAt    pgtype.Timestamptz `json:"checked_in_at"`
+	HasCertificate interface{}        `json:"has_certificate"`
 }

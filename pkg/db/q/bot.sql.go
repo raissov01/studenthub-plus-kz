@@ -132,10 +132,11 @@ func (q *Queries) BotCountUsers(ctx context.Context) (BotCountUsersRow, error) {
 }
 
 const botDeleteBotOnlyUser = `-- name: BotDeleteBotOnlyUser :execrows
-delete from users where id = $1 and consent_at is null
+delete from users where id = $1 and consent_at is null and email is null
 `
 
-// Only a user known solely to the bot; site accounts are deleted by the account flow.
+// Only a user known solely to the bot; site accounts (consented, or with an email sign-in)
+// are deleted by the account flow.
 func (q *Queries) BotDeleteBotOnlyUser(ctx context.Context, id int64) (int64, error) {
 	result, err := q.db.Exec(ctx, botDeleteBotOnlyUser, id)
 	if err != nil {
@@ -199,11 +200,12 @@ func (q *Queries) BotFinishReminder(ctx context.Context, arg BotFinishReminderPa
 }
 
 const botListUsers = `-- name: BotListUsers :many
-select id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, digest_asked, digest_week, digest_seen from users
-where bot_started_at is not null and deleted_at is null
+select id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, is_adult, last_seen_at, digest_asked, digest_week, digest_seen, referred_by, email, email_verified_at from users
+where bot_started_at is not null and deleted_at is null and telegram_id is not null
 order by id
 `
 
+// Email-only accounts (telegram_id null) are never bot users.
 func (q *Queries) BotListUsers(ctx context.Context) ([]User, error) {
 	rows, err := q.db.Query(ctx, botListUsers)
 	if err != nil {
@@ -234,9 +236,14 @@ func (q *Queries) BotListUsers(ctx context.Context) ([]User, error) {
 			&i.DigestDirection,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.IsAdult,
+			&i.LastSeenAt,
 			&i.DigestAsked,
 			&i.DigestWeek,
 			&i.DigestSeen,
+			&i.ReferredBy,
+			&i.Email,
+			&i.EmailVerifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -404,10 +411,10 @@ func (q *Queries) BotSetReminderDeadline(ctx context.Context, arg BotSetReminder
 }
 
 const botTouchUser = `-- name: BotTouchUser :one
-insert into users (telegram_id, lang, bot_started_at) values ($1, $2, now())
+insert into users (telegram_id, lang, bot_started_at) values ($1::bigint, $2, now())
 on conflict (telegram_id) do update
   set bot_inactive = false, bot_started_at = coalesce(users.bot_started_at, now())
-returning id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, digest_asked, digest_week, digest_seen
+returning id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, is_adult, last_seen_at, digest_asked, digest_week, digest_seen, referred_by, email, email_verified_at
 `
 
 type BotTouchUserParams struct {
@@ -441,9 +448,14 @@ func (q *Queries) BotTouchUser(ctx context.Context, arg BotTouchUserParams) (Use
 		&i.DigestDirection,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.IsAdult,
+		&i.LastSeenAt,
 		&i.DigestAsked,
 		&i.DigestWeek,
 		&i.DigestSeen,
+		&i.ReferredBy,
+		&i.Email,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
@@ -478,7 +490,7 @@ func (q *Queries) BotUpsertReminder(ctx context.Context, arg BotUpsertReminderPa
 
 const botUserByTelegram = `-- name: BotUserByTelegram :one
 
-select id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, digest_asked, digest_week, digest_seen from users where telegram_id = $1
+select id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, is_adult, last_seen_at, digest_asked, digest_week, digest_seen, referred_by, email, email_verified_at from users where telegram_id = $1::bigint
 `
 
 // Telegram reminder bot (pkg/bot). Bot users are rows in users keyed by telegram_id.
@@ -506,9 +518,14 @@ func (q *Queries) BotUserByTelegram(ctx context.Context, telegramID int64) (User
 		&i.DigestDirection,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.IsAdult,
+		&i.LastSeenAt,
 		&i.DigestAsked,
 		&i.DigestWeek,
 		&i.DigestSeen,
+		&i.ReferredBy,
+		&i.Email,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }

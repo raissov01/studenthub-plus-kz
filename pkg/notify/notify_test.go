@@ -537,3 +537,56 @@ func TestAccountDeletionCascades(t *testing.T) {
 		}
 	}
 }
+
+// An email-only account (no telegram_id) is never messaged: Direct is a silent no-op,
+// Send drops everything (nothing queued, no daily cap used), Flush and the digest cope.
+func TestEmailOnlyUserNeverMessaged(t *testing.T) {
+	testdb.Need(t)
+	var uid int64
+	err := db.Tx(ctx(), func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx(), `insert into users (email, email_verified_at, name, consent_at)
+			values ('notify-only@example.kz', now(), 'E', now()) returning id`).Scan(&uid)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tgMu.Lock()
+	before := 0
+	for _, m := range tgSent {
+		before += len(m)
+	}
+	tgMu.Unlock()
+	if err := Direct(ctx(), uid, "hello"); err != nil {
+		t.Fatalf("Direct: %v", err)
+	}
+	for _, c := range Categories {
+		if r := send(t, uid, c, "x", at(12, 0)); r != Off && !c.Transactional() {
+			t.Fatalf("%s: %s", c, r)
+		}
+	}
+	send(t, uid, CatEvents, "night", at(23, 30)) // would be queued for a Telegram user
+	if n := count(t, "select count(*) from notify_outbox where user_id = $1", uid); n != 0 {
+		t.Fatalf("outbox has %d rows for an email-only user", n)
+	}
+	// a row queued earlier (e.g. before an unlink) is handled without error
+	exec(t, `insert into notify_outbox (user_id, category, text, not_before, created_at) values ($1, 'events', 'old', $2, $2)`, uid, at(9, 0))
+	if _, err := Flush(ctx(), at(12, 0)); err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	if r, err := Digest(ctx(), uid, at(12, 0), "digest"); err != nil || r != DigestOff {
+		t.Fatalf("digest: %s %v", r, err)
+	}
+	if n := count(t, "select count(*) from bot_daily_sends where user_id = $1", uid); n != 0 {
+		t.Fatal("digest claimed a day for an email-only user")
+	}
+	tgMu.Lock()
+	after := 0
+	for _, m := range tgSent {
+		after += len(m)
+	}
+	_, zero := tgSent[0]
+	tgMu.Unlock()
+	if after != before || zero {
+		t.Fatalf("Telegram was called for an email-only user (%d -> %d, chat 0: %v)", before, after, zero)
+	}
+}

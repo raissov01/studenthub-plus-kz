@@ -941,3 +941,54 @@ func TestDigestRespectsSwitch(t *testing.T) {
 	h.reset()
 	eq(t, h.runCron(thu).Digests, 1, "digest on")
 }
+
+// Email-only accounts (telegram_id null) are invisible to the bot: the cron skips them even
+// if a row somehow carries bot state, and nothing is sent to chat 0.
+func TestCronIgnoresEmailOnlyUsers(t *testing.T) {
+	h := newHarness(t)
+	var id int64
+	if err := testPool.QueryRow(context.Background(), `insert into users (email, email_verified_at, consent_at, bot_started_at, lang)
+		values ('bot-email-only@example.kz', now(), now(), now(), 'kk') returning id`).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	h.putReminder(id, "o3", addDays(h.today, 3), "Мүмкіндік o3")
+	u := h.user(204, "kk")
+	h.putReminder(u.ID, "o3", addDays(h.today, 3), "Мүмкіндік o3")
+	r := h.runCron(time.Now())
+	eq(t, r.Failed, 0)
+	eq(t, len(h.messages(204)), 1, "telegram user still reminded")
+	for _, c := range h.calls() {
+		if c.Body["chat_id"] == nil || c.Body["chat_id"] == float64(0) {
+			t.Fatalf("message without a chat: %v", c.Body)
+		}
+	}
+	eq(t, h.count("select count(*) from bot_daily_sends where user_id = $1", id), 0, "no day claimed")
+	users, err := h.qs().BotListUsers(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range users {
+		if x.ID == id {
+			t.Fatal("BotListUsers returned an email-only user")
+		}
+	}
+}
+
+// /stop deletes a bot-only row entirely, but never an account with an email sign-in, even
+// before consent (it was linked to Telegram from the site).
+func TestStopKeepsEmailLinkedAccount(t *testing.T) {
+	h := newHarness(t)
+	if _, err := testPool.Exec(context.Background(),
+		"insert into users (telegram_id, email, email_verified_at, lang) values (411, 'linked411@example.kz', now(), 'kk')"); err != nil {
+		t.Fatal(err)
+	}
+	h.say(411, "/start remind_o20")
+	h.say(411, "/pause")
+	h.press(411, "stop:yes", nil)
+	u := h.getUser(411)
+	if u == nil {
+		t.Fatal("/stop deleted an account that signs in by email")
+	}
+	eq(t, u.Email.String, "linked411@example.kz")
+	eq(t, u.BotStartedAt.Valid, false, "bot state cleared")
+}

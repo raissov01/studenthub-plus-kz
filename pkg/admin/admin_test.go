@@ -181,3 +181,44 @@ func TestSummaryAndSearch(t *testing.T) {
 		t.Fatalf("search by telegram id: %s", w.Body)
 	}
 }
+
+// Email-only accounts (telegram_id null) show up in search (also by address) with
+// telegramId null, and roles can be changed by user id.
+func TestEmailOnlyUserInAdmin(t *testing.T) {
+	testdb.Need(t)
+	admin, _ := newUser(t, "admin", "Email админ")
+	var id int64
+	err := db.Tx(ctx(), func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx(), `insert into users (email, email_verified_at, name, consent_at)
+			values ('dana.admintest@example.kz', now(), 'Дана Email', now()) returning id`).Scan(&id)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{"dana.admintest", "Дана Email", strconv.FormatInt(id, 10), ""} {
+		w := do(t, "GET", "/api/admin/users?q="+url.QueryEscape(q), admin, nil)
+		var out struct{ Users []map[string]any }
+		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
+			t.Fatalf("q=%q: %d %s", q, w.Code, w.Body)
+		}
+		found := false
+		for _, u := range out.Users {
+			if int64(u["id"].(float64)) == id {
+				found = true
+				if u["telegramId"] != nil || u["email"] != "dana.admintest@example.kz" {
+					t.Fatalf("row: %v", u)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("q=%q did not find the email-only user: %s", q, w.Body)
+		}
+	}
+	w := do(t, "POST", "/api/admin/role", admin, map[string]any{"userId": id, "role": "ambassador", "reason": "email-only test"})
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"telegramId":null`) {
+		t.Fatalf("role: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "GET", "/api/admin/summary", admin, nil); w.Code != 200 {
+		t.Fatalf("summary with email-only user: %d", w.Code)
+	}
+}

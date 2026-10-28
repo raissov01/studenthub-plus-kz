@@ -42,7 +42,8 @@ const (
 // Send delivers text (HTML parse mode — escape user input) to the student under their
 // preferences:
 //   - transactional categories (moderation) go out immediately, always;
-//   - a switched-off category is dropped (Off);
+//   - a switched-off category is dropped (Off), and so is everything for an email-only
+//     account without Telegram;
 //   - during quiet hours, or when the daily cap is used up, the message waits in the outbox
 //     (Queued) until the hourly GET /api/cron/notify can send it;
 //   - otherwise it is sent now and counted against the daily cap.
@@ -67,6 +68,11 @@ func Send(ctx context.Context, userID int64, c Category, text string, opts Opts)
 	}
 	if !prefs.Allows(c) {
 		return Off, nil
+	}
+	if tg, err := HasTelegram(ctx, p, userID); err != nil {
+		return "", err
+	} else if !tg {
+		return Off, nil // email-only account: nothing to deliver to
 	}
 	if prefs.Quiet(now) {
 		return Queued, enqueue(ctx, p, userID, c, text, now, prefs.QuietEnds(now))

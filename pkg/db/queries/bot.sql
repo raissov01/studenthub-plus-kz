@@ -1,12 +1,12 @@
 -- Telegram reminder bot (pkg/bot). Bot users are rows in users keyed by telegram_id.
 
 -- name: BotUserByTelegram :one
-select * from users where telegram_id = $1;
+select * from users where telegram_id = sqlc.arg(telegram_id)::bigint;
 
 -- name: BotTouchUser :one
 -- Every private message or button press: create the bot-only user on first contact,
 -- mark them active again (they may have unblocked the bot).
-insert into users (telegram_id, lang, bot_started_at) values ($1, $2, now())
+insert into users (telegram_id, lang, bot_started_at) values (sqlc.arg(telegram_id)::bigint, sqlc.arg(lang), now())
 on conflict (telegram_id) do update
   set bot_inactive = false, bot_started_at = coalesce(users.bot_started_at, now())
 returning *;
@@ -36,8 +36,9 @@ update users set digest_direction = $2 where id = $1;
 update users set digest_week = $2, digest_seen = $3 where id = $1;
 
 -- name: BotListUsers :many
+-- Email-only accounts (telegram_id null) are never bot users.
 select * from users
-where bot_started_at is not null and deleted_at is null
+where bot_started_at is not null and deleted_at is null and telegram_id is not null
 order by id;
 
 -- name: BotActiveReminders :many
@@ -103,8 +104,9 @@ delete from bot_daily_sends where user_id = $1;
 update bot_events set user_id = null where user_id = $1;
 
 -- name: BotDeleteBotOnlyUser :execrows
--- Only a user known solely to the bot; site accounts are deleted by the account flow.
-delete from users where id = $1 and consent_at is null;
+-- Only a user known solely to the bot; site accounts (consented, or with an email sign-in)
+-- are deleted by the account flow.
+delete from users where id = $1 and consent_at is null and email is null;
 
 -- name: BotClearUser :exec
 update users set bot_started_at = null, bot_inactive = false, paused_until = null,
