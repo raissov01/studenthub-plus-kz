@@ -1,5 +1,5 @@
-// Package server builds the single HTTP handler behind every /api/* route. On Vercel it
-// runs as one Go function (api/index.go); locally cmd/server serves the same handler.
+// Package server builds the single HTTP handler behind every /api/* route. cmd/server runs it
+// on our own server (and locally); the Next.js site proxies /api/* to it.
 //
 // Feature packages are wired in routes_<feature>.go files in this package:
 //
