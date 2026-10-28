@@ -1,7 +1,6 @@
 'use client';
 /* Rows and cards of the search lists (vacancy, opportunity, event), the «Ұсын» link, and «Менің тізімім». */
 import { useApp } from '@/components/app';
-import { featureOn, useConfig } from '@/lib/config';
 import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
@@ -60,18 +59,9 @@ export function EventCard({ e, demo }: { e: EventItem; demo?: boolean }) {
   );
 }
 
-/** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists; hidden until the form exists */
+/** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists: the site's form, whatever the switches say */
 export function SuggestLink() {
-  const { tt } = useApp();
-  const cfg = useConfig();
-  const { suggestFormUrl } = cfg;
-  if (featureOn(cfg, 'ambassador')) return <SuggestButton />;
-  if (!suggestFormUrl) return null;
-  return (
-    <a className="btn ghost block suggest" href={suggestFormUrl} target="_blank" rel="noopener">
-      <Icon n="plus" s={18} /> {tt('Мүмкіндік білесің бе? Ұсын', 'Знаешь возможность? Предложи')}
-    </a>
-  );
+  return <SuggestButton />;
 }
 
 /** an internship / grant / mobility card: type, funding, deadline and «Сізге сәйкес» match badge, with ♥ */

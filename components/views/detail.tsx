@@ -16,7 +16,7 @@ import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
-import type { Job, Provenance } from '@/lib/types';
+import type { Job, Opportunity, Provenance } from '@/lib/types';
 
 /** one view event per screen opening (effects may run twice for the same mount in development) */
 let lastView = { key: '', at: 0 };
@@ -81,7 +81,8 @@ export function JobView({ id }: { id: string }) {
   return <JobBody j={j} />;
 }
 
-function JobBody({ j }: { j: Job }) {
+/** a vacancy page body; also the admin editor's preview */
+export function JobBody({ j }: { j: Job }) {
   const { S, tt, tp, L, I, go, update, toast } = useApp();
   const real = isEmployerJob(j);
   const perHour = hourly(j);
@@ -126,14 +127,21 @@ function JobBody({ j }: { j: Job }) {
 }
 
 export function OppView({ id }: { id: string }) {
-  const { S, ui, tt, L, I, setUi, update, toast, go, content } = useApp();
+  const { content } = useApp();
   const o = content.opportunities.find(x => x.id === id);
   const found = !!o;
   useEffect(() => { if (found) trackView('opportunity_view', id); }, [found, id]);
+  if (!o) return null;
+  return <OppBody o={o} />;
+}
+
+/** an opportunity page body; also the admin editor's preview */
+export function OppBody({ o }: { o: Opportunity }) {
+  const { S, ui, tt, L, I, setUi, update, toast, go } = useApp();
+  const id = o.id;
   const cfg = useConfig();
   const ambOn = featureOn(cfg, 'ambassador');
   const tg = useTelegram();
-  if (!o) return null;
   const remind = remindLink(cfg.botUsername, o.id);
   const showCheck = ui.oppCheck[id];
   const q = qualify(o, S.profile, I);

@@ -11,7 +11,7 @@ export const PLAIN = [
   'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
-  'employer', 'university', 'announcements',
+  'employer', 'university', 'announcements', 'suggest', 'suggestions',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
@@ -19,10 +19,11 @@ export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', '
 export const SUB_SCREENS = [
   'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff',
+  'admin:employers', 'admin:staff', 'admin:content',
 ] as const;
-/** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest] */
-export const MULTI_SEGMENT = ['employer'] as const;
+/** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest]
+    and app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along) */
+export const MULTI_SEGMENT = ['employer', 'admin'] as const;
 export const ROOTS = ['home', 'search', 'notif', 'profile'];
 
 const FIXED: Record<string, string> = {
@@ -51,7 +52,11 @@ export function pathOf(v: string): string {
   const [n, prm] = parseView(v);
   if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
   if (n === 'opps') return FIXED['opps:jobs'];
-  if ((MULTI_SEGMENT as readonly string[]).includes(n) && prm) return '/' + n + '/' + prm.split('/').map(encodeURIComponent).join('/');
+  if ((MULTI_SEGMENT as readonly string[]).includes(n) && prm) {
+    const q = prm.indexOf('?');
+    const sub = q < 0 ? prm : prm.slice(0, q), query = q < 0 ? '' : prm.slice(q);
+    return '/' + n + '/' + sub.split('/').map(encodeURIComponent).join('/') + query;
+  }
   return '/' + (SEGMENT[n] || n) + (prm ? '/' + encodeURIComponent(prm) : '');
 }
 

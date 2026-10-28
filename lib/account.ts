@@ -37,7 +37,8 @@ export function useAccount(): AccountState {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  /** `detail`: the whole `error` object, for the extra fields some endpoints add (admin content: `field`, `path`) */
+  constructor(public status: number, public code: string, message: string, public detail: Record<string, unknown> = {}) { super(message); }
 }
 
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
@@ -55,8 +56,8 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
-    const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {});
   }
   return j as T;
 }

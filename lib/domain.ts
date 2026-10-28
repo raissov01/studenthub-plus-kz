@@ -43,7 +43,8 @@ export interface QualRow { ok: boolean; mid?: boolean; t: string; you: string }
 export function qualify(o: Opportunity, p: Profile, I: I18n) {
   const { tt, L } = I;
   const r = o.req, res: QualRow[] = [];
-  res.push({ ok: p.course >= r.course, t: tt(`Курс: кемінде ${r.course}`, `Курс: не ниже ${r.course}`), you: tt(`Сізде: ${p.course}-курс`, `У вас: ${p.course} курс`) });
+  // a record without a course requirement (admin editor, student suggestions) has no course row
+  if (r.course) res.push({ ok: p.course >= r.course, t: tt(`Курс: кемінде ${r.course}`, `Курс: не ниже ${r.course}`), you: tt(`Сізде: ${p.course}-курс`, `У вас: ${p.course} курс`) });
   if (r.gpa) res.push({ ok: p.gpa >= r.gpa, t: `GPA ≥ ${r.gpa.toFixed(2)}`, you: tt(`Сізде: ${p.gpa.toFixed(2)}`, `У вас: ${p.gpa.toFixed(2)}`) });
   if (r.en) res.push({ ok: lvl(p.en) >= lvl(r.en), t: tt(`Ағылшын тілі: ${r.en} және жоғары`, `Английский: ${r.en} и выше`), you: tt(`Сізде: ${p.en}`, `У вас: ${p.en}`) });
   (r.skills || []).forEach(k => res.push({ ok: p.skills.includes(k), t: tt('Дағды: ', 'Навык: ') + L(SKILLS[k]), you: p.skills.includes(k) ? tt('Профильде бар', 'Есть в профиле') : tt('Профильде жоқ', 'Нет в профиле') }));

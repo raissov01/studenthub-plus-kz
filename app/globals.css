@@ -979,3 +979,31 @@ main.bare { padding-block: 12px 40px; max-width: 760px; }
   .pf-url { display: inline; }
   .pf .badge { border: 1px solid #9A9A9A; }
 }
+
+/* ---------- admin content editor, suggestion form: field errors, kk/ru pairs, list rows, preview ---------- */
+.field-err { display: flex; flex-direction: column; gap: 2px; font-size: .84rem; font-weight: 600; color: var(--danger); overflow-wrap: anywhere; }
+.ac-srv { display: block; font-weight: 500; overflow-wrap: anywhere; }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.field > legend { padding: 0; margin-bottom: 6px; }
+.ac-bi > .grid-2 > .field, .ac-stack > .field { min-width: 0; }
+.ac-stack { display: flex; flex-direction: column; gap: 10px; }
+.field label.ac-lang { font-size: .8rem; font-weight: 500; }
+.ac-form .section > h2 { font-size: 1.1rem; }
+.ac-sub { font-family: var(--font-body); font-size: .9rem; color: var(--muted); font-weight: 600; margin: 4px 0 0; }
+.ac-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ac-row { display: flex; gap: 8px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); min-width: 0; }
+.ac-n { flex: none; width: 22px; padding-top: 4px; font-weight: 700; color: var(--muted); }
+.ac-row-in { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ac-row-act { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.ac-row-act .icon-btn { width: 40px; height: 40px; }
+.ac-row-act .icon-btn[disabled] { opacity: .35; }
+.ac-up { transform: rotate(-90deg); }
+.ac-down { transform: rotate(90deg); }
+.ac-count { margin-left: 6px; font-size: .8rem; color: var(--muted); }
+.ac-title { overflow-wrap: anywhere; }
+.ac-item .btn-row .btn { flex: 1 1 96px; min-width: 0; }
+.ac-preview { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ac-page { border: 1px solid var(--line); border-radius: var(--r); padding: 14px 12px; background: var(--bg); }
+.ac-preview .sticky-cta { position: static; margin-inline: 0; padding: 0; }
+.ac-done { align-self: flex-start; }

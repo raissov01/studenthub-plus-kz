@@ -26,7 +26,7 @@ interface Cabinet {
   resources: { title_kk: string; title_ru: string; url: string }[];
 }
 interface UniStats { university: string; students: Count; weekly_active: Count; saved_deadlines: Count; events: Count; registrations: Count; check_ins: Count; by_faculty: Record<string, Count> }
-interface Submission { id: number; kind: string; status: 'pending' | 'approved' | 'rejected'; reason: string | null; university: string | null; payload: Record<string, unknown>; created_at: string; reviewed_at: string | null }
+export interface Submission { id: number; kind: string; status: 'pending' | 'approved' | 'rejected'; reason: string | null; university: string | null; payload: Record<string, unknown>; created_at: string; reviewed_at: string | null }
 interface RatingRow { rank: number; university: string; weekly_active: Count; event_check_ins: Count; score: number }
 interface Certificate { name: string; university: string; role_in_team: string; term_start: string; term_end: string; issued_at: string; events_organized: number; published_suggestions: number; verify_url: string }
 
@@ -309,12 +309,11 @@ export function SuggestSheet({ kind, onDone }: { kind: 'opportunity' | 'place'; 
   );
 }
 
-/** «Мүмкіндік білесің бе? Ұсын» for students when the ambassador switch is on (sign-in first) */
+/** «Мүмкіндік білесің бе? Ұсын»: the site's own form /suggest (it asks for sign-in and consent itself) */
 export function SuggestButton() {
-  const { tt, openSheet } = useApp();
-  const need = useNeedAccount();
+  const { tt, go } = useApp();
   return (
-    <button className="btn ghost block suggest" type="button" onClick={() => { if (need()) openSheet(<SuggestSheet kind="opportunity" />); }}>
+    <button className="btn ghost block suggest" type="button" onClick={() => go('suggest')}>
       <Icon n="plus" s={18} /> {tt('Мүмкіндік білесің бе? Ұсын', 'Знаешь возможность? Предложи')}
     </button>
   );

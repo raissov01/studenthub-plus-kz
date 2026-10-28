@@ -21,6 +21,7 @@ import { dOff, plural } from '@/lib/format';
 import { activeFilters, clearAll, INTERN_TYPES, isSearchCat, JOB_FLAGS, matches, SEARCH_CATS, SEARCH_LABELS, type SearchCat } from '@/lib/search';
 import type { App } from '@/components/app';
 import type { UiState } from '@/lib/defaults';
+import type { Discount } from '@/lib/types';
 
 const OPP_CATS: SearchCat[] = ['intern', 'grant', 'mobility'];
 
@@ -250,25 +251,31 @@ function CoursesResults() {
   );
 }
 
+/** a discount tile of the list (opens its sheet); also the admin editor's preview */
+export function DealCard({ d }: { d: Discount }) {
+  const { L, openSheet } = useApp();
+  return (
+    <div className="fav-card">
+      <button className="card" type="button" onClick={() => openSheet(<DealSheet id={d.id} />)}>
+        <span className="badges" style={{ alignSelf: 'flex-start' }}><span className="badge b-line">{L(DEAL_CATS[d.cat])}</span><DemoBadge show={d.is_demo} /></span>
+        <span className="deal-pct">{d.pct}</span>
+        <span className="row-title">{L(d.name)}</span>
+        <span className="row-sub">{L(d.what)}</span>
+      </button>
+      <Heart id={d.id} opp={false} />
+    </div>
+  );
+}
+
 function DealsResults() {
-  const { ui, L, tt, openSheet, content } = useApp();
+  const { ui, L, tt, content } = useApp();
   const list = content.discounts.filter(d => (ui.dealCat === 'all' || d.cat === ui.dealCat) && matches(ui.sq, L(d.name), L(d.what), L(DEAL_CATS[d.cat]), L(d.cond)));
   return (
     <>
       <StudentCardHero />
       <Count n={list.length} />
       {list.length ? (
-        <div className="deals">{list.map(d => (
-          <div key={d.id} className="fav-card">
-            <button className="card" type="button" onClick={() => openSheet(<DealSheet id={d.id} />)}>
-              <span className="badges" style={{ alignSelf: 'flex-start' }}><span className="badge b-line">{L(DEAL_CATS[d.cat])}</span><DemoBadge show={d.is_demo} /></span>
-              <span className="deal-pct">{d.pct}</span>
-              <span className="row-title">{L(d.name)}</span>
-              <span className="row-sub">{L(d.what)}</span>
-            </button>
-            <Heart id={d.id} opp={false} />
-          </div>
-        ))}</div>
+        <div className="deals">{list.map(d => <DealCard key={d.id} d={d} />)}</div>
       ) : <NoResults icon="tag" cat="deals" msg={tt('Жеңілдік табылмады.', 'Скидки не найдены.')} />}
       <BonusTiers />
     </>

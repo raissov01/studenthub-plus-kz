@@ -19,6 +19,8 @@ import { NotFound } from '@/components/views/common';
 import { Announcements } from '@/components/views/jobs-b2b';
 import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/employer';
 import { UniversityCabinet } from '@/components/views/university';
+import { AdminContent } from '@/components/views/admin-content';
+import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -67,6 +69,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'market') return <AdminMarket />;
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
+      if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
     case 'mentors': return <Mentors prm={prm} />;
@@ -77,6 +80,8 @@ export function Screen({ v }: { v: string }) {
     case 'employer': return <EmployerCabinet prm={prm} />;
     case 'university': return <UniversityCabinet />;
     case 'announcements': return <Announcements />;
+    case 'suggest': return <SuggestPage />;
+    case 'suggestions': return <MySuggestionsPage />;
     default: return <Home />;
   }
 }

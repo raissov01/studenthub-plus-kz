@@ -10,12 +10,18 @@ import { reportHref } from '@/lib/config';
 import { COURSES, DEAL_CATS, SKILLS, SPECS } from '@/lib/data/static';
 import { studentCode } from '@/lib/domain';
 import { isoLocal, parseYmd, plural, T0 } from '@/lib/format';
-import type { Provenance } from '@/lib/types';
+import type { Discount, Provenance } from '@/lib/types';
 
 export function DealSheet({ id }: { id: string }) {
-  const { S, tt, L, content } = useApp();
+  const { content } = useApp();
   const d = content.discounts.find(x => x.id === id);
   if (!d) return null;
+  return <DealBody d={d} />;
+}
+
+/** the discount sheet's content; also the admin editor's preview */
+export function DealBody({ d }: { d: Discount }) {
+  const { S, tt, L } = useApp();
   const code = `${d.id.toUpperCase()}-${studentCode(S.profile)}`;
   return (
     <>
