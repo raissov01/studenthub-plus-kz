@@ -1,4 +1,4 @@
-/* Content loading for server components: GET /api/content from the Go API (revalidated every 10 minutes),
+/* Content loading for server components: GET /api/content from the Go API (uncached so demo settings apply immediately),
    falling back to the bundled data/*.json when the API is unreachable (build time, local dev without Go). */
 import { cache } from 'react';
 import type { Content, Discount, Job, Opportunity } from '@/lib/types';
@@ -6,7 +6,6 @@ import opportunitiesJson from '@/data/opportunities.json';
 import jobsJson from '@/data/jobs.json';
 import discountsJson from '@/data/discounts.json';
 
-export const REVALIDATE_SECONDS = 600;
 const TIMEOUT_MS = 4000;
 
 /** Same origin as the /api rewrite in next.config.ts: API_ORIGIN, else the Go dev server locally, else our API host. */
@@ -25,9 +24,9 @@ export const isOpen = (o: { deadline: string | null }, today = astanaToday()) =>
 
 function fallback(): Content {
   return {
-    opportunities: opportunitiesJson as Opportunity[],
-    jobs: jobsJson as Job[],
-    discounts: discountsJson as Discount[],
+    opportunities: (opportunitiesJson as Opportunity[]).filter(o => !o.is_demo),
+    jobs: (jobsJson as Job[]).filter(j => !j.is_demo),
+    discounts: (discountsJson as Discount[]).filter(d => !d.is_demo),
     source: 'bundled',
     updated_at: '',
   };
@@ -43,7 +42,7 @@ async function load(): Promise<Content> {
   let data: Content;
   try {
     const res = await fetch(`${apiOrigin()}/api/content`, {
-      next: { revalidate: REVALIDATE_SECONDS },
+      cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
       headers: { accept: 'application/json' },
     });
@@ -58,7 +57,7 @@ async function load(): Promise<Content> {
   return { ...data, opportunities: data.opportunities.filter(o => isOpen(o, today)) };
 }
 
-/** deduplicated per request; the fetch itself is cached for REVALIDATE_SECONDS */
+/** deduplicated per request; no persistent cache; failures never restore hidden demos */
 export const getContent = cache(load);
 
 export async function getJob(id: string) {

@@ -7,6 +7,7 @@ import { Search } from '@/components/views/search';
 import { MapView } from '@/components/views/map';
 import { Mine } from '@/components/views/opps';
 import { Admission, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
+import { AdminHealth } from '@/components/views/admin-health';
 import { Admin } from '@/components/views/admin';
 import { Privacy } from '@/components/views/privacy';
 import { Roadmap } from '@/components/views/roadmap';
@@ -60,6 +61,7 @@ export function Screen({ v }: { v: string }) {
     case 'privacy': return <Privacy />;
     case 'admin':
       if (!prm) return <Admin />;
+      if (prm === 'health') return <AdminHealth />;
       if (prm === 'queue') return <AdminQueue />;
       if (prm === 'reports') return <AdminReports />;
       if (prm === 'mentors') return <AdminMentors />;

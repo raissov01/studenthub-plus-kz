@@ -979,3 +979,9 @@ main.bare { padding-block: 12px 40px; max-width: 760px; }
   .pf-url { display: inline; }
   .pf .badge { border: 1px solid #9A9A9A; }
 }
+
+/* Launch monitoring: long diagnostics and bilingual status text must wrap on small phones. */
+.launch-admin { min-width: 0; overflow-wrap: anywhere; }
+.launch-admin .row-title, .launch-admin .row-sub { white-space: normal; overflow-wrap: anywhere; }
+.launch-admin .btn { white-space: normal; max-width: 100%; }
+.launch-admin > .section { margin-top: 22px; }

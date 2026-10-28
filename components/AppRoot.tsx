@@ -1,6 +1,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { ClientErrorReporter } from '@/components/ClientErrorReporter';
 import { AppProvider } from '@/components/app';
 import { Shell } from '@/components/Shell';
 import type { Content } from '@/lib/types';
@@ -12,6 +13,7 @@ export function AppRoot({ content, children }: { content: Content; children: Rea
   const pathname = usePathname();
   return (
     <AppProvider content={content}>
+      <ClientErrorReporter />
       {isBare(pathname) ? <main id="main" className="bare">{children}</main> : <Shell>{children}</Shell>}
     </AppProvider>
   );

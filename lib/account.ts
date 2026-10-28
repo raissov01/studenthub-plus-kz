@@ -37,18 +37,18 @@ export function useAccount(): AccountState {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  constructor(public status: number, public code: string, message: string, public data?: unknown) { super(message); }
 }
 
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
-export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru' } = {}): Promise<T> {
+export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru'; cache?: RequestCache; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (token) headers.authorization = `Bearer ${token}`;
   if (opts.lang) headers['accept-language'] = opts.lang;
   let r: Response;
   try {
-    r = await fetch(path, { method: opts.method || 'GET', headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
+    r = await fetch(path, { method: opts.method || 'GET', cache: opts.cache, signal: opts.signal, headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
   } catch {
     throw new ApiError(0, 'network', opts.lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
   }
@@ -56,7 +56,7 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), j);
   }
   return j as T;
 }
@@ -76,7 +76,7 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), j);
   }
   return j as T;
 }

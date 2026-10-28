@@ -14,6 +14,7 @@ import type { AppState, Content } from '@/lib/types';
 interface GoOpts { replace?: boolean }
 interface Ctx {
   content: Content;
+  refreshContent: () => Promise<Content>;
   go: (v: string, opts?: GoOpts) => void;
   back: () => void;
   openSheet: (node: ReactNode) => void;
@@ -44,10 +45,21 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
   const pathRef = useRef(pathname);
   useEffect(() => { pathRef.current = pathname; }, [pathname]);
 
+  const [fresh, setFresh] = useState<{ base: Content; data: Content } | null>(null);
+  const feed = fresh?.base === raw ? fresh.data : raw;
+  const refreshContent = useCallback(async () => {
+    const r = await fetch('/api/content', { cache: 'no-store', signal: AbortSignal.timeout(12_000) });
+    if (!r.ok) throw new Error('Content unavailable');
+    const data = await r.json() as Content;
+    if (!Array.isArray(data.jobs) || !Array.isArray(data.opportunities) || !Array.isArray(data.discounts)) throw new Error('Content unavailable');
+    setFresh({ base: raw, data });
+    return data;
+  }, [raw]);
+
   // past deadlines never show, whatever the source said; adult-only employer jobs never reach a signed-in minor
   const acc = useAccount();
   const signedIn = !!acc.user, isAdult = acc.user?.isAdult;
-  const content = useMemo(() => ({ ...raw, opportunities: openOpps(raw.opportunities), jobs: jobsForViewer(raw.jobs, signedIn, isAdult) }), [raw, signedIn, isAdult]);
+  const content = useMemo(() => ({ ...feed, opportunities: openOpps(feed.opportunities), jobs: jobsForViewer(feed.jobs, signedIn, isAdult) }), [feed, signedIn, isAdult]);
 
   const [sheet, setSheet] = useState<ReactNode>(null);
   const sheetOpen = useRef(false);
@@ -117,8 +129,8 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
   const setActiveTab = useCallback((t: string) => { activeTab.current = t; }, []);
   const fromOf = useCallback((path: string) => froms()[path] ?? '', []);
 
-  const value = useMemo<Ctx>(() => ({ content, go, back, openSheet, closeSheet, closeSheetDom, toast, sheet, toastMsg, setActiveTab, fromOf }),
-    [content, go, back, openSheet, closeSheet, closeSheetDom, toast, sheet, toastMsg, setActiveTab, fromOf]);
+  const value = useMemo<Ctx>(() => ({ content, refreshContent, go, back, openSheet, closeSheet, closeSheetDom, toast, sheet, toastMsg, setActiveTab, fromOf }),
+    [content, refreshContent, go, back, openSheet, closeSheet, closeSheetDom, toast, sheet, toastMsg, setActiveTab, fromOf]);
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
 
