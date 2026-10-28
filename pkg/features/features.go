@@ -6,6 +6,7 @@ package features
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
@@ -57,6 +58,8 @@ func Routes(mux *http.ServeMux) {
 			"botUsername":    strings.TrimPrefix(config.Str("BOT_USERNAME", ""), "@"),
 			"reportUrl":      config.Str("REPORT_URL", ""),
 			"suggestFormUrl": config.Str("SUGGEST_FORM_URL", ""),
+			// null unless MARKET_SEASON is set and the range is current or upcoming
+			"marketSeason": MarketSeason(time.Now()),
 		})
 	})
 }

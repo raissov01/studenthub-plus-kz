@@ -1,7 +1,10 @@
 [Unit]
-Description=Student Hub daily deadline reminders (calls the API's cron endpoint)
+Description=Student Hub daily jobs: deadline reminders first, then mentors and market digests
 
 [Service]
 Type=oneshot
 EnvironmentFile=/opt/studenthub/.env
 ExecStart=/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron'
+# '-': these answer 404 while their feature switch is off
+ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/mentors'
+ExecStart=-/bin/sh -c 'curl -fsS -m 300 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/market'

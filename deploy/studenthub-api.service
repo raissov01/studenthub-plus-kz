@@ -4,6 +4,7 @@ After=network-online.target docker.service
 Wants=network-online.target
 
 [Service]
+Environment=UPLOAD_DIR=/opt/studenthub/uploads
 EnvironmentFile=/opt/studenthub/.env
 WorkingDirectory=/opt/studenthub
 ExecStart=/opt/studenthub/studenthub-api
@@ -13,10 +14,10 @@ User=studenthub
 MemoryMax=150M
 NoNewPrivileges=true
 ProtectSystem=strict
+# market photos (prompt 08) are the only files the API writes
+ReadWritePaths=-/opt/studenthub/uploads
 ProtectHome=true
 PrivateTmp=true
-Environment=UPLOAD_DIR=/opt/studenthub/uploads
-ReadWritePaths=/opt/studenthub/uploads
 
 [Install]
 WantedBy=multi-user.target
