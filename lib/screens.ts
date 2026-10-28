@@ -19,7 +19,12 @@ const META: Record<string, Meta> = {
   services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
   materials: { title: (_, x) => t('Оқу материалдары', 'Учебные материалы')(x), tab: 'home' },
   saved: { title: (_, x) => t('Сақталғандар', 'Сохранённое')(x), tab: 'profile' },
-  opps: { title: (_, x) => t('Мүмкіндіктер', 'Возможности')(x) },
+  // the search screen under the old URLs; the header shows «Іздеу», the page <title> names the category
+  opps: {
+    title: (prm, x) => ({
+      intern: t('Тағылымдама', 'Стажировки')(x), events: t('Іс-шаралар', 'Мероприятия')(x), courses: t('Курстар', 'Курсы')(x),
+    } as Record<string, string>)[prm] ?? t('Жұмыс', 'Работа')(x),
+  },
   mine: { title: (_, x) => t('Менің тізімім', 'Мой список')(x) },
   job: { title: (_, x) => t('Вакансия', 'Вакансия')(x), tab: 'opps' },
   opp: { title: (_, x) => t('Мүмкіндік', 'Возможность')(x), tab: 'opps' },
@@ -45,7 +50,7 @@ const META: Record<string, Meta> = {
     tab: 'ai',
   },
   match: { title: (_, x) => t('Вакансияға сәйкестік', 'Совпадение с вакансией')(x), tab: 'ai' },
-  bonus: { title: (_, x) => t('Бонустар мен жеңілдіктер', 'Бонусы и скидки')(x) },
+  bonus: { title: (_, x) => t('Жеңілдіктер', 'Скидки')(x) },
   profile: { title: (_, x) => t('Профиль', 'Профиль')(x) },
   edit: { title: (_, x) => t('Профильді өзгерту', 'Изменить профиль')(x), tab: 'profile' },
   gpa: { title: (_, x) => t('Менің оқуым', 'Моя учёба')(x), tab: 'profile' },

@@ -1,16 +1,17 @@
 'use client';
-/* Profile and its sub-pages, discounts, settings and onboarding. The profile and photo stay on this device only. */
+/* Profile and its sub-pages, the student card and GPA bonus of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, ConfirmSheet, DemoBadge, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
-import { AddCertSheet, DealSheet, StudentQrSheet } from '@/components/views/sheets';
-import { ADMISSION, CITIES, DEAL_CATS, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
+import { ConfirmSheet, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
+import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
+import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
 import { dOff, money } from '@/lib/format';
 import { getState, resetState, update } from '@/lib/store';
 import { track } from '@/features/analytics/track';
 import { useTelegram } from '@/lib/telegram';
 import { AccountSection } from '@/components/views/account';
+import { NotifySection } from '@/components/views/notify';
 import { RoadmapProgress } from '@/components/views/roadmap';
 import { ProfileCommunity } from '@/components/views/entries';
 import { VerifiedAttendance } from '@/components/views/events';
@@ -169,13 +170,10 @@ export function Profile() {
 }
 
 /* ---------- discounts ---------- */
-export function Bonus() {
-  const { S, ui, tt, tp, L, setUi, openSheet, go, content } = useApp();
+/** «Цифрлық студенттік» card at the top of the discounts category; opens the QR */
+export function StudentCardHero() {
+  const { S, tt, L, openSheet } = useApp();
   const p = S.profile;
-  const cats: [string, string][] = [['all', tt('Барлығы', 'Все')], ...Object.entries(DEAL_CATS).filter(([k]) => content.discounts.some(d => d.cat === k)).map(([k, c]): [string, string] => [k, L(c)])];
-  const list = content.discounts.filter(d => ui.dealCat === 'all' || d.cat === ui.dealCat);
-  const tier = TIERS.find(t => p.gpa >= t.min);
-  const next = TIERS.slice().reverse().find(t => p.gpa < t.min);
   return (
     <>
       <button className="hero" type="button" onClick={() => openSheet(<StudentQrSheet />)} style={{ border: 0, textAlign: 'left', width: '100%' }}>
@@ -186,31 +184,31 @@ export function Bonus() {
         <span className="code">{studentCode(p)}</span>
       </button>
       <Note>{tt('Серіктестер мен жеңілдік мөлшері — үлгі. Нақты шарттар серіктестермен жасалған келісімге байланысты.', 'Партнёры и размеры скидок — примеры. Реальные условия зависят от соглашений с партнёрами.')}</Note>
-      <div className="chips">{cats.map(([k, l]) => <Chip key={k} pressed={ui.dealCat === k} onClick={() => setUi({ dealCat: k })}>{l}</Chip>)}</div>
-      <div className="deals">{list.map(d => (
-        <button key={d.id} className="card" type="button" onClick={() => openSheet(<DealSheet id={d.id} />)}>
-          <span className="badges" style={{ alignSelf: 'flex-start' }}><span className="badge b-line">{L(DEAL_CATS[d.cat])}</span><DemoBadge show={d.is_demo} /></span>
-          <span className="deal-pct">{d.pct}</span>
-          <span className="row-title">{L(d.name)}</span>
-          <span className="row-sub">{L(d.what)}</span>
-        </button>
-      ))}</div>
-      <section className="section">
-        <h2>{tt('Үздік оқығаны үшін бонус', 'Бонусы за успеваемость')}</h2>
-        <div className="card">
-          <div className="card-row" style={{ alignItems: 'center' }}><span className={`ico ${tier ? 'sun' : ''}`}><Icon n="award" /></span>
-            <div className="row-main"><span className="row-title">{tier ? tp(tier.name) : tt('Деңгей әзірге жоқ', 'Уровня пока нет')}</span>
-              <span className="row-sub">GPA {p.gpa.toFixed(2)}{next ? ' · ' + tt(`${tp(next.name)} үшін ${next.min.toFixed(2)} керек`, `для уровня «${tp(next.name)}» нужно ${next.min.toFixed(2)}`) : ''}</span></div></div>
-          {tier ? <ul className="bullets">{tier.perks.map((x, i) => <li key={i}>{tp(x)}</li>)}</ul> : null}
-          <p className="tiny muted">{tt('Жоғары баға өздігінен жеңілдік бермейді: ереже мен қаржыландыру университетпен және серіктестермен келісіледі.', 'Высокие оценки сами по себе не дают права на скидку: правила и финансирование согласуются с университетом и партнёрами.')}</p>
-          <button className="btn ghost" type="button" onClick={() => go('gpa')}><Icon n="chart" s={18} /> {tt('GPA калькуляторы', 'Калькулятор GPA')}</button>
-        </div>
-      </section>
     </>
   );
 }
 
-/* ---------- GPA ---------- */
+/** «Үздік оқығаны үшін бонус» under the discounts */
+export function BonusTiers() {
+  const { S, tt, tp, go } = useApp();
+  const p = S.profile;
+  const tier = TIERS.find(t => p.gpa >= t.min);
+  const next = TIERS.slice().reverse().find(t => p.gpa < t.min);
+  return (
+    <section className="section">
+      <h2>{tt('Үздік оқығаны үшін бонус', 'Бонусы за успеваемость')}</h2>
+      <div className="card">
+        <div className="card-row" style={{ alignItems: 'center' }}><span className={`ico ${tier ? 'sun' : ''}`}><Icon n="award" /></span>
+          <div className="row-main"><span className="row-title">{tier ? tp(tier.name) : tt('Деңгей әзірге жоқ', 'Уровня пока нет')}</span>
+            <span className="row-sub">GPA {p.gpa.toFixed(2)}{next ? ' · ' + tt(`${tp(next.name)} үшін ${next.min.toFixed(2)} керек`, `для уровня «${tp(next.name)}» нужно ${next.min.toFixed(2)}`) : ''}</span></div></div>
+        {tier ? <ul className="bullets">{tier.perks.map((x, i) => <li key={i}>{tp(x)}</li>)}</ul> : null}
+        <p className="tiny muted">{tt('Жоғары баға өздігінен жеңілдік бермейді: ереже мен қаржыландыру университетпен және серіктестермен келісіледі.', 'Высокие оценки сами по себе не дают права на скидку: правила и финансирование согласуются с университетом и партнёрами.')}</p>
+        <button className="btn ghost" type="button" onClick={() => go('gpa')}><Icon n="chart" s={18} /> {tt('GPA калькуляторы', 'Калькулятор GPA')}</button>
+      </div>
+    </section>
+  );
+}
+
 export function Gpa() {
   const { S, ui, tt, setUi } = useApp();
   const p = S.profile;
@@ -385,6 +383,7 @@ export function Settings() {
       <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><Seg items={[['kk', 'Қазақша'], ['ru', 'Русский']]} cur={S.lang} onPick={v => update(s => { s.lang = v === 'ru' ? 'ru' : 'kk'; })} /></section>
       {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
       <AccountSection />
+      <NotifySection />
       <section className="section"><h2>{tt('Деректер', 'Данные')}</h2>
         <div className="group">
           <Row onClick={() => { update(s => { s.chat = []; }); setUi({ chatErr: '' }); toast(tt('Чат тазаланды', 'Чат очищен')); }} icon="chat" title={tt('Чат тарихын тазалау', 'Очистить историю чата')} chev={false} />

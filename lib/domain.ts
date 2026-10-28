@@ -205,7 +205,7 @@ export function notifs(S: AppState, I: I18n, C: Content): Notif[] {
 export const unreadCount = (S: AppState, I: I18n, C: Content) => notifs(S, I, C).filter(n => !S.read[n.id]).length;
 
 /* ---------- one list for jobs, internships and deals ---------- */
-export interface SearchItem { k: string; id: string; go?: string; act?: 'deal'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean }
+export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean; noFav?: boolean }
 export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
   const { tt, L } = I;
   const items: SearchItem[] = [];

@@ -123,3 +123,21 @@ export function ConfirmSheet({ msg, yes }: { msg: string; yes: () => void }) {
     </>
   );
 }
+
+/** ♥ save toggle: opportunities go to «saved» (their deadlines show in «Менің тізімім»), the rest to favourites */
+export function Heart({ id, opp }: { id: string; opp: boolean }) {
+  const { S, tt, update, toast } = useApp();
+  const on = !!(opp ? S.saved : S.fav)[id];
+  const flip = () => {
+    update(s => {
+      const box = opp ? s.saved : s.fav;
+      if (box[id]) delete box[id]; else box[id] = Date.now();
+    });
+    toast(on ? tt('Сақталғаннан алынды', 'Убрано из сохранённых') : tt('Сақталды', 'Сохранено'));
+  };
+  return (
+    <button className="heart" type="button" onClick={flip} aria-pressed={on} aria-label={on ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}>
+      <Icon n="heart" s={20} />
+    </button>
+  );
+}

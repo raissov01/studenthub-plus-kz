@@ -35,6 +35,8 @@ const FIXED: Record<string, string> = {
   'map:near': '/map/near',
 };
 const SEGMENT: Record<string, string> = { opp: 'opportunity' };
+/** search categories that kept their own old URL; the others are /search?k=<category> */
+const SEARCH_PATH: Record<string, string> = { jobs: '/jobs', intern: '/internships', events: '/events', courses: '/courses', deals: '/discounts' };
 const FIXED_BACK: Record<string, string> = Object.fromEntries(
   Object.entries(FIXED).filter(([v]) => v !== 'opps' && v !== 'map:campus').map(([v, p]) => [p, v]),
 );
@@ -43,7 +45,7 @@ const SEGMENT_BACK: Record<string, string> = Object.fromEntries(Object.entries(S
 export function pathOf(v: string): string {
   if (v in FIXED) return FIXED[v];
   const [n, prm] = parseView(v);
-  if (n === 'search') return '/search';
+  if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
   if (n === 'opps') return FIXED['opps:jobs'];
   return '/' + (SEGMENT[n] || n) + (prm ? '/' + encodeURIComponent(prm) : '');
 }
