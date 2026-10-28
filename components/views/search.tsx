@@ -6,18 +6,17 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row } from '@/components/ui';
-import { Loading, useFeature, useLoad } from '@/components/views/common';
-import { DbEventCard } from '@/components/views/events';
+import { useFeature } from '@/components/views/common';
 import { SearchRow } from '@/components/views/home';
 import { MarketSearchResults } from '@/components/views/market';
-import { EventCard, JobRow, OppCard, SuggestLink } from '@/components/views/opps';
+import { JobRow, OppCard, SuggestLink } from '@/components/views/opps';
 import { BonusTiers, StudentCardHero } from '@/components/views/profile';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useAccount } from '@/lib/account';
-import { CITIES, COURSES, DEAL_CATS, EVENTS, EVENT_CATS, JOB_TAGS, OPP_TYPES } from '@/lib/data/static';
+import { CITIES, COURSES, DEAL_CATS, EVENT_CATS, JOB_TAGS, OPP_TYPES } from '@/lib/data/static';
 import { hourly, oppKind, oppLeft, searchItems, type SearchItem } from '@/lib/domain';
-import { ALL_EVENT_CATS, canCreateEvents, eventListItems, evTitle, type DbEvent, type EventListItem } from '@/lib/events';
-import { dOff, plural } from '@/lib/format';
+import { ALL_EVENT_CATS, canCreateEvents, evTitle, evDesc } from '@/lib/events';
+import { plural } from '@/lib/format';
 import { activeFilters, clearAll, INTERN_TYPES, isSearchCat, JOB_FLAGS, matches, SEARCH_CATS, SEARCH_LABELS, type SearchCat } from '@/lib/search';
 import type { App } from '@/components/app';
 import type { UiState } from '@/lib/defaults';
@@ -169,14 +168,11 @@ const Count = ({ n }: { n: number }) => {
   return <p className="tiny muted" role="status">{tt(`Табылды: ${n}`, `Найдено: ${n}`)}</p>;
 };
 
-/** DB events (when the switch is on) and the legacy demo ones, filtered by category and query */
-function useEventItems(on: boolean, cat: string): { items: EventListItem[]; loading: boolean } {
-  const { ui, lang } = useApp();
-  const eventsOn = useFeature('events');
-  const acc = useAccount();
-  const { data, loading } = useLoad<{ events: DbEvent[] }>(on && eventsOn ? '/api/events?scope=upcoming' : null);
-  const items = eventListItems(eventsOn ? data?.events ?? null : null, EVENTS, { signedIn: !!acc.user, cat, q: ui.sq, lang });
-  return { items, loading: eventsOn && on && loading && !data };
+/** Public events follow the server's demo filter; management APIs are used only by detail screens. */
+function useEventItems(cat: string) {
+  const { ui, lang, content } = useApp();
+  return (content.events ?? []).filter(e => (cat === 'all' || e.cat === cat)
+    && matches(ui.sq, evTitle(e, lang), evDesc(e, lang), e.place_text));
 }
 
 function JobsResults() {
@@ -211,16 +207,15 @@ function OppResults({ cat }: { cat: SearchCat }) {
 }
 
 function EventsResults() {
-  const { ui, tt, go } = useApp();
+  const { ui, tt, go, lang, I } = useApp();
   const acc = useAccount();
-  const { items, loading } = useEventItems(true, ui.evCat);
-  if (loading) return <Loading />;
+  const items = useEventItems(ui.evCat);
   return (
     <>
       {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
       <Count n={items.length} />
       {items.length
-        ? <div className="list">{items.map(it => it.kind === 'db' ? <DbEventCard key={'db' + it.e.id} e={it.e} /> : <EventCard key={it.e.id} e={it.e} demo />)}</div>
+        ? <div className="group">{items.map(e => <Row key={e.id} go={'event:' + e.id} icon="calendar" title={<>{evTitle(e, lang)} <DemoBadge show={!!e.is_demo} /></>} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />)}</div>
         : <NoResults icon="calendar" cat="events" msg={tt('Іс-шара табылмады.', 'Событий не найдено.')} />}
     </>
   );
@@ -285,20 +280,13 @@ function DealsResults() {
 function AllResults() {
   const { S, I, ui, tt, L, lang, content, monS } = useApp();
   const marketOn = useFeature('market');
-  const { items: evs } = useEventItems(true, 'all');
+  const evs = useEventItems('all');
   const base = searchItems(S, I, content);
-  const evItems: SearchItem[] = evs.map(it => {
-    if (it.kind === 'db') {
-      const d = new Date(new Date(it.e.starts_at).getTime() + 5 * 3600_000);
-      return {
-        k: 'events', id: 'ev' + it.e.id, go: 'event:' + it.e.id, org: evTitle(it.e, lang), noFav: true, fav: false, demo: false, badge: null,
-        title: `${d.getUTCDate()} ${monS[d.getUTCMonth()]}${it.e.place_text ? ', ' + it.e.place_text : ''}`, meta: `${L(ALL_EVENT_CATS[it.e.cat] ?? ALL_EVENT_CATS.other)} · ${tt('Іс-шара', 'Событие')}`,
-      };
-    }
-    const d = dOff(it.e.day);
+  const evItems: SearchItem[] = evs.map(e => {
+    const d = new Date(new Date(e.starts_at).getTime() + 5 * 3600_000);
     return {
-      k: 'events', id: it.e.id, go: 'event:' + it.e.id, org: L(it.e.title), noFav: true, fav: false, demo: true, badge: null,
-      title: `${d.getDate()} ${monS[d.getMonth()]}, ${L(it.e.place)}`, meta: `${L(EVENT_CATS[it.e.cat])} · ${tt('Іс-шара', 'Событие')}`,
+      k: 'events', id: 'ev' + e.id, go: 'event:' + e.id, org: evTitle(e, lang), noFav: true, fav: false, demo: !!e.is_demo, badge: null,
+      title: `${d.getUTCDate()} ${monS[d.getUTCMonth()]}${e.place_text ? ', ' + e.place_text : ''}`, meta: `${L(ALL_EVENT_CATS[e.cat] ?? ALL_EVENT_CATS.other)} · ${tt('Іс-шара', 'Событие')}`,
     };
   });
   const courseItems: SearchItem[] = COURSES.map(c => ({

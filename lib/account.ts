@@ -46,7 +46,7 @@ export class ApiError extends Error {
   /** seconds from the Retry-After header of a 429, 0 otherwise */
   retryAfter = 0;
   /** `detail`: the whole `error` object, for the extra fields some endpoints add (admin content: `field`, `path`) */
-  constructor(public status: number, public code: string, message: string, public detail: Record<string, unknown> = {}) { super(message); }
+  constructor(public status: number, public code: string, message: string, public detail: Record<string, unknown> = {}, public data?: unknown) { super(message); }
 }
 
 /** the device knows it has no network: fail at once with a clear reason instead of a long timeout */
@@ -54,7 +54,7 @@ const offlineError = (lang?: 'kk' | 'ru') =>
   new ApiError(0, 'offline', lang === 'ru' ? 'Нет интернета — для этого нужно подключение.' : 'Интернет жоқ — бұл әрекетке интернет керек.');
 
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
-export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru' } = {}): Promise<T> {
+export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru'; cache?: RequestCache; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (token) headers.authorization = `Bearer ${token}`;
@@ -62,7 +62,7 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   if (!isOnline()) throw offlineError(opts.lang);
   let r: Response;
   try {
-    r = await fetch(path, { method: opts.method || 'GET', headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
+    r = await fetch(path, { method: opts.method || 'GET', cache: opts.cache, signal: opts.signal, headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
   } catch {
     throw new ApiError(0, 'network', opts.lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
   }
@@ -70,7 +70,7 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
-    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {});
+    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {}, j);
     const ra = Number(r.headers.get('retry-after'));
     if (Number.isFinite(ra) && ra > 0) err.retryAfter = Math.ceil(ra);
     throw err;
@@ -94,7 +94,7 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), j);
   }
   return j as T;
 }

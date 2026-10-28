@@ -62,7 +62,14 @@ export interface CommunityPlace {
   id: string; cat: string; name: LText; desc: LText; address: string; building_id: string; hours: string;
   source_url: string; posted_at: string; university: string; source: 'ambassador';
 }
+/** Public event feed: intentionally excludes attendee and management data. */
+export interface ContentEvent {
+  id: number; title_kk: string; title_ru: string | null; desc_kk: string | null; desc_ru: string | null;
+  cat: string; starts_at: string; ends_at: string; university: string; place_text: string | null;
+  building_id: string | null; is_demo?: boolean;
+}
 export interface Content {
+  events?: ContentEvent[];
   places?: CommunityPlace[];
   opportunities: Opportunity[];
   jobs: Job[];

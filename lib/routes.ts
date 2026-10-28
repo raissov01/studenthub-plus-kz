@@ -17,7 +17,7 @@ export const PLAIN = [
 export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
 /** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
 export const SUB_SCREENS = [
-  'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
+  'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
   'admin:employers', 'admin:staff', 'admin:content',
 ] as const;

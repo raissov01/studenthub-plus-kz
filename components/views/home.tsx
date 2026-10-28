@@ -8,7 +8,7 @@ import { ServicesCommunity } from '@/components/views/entries';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
-import { EVENTS, SCHEDULE } from '@/lib/data/static';
+import { SCHEDULE } from '@/lib/data/static';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
 import { dOff } from '@/lib/format';
 import { buildScheduleIcs } from '@/lib/ics';
@@ -89,11 +89,11 @@ export function Home() {
     ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
   ];
   const news = [
-    ...EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: e.id, title: L(e.title), sub: `${I.fDate(dOff(e.day))}, ${L(e.place)}` })),
+    ...(content.events ?? []).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
     ...content.opportunities.slice(0, 2).map(o => {
       const left = oppLeft(o);
       const sub = Number.isFinite(left) ? tt(`Өтінім мерзімі: ${I.fDate(dOff(left))}`, `Приём заявок до ${I.fDate(dOff(left))}`) : tt('Мерзімі шектелмеген', 'Без срока');
-      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, title: L(o.title), sub };
+      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, demo: !!o.is_demo, title: L(o.title), sub };
     }),
   ];
   const focused = useRef(false);
@@ -145,7 +145,7 @@ export function Home() {
           {news.map(n => (
             <button key={n.go} className="row news" type="button" onClick={() => go(n.go)}>
               <span className={`thumb thumb-${hue(n.id)}`}><Icon n={n.icon} s={24} /></span>
-              <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.sub}</span></span>
+              <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.sub} <DemoBadge show={n.demo} /></span></span>
             </button>
           ))}
         </div>

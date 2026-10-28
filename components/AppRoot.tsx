@@ -1,6 +1,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { ClientErrorReporter } from '@/components/ClientErrorReporter';
 import { AppProvider } from '@/components/app';
 import { Shell } from '@/components/Shell';
 import { PwaRegister } from '@/components/Pwa';
@@ -14,6 +15,7 @@ export function AppRoot({ content, children }: { content: Content; children: Rea
   return (
     <AppProvider content={content}>
       <PwaRegister />
+      <ClientErrorReporter />
       {isBare(pathname) ? <main id="main" className="bare">{children}</main> : <Shell>{children}</Shell>}
     </AppProvider>
   );

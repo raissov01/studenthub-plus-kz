@@ -1043,3 +1043,8 @@ fieldset.field > legend { padding: 0; margin-bottom: 6px; }
 .ac-page { border: 1px solid var(--line); border-radius: var(--r); padding: 14px 12px; background: var(--bg); }
 .ac-preview .sticky-cta { position: static; margin-inline: 0; padding: 0; }
 .ac-done { align-self: flex-start; }
+/* Launch monitoring: long diagnostics and bilingual status text must wrap on small phones. */
+.launch-admin { min-width: 0; overflow-wrap: anywhere; }
+.launch-admin .row-title, .launch-admin .row-sub { white-space: normal; overflow-wrap: anywhere; }
+.launch-admin .btn { white-space: normal; max-width: 100%; }
+.launch-admin > .section { margin-top: 22px; }
