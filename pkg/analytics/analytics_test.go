@@ -105,7 +105,7 @@ func TestIngestAndReport(t *testing.T) {
 		if _, err := tx.Exec(ctx, `update analytics_devices set first_day = first_day - 8 where anon_id = $1`, a); err != nil {
 			return err
 		}
-		_, err := tx.Exec(ctx, `insert into analytics_events (anon_id, name, day) values ($1, 'visit', current_date - 7), ($1, 'visit', current_date - 1)`, a)
+		_, err := tx.Exec(ctx, `insert into analytics_events (anon_id, name, day) values ($1, 'visit', (now() at time zone 'Asia/Almaty')::date - 7), ($1, 'visit', (now() at time zone 'Asia/Almaty')::date - 1)`, a)
 		return err
 	})
 	if err != nil {

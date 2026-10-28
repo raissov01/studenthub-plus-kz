@@ -3,7 +3,9 @@ module github.com/raissov01/studenthub-plus-kz
 go 1.25.0
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/jackc/pgx/v5 v5.11.0
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	golang.org/x/crypto v0.46.0
 	golang.org/x/image v0.25.0
 )
