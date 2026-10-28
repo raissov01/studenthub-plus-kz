@@ -5,6 +5,8 @@ package analytics
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -108,13 +110,15 @@ func ingest(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		for _, e := range events {
-			if _, err := tx.Exec(r.Context(), `insert into analytics_events (anon_id, name, props) values ($1, $2, $3)`, b.AnonID, e.Name, e.Props); err != nil {
+			props, _ := json.Marshal(e.Props)
+			if _, err := tx.Exec(r.Context(), `insert into analytics_events (anon_id, name, props) values ($1, $2, $3::jsonb)`, b.AnonID, e.Name, string(props)); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 	if err != nil && err != db.ErrNoDB {
+		log.Printf("analytics ingest: %v", err)
 		httpx.Error(w, r, http.StatusInternalServerError, "internal", httpx.MsgInternal)
 		return
 	}
