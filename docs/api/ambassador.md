@@ -81,6 +81,9 @@
 
 - Амбассадордың ұсынысы әрқашан өз университетіне; басқа `university` → `403 foreign_university`.
   Студентте `university` — жіберілгені не профильдегісі.
+- **Ажыратқышқа тәуелсіз**: `/api/submissions` және `/api/submissions/my` `FEATURE_AMBASSADOR` өшік болса да жұмыс
+  істейді (`pkg/server/routes_moderation.go`, ортақ кезекпен бірге). Ажыратқыш өшік кезде амбассадор мерзімі
+  тексерілмейді — бәрі студент ретінде (`author_role = student`) ұсынады.
 - Автоматты жариялау жоқ: тек admin бекіткеннен кейін `/api/content`-те шығады.
 - Валидация қатесі: `400 invalid_<өріс>` (мысалы `invalid_source_url`, `invalid_deadline`).
 
@@ -93,10 +96,11 @@
 
 Бекітілгенде `community_content`-ке көшеді (автор аккаунтын өшірсе не мерзімі бітсе де қалады) және
 `GET /api/content` нәтижесіне қосылады:
-- `opportunities[]` соңына: Sheets жазбасының пішіні + `"source":"ambassador"`, `"university"`, `"free"`; `id = "amb-<n>"`.
+- `opportunities[]` соңына: Sheets жазбасының пішіні + `"source":"ambassador"|"student"` (автордың рөлі), `"university"`, `"free"`; `id = "amb-<n>"`.
 - жаңа `places[]` кілті (тек бекітілген орын болса; әйтпесе кілт жоқ — Sheets/JSON шығысы өзгермейді):
   `{"id":"amb-<n>","cat","name":{"kk","ru"},"desc":{"kk","ru"},"address","building_id","hours","source_url","posted_at","university","source":"ambassador"}`.
-- мерзімі өткендер сол `FilterActive` ережесімен түседі; `FEATURE_AMBASSADOR` өшік болса қосылмайды.
+- мерзімі өткендер сол `FilterActive` ережесімен түседі; `FEATURE_AMBASSADOR` өшік болса тек `source = student`
+  жазбалар қосылады (амбассадорлардікі жасырылады).
 
 ## Ортақ модерация кезегі (3-кезең) — тек admin
 
@@ -105,6 +109,7 @@
 | GET | `/api/admin/queue?kind=&status=pending\|approved\|rejected&limit=50&after=<id>` | — | `{"items":[QueueItem],"pendingByKind":{"opportunity":3,…}}` |
 | POST | `/api/admin/queue/{id}/approve` | `{"reason":"міндетті емес ескертпе ≤500"}` | `{"submission":{…},"notified":true}` |
 | POST | `/api/admin/queue/{id}/reject` | `{"reason":"3–500 таңба, МІНДЕТТІ"}` | `{"submission":{…},"notified":true}` |
+| PATCH | `/api/admin/queue/{id}` | `{"payload":{…}}` — `pending` ұсыныстың түзетілген толық payload-ы | `{"submission":{…}}` |
 
 - `pending` ескісі бірінші (`created_at, id`; келесі бет `after=<соңғы id>`); шешілгендер — жаңасы бірінші.
 - `QueueItem`: `{"id","kind","payload","submitted_by","university","status","reason","created_at","reviewed_at","reviewed_by","age_hours","author":{"id","name","username","role","university"},"checklist":{"hasOfficialSource","noFee","deadlineOk"}}` — `checklist` тек `opportunity`-де (бекітер алдындағы шағын тізім).
@@ -112,6 +117,9 @@
   (`moderation.OnApprove/OnReject/Notice`) қосады — эндпоинт бәріне ортақ.
 - Шешім + kind hook + `audit_log` (`moderation_approve|reject`) бір транзакцияда; кейін авторға `notify.Direct`
   (түрге арналған мәтін не жалпы: «бекітілді» / «қайтарылды. Себебі: …»).
+- `PATCH` (бекітер алдында түзету): тек `opportunity` / `place` (`moderation.Editor`), `POST /api/submissions`-тағы
+  ережелермен тексеріледі (`400 invalid_<өріс>`), `author_role` сақталады, `audit_log` `moderation_edit`
+  (`meta.changed` — өзгерген өрістер). Басқа түр → `400 not_editable`; шешілген → `409 not_pending`; жоқ → `404 not_found`.
 - Қателер: `400 reason_required`, `409 not_pending` (бұрын шешілген), `409 <hook code>` (мысалы `team_full`,
   `already_ambassador`, `author_deleted`, `term_not_found`) — бұл кезде ештеңе өзгермейді.
 

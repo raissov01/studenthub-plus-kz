@@ -166,7 +166,7 @@ func CleanPayload(kind string, in map[string]any, today string) (map[string]any,
 }
 
 // submit: POST /api/submissions — an opportunity or a place for the admin queue. Students and
-// ambassadors alike; nothing is published without approval. An ambassador's suggestion is
+// ambassadors alike (not behind the "ambassador" switch); nothing is published without approval. An ambassador's suggestion is
 // always for their own university.
 func submit(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
@@ -193,13 +193,16 @@ func submit(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		univ = strings.TrimSpace(*body.University)
 	}
 	var term *Term
-	if err := db.Tx(ctx, func(tx pgx.Tx) error {
-		var err error
-		term, err = ActiveTerm(ctx, tx, u.ID, Now())
-		return err
-	}); err != nil {
-		fail(w, r, "submit", err)
-		return
+	// with the ambassador programme switched off everybody suggests as a student
+	if features.Enabled("ambassador") {
+		if err := db.Tx(ctx, func(tx pgx.Tx) error {
+			var err error
+			term, err = ActiveTerm(ctx, tx, u.ID, Now())
+			return err
+		}); err != nil {
+			fail(w, r, "submit", err)
+			return
+		}
 	}
 	authorRole := "student"
 	switch {
@@ -295,8 +298,24 @@ func bi(p map[string]any, name string) content.Bi {
 	return content.Bi{KK: str(p, name+"_kk"), RU: str(p, name+"_ru")}
 }
 
-// record shapes a community_content row like the Sheets records, plus source / university.
-func record(id int64, kind string, payload json.RawMessage, univ *string, published time.Time) (content.Record, error) {
+// editPayload lets the admin correct a pending suggestion before approving it: the same rules
+// as POST /api/submissions; author_role stays what the server set.
+func editPayload(kind string) moderation.EditFunc {
+	return func(old, in map[string]any, today string) (map[string]any, error) {
+		out, err := CleanPayload(kind, in, today)
+		if err != nil {
+			return nil, err
+		}
+		if role, ok := old["author_role"]; ok {
+			out["author_role"] = role
+		}
+		return out, nil
+	}
+}
+
+// record shapes a community_content row like the Sheets records, plus source (ambassador |
+// student) / university.
+func record(id int64, kind string, payload json.RawMessage, univ *string, source string, published time.Time) (content.Record, error) {
 	var p map[string]any
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return nil, err
@@ -320,12 +339,12 @@ func record(id int64, kind string, payload json.RawMessage, univ *string, publis
 			ID: rid, Type: str(p, "type"), Funded: funded, Title: bi(p, "title"), Org: bi(p, "org"),
 			Spec: []string{}, Desc: bi(p, "desc"), Docs: []content.Bi{}, Steps: []content.Bi{},
 			SourceURL: str(p, "source_url"), PostedAt: &posted, Deadline: deadline, City: str(p, "city"),
-		}, "ambassador", univ, free}
+		}, source, univ, free}
 	} else {
 		v = map[string]any{
 			"id": rid, "cat": str(p, "cat"), "name": bi(p, "name"), "desc": bi(p, "desc"),
 			"address": str(p, "address"), "building_id": str(p, "building_id"), "hours": str(p, "hours"),
-			"source_url": str(p, "source_url"), "posted_at": posted, "university": univ, "source": "ambassador",
+			"source_url": str(p, "source_url"), "posted_at": posted, "university": univ, "source": source,
 		}
 	}
 	raw, err := json.Marshal(v)
@@ -335,12 +354,13 @@ func record(id int64, kind string, payload json.RawMessage, univ *string, publis
 	return content.RawRecord(raw, str(p, "deadline")), nil
 }
 
-// Published returns the visible community records per /api/content list.
-func Published(ctx context.Context) (map[string][]content.Record, error) {
+// Published returns the visible community records per /api/content list. With studentsOnly
+// (the "ambassador" switch is off) only plain students' approved suggestions are returned.
+func Published(ctx context.Context, studentsOnly bool) (map[string][]content.Record, error) {
 	out := map[string][]content.Record{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select id, kind, payload, university, published_at from community_content
-			where not hidden order by published_at desc limit 500`)
+		rows, err := tx.Query(ctx, `select id, kind, payload, university, source, published_at from community_content
+			where not hidden and (not $1 or source = 'student') order by published_at desc limit 500`, studentsOnly)
 		if err != nil {
 			return err
 		}
@@ -350,11 +370,12 @@ func Published(ctx context.Context) (map[string][]content.Record, error) {
 			var kind string
 			var payload json.RawMessage
 			var univ *string
+			var source string
 			var at time.Time
-			if err := rows.Scan(&id, &kind, &payload, &univ, &at); err != nil {
+			if err := rows.Scan(&id, &kind, &payload, &univ, &source, &at); err != nil {
 				return err
 			}
-			rec, err := record(id, kind, payload, univ, at)
+			rec, err := record(id, kind, payload, univ, source, at)
 			if err != nil {
 				continue
 			}
@@ -371,13 +392,11 @@ func Published(ctx context.Context) (map[string][]content.Record, error) {
 
 func registerContent() {
 	content.RegisterExtra("ambassador", func(ctx context.Context) (map[string][]content.Record, error) {
-		if !features.Enabled("ambassador") {
-			return nil, nil
-		}
 		if _, err := db.Pool(ctx); errors.Is(err, db.ErrNoDB) {
 			return nil, nil
 		}
-		return Published(ctx)
+		// students' approved suggestions are published whatever the switch says
+		return Published(ctx, !features.Enabled("ambassador"))
 	})
 }
 

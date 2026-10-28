@@ -525,6 +525,9 @@ func idOf(row Item) string {
 	if !idShape.MatchString(id) {
 		fail(`"id" тек латын әріптері, сандар, - және _ болуы керек: "%s"`, id)
 	}
+	if reservedID(id) {
+		fail(`"id" "%s" деп басталмауы керек — бұл префикс админ панеліндегі жазбаларға берілген: "%s"`, AdminIDPrefix, id)
+	}
 	return id
 }
 

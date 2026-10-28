@@ -6,7 +6,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/ambassador"
 )
 
-// Ambassadors (06): applications, cabinet, suggestions, rating, certificates, the shared admin
-// queue and reports — behind the "ambassador" switch. Importing the package also registers its
+// Ambassadors (06): applications, cabinet, rating, certificates — behind the "ambassador" switch.
+// Suggestions (/api/submissions) and the shared queue are wired in routes_moderation.go. Importing the package also registers its
 // moderation hooks, the /api/content extra source and the data-export sections.
 func init() { register(func(mux *http.ServeMux) { ambassador.Routes(mux) }) }
