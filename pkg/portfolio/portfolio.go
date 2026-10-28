@@ -61,7 +61,7 @@ func init() {
 }
 
 // Routes wires /api/portfolio/* and the public /api/p/{slug}, all behind the switch.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	h("GET /api/portfolio/me", auth.Need(mine))
 	h("PATCH /api/portfolio/settings", auth.Write(auth.Need(patchSettings)))

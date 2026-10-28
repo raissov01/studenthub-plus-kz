@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"net/http"
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/ambassador"
@@ -12,7 +13,7 @@ import (
 // Students' suggestions («Мүмкіндік ұсыну», POST /api/submissions) feed that queue and are
 // always available too, whatever the "ambassador" switch says.
 func init() {
-	register(func(mux *http.ServeMux) {
+	register(func(mux httpx.Router) {
 		moderation.Routes(mux, func(h http.Handler) http.Handler { return h })
 		ambassador.SubmissionRoutes(mux)
 	})

@@ -44,7 +44,7 @@ func init() {
 }
 
 // Routes wires the discount check endpoints.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("POST /api/discounts/{id}/check", auth.Write(auth.Need(check)))
 	mux.HandleFunc("GET /api/discounts/checks", list)
 }

@@ -50,7 +50,7 @@ func Require(name string, h http.Handler) http.Handler {
 func RequireFunc(name string, h http.HandlerFunc) http.Handler { return Require(name, h) }
 
 // Routes wires GET /api/config: public settings the frontend needs at runtime.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=60")
 		httpx.JSON(w, http.StatusOK, map[string]any{

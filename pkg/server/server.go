@@ -3,7 +3,7 @@
 //
 // Feature packages are wired in routes_<feature>.go files in this package:
 //
-//	func init() { register(func(mux *http.ServeMux) { content.Routes(mux) }) }
+//	func init() { register(func(mux httpx.Router) { content.Routes(mux) }) }
 package server
 
 import (
@@ -16,26 +16,18 @@ import (
 )
 
 var (
-	routes  []func(*http.ServeMux)
+	routes  []func(httpx.Router)
 	once    sync.Once
 	handler http.Handler
 )
 
-func register(fn func(*http.ServeMux)) { routes = append(routes, fn) }
+func register(fn func(httpx.Router)) { routes = append(routes, fn) }
 
 // Handler returns the API handler, built once per instance.
 func Handler() http.Handler {
 	once.Do(func() {
 		mux := http.NewServeMux()
-		mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
-			httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
-		})
-		for _, fn := range routes {
-			fn(mux)
-		}
-		mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
-			httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
-		})
+		registerAll(mux)
 		handler = recoverer(secure(mux))
 	})
 	return handler
@@ -62,5 +54,17 @@ func recoverer(next http.Handler) http.Handler {
 			}
 		}()
 		next.ServeHTTP(w, r)
+	})
+}
+
+func registerAll(mux httpx.Router) {
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	for _, fn := range routes {
+		fn(mux)
+	}
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
 	})
 }

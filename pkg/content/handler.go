@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"net/http"
 	"os"
 	"time"
@@ -15,8 +16,8 @@ import (
 // Default is the loader used by the HTTP handler; its memory lives as long as the instance.
 var Default = &Loader{}
 
-func Routes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/content", Handler(Default))
+func Routes(mux httpx.Router) {
+	mux.HandleFunc("GET /api/content", Handler(Default))
 }
 
 // Handler serves GET/HEAD with the given loader.
@@ -31,7 +32,7 @@ func Handler(l *Loader) http.HandlerFunc {
 		}
 		// A client hanging up must not abort the Sheets fetch (and wipe the memory refresh).
 		body := safeLoad(l, context.WithoutCancel(r.Context()))
-		w.Header().Set("Cache-Control", "public, s-maxage=600, stale-while-revalidate=86400")
+		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, body)
 	}
 }

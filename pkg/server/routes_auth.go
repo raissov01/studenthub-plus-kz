@@ -1,7 +1,7 @@
 package server
 
 import (
-	"net/http"
+	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/admin"
 	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
@@ -11,7 +11,7 @@ import (
 
 // Accounts: Telegram login, sessions, /api/me, admin, feature switches and /api/config.
 func init() {
-	register(func(mux *http.ServeMux) {
+	register(func(mux httpx.Router) {
 		auth.Routes(mux)
 		me.Routes(mux)
 		admin.Routes(mux)
