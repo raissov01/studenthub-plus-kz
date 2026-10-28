@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "api": "go run ./cmd/server",
+    "db:migrate": "go run ./cmd/migrate",
+    "test:go": "go test ./..."
   },
   "dependencies": {
     "next": "16.4.3",
