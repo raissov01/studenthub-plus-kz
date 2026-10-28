@@ -83,7 +83,11 @@ var (
 
 type ctxKey struct{}
 
-type cached struct{ u *User }
+type cached struct {
+	u      *User
+	claims Claims
+	bearer bool // the token came in "Authorization: Bearer", not the cookie
+}
 
 // Current returns the signed-in user or nil. The token's session_version must match the
 // database and the account must not be deleted. The lookup runs through db.WithUser.
@@ -91,17 +95,18 @@ func Current(r *http.Request) *User {
 	if c, ok := r.Context().Value(ctxKey{}).(*cached); ok {
 		return c.u
 	}
-	return lookup(r)
+	return lookup(r).u
 }
 
-func lookup(r *http.Request) *User {
-	tok := tokenFrom(r)
+func lookup(r *http.Request) *cached {
+	tok, bearer := tokenFrom(r)
 	if tok == "" {
-		return nil
+		return &cached{}
 	}
-	c, err := Parse(tok, time.Now())
+	now := time.Now()
+	c, err := Parse(tok, now)
 	if err != nil {
-		return nil
+		return &cached{}
 	}
 	var u *User
 	err = db.WithUser(r.Context(), c.UserID, func(tx pgx.Tx) error {
@@ -113,12 +118,12 @@ func lookup(r *http.Request) *User {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, db.ErrNoDB) {
 			log.Printf("auth: load user %d: %v", c.UserID, err)
 		}
-		return nil
+		return &cached{}
 	}
-	if u.DeletedAt != nil || u.SessionVersion != c.Version {
-		return nil
+	if u.DeletedAt != nil || u.SessionVersion != c.Version || !c.validFor(u.Role, now) {
+		return &cached{}
 	}
-	return u
+	return &cached{u: u, claims: c, bearer: bearer}
 }
 
 // attach resolves the user once and caches it in the request context.
@@ -126,7 +131,39 @@ func attach(r *http.Request) *http.Request {
 	if _, ok := r.Context().Value(ctxKey{}).(*cached); ok {
 		return r
 	}
-	return r.WithContext(context.WithValue(r.Context(), ctxKey{}, &cached{lookup(r)}))
+	return r.WithContext(context.WithValue(r.Context(), ctxKey{}, lookup(r)))
+}
+
+// Touch resolves the signed-in user (nil when signed out) and slides the session: a
+// student's or ambassador's token older than half its lifetime (and at least
+// RefreshMinInterval old) is re-issued with a fresh expiry — as the cookie when it came in
+// the cookie, and in the X-Session-Token response header when it came as a Bearer token.
+// session_version is kept, so "log out everywhere" still ends the refreshed token. The
+// returned request carries the cached user. Call it before writing the response.
+func Touch(w http.ResponseWriter, r *http.Request) (*http.Request, *User) {
+	r = attach(r)
+	c, _ := r.Context().Value(ctxKey{}).(*cached)
+	if c == nil || c.u == nil {
+		return r, nil
+	}
+	now := time.Now()
+	if c.claims.needsRefresh(c.u.Role, now) {
+		next := c.claims
+		next.Issued = now.Unix()
+		next.Auth = c.claims.authAt().Unix()
+		next.Exp = now.Add(SessionTTLFor(c.u.Role)).Unix()
+		if tok, err := Sign(next); err == nil {
+			if c.bearer {
+				w.Header().Set(TokenHeader, tok)
+				w.Header().Add("Access-Control-Expose-Headers", TokenHeader)
+			} else {
+				setCookie(w, r, tok, int(SessionTTLFor(c.u.Role).Seconds()))
+			}
+			w.Header().Add("Vary", "Cookie, Authorization")
+			c.claims = next
+		}
+	}
+	return r, c.u
 }
 
 // Handler receives the signed-in user.
@@ -135,8 +172,7 @@ type Handler func(w http.ResponseWriter, r *http.Request, u *User)
 // Need answers 401 unless someone is signed in.
 func Need(h Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r = attach(r)
-		u := Current(r)
+		r, u := Touch(w, r)
 		if u == nil {
 			httpx.Error(w, r, http.StatusUnauthorized, "unauthorized", httpx.MsgAuth)
 			return
@@ -404,13 +440,13 @@ func startSession(w http.ResponseWriter, r *http.Request, u *User, webapp bool) 
 		httpx.Error(w, r, http.StatusForbidden, "account_blocked", MsgDeleted)
 		return
 	}
-	tok, err := Sign(Claims{UserID: u.ID, Version: u.SessionVersion, Exp: time.Now().Add(SessionTTL).Unix()})
+	tok, err := Sign(newClaims(u.ID, u.SessionVersion, u.Role, time.Now()))
 	if err != nil {
 		log.Printf("auth: %v", err)
 		httpx.Error(w, r, http.StatusServiceUnavailable, "auth_off", MsgOff)
 		return
 	}
-	setCookie(w, r, tok, int(SessionTTL.Seconds()))
+	setCookie(w, r, tok, int(SessionTTLFor(u.Role).Seconds()))
 	resp := map[string]any{"user": u, "needsConsent": u.NeedsConsent()}
 	if webapp {
 		// Telegram Web opens Mini Apps in an iframe that may drop cookies; the Mini App keeps

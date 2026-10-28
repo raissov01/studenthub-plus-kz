@@ -17,7 +17,8 @@ var Now = time.Now
 
 // Opts tune one Send.
 type Opts struct {
-	Now time.Time // zero = Now()
+	Now  time.Time // zero = Now()
+	Link string    // site path for the inbox row ("/event/12"); see WithLink
 }
 
 // Result of Send.
@@ -39,8 +40,8 @@ const (
 	retryBackoff = time.Hour
 )
 
-// Send delivers text (HTML parse mode — escape user input) to the student under their
-// preferences:
+// Send writes the in-site inbox row (always), then delivers text (HTML parse mode — escape
+// user input) to the student's Telegram under their preferences:
 //   - transactional categories (moderation) go out immediately, always;
 //   - a switched-off category is dropped (Off), and so is everything for an email-only
 //     account without Telegram;
@@ -51,16 +52,20 @@ func Send(ctx context.Context, userID int64, c Category, text string, opts Opts)
 	if !c.valid() {
 		return "", fmt.Errorf("notify: unknown category %q", c)
 	}
+	p, err := db.Pool(ctx)
+	if err != nil {
+		return "", err
+	}
+	if opts.Link != "" {
+		ctx = WithLink(ctx, opts.Link)
+	}
+	recordLogged(ctx, p, userID, c, text, false) // the inbox always gets it
 	if c.Transactional() {
-		return Sent, Direct(ctx, userID, text)
+		return Sent, deliver(ctx, userID, text)
 	}
 	now := opts.Now
 	if now.IsZero() {
 		now = Now()
-	}
-	p, err := db.Pool(ctx)
-	if err != nil {
-		return "", err
 	}
 	prefs, err := LoadPrefs(ctx, p, userID)
 	if err != nil {
@@ -84,7 +89,7 @@ func Send(ctx context.Context, userID int64, c Category, text string, opts Opts)
 	if n >= prefs.DailyCap {
 		return Queued, enqueue(ctx, p, userID, c, text, now, nextDay(now, prefs))
 	}
-	if err := Direct(ctx, userID, text); err != nil {
+	if err := deliver(ctx, userID, text); err != nil {
 		return "", err
 	}
 	return Sent, RecordSend(ctx, p, userID, c, now)
@@ -197,7 +202,7 @@ func Flush(ctx context.Context, now time.Time) (*FlushResult, error) {
 				err = set(m.id, "state = 'pending', claimed_at = null, not_before = $2", nextDay(now, pr))
 				break
 			}
-			if sendErr := Direct(ctx, m.userID, m.text); sendErr != nil {
+			if sendErr := deliver(ctx, m.userID, m.text); sendErr != nil {
 				log.Printf("notify: outbox %d to %d: %v", m.id, m.userID, sendErr)
 				res.Failed++
 				if m.attempts+1 >= maxAttempts {

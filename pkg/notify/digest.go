@@ -35,7 +35,8 @@ func Digest(ctx context.Context, userID int64, now time.Time, text string) (stri
 	return DigestAs(ctx, userID, CatDigest, now, text)
 }
 
-// DigestAs is Digest for category c. Whoever inserts the day row owns the day; when the day
+// DigestAs is Digest for category c. The in-site inbox row is written first, always (once per
+// text and category within two weeks, see record). Whoever inserts the day row owns the day; when the day
 // is taken, the category is off (or the account has no Telegram), it is quiet time or the
 // daily cap is used up, nothing is sent and the caller retries on a later run (any status but DigestSent). A failed send
 // gives the day back.
@@ -44,6 +45,9 @@ func DigestAs(ctx context.Context, userID int64, c Category, now time.Time, text
 	if err != nil {
 		return "", err
 	}
+	// The inbox gets it on the first try; crons retry digests that were not sent, and the
+	// dedupe keeps those retries from piling up in the inbox.
+	recordLogged(ctx, p, userID, c, text, true)
 	if tg, err := HasTelegram(ctx, p, userID); err != nil {
 		return "", err
 	} else if !tg {
@@ -76,7 +80,7 @@ func DigestAs(ctx context.Context, userID int64, c Category, now time.Time, text
 	if tag.RowsAffected() == 0 {
 		return DigestClaimed, nil
 	}
-	if err := Direct(ctx, userID, text); err != nil {
+	if err := deliver(ctx, userID, text); err != nil {
 		_, _ = p.Exec(ctx, `delete from bot_daily_sends where user_id = $1 and day = $2::date`, userID, day)
 		return DigestFailed, err
 	}

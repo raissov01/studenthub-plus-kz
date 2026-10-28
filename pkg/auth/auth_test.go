@@ -115,7 +115,7 @@ func TestWebAppLoginCookieAndUser(t *testing.T) {
 		t.Fatalf("status %d %s", w.Code, w.Body)
 	}
 	c := sessionCookie(t, w)
-	if !c.HttpOnly || !c.Secure || c.SameSite != http.SameSiteLaxMode || c.Path != "/" || c.MaxAge != 30*24*3600 {
+	if !c.HttpOnly || !c.Secure || c.SameSite != http.SameSiteLaxMode || c.Path != "/" || c.MaxAge != int(StudentSessionTTL.Seconds()) {
 		t.Fatalf("cookie flags: %+v", c)
 	}
 	if out["needsConsent"] != true || out["token"] == nil {

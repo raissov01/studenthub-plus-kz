@@ -293,6 +293,7 @@ func sendIntros(ctx context.Context, p pairRow) {
 	// from someone who is not a confirmed adult.
 	if !mentor.IsAdult || !mentee.IsAdult {
 		mentor.Username, mentee.Username = "", ""
+		mentor.TelegramID, mentee.TelegramID = 0, 0
 	}
 	pairNews(ctx, mentor.ID, introText(mentor, mentee, p.Need, true))
 	pairNews(ctx, mentee.ID, introText(mentee, mentor, p.Need, false))

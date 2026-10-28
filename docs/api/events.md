@@ -110,6 +110,15 @@
 
 Барлығы: кірген + `can_manage` (admin / өз университетінің ambassador не university_staff). Бөтен университет → `403 forbidden`.
 
+**university_staff — тек жиынтық сандар (10-004).** Қызметкер өз университетінің іс-шарасын құрып,
+QR арқылы тіркеуді жүргізе алады, бірақ жеке студент дерегін еш жерден алмайды:
+`/regs` → `regs: []`, `aggregate_only: true` (санағыштар бар); `/attendees` → тек `count`;
+`/attendees.csv` → `metric,value` жиынтық CSV (registered, waitlist, checked_in, cancelled,
+checkin_revoked, ratings, avg_rating, `checked_in_faculty:<факультет>`; 1–4 → `< 5`); `/feedback` →
+пікірлер жоқ, бөлу мен орташа баға тек 5 жауаптан бастап, `count` 1–4 болса `"< 5"`;
+`/checkin/manual` — тек `ticket` (студент көрсеткен электронды билет коды), `user_id` → `403 aggregate_only`;
+`/checkin/revoke` → `403 aggregate_only`. Амбассадор, бекітілген ментор (өз кездесуі) және admin — бұрынғыдай толық тізім.
+
 | Method | Path | Body | Response |
 |---|---|---|---|
 | GET | `/api/events/manage` | — | `{"events":[Event]}` (draft қоса) |

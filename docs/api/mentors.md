@@ -205,7 +205,8 @@ All checks run inside `mentor_match()` under row locks:
 
 ### GET /api/cron/mentors
 
-Bearer `CRON_SECRET`; 401 otherwise. Runs after the bot's `/api/cron` (see `deploy/studenthub-cron.service`) so deadline reminders keep priority. Response `{"check3Sent", "monthSent", "postponed", "monthExpired"}`. Week-3 and week-4 questions are digest messages: they use the bot's one-message-per-day claim (`bot_daily_sends`), so a student who already got a bot message today is asked on a later day.
+Bearer `CRON_SECRET`; 401 otherwise. Runs after the bot's `/api/cron` (see `deploy/studenthub-cron.service`) so deadline reminders keep priority. Response `{"check3Sent", "monthSent", "postponed", "monthExpired", "meetingNotices", "meetingPostponed"}`.
+Group meetings (07-017): every student with a `waiting` request hears once about each published, not yet started `cat = mentoring` event of their university that has free seats and that they have not registered for — a digest-type message in the `mentors` category (one bot message a day: one meeting per student per run, the rest on later days), with a link to `/event/{id}`. Delivered (or undeliverable by the bot: category off / no Telegram — the inbox has it) notices are recorded in `mentor_meeting_notices (event_id, user_id)`. Week-3 and week-4 questions are digest messages: they use the bot's one-message-per-day claim (`bot_daily_sends`), so a student who already got a bot message today is asked on a later day.
 
 ## Queue kinds (shared `submissions`, decided by `moderation.Review`)
 

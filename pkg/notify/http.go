@@ -32,11 +32,14 @@ var (
 	MsgCap    = httpx.Msg{KK: "Күндік шек 1-ден 20-ға дейін болуы керек.", RU: "Дневной лимит — от 1 до 20."}
 )
 
-// Routes wires GET/PUT /api/me/notifications and the hourly outbox job GET /api/cron/notify.
+// Routes wires GET/PUT /api/me/notifications, the in-site inbox (GET /api/me/inbox, POST
+// /api/me/inbox/read) and the hourly outbox job GET /api/cron/notify.
 func Routes(mux httpx.Router) {
 	mux.HandleFunc("GET /api/me/notifications", auth.Need(getPrefs))
 	mux.HandleFunc("PUT /api/me/notifications", auth.Write(auth.Need(putPrefs)))
 	mux.HandleFunc("GET /api/cron/notify", cron)
+	mux.HandleFunc("GET /api/me/inbox", auth.Need(getInbox))
+	mux.HandleFunc("POST /api/me/inbox/read", auth.Write(auth.Need(markRead)))
 }
 
 // PrefsJSON is the wire shape of Prefs.

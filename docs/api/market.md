@@ -56,6 +56,7 @@ Item JSON (all list/detail responses):
 ```
 
 - **Anonymous visitors get `"pickup": null` and `"author": null`** — show only the item and the generic "университет аумағында" label (`pickupHint`). Name, @username, "Жазу 💬" (`telegramUrl`) and the exact pickup place are for signed-in students only.
+- **Under-18 or unconfirmed age** (signed in, `users.is_adult` false or null; 04: no direct contact exchange for minors): `"author": {"name": "…", "username": null, "telegramUrl": null}`, `"pickup": null` and `"contactHidden": "minor"`. Show the name and "университет аумағында", hide the "Жазу 💬" button, and explain «Байланыс 18 жастан асқан студенттерге ғана көрсетіледі». The owner and admins always see full data.
 - `hiddenReason` and `givenAt` appear only for the owner (and admin).
 
 ### GET /api/market/items

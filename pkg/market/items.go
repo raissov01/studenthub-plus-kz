@@ -45,18 +45,32 @@ type itemOut struct {
 	GivenAt      *time.Time `json:"givenAt,omitempty"`
 	DaysAgo      int        `json:"daysAgo"`
 	Mine         bool       `json:"mine"`
-	// Signed-in viewers only; anonymous visitors get null and pickupHint "university"
-	// ("университет аумағында").
-	Pickup     *string    `json:"pickup"`
-	PickupHint string     `json:"pickupHint"`
-	Author     *authorOut `json:"author"`
+	// Signed-in adult viewers only (plus the owner and admins); anonymous visitors get null
+	// and pickupHint "university" ("университет аумағында"). A signed-in viewer who is not
+	// confirmed 18+ (users.is_adult false or unknown) sees the publisher's name but no
+	// username, t.me link or pickup place, and contactHidden = "minor" (04/08: no direct
+	// contact exchange for under-18 students).
+	Pickup        *string    `json:"pickup"`
+	PickupHint    string     `json:"pickupHint"`
+	Author        *authorOut `json:"author"`
+	ContactHidden string     `json:"contactHidden,omitempty"`
+}
+
+// SeesContact: the publisher's Telegram and the pickup place are for signed-in viewers who
+// confirmed they are 18+, the owner and admins.
+func SeesContact(viewer *auth.User, owner int64) bool {
+	if viewer == nil {
+		return false
+	}
+	return viewer.ID == owner || viewer.Role == "admin" || (viewer.IsAdult != nil && *viewer.IsAdult)
 }
 
 const itemCols = `i.id, i.title, i.descr, i.category, i.condition, i.university, i.pickup_text, i.photos, i.status,
 	i.hidden_reason, i.created_at, i.expires_at, i.given_at, i.user_id, coalesce(u.name, ''), u.tg_username`
 
-// scanItem reads itemCols. viewer is nil for anonymous visitors: the publisher's name,
-// username and the exact pickup place are only for signed-in students.
+// scanItem reads itemCols. viewer is nil for anonymous visitors: the publisher's name is
+// only for signed-in students, the username and the exact pickup place only for those who
+// are 18+ (SeesContact).
 func scanItem(row pgx.Row, viewer *auth.User, private bool) (itemOut, error) {
 	var it itemOut
 	var pickup, name string
@@ -74,7 +88,8 @@ func scanItem(row pgx.Row, viewer *auth.User, private bool) (itemOut, error) {
 	}
 	it.DaysAgo = int(time.Since(it.CreatedAt).Hours() / 24)
 	it.PickupHint = "university"
-	if viewer != nil {
+	switch {
+	case SeesContact(viewer, owner):
 		it.Mine = viewer.ID == owner
 		it.Pickup = &pickup
 		it.Author = &authorOut{Name: name, Username: username}
@@ -82,6 +97,9 @@ func scanItem(row pgx.Row, viewer *auth.User, private bool) (itemOut, error) {
 			u := "https://t.me/" + *username
 			it.Author.TelegramURL = &u
 		}
+	case viewer != nil:
+		it.Author = &authorOut{Name: name}
+		it.ContactHidden = "minor"
 	}
 	if !private && !it.Mine {
 		it.HiddenReason = nil

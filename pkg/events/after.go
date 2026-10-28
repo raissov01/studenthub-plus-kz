@@ -9,6 +9,7 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -70,6 +71,10 @@ func csvCell(s string) string {
 }
 
 func csvExport(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	if AggregateOnly(u) {
+		csvAggregate(w, r, u)
+		return
+	}
 	var rows []regRow
 	var ev *Event
 	ok := withEvent(w, r, u, true, func(tx pgx.Tx, e *Event) error {
@@ -111,6 +116,84 @@ func csvExport(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			num(x.TeamNo), num(x.Feedback)})
 	}
 	cw.Flush()
+}
+
+// minGroup: a number about fewer people than this is shown as "< 5" to university staff
+// (10-b2b: 5 адамнан аз топ ешқашан көрсетілмейді).
+const minGroup = 5
+
+// groupCount marshals like ambassador.Count / b2b.Count: 1–4 becomes "< 5".
+type groupCount int
+
+func (c groupCount) MarshalJSON() ([]byte, error) {
+	if c > 0 && c < minGroup {
+		return []byte(`"< 5"`), nil
+	}
+	return []byte(fmt.Sprint(int(c))), nil
+}
+
+func groupCell(n int) string {
+	if n > 0 && n < minGroup {
+		return "< 5"
+	}
+	return fmt.Sprint(n)
+}
+
+// csvAggregate is the university staff's attendees.csv: metric,value rows, no row per
+// student, small groups as "< 5" (10-b2b: «CSV экспорт тек жиынтық сандармен»).
+func csvAggregate(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	var ev *Event
+	var cancelled, revoked, ratings int
+	var avg *float64
+	byFaculty := map[string]int{}
+	ok := withEvent(w, r, u, true, func(tx pgx.Tx, e *Event) error {
+		ev = e
+		err := tx.QueryRow(r.Context(), `select count(*) filter (where r.status = 'cancelled'),
+				count(*) filter (where r.checkin_revoked_at is not null and r.checked_in_at is null),
+				count(r.feedback_score), avg(r.feedback_score)::float8
+			from event_regs r where r.event_id = $1`, e.ID).Scan(&cancelled, &revoked, &ratings, &avg)
+		if err != nil {
+			return err
+		}
+		rows, err := tx.Query(r.Context(), `select coalesce(nullif(u.faculty, ''), '—'), count(*) from event_regs r
+			join users u on u.id = r.user_id where r.event_id = $1 and r.checked_in_at is not null group by 1`, e.ID)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var f string
+			var n int
+			if err := rows.Scan(&f, &n); err != nil {
+				return err
+			}
+			byFaculty[f] = n
+		}
+		return rows.Err()
+	})
+	if !ok {
+		return
+	}
+	out := [][]string{{"metric", "value"},
+		{"event_id", fmt.Sprint(ev.ID)}, {"registered", groupCell(ev.Registered)}, {"waitlist", groupCell(ev.Waitlist)},
+		{"checked_in", groupCell(ev.CheckedIn)}, {"cancelled", groupCell(cancelled)}, {"checkin_revoked", groupCell(revoked)},
+		{"ratings", groupCell(ratings)}, {"avg_rating", ""}}
+	if ratings >= minGroup && avg != nil {
+		out[len(out)-1][1] = fmt.Sprintf("%.1f", *avg)
+	}
+	facs := make([]string, 0, len(byFaculty))
+	for f := range byFaculty {
+		facs = append(facs, f)
+	}
+	sort.Strings(facs)
+	for _, f := range facs {
+		out = append(out, []string{csvCell("checked_in_faculty:" + f), groupCell(byFaculty[f])})
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="event-%d-summary.csv"`, ev.ID))
+	_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
+	cw := csv.NewWriter(w)
+	_ = cw.WriteAll(out)
 }
 
 func feedback(w http.ResponseWriter, r *http.Request, u *auth.User) {
@@ -173,7 +256,9 @@ type fbText struct {
 	At    time.Time `json:"at"`
 }
 
-// feedbackSummary: anonymous results for the organizer.
+// feedbackSummary: anonymous results for the organizer. University staff get the
+// distribution and average only from 5 answers and never the free-text comments (a
+// comment is one student's own words; 10-b2b allows aggregates only).
 func feedbackSummary(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	dist := make([]int, 5)
 	var texts []fbText
@@ -207,6 +292,17 @@ func feedbackSummary(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	if count > 0 {
 		a := float64(sum) / float64(count)
 		avg = &a
+	}
+	if AggregateOnly(u) {
+		var d []int
+		if count >= minGroup {
+			d = dist
+		} else {
+			avg = nil
+		}
+		httpx.JSON(w, http.StatusOK, map[string]any{"count": groupCount(count), "average": avg, "distribution": d,
+			"comments": []fbText{}, "aggregate_only": true})
+		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"count": count, "average": avg, "distribution": dist, "comments": withText})
 }

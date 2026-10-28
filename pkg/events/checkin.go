@@ -380,6 +380,10 @@ func manual(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
 		return
 	}
+	if body.UserID != 0 && AggregateOnly(u) {
+		httpx.Error(w, r, http.StatusForbidden, "aggregate_only", MsgAggregate)
+		return
+	}
 	var res CheckinResult
 	ok := withEvent(w, r, u, true, func(tx pgx.Tx, ev *Event) error {
 		uid := body.UserID
@@ -416,6 +420,10 @@ func revoke(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	if err := httpx.Decode(r, &body, 1<<10); err != nil || body.UserID == 0 {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+		return
+	}
+	if AggregateOnly(u) {
+		httpx.Error(w, r, http.StatusForbidden, "aggregate_only", MsgAggregate)
 		return
 	}
 	ok := withEvent(w, r, u, true, func(tx pgx.Tx, ev *Event) error {
@@ -466,11 +474,16 @@ func loadRegs(ctx context.Context, tx pgx.Tx, eventID int64) ([]regRow, error) {
 }
 
 // regs: the organizer's full list (also the offline fallback list for manual check-in).
+// University staff get the counters only: "regs" is empty and "aggregate_only" true.
 func regs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	var out []regRow
 	var ev *Event
+	agg := AggregateOnly(u)
 	ok := withEvent(w, r, u, true, func(tx pgx.Tx, e *Event) error {
 		ev = e
+		if agg {
+			return nil
+		}
 		var err error
 		out, err = loadRegs(r.Context(), tx, e.ID)
 		return err
@@ -480,7 +493,7 @@ func regs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			out = []regRow{}
 		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"registered": ev.Registered, "checked_in": ev.CheckedIn,
-			"waitlist": ev.Waitlist, "regs": out})
+			"waitlist": ev.Waitlist, "regs": out, "aggregate_only": agg})
 	}
 }
 

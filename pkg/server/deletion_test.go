@@ -158,6 +158,8 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into notify_prefs(user_id) values ($1)`, uid)
 		exec(`insert into notify_outbox(user_id,category,text,not_before) values ($1,'events','fixture',now())`, uid)
 		exec(`insert into notify_sends(user_id,category) values ($1,'events')`, uid)
+		exec(`insert into notifications(user_id,category,text,link) values ($1,'events','fixture','/event/1'),($2,'events','control',null)`, uid, other)
+		exec(`insert into mentor_meeting_notices(event_id,user_id) values ($1,$2)`, event, uid)
 		exec(`insert into discount_checks(discount_id,user_id,worked) values ('d1',$1,true)`, uid)
 		exec(`update users set email='launch-delete@example.kz', email_verified_at=now() where id=$1`, uid)
 		exec(`insert into user_passwords(user_id,hash) values ($1,'$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA')`, uid)

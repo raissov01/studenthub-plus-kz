@@ -1,5 +1,8 @@
 # Notifications API (F8: «хабарлама тым көп / өшіру мүмкін емес»)
 
+> Әр хабарлама алдымен сайттағы inbox-қа (`notifications`) жазылады — Telegram-ға жетсе де,
+> жетпесе де. Inbox API: `docs/api/inbox.md`.
+
 Сервер: `pkg/notify` (`Send`, `Digest`/`DigestAs`, `Flush`, HTTP), бот: `pkg/bot` (`/settings`),
 миграция `supabase/migrations/20261028000013_notif_prefs.sql` (`notify_prefs`, `notify_outbox`, `notify_sends`).
 
@@ -40,7 +43,9 @@ var Notify = notify.For(notify.CatEvents)
 // Күніне бір, санатпен:
 st, err := notify.DigestAs(ctx, userID, notify.CatMarket, now, text)
 // Бұрынғы қолтаңбалар өзгерген жоқ:
-notify.Direct(ctx, userID, text)          // ештеңе тексермейді — тек транзакциялық үшін
+notify.Direct(ctx, userID, text)          // ештеңе тексермейді — тек транзакциялық үшін (inbox санаты moderation)
+notify.DirectAs(ctx, userID, notify.CatJobs, text) // сол, басқа inbox санатымен; DirectFor(c) — айнымалыға
+// Inbox жазбасына сайт жолы: notify.Opts{Link: "/event/12"} не notify.WithLink(ctx, "/event/12")
 notify.Digest(ctx, userID, now, text)     // = DigestAs(..., notify.CatDigest, ...)
 ```
 

@@ -3,8 +3,10 @@ package mentors
 import (
 	"context"
 	"crypto/subtle"
+	"html"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +27,9 @@ type CronResult struct {
 	MonthSent    int `json:"monthSent"`
 	Postponed    int `json:"postponed"` // the student already had a bot message today
 	MonthExpired int `json:"monthExpired"`
+	// 07-017: waiting mentees told about a new group meeting of their university
+	MeetingNotices   int `json:"meetingNotices"`
+	MeetingPostponed int `json:"meetingPostponed"`
 }
 
 // cronHandler: GET /api/cron/mentors with "Authorization: Bearer $CRON_SECRET". Run it after
@@ -125,6 +130,9 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			}
 		}
 	}
+	if err := meetingNotices(ctx, now, res); err != nil {
+		return nil, err
+	}
 	// first month over, question asked a week ago, not both "yes": the pair ends quietly
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `select id from mentor_pairs
@@ -149,4 +157,88 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		return nil
 	})
 	return res, err
+}
+
+type meetingNotice struct {
+	eventID, userID int64
+	lang, title     string
+	startsAt        time.Time
+	place           string
+}
+
+var almaty = time.FixedZone("Asia/Almaty", 5*3600)
+
+func meetingText(m meetingNotice) string {
+	when := m.startsAt.In(almaty).Format("02.01 15:04")
+	place := ""
+	if m.place != "" {
+		place = ", " + html.EscapeString(m.place)
+	}
+	return tr(m.lang,
+		"🎓 Сенің университетіңде топтық менторлық кездесу ашылды: «"+html.EscapeString(m.title)+"» — "+when+place+
+			". Жеке ментор күтіп жүргенде осыған қатысып көр (орын саны шектеулі): "+site("/event/"+strconv.FormatInt(m.eventID, 10)),
+		"🎓 В вашем университете открыта групповая менторская встреча: «"+html.EscapeString(m.title)+"» — "+when+place+
+			". Пока ждёте личного ментора, приходите на неё (мест немного): "+site("/event/"+strconv.FormatInt(m.eventID, 10)))
+}
+
+// meetingNotices (07-017: «Күтіп тұрған студенттерге сай топтық кездесу ашылса — digest
+// хабарлама»): every student with a waiting mentor request hears once about each published,
+// not yet started group meeting (cat = mentoring) of their university that still has seats
+// and that they have not registered for. It is a digest-type message in the "mentors"
+// category: at most one bot message a day (DigestAs), so a student gets one meeting per run
+// and the rest on later runs. A notice is recorded when the message went out or cannot go
+// out by the bot at all (category off, no Telegram) — the inbox has it either way.
+func meetingNotices(ctx context.Context, now time.Time, res *CronResult) error {
+	var list []meetingNotice
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `select e.id, r.user_id, u.lang,
+				case when u.lang = 'ru' then coalesce(nullif(e.title_ru, ''), e.title_kk) else e.title_kk end,
+				e.starts_at, coalesce(e.place_text, '')
+			from events e
+			join mentor_requests r on r.university = e.university and r.status = 'waiting'
+			join users u on u.id = r.user_id and u.deleted_at is null
+			where e.cat = 'mentoring' and e.status = 'published' and e.starts_at > $1
+				and (e.capacity is null or e.capacity > (select count(*) from event_regs g where g.event_id = e.id and g.status = 'registered'))
+				and not exists (select 1 from event_regs g where g.event_id = e.id and g.user_id = r.user_id)
+				and not exists (select 1 from mentor_meeting_notices n where n.event_id = e.id and n.user_id = r.user_id)
+			order by r.user_id, e.starts_at, e.id`, now)
+		if err != nil {
+			return err
+		}
+		list, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (meetingNotice, error) {
+			var m meetingNotice
+			return m, row.Scan(&m.eventID, &m.userID, &m.lang, &m.title, &m.startsAt, &m.place)
+		})
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	told := map[int64]bool{}
+	for _, m := range list {
+		if told[m.userID] { // one meeting per student per run; the next one tomorrow
+			res.MeetingPostponed++
+			continue
+		}
+		told[m.userID] = true
+		st, err := notify.DigestAs(notify.WithLink(ctx, "/event/"+strconv.FormatInt(m.eventID, 10)), m.userID, notify.CatMentors, now, meetingText(m))
+		if err != nil {
+			log.Printf("mentors cron: meeting %d to %d: %v", m.eventID, m.userID, err)
+			continue
+		}
+		if st != notify.DigestSent && st != notify.DigestOff {
+			res.MeetingPostponed++
+			continue
+		}
+		res.MeetingNotices++
+		err = db.Tx(ctx, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `insert into mentor_meeting_notices (event_id, user_id, sent_at) values ($1, $2, $3) on conflict do nothing`,
+				m.eventID, m.userID, now)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

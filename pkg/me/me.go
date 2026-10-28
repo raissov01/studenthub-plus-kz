@@ -99,13 +99,30 @@ func Routes(mux httpx.Router) {
 	mux.HandleFunc("DELETE /api/me", auth.Write(auth.Need(remove)))
 }
 
+// InboxUnread counts the user's unread in-site notifications; pkg/notify sets it. tx is
+// scoped to the user (RLS on).
+var InboxUnread func(ctx context.Context, tx pgx.Tx, userID int64) (int, error)
+
+// get: GET /api/me. It also slides the session (auth.Touch): the app calls it on start, so
+// an active student's session never runs out.
 func get(w http.ResponseWriter, r *http.Request) {
-	u := auth.Current(r)
+	r, u := auth.Touch(w, r)
 	if u == nil {
-		httpx.JSON(w, http.StatusOK, map[string]any{"user": nil, "needsConsent": false})
+		httpx.JSON(w, http.StatusOK, map[string]any{"user": nil, "needsConsent": false, "inboxUnread": 0})
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"user": u, "needsConsent": u.NeedsConsent()})
+	unread := 0
+	if InboxUnread != nil {
+		err := db.WithUser(r.Context(), u.ID, func(tx pgx.Tx) error {
+			var err error
+			unread, err = InboxUnread(r.Context(), tx, u.ID)
+			return err
+		})
+		if err != nil {
+			log.Printf("me: inbox unread %d: %v", u.ID, err) // the profile still loads
+		}
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"user": u, "needsConsent": u.NeedsConsent(), "inboxUnread": unread})
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {

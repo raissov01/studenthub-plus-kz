@@ -770,3 +770,34 @@ func TestFeatureOff(t *testing.T) {
 		}
 	}
 }
+
+// 04/08: a signed-in viewer who is not confirmed 18+ (is_adult false or unknown) sees the
+// item and the publisher's name, never the Telegram username, t.me link or pickup place.
+func TestUnderageViewerSeesNoContacts(t *testing.T) {
+	testdb.Need(t)
+	uid, _ := newUser(t, userOpt{university: "Minor Uni", username: "adult_giver"})
+	minor, _ := newUser(t, userOpt{university: "Minor Uni", adult: &no})
+	unknown, _ := newUser(t, userOpt{university: "Minor Uni"})
+	exec(t, `update users set is_adult = null where id = $1`, unknown)
+	adult, _ := newUser(t, userOpt{university: "Minor Uni"})
+	admin, _ := newUser(t, userOpt{university: "Other Uni", role: "admin", adult: &no})
+	id := newItem(t, uid, uploadPhoto(t, uid))
+	path := "/api/market/items/" + strconv.FormatInt(id, 10)
+
+	for name, v := range map[string]int64{"minor": minor, "unknown age": unknown} {
+		for _, p := range []string{"/api/market/items?university=Minor+Uni", path} {
+			w := do(t, "GET", p, v, nil)
+			b := w.Body.String()
+			if w.Code != 200 || strings.Contains(b, "adult_giver") || strings.Contains(b, "t.me") || strings.Contains(b, "4-корпус") ||
+				!strings.Contains(b, `"contactHidden":"minor"`) || !strings.Contains(b, `"pickup":null`) || !strings.Contains(b, "Giver ") {
+				t.Fatalf("%s %s: %d %s", name, p, w.Code, b)
+			}
+		}
+	}
+	for name, v := range map[string]int64{"adult": adult, "admin": admin, "owner": uid} {
+		b := do(t, "GET", path, v, nil).Body.String()
+		if !strings.Contains(b, "https://t.me/adult_giver") || !strings.Contains(b, "4-корпус") || strings.Contains(b, "contactHidden") {
+			t.Fatalf("%s: %s", name, b)
+		}
+	}
+}

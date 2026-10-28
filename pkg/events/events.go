@@ -187,6 +187,20 @@ func CanManage(ctx context.Context, u *auth.User, ev *Event) bool {
 	return ExtraManager != nil && ExtraManager(ctx, u, ev)
 }
 
+// AggregateOnly: university staff manage their university's events but never see an
+// individual student's data (10-b2b: «Университет қызметкері ешқашан жеке студенттің дерегін
+// көрмейді — тек жиынтық сандар»). They get counts in place of lists, an aggregate CSV, the
+// feedback distribution (from 5 answers) without comments, and manual check-in by e-ticket
+// code only. Ambassadors, approved mentors (their own meetings) and admins run check-in and
+// keep the attendee list (05: «Келгендер тізімі + CSV экспорт — ұйымдастырушы мен admin»).
+func AggregateOnly(u *auth.User) bool { return u != nil && u.Role == "university_staff" }
+
+// MsgAggregate refuses an action that needs a student's identity to staff.
+var MsgAggregate = httpx.Msg{
+	KK: "Университет қызметкері студенттердің жеке деректерін көрмейді — тек жиынтық сандар. Қолмен белгілеу үшін студенттің электронды билетінің кодын енгізіңіз.",
+	RU: "Сотрудник университета не видит личные данные студентов — только сводные цифры. Для ручной отметки введите код электронного билета студента.",
+}
+
 func visible(ctx context.Context, u *auth.User, ev *Event) bool {
 	return ev.Status != "draft" || CanManage(ctx, u, ev)
 }
@@ -375,6 +389,9 @@ func attendees(w http.ResponseWriter, r *http.Request) {
 	var people []attendee
 	ok := withEvent(w, r, u, false, func(tx pgx.Tx, ev *Event) error {
 		count = ev.Registered
+		if AggregateOnly(u) {
+			return nil // staff: the count only, even for an event they are registered for
+		}
 		allowed := ev.CanManage
 		if !allowed && u != nil {
 			m, err := myReg(r.Context(), tx, ev.ID, u.ID)

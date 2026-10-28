@@ -98,22 +98,23 @@ are never part of a play view and live in a separate owner-only RLS table.
 | GET | `/api/events/my` | signed-in | no | yes | events |
 | GET | `/api/events/my/attendance` | signed-in | no | yes | events |
 | GET | `/api/events/{id}` | anonymous | no | yes | events |
-| GET | `/api/events/{id}/attendees` | anonymous | no | yes | events |
-| GET | `/api/events/{id}/attendees.csv` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/attendees` | anonymous (count); names for organizers and registered students, never university_staff | no | yes | events |
+| GET | `/api/events/{id}/attendees.csv` | ambassador, university_staff (own university; university_staff: aggregate metric,value CSV only), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/checkin/live` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
-| GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university; university_staff: distribution from 5 answers, no comments), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/ics` | anonymous | no | yes | events |
-| GET | `/api/events/{id}/regs` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/health` | anonymous | no | no (no input) | — |
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
-| GET | `/api/market/items` | anonymous | no | yes | market |
-| GET | `/api/market/items/{id}` | anonymous | no | yes | market |
+| GET | `/api/market/items` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
+| GET | `/api/market/items/{id}` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/me` | signed-in | no | no (no input) | market |
 | GET | `/api/market/mine` | signed-in | no | no (no input) | market |
 | GET | `/api/market/photos/{name}` | anonymous (active/reserved); owner or admin otherwise | no | yes | market |
 | GET | `/api/me` | anonymous | no | no (no input) | — |
 | GET | `/api/me/export` | signed-in | no | no (no input) | — |
+| GET | `/api/me/inbox` | signed-in (own rows only, RLS) | no | yes | — |
 | GET | `/api/me/notifications` | signed-in | no | no (no input) | — |
 | GET | `/api/mentors/me` | signed-in | no | no (no input) | mentors |
 | GET | `/api/mentors/pairs` | signed-in | no | no (no input) | mentors |
@@ -205,8 +206,8 @@ are never part of a play view and live in a separate owner-only RLS table.
 | POST | `/api/events/checkin` | anonymous | yes | yes | events |
 | POST | `/api/events/checkin/claim` | signed-in | yes | yes | events |
 | POST | `/api/events/create` | ambassador, university_staff (own university), admin | yes | yes | events |
-| POST | `/api/events/{id}/checkin/manual` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
-| POST | `/api/events/{id}/checkin/revoke` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/events/{id}/checkin/manual` | ambassador, university_staff (own university; university_staff: by e-ticket code only), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/events/{id}/checkin/revoke` | ambassador, university_staff (own university; university_staff: refused (needs a user id)), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/checkin/start` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/feedback` | signed-in | yes | yes | events |
 | POST | `/api/events/{id}/finish` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
@@ -223,6 +224,7 @@ are never part of a play view and live in a separate owner-only RLS table.
 | POST | `/api/me/consent` | signed-in | yes | yes | — |
 | POST | `/api/me/email` | signed-in | yes (+ per-user/per-address send throttle) | yes | — |
 | POST | `/api/me/email/confirm` | signed-in | yes (+ per-user code throttle, 5 tries per code) | yes | — |
+| POST | `/api/me/inbox/read` | signed-in (own rows only, RLS) | yes | yes | — |
 | POST | `/api/me/password` | signed-in | yes (+ per-user throttle) | yes | — |
 | POST | `/api/mentors/apply` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/pairs/{id}/checkin` | signed-in | yes | yes | mentors |

@@ -55,8 +55,8 @@ const (
 	MaxInviteMessage = 500
 )
 
-// Notify is the direct-message sender; tests replace it.
-var Notify = notify.Direct
+// Notify is the direct-message sender (immediate; inbox category "jobs"); tests replace it.
+var Notify = notify.DirectFor(notify.CatJobs)
 
 // Digest is the one-per-day sender; tests replace it.
 var Digest = notify.Digest

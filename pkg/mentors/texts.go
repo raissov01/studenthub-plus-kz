@@ -22,6 +22,7 @@ type person struct {
 	Faculty    string
 	Lang       string
 	IsAdult    bool
+	TelegramID int64 // 0 = no Telegram linked (email-only account)
 }
 
 func loadPerson(ctx context.Context, q interface {
@@ -30,9 +31,13 @@ func loadPerson(ctx context.Context, q interface {
 	p := person{ID: id}
 	var name, username, uni, fac *string
 	var adult *bool
-	err := q.QueryRow(ctx, `select name, tg_username, university, faculty, lang, is_adult from users where id = $1`, id).
-		Scan(&name, &username, &uni, &fac, &p.Lang, &adult)
+	var tg *int64
+	err := q.QueryRow(ctx, `select name, tg_username, university, faculty, lang, is_adult, telegram_id from users where id = $1`, id).
+		Scan(&name, &username, &uni, &fac, &p.Lang, &adult, &tg)
 	p.Name, p.Username, p.University, p.Faculty = deref(name), deref(username), deref(uni), deref(fac)
+	if tg != nil {
+		p.TelegramID = *tg
+	}
 	p.IsAdult = adult != nil && *adult
 	if p.Name == "" {
 		p.Name = "Student Hub"
@@ -76,7 +81,50 @@ func mention(p person) string {
 	return "@" + html.EscapeString(p.Username)
 }
 
-// introText is the match message for `to` about `other`. Usernames are exchanged only here,
+// contacts is the "how to reach each other" block of the match message (07: бір-бірінің
+// Telegram @username-і, жоқ болса — бот арқылы таныстыру). Both usernames are shown when
+// present: the partner's to write to, and the reader's own, so they know what was shared.
+// Without a username the bot introduces them: a tg://user?id= link in this message opens
+// the partner's Telegram chat without exposing a phone number (Telegram opens it because
+// both have a chat with the bot). With no Telegram linked at all, the pair page on the site
+// shows the partner's username as soon as one is set. Nothing else (phone, email) is shared.
+func contacts(to, other person) string {
+	l := to.Lang
+	var b strings.Builder
+	b.WriteString(tr(l, "\n<b>Байланыс</b>\n", "\n<b>Как связаться</b>\n"))
+	switch {
+	case other.Username != "":
+		fmt.Fprintf(&b, "%s: %s\n", tr(l, "Серіктесіңіздің Telegram-ы", "Telegram собеседника"), mention(other))
+	case other.TelegramID != 0:
+		fmt.Fprintf(&b, tr(l, "Серіктесіңізде Telegram username жоқ — бот таныстырады: <a href=\"tg://user?id=%d\">%s</a> атына басып, чатты ашыңыз.\n",
+			"У собеседника нет username в Telegram — знакомит бот: нажмите на <a href=\"tg://user?id=%d\">%s</a>, чтобы открыть чат.\n"),
+			other.TelegramID, html.EscapeString(other.Name))
+	case to.Username != "":
+		b.WriteString(tr(l, "Серіктесіңіз Telegram-ды әлі қоспаған — ол сайттағы жұп бетінен сіздің username-іңізді көріп, өзі жазады.\n",
+			"Собеседник ещё не подключил Telegram — он увидит ваш username на странице пары на сайте и напишет сам.\n"))
+	default:
+		b.WriteString(tr(l, "Серіктесіңіз Telegram-ды әлі қоспаған — ол қосқан соң username-і сайттағы жұп бетінде көрінеді.\n",
+			"Собеседник ещё не подключил Telegram — когда подключит, его username появится на странице пары на сайте.\n"))
+	}
+	switch {
+	case to.Username != "":
+		fmt.Fprintf(&b, "%s: %s\n", tr(l, "Серіктесіңізге сіздің username жіберілді", "Собеседнику отправлен ваш username"), mention(to))
+	case to.TelegramID != 0:
+		b.WriteString(tr(l, "Сізде username жоқ, сондықтан серіктесіңізге сіздің чатыңызды ашатын бот сілтемесі жіберілді. Оңай болу үшін Telegram баптауларында username орнатыңыз.\n",
+			"У вас нет username, поэтому собеседнику отправлена ссылка бота на ваш чат. Для удобства задайте username в настройках Telegram.\n"))
+	default:
+		b.WriteString(tr(l, "Сіздің аккаунтыңызға Telegram қосылмаған: профильде Telegram-ды қосыңыз — сонда серіктесіңіз сізге жаза алады.\n",
+			"К вашему аккаунту не подключён Telegram: подключите его в профиле — тогда собеседник сможет вам написать.\n"))
+	}
+	if other.Username == "" || to.Username == "" {
+		fmt.Fprintf(&b, "%s: %s\n", tr(l, "Жұп беті (username орнатылған сәтте сонда көрінеді)", "Страница пары (username появится там, как только его зададут)"), site("/mentors/me"))
+	}
+	b.WriteString(tr(l, "Телефон, мекенжай және басқа жеке деректерді алғашқы танысуда бермеңіз — Telegram чаты жеткілікті.\n",
+		"Не передавайте телефон, адрес и другие личные данные при первом знакомстве — хватит чата в Telegram.\n"))
+	return b.String()
+}
+
+// introText is the match message for `to` about `other`. Contacts are exchanged only here,
 // after a match, and pairs exist only between adults (mentor_match refuses minors).
 func introText(to, other person, need string, toIsMentor bool) string {
 	l := to.Lang
@@ -95,16 +143,7 @@ func introText(to, other person, need string, toIsMentor bool) string {
 		fmt.Fprintf(&b, "%s: %s\n", tr(l, "Университет", "Университет"), html.EscapeString(uni))
 	}
 	fmt.Fprintf(&b, "%s: %s\n", tr(l, "Бағыты", "Направление"), needName(l, need))
-	switch {
-	case other.Username != "":
-		fmt.Fprintf(&b, "Telegram: %s\n", mention(other))
-	case to.Username != "":
-		b.WriteString(tr(l, "Серіктесіңізде Telegram username жоқ — біз оған сіздің username-іңізді жібердік, ол өзі жазады.\n",
-			"У собеседника нет username в Telegram — мы отправили ему ваш username, он напишет сам.\n"))
-	default:
-		b.WriteString(tr(l, "Екеуіңізде де Telegram username жоқ. Telegram баптауларында username орнатыңыз да, ботқа жазыңыз — таныстырамыз.\n",
-			"Ни у кого из вас нет username в Telegram. Установите username в настройках Telegram и напишите боту — мы вас познакомим.\n"))
-	}
+	b.WriteString(contacts(to, other))
 	b.WriteString(tr(l, "\n<b>Алғашқы қадам:</b> 15 минуттық танысу туралы келісіңдер.\n\n",
 		"\n<b>Первый шаг:</b> договоритесь о 15-минутном знакомстве.\n\n"))
 	b.WriteString(etiquette(l))

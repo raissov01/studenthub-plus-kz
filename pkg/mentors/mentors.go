@@ -85,6 +85,9 @@ func init() {
 	me.RegisterExport("mentorPrompts", func(ctx context.Context, tx pgx.Tx, _ int64) (any, error) {
 		return me.Rows(ctx, tx, "select * from mentor_pair_prompts where user_id = app_user_id() order by pair_id, kind")
 	})
+	me.RegisterExport("mentorMeetingNotices", func(ctx context.Context, tx pgx.Tx, _ int64) (any, error) {
+		return me.Rows(ctx, tx, "select event_id, sent_at from mentor_meeting_notices where user_id = app_user_id() order by sent_at")
+	})
 	me.RegisterExport("badges", func(ctx context.Context, tx pgx.Tx, _ int64) (any, error) {
 		return me.Rows(ctx, tx, "select * from user_badges where user_id = app_user_id() order by awarded_at")
 	})

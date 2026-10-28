@@ -1,6 +1,7 @@
-// Package notify sends a "direct" Telegram message to a user through the bot (moderation
-// decisions, reports, mentor matches). Users who blocked the bot are skipped and marked;
-// email-only accounts (no telegram_id) are skipped silently.
+// Package notify is the one way the server tells a user something: every message is first
+// written to the in-site inbox (notifications, inbox.go), then sent through the bot under
+// the user's preferences. Users who blocked the bot are skipped and marked; email-only
+// accounts (no telegram_id) only get the inbox row.
 package notify
 
 import (
@@ -17,10 +18,33 @@ import (
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
-// Direct sends text (HTML parse mode — escape user input) to the user's Telegram chat.
-// It returns nil without sending when no bot is configured, so features keep working in
-// tests, and when the account has no Telegram (signed up by email and never linked it).
+// Direct sends a transactional message (category moderation) right away: see DirectAs.
 func Direct(ctx context.Context, userID int64, text string) error {
+	return DirectAs(ctx, userID, CatModeration, text)
+}
+
+// DirectAs writes the in-site inbox row (category c) and sends text (HTML parse mode —
+// escape user input) to the user's Telegram chat at once, ignoring preferences, quiet hours
+// and the cap. The Telegram part is skipped when no bot is configured, so features keep
+// working in tests, and when the account has no Telegram (signed up by email and never
+// linked it) or blocked the bot — the inbox row is written either way.
+func DirectAs(ctx context.Context, userID int64, c Category, text string) error {
+	p, err := db.Pool(ctx)
+	if err != nil {
+		return err
+	}
+	recordLogged(ctx, p, userID, c, text, false)
+	return deliver(ctx, userID, text)
+}
+
+// DirectFor adapts DirectAs to func(ctx, userID, text) error for a fixed category.
+func DirectFor(c Category) func(ctx context.Context, userID int64, text string) error {
+	return func(ctx context.Context, userID int64, text string) error { return DirectAs(ctx, userID, c, text) }
+}
+
+// deliver is the Telegram part only (no inbox row): Send, Flush and Digest use it after
+// writing the inbox themselves.
+func deliver(ctx context.Context, userID int64, text string) error {
 	token := config.Str("BOT_TOKEN", "")
 	if token == "" {
 		return nil
