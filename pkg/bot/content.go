@@ -124,7 +124,10 @@ func (c *content) find(ctx context.Context, id string) (*Opp, error) {
 }
 
 func (c *content) fetch(ctx context.Context) ([]Opp, error) {
-	site := c.b.Cfg.SiteURL
+	site := c.b.Cfg.ContentURL
+	if site == "" {
+		site = c.b.Cfg.SiteURL
+	}
 	if body, err := c.b.getJSON(ctx, site+"/api/content"); err == nil {
 		var data struct {
 			Opportunities json.RawMessage `json:"opportunities"`

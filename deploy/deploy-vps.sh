@@ -23,6 +23,7 @@ ssh $VPS "docker inspect studenthub-postgres >/dev/null 2>&1 || docker run -d --
 ssh $VPS 'for i in $(seq 1 30); do docker exec studenthub-postgres pg_isready -U studenthub -q && exit 0; sleep 1; done; exit 1'
 
 rsync -az --delete data/ $VPS:/opt/studenthub/data/
+ssh $VPS "mkdir -p /opt/studenthub/supabase/migrations"
 rsync -az --delete supabase/migrations/ $VPS:/opt/studenthub/supabase/migrations/
 scp -q deploy/studenthub-api $VPS:/opt/studenthub/studenthub-api.new
 scp -q deploy/studenthub-migrate $VPS:/opt/studenthub/studenthub-migrate

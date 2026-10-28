@@ -22,6 +22,7 @@ type Config struct {
 	WebhookSecret string
 	CronSecret    string
 	SiteURL       string
+	ContentURL    string // where /api/content is read from; the API's own address on the server
 	APIBase       string
 	Admins        map[string]bool
 	Digest        bool
@@ -37,6 +38,7 @@ func ConfigFromEnv() Config {
 		WebhookSecret: config.Str("WEBHOOK_SECRET", ""),
 		CronSecret:    config.Str("CRON_SECRET", ""),
 		SiteURL:       config.SiteURL(),
+		ContentURL:    config.Str("CONTENT_URL", config.SiteURL()),
 		APIBase:       strings.TrimRight(config.Str("TELEGRAM_API_BASE", "https://api.telegram.org"), "/"),
 		Admins:        admins,
 		Digest:        config.Bool("DIGEST_ENABLED", false),
