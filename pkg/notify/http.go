@@ -33,7 +33,7 @@ var (
 )
 
 // Routes wires GET/PUT /api/me/notifications and the hourly outbox job GET /api/cron/notify.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("GET /api/me/notifications", auth.Need(getPrefs))
 	mux.HandleFunc("PUT /api/me/notifications", auth.Write(auth.Need(putPrefs)))
 	mux.HandleFunc("GET /api/cron/notify", cron)

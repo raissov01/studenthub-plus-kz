@@ -75,7 +75,7 @@ func init() {
 }
 
 // Routes wires /api/market/*, /api/admin/market/* and the cron job; 404 while FEATURE_MARKET is off.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	w := func(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.Need(fn)) }
 

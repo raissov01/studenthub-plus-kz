@@ -11,14 +11,18 @@ export const PLAIN = [
   'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
+  'employer', 'university', 'announcements',
 ] as const;
 /** screens that need an id */
-export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize'] as const;
+export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
 /** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
 export const SUB_SCREENS = [
   'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
+  'admin:employers', 'admin:staff',
 ] as const;
+/** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest] */
+export const MULTI_SEGMENT = ['employer'] as const;
 export const ROOTS = ['home', 'search', 'notif', 'profile'];
 
 const FIXED: Record<string, string> = {
@@ -35,6 +39,8 @@ const FIXED: Record<string, string> = {
   'map:near': '/map/near',
 };
 const SEGMENT: Record<string, string> = { opp: 'opportunity' };
+/** search categories that kept their own old URL; the others are /search?k=<category> */
+const SEARCH_PATH: Record<string, string> = { jobs: '/jobs', intern: '/internships', events: '/events', courses: '/courses', deals: '/discounts' };
 const FIXED_BACK: Record<string, string> = Object.fromEntries(
   Object.entries(FIXED).filter(([v]) => v !== 'opps' && v !== 'map:campus').map(([v, p]) => [p, v]),
 );
@@ -43,8 +49,9 @@ const SEGMENT_BACK: Record<string, string> = Object.fromEntries(Object.entries(S
 export function pathOf(v: string): string {
   if (v in FIXED) return FIXED[v];
   const [n, prm] = parseView(v);
-  if (n === 'search') return '/search';
+  if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
   if (n === 'opps') return FIXED['opps:jobs'];
+  if ((MULTI_SEGMENT as readonly string[]).includes(n) && prm) return '/' + n + '/' + prm.split('/').map(encodeURIComponent).join('/');
   return '/' + (SEGMENT[n] || n) + (prm ? '/' + encodeURIComponent(prm) : '');
 }
 
@@ -62,6 +69,7 @@ export function viewOfPath(pathname: string): string | null {
     return (PLAIN as readonly string[]).includes(name) ? name : null;
   }
   if (parts.length === 2 && (WITH_ID as readonly string[]).includes(name) && parts[0] !== 'opp') return `${name}:${parts[1]}`;
+  if (parts.length > 2 && (MULTI_SEGMENT as readonly string[]).includes(name)) return `${name}:${parts.slice(1).join('/')}`;
   return null;
 }
 

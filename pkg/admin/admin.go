@@ -31,7 +31,7 @@ var (
 )
 
 // Routes wires /api/admin/*.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("GET /api/admin/summary", auth.NeedRole(summary, "admin"))
 	mux.HandleFunc("GET /api/admin/users", auth.NeedRole(users, "admin"))
 	mux.HandleFunc("GET /api/admin/analytics", auth.NeedRole(analyticsReport, "admin"))

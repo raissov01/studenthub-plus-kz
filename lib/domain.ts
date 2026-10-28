@@ -16,7 +16,8 @@ export function gradYear(p: Profile) {
   const start = n.getMonth() >= 8 ? n.getFullYear() : n.getFullYear() - 1;
   return start + (4 - p.course) + 1;
 }
-export const hourly = (j: Job) => (j.per === 'hour' ? j.pay : j.per === 'shift' ? j.pay / j.hours : j.pay / (j.hours * 22));
+// employer jobs may leave hours empty for a monthly salary: fall back to a full-time month (22 days × 8 h)
+export const hourly = (j: Job) => (j.per === 'hour' ? j.pay : j.per === 'shift' ? (j.hours ? j.pay / j.hours : 0) : j.pay / ((j.hours || 8) * 22));
 export function payText(j: Job, I: I18n) {
   const { tt } = I;
   if (j.per === 'month') return { main: money(j.pay), sub: tt('айына', 'в месяц') };
@@ -205,7 +206,7 @@ export function notifs(S: AppState, I: I18n, C: Content): Notif[] {
 export const unreadCount = (S: AppState, I: I18n, C: Content) => notifs(S, I, C).filter(n => !S.read[n.id]).length;
 
 /* ---------- one list for jobs, internships and deals ---------- */
-export interface SearchItem { k: string; id: string; go?: string; act?: 'deal'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean }
+export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean; noFav?: boolean }
 export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
   const { tt, L } = I;
   const items: SearchItem[] = [];

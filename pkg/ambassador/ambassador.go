@@ -84,7 +84,7 @@ func init() {
 
 // Routes wires /api/ambassador/*, /api/certificates/* and the admin endpoints for ambassadors —
 // all behind the "ambassador" switch. Suggestions are in SubmissionRoutes.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	wrap := func(h http.Handler) http.Handler { return features.Require("ambassador", h) }
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, wrap(fn)) }
 	h("POST /api/ambassador/apply", auth.Write(auth.Need(apply)))
@@ -107,7 +107,7 @@ func Routes(mux *http.ServeMux) {
 // SubmissionRoutes wires the «Мүмкіндік ұсыну» suggestions (POST /api/submissions, GET
 // /api/submissions/my). Any signed-in, consented student may suggest, so they do not depend on
 // the "ambassador" switch (pkg/server registers them next to the shared queue).
-func SubmissionRoutes(mux *http.ServeMux) {
+func SubmissionRoutes(mux httpx.Router) {
 	mux.Handle("POST /api/submissions", auth.Write(auth.Need(submit)))
 	mux.Handle("GET /api/submissions/my", auth.Need(mySubmissions))
 }

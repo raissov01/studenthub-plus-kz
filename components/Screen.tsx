@@ -2,10 +2,11 @@
 /* Renders the screen for a view id ('home', 'opps:jobs', 'job:j1', ...). */
 import { Ai, Cards, Chat, DeckView, Exam, Interview, Match, PlanView, Resume, Study } from '@/components/views/ai';
 import { EventView, JobView, OppView } from '@/components/views/detail';
-import { Home, Materials, Notifications, Saved, Search, Services } from '@/components/views/home';
+import { Home, Materials, Notifications, Saved, Services } from '@/components/views/home';
+import { Search } from '@/components/views/search';
 import { MapView } from '@/components/views/map';
-import { Mine, Opps } from '@/components/views/opps';
-import { Admission, Bonus, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
+import { Mine } from '@/components/views/opps';
+import { Admission, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
 import { Admin } from '@/components/views/admin';
 import { Privacy } from '@/components/views/privacy';
 import { Roadmap } from '@/components/views/roadmap';
@@ -15,7 +16,11 @@ import { Market } from '@/components/views/market';
 import { AdminMentors, AmbassadorMentors, Mentors } from '@/components/views/mentors';
 import { AdminAmbassadors, AdminMarket, AdminQueue, AdminReports } from '@/components/views/moderation';
 import { NotFound } from '@/components/views/common';
+import { Announcements } from '@/components/views/jobs-b2b';
+import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/employer';
+import { UniversityCabinet } from '@/components/views/university';
 import { parseView } from '@/lib/routes';
+import { catOfView } from '@/lib/search';
 
 export function Screen({ v }: { v: string }) {
   const [name, prm] = parseView(v);
@@ -26,7 +31,8 @@ export function Screen({ v }: { v: string }) {
     case 'services': return <Services />;
     case 'materials': return <Materials />;
     case 'saved': return <Saved />;
-    case 'opps': return <Opps tab={prm || 'jobs'} />;
+    // the old «Мүмкіндіктер» and discounts URLs are the search screen with their category selected
+    case 'opps': case 'bonus': return <Search fixed={catOfView(name, prm)} />;
     case 'mine': return <Mine />;
     case 'job': return <JobView id={prm} />;
     case 'opp': return <OppView id={prm} />;
@@ -41,7 +47,6 @@ export function Screen({ v }: { v: string }) {
     case 'deck': return <DeckView id={prm} />;
     case 'study': return <Study />;
     case 'match': return <Match id={prm || undefined} />;
-    case 'bonus': return <Bonus />;
     case 'edit': return <Edit />;
     case 'gpa': return <Gpa />;
     case 'docs': return <Docs />;
@@ -60,6 +65,8 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'mentors') return <AdminMentors />;
       if (prm === 'ambassadors') return <AdminAmbassadors />;
       if (prm === 'market') return <AdminMarket />;
+      if (prm === 'employers') return <AdminEmployers />;
+      if (prm === 'staff') return <AdminStaff />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
     case 'mentors': return <Mentors prm={prm} />;
@@ -67,6 +74,9 @@ export function Screen({ v }: { v: string }) {
     case 'organize': return <Organize prm={prm} />;
     case 'checkin': return <Checkin />;
     case 'certificate': return prm ? <CertificateView code={prm} /> : <NotFound />;
+    case 'employer': return <EmployerCabinet prm={prm} />;
+    case 'university': return <UniversityCabinet />;
+    case 'announcements': return <Announcements />;
     default: return <Home />;
   }
 }
