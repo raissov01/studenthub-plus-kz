@@ -889,3 +889,35 @@ body::before { height: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
   body { background: #FFFFFF; }
   .cert { border: 2px solid #000000; }
 }
+
+/* ---------- one search screen (search box sticky under the header, chips wrap, removable filter chips) ---------- */
+.search-top {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--tg-top) + 59px); z-index: 15; background: var(--bg);
+  margin: -8px -16px -12px; padding: 8px 16px 12px;
+}
+.search-cats { gap: 8px 6px; }
+.search-cats .chip { min-height: 36px; padding: 6px 12px; }
+.active-filters { align-items: center; gap: 6px; margin-top: -10px; }
+.active-filters .chip { min-height: 34px; padding: 5px 10px 5px 12px; font-size: .84rem; }
+.active-filters .link-btn { min-height: 34px; padding: 4px 6px; }
+.filter-btn .count { top: 2px; right: 2px; }
+.sr > .row { flex: 1; min-width: 0; border-top: 0; }
+.sr-heart { justify-content: center; padding-left: 0; }
+.fav-card { position: relative; min-width: 0; display: flex; }
+.fav-card > .card { flex: 1; }
+.fav-card > .heart { position: absolute; top: 6px; right: 6px; }
+.fav-card > .card > .badges:first-child { padding-right: 34px; }
+.my-ev { gap: 0; }
+.ics-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+
+/* ---------- discount «Жұмыс істеді ме?» and notification settings ---------- */
+.dcheck { display: flex; flex-direction: column; gap: 10px; }
+.dcheck .btn-row .btn { min-height: 44px; padding: 10px 14px; }
+.toggle-row { cursor: pointer; }
+.toggle-row input[type="checkbox"] { width: 22px; height: 22px; margin: 0; accent-color: var(--primary); flex: none; align-self: center; }
+.toggle-row input[type="checkbox"]:disabled { opacity: .55; }
+.toggle-row.locked { cursor: default; }
+.quiet-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 14px; }
+/* a long sheet scrolls instead of squeezing its blocks (the deal sheet grew a row) */
+.sheet > * { flex-shrink: 0; }
+@media (max-width: 374px) { .quiet-times { grid-template-columns: 1fr; } }

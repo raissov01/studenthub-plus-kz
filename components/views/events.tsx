@@ -9,12 +9,10 @@ import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
   toLocalInput, useFeature, useLoad, useNeedAccount,
 } from '@/components/views/common';
-import { EventCard } from '@/components/views/opps';
 import { api, apiDownload, useAccount } from '@/lib/account';
 import { BUILDINGS } from '@/lib/data/campus';
-import { EVENTS } from '@/lib/data/static';
 import {
-  ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, eventListItems, evTitle,
+  ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
   type Attendance, type CheckinResult, type DbEvent, type FeedbackSummary, type LiveView, type RegRow, type RegsResp,
 } from '@/lib/events';
 
@@ -41,24 +39,6 @@ export function DbEventCard({ e }: { e: DbEvent }) {
         </div>
       </div>
     </button>
-  );
-}
-
-/** «Іс-шара» tab content when the events switch is on: DB events, demo ones as «үлгі» (see eventListItems) */
-export function DbEventsList() {
-  const { ui, tt, lang, setUi, go } = useApp();
-  const acc = useAccount();
-  const { data, loading } = useLoad<{ events: DbEvent[] }>('/api/events?scope=upcoming');
-  if (loading && !data) return <Loading />;
-  const list = eventListItems(data?.events ?? null, EVENTS, { signedIn: !!acc.user, cat: ui.evCat, q: ui.q, lang });
-  const organizer = canCreateEvents(acc.user?.role);
-  return (
-    <>
-      {organizer ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
-      {list.length
-        ? <div className="list">{list.map(it => it.kind === 'db' ? <DbEventCard key={'db' + it.e.id} e={it.e} /> : <EventCard key={it.e.id} e={it.e} demo />)}</div>
-        : <Empty icon="calendar" action={ui.q ? <button className="btn ghost" type="button" onClick={() => setUi({ q: '' })}>{tt('Іздеуді тазалау', 'Очистить поиск')}</button> : null}>{tt('Іс-шара табылмады.', 'Событий не найдено.')}</Empty>}
-    </>
   );
 }
 
@@ -135,7 +115,7 @@ function DbEvent_({ id }: { id: string }) {
               : <><Qr text={my.ticket} /><span className="code">{my.ticket.slice(0, 6).toUpperCase()}</span>
                 <span className="tiny muted">{tt('Кіреберісте ұйымдастырушының QR-ын сканерлеңіз. Интернет болмаса — осы билетті көрсетіңіз.', 'На входе отсканируйте QR организатора. Нет интернета — покажите этот билет.')}</span></>}
           </div>
-          <a className="btn ghost block" href={`/api/events/${e.id}/ics`} download={`event-${e.id}.ics`}><Icon n="calendar" s={18} /> {tt('Күнтізбеге қосу', 'Добавить в календарь')}</a>
+          <IcsLink id={e.id} />
           {!started && open ? <button className="btn danger block" type="button" disabled={busy} onClick={unregister}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button> : null}
           {e.status === 'finished' && my.checked_in_at && my.feedback_score == null ? <FeedbackForm id={e.id} onDone={reload} /> : null}
           {my.feedback_score != null ? <p className="tiny muted">{tt('Пікіріңіз үшін рақмет!', 'Спасибо за отзыв!')}</p> : null}
@@ -144,6 +124,7 @@ function DbEvent_({ id }: { id: string }) {
         <>
           <div className="card"><b>{tt('Орын жоқ — күту тізіміндесіз', 'Мест нет — вы в листе ожидания')}</b>
             <span className="small muted">{tt('Біреу бас тартса, сізді автоматты тіркеп, Telegram-да хабарлаймыз.', 'Если кто-то откажется, запишем вас автоматически и сообщим в Telegram.')}</span></div>
+          {open && !started ? <IcsLink id={e.id} /> : null}
           {open && !started ? <button className="btn danger block" type="button" disabled={busy} onClick={unregister}>{tt('Күту тізімінен шығу', 'Выйти из листа ожидания')}</button> : null}
         </>
       ) : open ? (
@@ -152,7 +133,7 @@ function DbEvent_({ id }: { id: string }) {
           <div className="sticky-cta">
             <button className="btn block" type="button" disabled={busy} onClick={register}><Icon n="check" s={18} /> {e.spots_left === 0 ? tt('Күту тізіміне жазылу', 'В лист ожидания') : tt('Тіркелу', 'Записаться')}</button>
           </div>
-          <a className="btn ghost block" href={`/api/events/${e.id}/ics`} download={`event-${e.id}.ics`}><Icon n="calendar" s={18} /> {tt('Күнтізбеге қосу', 'Добавить в календарь')}</a>
+          <IcsLink id={e.id} />
         </>
       ) : null}
       {e.gives_cert ? <p className="tiny muted">{tt('Келгеніңіз QR арқылы расталса, сертификат портфолиоңызға өзі қосылады.', 'Если ваше присутствие подтверждено по QR, сертификат сам появится в портфолио.')}</p> : null}
@@ -300,7 +281,26 @@ export function MyDbEvents() {
   const { data } = useLoad<{ registrations: { event: DbEvent }[] }>(on && acc.user ? '/api/events/my' : null);
   const list = (data?.registrations ?? []).map(r => r.event).filter(e => e.status !== 'finished' && !isPast(e.ends_at));
   if (!list.length) return null;
-  return <div className="list">{list.map(e => <DbEventCard key={e.id} e={e} />)}</div>;
+  return (
+    <div className="list">
+      {list.map(e => (
+        <div key={e.id} className="list my-ev">
+          <DbEventCard e={e} />
+          {e.status === 'published' ? <IcsLink id={e.id} small /> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** «Күнтізбеге қосу»: the server's .ics of a DB event (GET /api/events/{id}/ics, in the UI language) */
+export function IcsLink({ id, small }: { id: number; small?: boolean }) {
+  const { tt, lang } = useApp();
+  return (
+    <a className={small ? 'link-btn ics-link' : 'btn ghost block'} href={`/api/events/${id}/ics?lang=${lang}`} download={`event-${id}.ics`}>
+      <Icon n="calendar" s={small ? 16 : 18} /> {tt('Күнтізбеге қосу', 'Добавить в календарь')}
+    </a>
+  );
 }
 
 /* ---------- organizer ---------- */

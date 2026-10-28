@@ -1,6 +1,10 @@
 'use client';
-/* Bottom-sheet contents: deal QR, course, digital student card, add certificate, «Тексерілген» explanation. */
+/* Bottom-sheet contents: deal QR (+ «Жұмыс істеді ме?»), course, digital student card, add certificate, «Тексерілген» explanation. */
+import { useEffect, useState } from 'react';
 import { useApp } from '@/components/app';
+import { agoDays, errCode, errText, useNeedAccount } from '@/components/views/common';
+import { ConsentSheet } from '@/components/views/account';
+import { api, ApiError, useAccount } from '@/lib/account';
 import { Icon, Qr, Row } from '@/components/ui';
 import { reportHref } from '@/lib/config';
 import { COURSES, DEAL_CATS, SKILLS, SPECS } from '@/lib/data/static';
@@ -21,6 +25,7 @@ export function DealSheet({ id }: { id: string }) {
       <Qr text={'STUDENTHUB-DEAL|' + code} />
       <p style={{ textAlign: 'center' }}><span className="code">{code}</span></p>
       <div className="group"><Row icon="check" tone="ok" title={tt('Шарттары', 'Условия')} sub={L(d.cond)} chev={false} /></div>
+      <DealCheck id={d.id} />
       <p className="tiny muted">{d.is_demo
         ? tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз. Серіктес — үлгі.', 'Покажите QR-код или студенческий статус на кассе. Партнёр — пример.')
         : tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз.', 'Покажите QR-код или студенческий статус на кассе.')}</p>
@@ -143,5 +148,77 @@ export function VerifiedSheet({ item, kind, id, path }: { item: Provenance; kind
       <p className="tiny muted">{tt('Тексеру кепілдік емес. Біреу алдын ала ақша сұраса, төлемеңіз және бізге хабарлаңыз.', 'Проверка — не гарантия. Если у вас просят деньги заранее, не платите и сообщите нам.')}</p>
       <a className="btn ghost" href={reportHref(id, kind, url, lang)} target="_blank" rel="noopener"><Icon n="bell" s={18} /> {tt('Қате не алаяқтық туралы хабарлау', 'Сообщить об ошибке или мошенничестве')}</a>
     </>
+  );
+}
+
+/* ---------- F7: «Жұмыс істеді ме?» (docs/api/discounts.md, pkg/discounts) ---------- */
+interface CheckStats { worked: number; notWorked: number; lastConfirmedAt: string | null }
+const VOTES_KEY = 'studenthub.dealVotes';
+const VOTE_DAYS = 30;
+/** GET /api/discounts/checks once per page load (the CDN caches it for 5 minutes anyway) */
+let checksCache: Promise<Record<string, CheckStats>> | null = null;
+const loadChecks = () => (checksCache ??= api<{ checks: Record<string, CheckStats> }>('/api/discounts/checks').then(r => r.checks || {}, (): Record<string, CheckStats> => { checksCache = null; return {}; }));
+function myVotes(): Record<string, number> {
+  try { return JSON.parse(window.localStorage.getItem(VOTES_KEY) || '{}') as Record<string, number>; } catch { return {}; }
+}
+function rememberVote(id: string, at: number) {
+  try { window.localStorage.setItem(VOTES_KEY, JSON.stringify({ ...myVotes(), [id]: at })); } catch { /* ignore */ }
+}
+const votedRecently = (id: string) => { const t = myVotes()[id]; return !!t && Date.now() - t < VOTE_DAYS * 86400_000; };
+
+function DealCheck({ id }: { id: string }) {
+  const { tt, lang, toast, openSheet } = useApp();
+  const acc = useAccount();
+  const need = useNeedAccount();
+  const [stats, setStats0] = useState<CheckStats | null | undefined>(undefined);
+  const [ago, setAgo] = useState<number | null>(null);
+  const setStats = (st: CheckStats | null) => {
+    setStats0(st);
+    setAgo(st?.lastConfirmedAt ? Math.max(0, Math.floor((Date.now() - new Date(st.lastConfirmedAt).getTime()) / 86400_000)) : null);
+  };
+  const [state, setState] = useState<'' | 'thanks' | 'already'>(() => (votedRecently(id) ? 'already' : ''));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    loadChecks().then(m => { if (live) setStats(m[id] ?? null); });
+    return () => { live = false; };
+  }, [id]);
+  const vote = async (worked: boolean) => {
+    if (busy || !need()) return;
+    setBusy(true);
+    try {
+      const r = await api<{ check: { createdAt: string }; stats: CheckStats }>(`/api/discounts/${encodeURIComponent(id)}/check`, { method: 'POST', body: { worked }, lang });
+      setStats(r.stats);
+      checksCache = null;
+      rememberVote(id, Date.now());
+      setState('thanks');
+    } catch (e) {
+      const code = errCode(e);
+      if (code === 'already_checked') { rememberVote(id, Date.now()); setState('already'); }
+      else if (code === 'consent_required') openSheet(<ConsentSheet />);
+      else toast(errText(e, tt('Болмады', 'Не получилось')));
+      if (e instanceof ApiError && e.status === 404) checksCache = null;
+    } finally { setBusy(false); }
+  };
+  const days = ago;
+  const counts = stats ? tt(`${stats.worked} иә / ${stats.notWorked} жоқ`, `${stats.worked} да / ${stats.notWorked} нет`) : '';
+  const line = stats === undefined ? ''
+    : days != null ? `${tt('Соңғы расталған', 'Последнее подтверждение')}: ${agoDays(days, tt)} · ${counts}`
+      : stats ? `${tt('Әзірге ешкім растамаған', 'Пока никто не подтвердил')} · ${counts}`
+        : tt('Әзірге ешкім растамаған', 'Пока никто не подтвердил');
+  return (
+    <div className="card dcheck">
+      <span className="row-title">{tt('Жұмыс істеді ме?', 'Сработала ли скидка?')}</span>
+      {state === 'thanks' ? <p className="small"><b>{tt('Рақмет!', 'Спасибо!')}</b> {tt('Бағаңыз басқа студенттерге көмектеседі.', 'Ваша отметка поможет другим студентам.')}</p>
+        : state === 'already' ? <p className="small muted">{tt('Сіз бұл айда бағалағансыз.', 'Вы уже отмечали эту скидку в этом месяце.')}</p>
+          : (
+            <div className="btn-row">
+              <button className="btn secondary" type="button" disabled={busy} onClick={() => vote(true)}><Icon n="check" s={18} /> {tt('Иә, жұмыс істеді', 'Да, сработала')}</button>
+              <button className="btn ghost" type="button" disabled={busy} onClick={() => vote(false)}><Icon n="x" s={18} /> {tt('Жоқ', 'Нет')}</button>
+            </div>
+          )}
+      {line ? <p className="tiny muted" role="status">{line}</p> : null}
+      {!acc.user && state === '' ? <p className="tiny muted">{tt('Бағалау үшін Telegram арқылы кіру керек — бір жеңілдікке айына бір рет.', 'Чтобы отметить, нужно войти через Telegram — одна отметка на скидку в месяц.')}</p> : null}
+    </div>
   );
 }
