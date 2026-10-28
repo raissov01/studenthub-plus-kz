@@ -12,6 +12,8 @@ import { track } from '@/features/analytics/track';
 import { useTelegram } from '@/lib/telegram';
 import { AccountSection } from '@/components/views/account';
 import { RoadmapProgress } from '@/components/views/roadmap';
+import { ProfileCommunity } from '@/components/views/entries';
+import { VerifiedAttendance } from '@/components/views/events';
 import type { Profile as ProfileT } from '@/lib/types';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
@@ -160,6 +162,7 @@ export function Profile() {
         <Row go="saved" icon="bookmark" title={tt('Сақталғандар', 'Сохранённое')} />
         <Row go="settings" icon="gear" title={tt('Параметрлер', 'Параметры')} />
       </div>
+      <ProfileCommunity />
       <p className="note">{tt('Деректеріңіз бен суретіңіз тек осы құрылғыда сақталады.', 'Ваши данные и фото хранятся только на этом устройстве.')}</p>
     </>
   );
@@ -364,6 +367,7 @@ export function Portfolio() {
             end={c.src === 'manual' ? <button className="icon-btn" type="button" style={{ color: 'var(--muted)' }} aria-label={tt('Жою', 'Удалить')} onClick={() => update(s => { s.certs.splice(c.i ?? -1, 1); })}><Icon n="trash" s={18} /></button> : null} />
         )) : <div className="empty">{tt('Курсты аяқтаңыз немесе сертификат қосыңыз', 'Пройдите курс или добавьте сертификат')}</div>}</div></section>
       <section className="section"><h2>{tt('Қатысқан іс-шаралар', 'Мероприятия')}</h2>
+        <VerifiedAttendance />
         <div className="group">{attended.length ? attended.map(e => <Row key={e.id} icon="calendar" title={L(e.title)} sub={I.fDateY(dOff(e.day))} chev={false} />) : <div className="empty">{tt('Әзірге жоқ', 'Пока нет')}</div>}</div></section>
       <section className="section"><h2>{tt('Тәжірибе', 'Опыт')}</h2>
         <div className="group">{exp.length ? exp.map((s, i) => <Row key={i} icon="briefcase" title={s} chev={false} />) : <div className="empty">{tt('Профильге тәжірибе қосыңыз', 'Добавьте опыт в профиль')}</div>}</div></section>

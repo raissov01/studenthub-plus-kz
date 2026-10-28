@@ -6,6 +6,8 @@ import { Chip, Icon, Note, Seg } from '@/components/ui';
 import { BUILDINGS, DIR_L, ENTR, GEO, KIND_L, NEAR_CATS, NEARBY, PINS, UNI_SITES } from '@/lib/data/campus';
 import { distTxt, entrPx, geoToPx, inPlan, mapSearch, metresBetween, nearOnMapCount, onCampus, walkMin, type Me } from '@/lib/campus';
 import { IC } from '@/lib/icons';
+import { CommunityReport } from '@/components/views/ambassador';
+import { useFeature } from '@/components/views/common';
 import type { Building, NearPlace } from '@/lib/types';
 
 /* viewBox lives outside React so pinch/drag can move it every frame without re-rendering the plan */
@@ -95,12 +97,41 @@ function Near() {
     <>
       <div className="chips">{cats.map(([k, l]) => <Chip key={k} pressed={ui.nearCat === k} onClick={() => setUi({ nearCat: k })}>{l}</Chip>)}</div>
       <div id="nearList" className="section"><div className="group">{list.map((p, i) => <NearRow key={i} p={p} />)}</div></div>
+      <CommunityPlaces />
       <Note>{tt('Қашықтық кампус ортасынан түзу сызықпен есептелген. Басқанда 2GIS ашылады. Дереккөз: OpenStreetMap және 2GIS.', 'Расстояние — по прямой от центра кампуса. Нажмите, чтобы открыть 2GIS. Источники: OpenStreetMap и 2GIS.')}</Note>
       <section className="section"><h2>{tt('Университеттің басқа ғимараттары', 'Другие здания университета')}</h2>
         <div className="group">{UNI_SITES.map((u, i) => (
           <a key={i} className="row" href={twoGis('Сейфуллин ' + L(u.a))} target="_blank" rel="noopener"><span className="bnum bnum-other"><Icon n="pin" s={16} /></span><span className="row-main"><span className="row-title">{L(u.n)}</span><span className="row-sub">{L(u.a)}</span></span><span className="chev"><Icon n="ext" s={18} /></span></a>
         ))}</div></section>
     </>
+  );
+}
+
+/** places from the ambassadors' queue (approved by an admin); only while the ambassador switch is on */
+function CommunityPlaces() {
+  const { tt, L, content, setUi, go } = useApp();
+  const on = useFeature('ambassador');
+  const list = content.places ?? [];
+  if (!on || !list.length) return null;
+  return (
+    <section className="section"><h2>{tt('Студенттер ұсынған орындар', 'Места от студентов')}</h2>
+      <div className="list">{list.map(p => {
+        const b = BUILDINGS.find(x => x.id === p.building_id);
+        return (
+          <div key={p.id} className="card">
+            <div className="badges"><span className="badge b-sky">{tt('Амбассадор', 'Амбассадор')}</span>{p.university ? <span className="badge b-line">{p.university}</span> : null}</div>
+            <span className="row-title">{L(p.name)}</span>
+            <span className="row-sub">{p.address}{p.hours ? ' · ' + p.hours : ''}</span>
+            {L(p.desc) ? <p className="small">{L(p.desc)}</p> : null}
+            <div className="btn-row">
+              {b ? <button className="btn ghost" type="button" onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }}><Icon n="pin" s={16} /> {tt('Картада', 'На карте')}</button> : null}
+              <a className="btn ghost" href={twoGis(p.address)} target="_blank" rel="noopener">2GIS</a>
+            </div>
+            <CommunityReport kind="place" id={p.id} />
+          </div>
+        );
+      })}</div>
+    </section>
   );
 }
 

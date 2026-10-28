@@ -4,7 +4,9 @@
    from docs/ANALYTICS.md in plain words. */
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/components/app';
-import { Empty, Row, SectionHead } from '@/components/ui';
+import { Row, SectionHead } from '@/components/ui';
+import { NotFound } from '@/components/views/common';
+import { ModerationLinks } from '@/components/views/moderation';
 import { roleLabel } from '@/components/views/account';
 import { api, ApiError, useAccount, type Role } from '@/lib/account';
 
@@ -18,10 +20,6 @@ interface UserRow { id: number; telegramId: number; username: string | null; nam
 const ROLES: Role[] = ['student', 'ambassador', 'admin', 'university_staff', 'employer'];
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
 
-function NotFound() {
-  const { tt, go } = useApp();
-  return <Empty icon="search" action={<button className="btn secondary" type="button" onClick={() => go('home')}>{tt('Басты бетке', 'На главную')}</button>}>{tt('Мұндай бет жоқ.', 'Такой страницы нет.')}</Empty>;
-}
 
 function RoleSheet({ u, onDone }: { u: UserRow; onDone: () => void }) {
   const { tt, lang, toast, closeSheet } = useApp();
@@ -88,6 +86,7 @@ function Dashboard() {
   const amb = Object.entries(rep.ambassadors || {}).sort((a, b) => b[1] - a[1]);
   return (
     <>
+      <ModerationLinks />
       <section className="section">
         <SectionHead title={tt('Басты 3 көрсеткіш (30 күн)', 'Главные 3 показателя (30 дней)')} />
         <div className="stat-grid">

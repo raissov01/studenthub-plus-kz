@@ -57,7 +57,13 @@ export interface Discount extends Provenance {
   what: LText;
   cond: LText;
 }
+/** a useful place an ambassador or student suggested and an admin approved (GET /api/content → places[]) */
+export interface CommunityPlace {
+  id: string; cat: string; name: LText; desc: LText; address: string; building_id: string; hours: string;
+  source_url: string; posted_at: string; university: string; source: 'ambassador';
+}
 export interface Content {
+  places?: CommunityPlace[];
   opportunities: Opportunity[];
   jobs: Job[];
   discounts: Discount[];

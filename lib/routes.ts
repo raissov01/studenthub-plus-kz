@@ -10,10 +10,15 @@ export const parseView = (v: string): [string, string] => {
 export const PLAIN = [
   'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
-  'roadmap', 'privacy', 'admin',
+  'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
 ] as const;
 /** screens that need an id */
-export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match'] as const;
+export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize'] as const;
+/** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
+export const SUB_SCREENS = [
+  'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
+  'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
+] as const;
 export const ROOTS = ['home', 'search', 'notif', 'profile'];
 
 const FIXED: Record<string, string> = {
@@ -62,7 +67,7 @@ export function viewOfPath(pathname: string): string | null {
 
 /** Old single-file links: '#/job/j1', '#/opportunity/o2', '#/jobs', '#/opps/courses', '#/map/near', '#/search/all' */
 export function viewOfLegacyHash(hash: string): string | null {
-  const path = (hash || '').replace(/^#\/?/, '');
+  const path = (hash || '').replace(/^#\/?/, '').replace(/\?.*$/, '');
   if (!path) return null;
   const legacyFixed: Record<string, string> = { jobs: 'opps:jobs', internships: 'opps:intern', events: 'opps:events', discounts: 'bonus' };
   if (path in legacyFixed) return legacyFixed[path];
@@ -78,7 +83,7 @@ export function viewOfLegacyHash(hash: string): string | null {
 
 /** every parameterless screen, for generateStaticParams of the catch-all route */
 export function staticSlugs(): string[][] {
-  const views = ['home', 'opps:jobs', 'opps:intern', 'opps:events', 'opps:courses', 'map:near', ...PLAIN];
+  const views = ['home', 'opps:jobs', 'opps:intern', 'opps:events', 'opps:courses', 'map:near', ...PLAIN, ...SUB_SCREENS];
   const seen = new Set<string>();
   const out: string[][] = [];
   for (const v of views) {

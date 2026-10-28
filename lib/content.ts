@@ -10,7 +10,7 @@ export const REVALIDATE_SECONDS = 600;
 const TIMEOUT_MS = 4000;
 
 /** Same origin as the /api rewrite in next.config.ts: API_ORIGIN, else the Go dev server locally, else our API host. */
-function apiOrigin(): string {
+export function apiOrigin(): string {
   const o = process.env.API_ORIGIN ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://studenthub.85-137-91-47.sslip.io');
   return o.replace(/\/+$/, '');
 }

@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
 import { unreadCount } from '@/lib/domain';
 import { IC } from '@/lib/icons';
+import { CHECKIN_KEY } from '@/lib/events';
 import { ROOTS, viewOfLegacyHash, viewOfPath } from '@/lib/routes';
 import { screenMeta } from '@/lib/screens';
 import { useHydrated } from '@/lib/store';
@@ -37,6 +38,9 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const redirect = () => {
       if (/^#tgWebApp/.test(window.location.hash)) return; // Telegram's launch parameters, not an old link
+      // QR check-in link outside Telegram: SITE_URL/#/checkin?t=ci_… (the token rides along to /checkin)
+      const ci = /^#\/?checkin\?(?:.*&)?t=(ci_[A-Za-z0-9_-]+)/.exec(window.location.hash);
+      if (ci) { try { window.sessionStorage.setItem(CHECKIN_KEY, ci[1]); } catch { /* ignore */ } }
       const hv = viewOfLegacyHash(window.location.hash);
       if (hv) go(hv, { replace: true });
     };

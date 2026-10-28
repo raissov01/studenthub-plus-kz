@@ -4,6 +4,9 @@ import { useEffect, useRef } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { RoadmapBoard } from '@/components/views/roadmap';
+import { ServicesCommunity } from '@/components/views/entries';
+import { MarketSearchResults } from '@/components/views/market';
+import { useFeature } from '@/components/views/common';
 import { DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
@@ -177,8 +180,11 @@ export function Search() {
   useEffect(() => {
     if (ui.sqFocus) { setUi({ sqFocus: false }); inp.current?.focus(); }
   }, [ui.sqFocus, setUi]);
+  const marketOn = useFeature('market');
   const kinds: [string, string][] = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['intern', tt('Тағылымдама', 'Стажировки')], ['grant', tt('Грант / байқау', 'Гранты / конкурсы')], ['mobility', tt('Академиялық ұтқырлық', 'Академическая мобильность')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
-  const adv = ({ jobs: 'opps:jobs', intern: 'opps:intern', grant: 'opps:intern', mobility: 'opps:intern', deals: 'bonus', all: 'opps:jobs' } as Record<string, string>)[ui.sk] || 'opps:jobs';
+  if (marketOn) kinds.push(['market', tt('Тегін заттар', 'Отдам даром')]);
+  const marketOnly = marketOn && ui.sk === 'market';
+  const adv = ({ jobs: 'opps:jobs', intern: 'opps:intern', grant: 'opps:intern', mobility: 'opps:intern', deals: 'bonus', all: 'opps:jobs', market: 'market' } as Record<string, string>)[ui.sk] || 'opps:jobs';
   const q = (ui.sq || '').trim().toLowerCase();
   const list = searchItems(S, I, content).filter(it => (ui.sk === 'all' || it.k === ui.sk) && (!q || [it.org, it.title, it.meta].join(' ').toLowerCase().includes(q)));
   return (
@@ -188,7 +194,8 @@ export function Search() {
         <button className="icon-btn filter-btn" type="button" onClick={() => go(adv)} aria-label={tt('Толық сүзгілер', 'Все фильтры')}><Icon n="filter" s={22} /></button>
       </div>
       <div className="chips">{kinds.map(([v, l]) => <Chip key={v} pressed={ui.sk === v} onClick={() => setUi({ sk: v })}>{l}</Chip>)}</div>
-      <div id="sList" className="section">
+      {marketOn && (ui.sk === 'all' || marketOnly) ? <MarketSearchResults q={ui.sq} /> : null}
+      {marketOnly ? (ui.sq.trim() ? null : <p className="note">{tt('Затты атауымен іздеңіз.', 'Ищите вещь по названию.')}</p>) : <div id="sList" className="section">
         {list.length ? (
           <>
             <p className="tiny muted">{tt(`Табылды: ${list.length}`, `Найдено: ${list.length}`)}</p>
@@ -199,7 +206,7 @@ export function Search() {
             {tt('Ештеңе табылмады. Басқа сөзбен іздеп көріңіз.', 'Ничего не нашлось. Попробуйте другое слово.')}
           </Empty>
         )}
-      </div>
+      </div>}
     </>
   );
 }
@@ -255,6 +262,7 @@ export function Services() {
       <Row go="pay" icon="tenge" title={tt('Оқу ақысы', 'Оплата обучения')} sub={tt('Мерзімдер мен төлем тарихы', 'Сроки и история платежей')} />
       <Row go="opps:events" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} sub={tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы')} />
       <Row go="admission" icon="cap" title={tt('Түсу', 'Поступление')} sub={tt('Бакалавриат, магистратура, докторантура', 'Бакалавриат, магистратура, докторантура')} />
+      <ServicesCommunity />
     </div>
   );
 }

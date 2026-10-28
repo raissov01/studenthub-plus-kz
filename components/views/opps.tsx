@@ -1,7 +1,9 @@
 'use client';
 /* «Мүмкіндіктер»: jobs, internships, events and courses tabs; «Менің тізімім». */
 import { useApp } from '@/components/app';
-import { useConfig } from '@/lib/config';
+import { featureOn, useConfig } from '@/lib/config';
+import { SuggestButton } from '@/components/views/ambassador';
+import { DbEventsList, MyDbEvents } from '@/components/views/events';
 import { Chip, DemoBadge, Empty, Icon, Row, Seg, SectionHead } from '@/components/ui';
 import { CourseSheet } from '@/components/views/sheets';
 import { CITIES, COURSES, EVENTS, EVENT_CATS, JOB_TAGS, OPP_TYPES } from '@/lib/data/static';
@@ -33,7 +35,7 @@ export function JobRow({ j }: { j: Job }) {
   );
 }
 
-export function EventCard({ e }: { e: EventItem }) {
+export function EventCard({ e, demo }: { e: EventItem; demo?: boolean }) {
   const { S, tt, L, monS, wd, go } = useApp();
   const d = dOff(e.day), reg = S.events[e.id];
   return (
@@ -47,6 +49,7 @@ export function EventCard({ e }: { e: EventItem }) {
             <span className="badge b-line">{L(EVENT_CATS[e.cat])}</span>
             {e.cert ? <span className="badge b-sun">{tt('Сертификат', 'Сертификат')}</span> : null}
             {reg ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Тіркелдіңіз', 'Вы записаны')}</span> : null}
+            <DemoBadge show={!!demo} />
           </span>
         </div>
       </div>
@@ -57,7 +60,9 @@ export function EventCard({ e }: { e: EventItem }) {
 /** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists; hidden until the form exists */
 function SuggestLink() {
   const { tt } = useApp();
-  const { suggestFormUrl } = useConfig();
+  const cfg = useConfig();
+  const { suggestFormUrl } = cfg;
+  if (featureOn(cfg, 'ambassador')) return <SuggestButton />;
   if (!suggestFormUrl) return null;
   return (
     <a className="btn ghost block suggest" href={suggestFormUrl} target="_blank" rel="noopener">
@@ -68,6 +73,7 @@ function SuggestLink() {
 
 function OppList({ t }: { t: string }) {
   const { S, ui, I, tt, L, setUi, openSheet, go, content } = useApp();
+  const cfg = useConfig();
   const qm = (...parts: string[]) => !ui.q || parts.join(' ').toLowerCase().includes(ui.q.trim().toLowerCase());
   const none = (icon: 'search' | 'globe' | 'calendar' | 'book', msg: string) => (
     <Empty icon={icon} action={ui.q ? <button className="btn ghost" type="button" onClick={() => setUi({ q: '' })}>{tt('Іздеуді тазалау', 'Очистить поиск')}</button> : null}>{msg}</Empty>
@@ -113,6 +119,7 @@ function OppList({ t }: { t: string }) {
     );
   }
   if (t === 'events') {
+    if (featureOn(cfg, 'events')) return <DbEventsList />;
     const list = EVENTS.filter(e => !e.past && (ui.evCat === 'all' || e.cat === ui.evCat) && qm(L(e.title), L(e.place), L(e.desc))).sort((a, b) => a.day - b.day);
     return list.length ? <div className="list">{list.map(e => <EventCard key={e.id} e={e} />)}</div> : none('calendar', tt('Іс-шара табылмады.', 'Событий не найдено.'));
   }
@@ -203,6 +210,7 @@ export function Mine() {
           ? <div className="group">{opps.map(o => <Row key={o.id} go={'opp:' + o.id} icon="globe" title={I.L(o.title)} sub={<span className={oppLeft(o) <= 14 ? 'urgent' : ''}>{deadlineText(o, I)}</span>} />)}</div>
           : empty(tt('Ұнаған тағылымдаманы сақтасаңыз, мерзімі осында көрінеді.', 'Сохраните стажировку, и её срок будет виден здесь.'), 'opps:intern', tt('Тағылымдамаларды қарау', 'Смотреть стажировки'))}</section>
       <section className="section"><SectionHead title={tt('Іс-шараларым', 'Мои мероприятия')} more={<span className="tiny muted num">{evs.length}</span>} />
+        <MyDbEvents />
         {evs.length ? <div className="list">{evs.map(e => <EventCard key={e.id} e={e} />)}</div> : empty(tt('Әзірге тіркелген іс-шара жоқ.', 'Вы пока никуда не записаны.'), 'opps:events', tt('Іс-шараларды қарау', 'Смотреть события'))}</section>
       <section className="section"><SectionHead title={tt('Емтихан жоспарлары', 'Планы к экзаменам')} more={<span className="tiny muted num">{plans.length}</span>} />
         {plans.length ? <div className="group">{plans.map(pl => <PlanRow key={pl.id} pl={pl} sep="," />)}</div>

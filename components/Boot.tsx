@@ -8,7 +8,8 @@ import { Chip } from '@/components/ui';
 import { captureRef, track, trackVisit } from '@/features/analytics/track';
 import { cleanMissing, emptyFeedback, FEEDBACK_KEY, FEEDBACK_TEXT, markAsked, MAX_MISSING_LEN, onVisit, type FeedbackState } from '@/features/feedback/logic';
 import { almatyDate } from '@/features/roadmap/logic';
-import { bindBackButton } from '@/features/telegram/webapp';
+import { bindBackButton, startParam } from '@/features/telegram/webapp';
+import { CHECKIN_KEY } from '@/lib/events';
 import { loadMe, signInWebApp } from '@/lib/account';
 import { loadConfig } from '@/lib/config';
 import { initTelegram, useTelegram } from '@/lib/telegram';
@@ -27,7 +28,7 @@ function writeFeedback(s: FeedbackState) {
 let booted = false;
 
 export function Boot({ root }: { root: boolean }) {
-  const { S, sheet, back, openSheet } = useApp();
+  const { S, sheet, back, openSheet, go } = useApp();
   const tg = useTelegram();
 
   useEffect(() => {
@@ -40,10 +41,17 @@ export function Boot({ root }: { root: boolean }) {
       let sent = false;
       try { sent = !!window.sessionStorage.getItem('studenthub.tgOpenSent'); window.sessionStorage.setItem('studenthub.tgOpenSent', '1'); } catch { /* ignore */ }
       if (!sent) track('telegram_open', { in_telegram: !!app });
+      // opened from an event's live QR (t.me/<bot>/<app>?startapp=ci_…): straight to the check-in screen, once
+      const sp = startParam(app);
+      if (/^ci_[A-Za-z0-9_-]{8,64}$/.test(sp)) {
+        let first = true;
+        try { first = window.sessionStorage.getItem('studenthub.ciUsed') !== sp; window.sessionStorage.setItem('studenthub.ciUsed', sp); window.sessionStorage.setItem(CHECKIN_KEY, sp); } catch { /* ignore */ }
+        if (first) go('checkin', { replace: true });
+      }
       if (app?.initData) signInWebApp(app.initData).catch(() => loadMe());
       else void loadMe();
     });
-  }, []);
+  }, [go]);
 
   // 3rd visit day: one short question, then never again (closing counts as answered)
   const onboarded = S.onboarded;

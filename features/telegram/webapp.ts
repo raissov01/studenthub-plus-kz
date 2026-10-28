@@ -4,7 +4,7 @@
 type TgTheme = Record<string, string | undefined>;
 type TgWebApp = {
   initData: string;
-  initDataUnsafe: { user?: { first_name?: string; language_code?: string } };
+  initDataUnsafe: { user?: { first_name?: string; language_code?: string }; start_param?: string };
   colorScheme: "light" | "dark";
   themeParams: TgTheme;
   contentSafeAreaInset?: { top: number };
@@ -68,6 +68,9 @@ export function bindBackButton(app: TgWebApp, isRoot: boolean, onBack: () => voi
   app.BackButton.onClick(onBack);
   return () => app.BackButton.offClick(onBack);
 }
+
+/** the ?startapp= value the Mini App was opened with (e.g. ci_<token> from an event's QR) */
+export const startParam = (app: TgWebApp | null) => app?.initDataUnsafe.start_param ?? "";
 
 export const firstName = (app: TgWebApp | null) => app?.initDataUnsafe.user?.first_name ?? "";
 

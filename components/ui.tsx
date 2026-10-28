@@ -73,7 +73,7 @@ export function DemoBadge({ show }: { show: boolean }) {
 function utf8Latin1(s: string) {
   return Array.from(new TextEncoder().encode(s), b => String.fromCharCode(b)).join('');
 }
-export function Qr({ text }: { text: string }) {
+export function Qr({ text, big }: { text: string; big?: boolean }) {
   let svg = '';
   try {
     const q = qrcode(0, 'M');
@@ -81,9 +81,9 @@ export function Qr({ text }: { text: string }) {
     q.make();
     svg = q.createSvgTag({ cellSize: 4, margin: 8, scalable: true });
   } catch {
-    return <div className="qr"><div className="code">{text}</div></div>;
+    return <div className={big ? 'qr qr-big' : 'qr'}><div className="code">{text}</div></div>;
   }
-  return <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} />;
+  return <div className={big ? 'qr qr-big' : 'qr'} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 /** «Бөлісу» (native share on touch devices, otherwise copy) + Telegram, for the real URL of a screen.

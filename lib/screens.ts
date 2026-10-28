@@ -58,7 +58,32 @@ const META: Record<string, Meta> = {
   settings: { title: (_, x) => t('Баптаулар', 'Настройки')(x), tab: 'profile' },
   roadmap: { title: (_, x) => t('Даму жоспары', 'План развития')(x), tab: 'home' },
   privacy: { title: (_, x) => t('Құпиялылық саясаты', 'Конфиденциальность')(x), tab: 'profile' },
-  admin: { title: () => 'Student Hub', tab: 'profile' },
+  admin: {
+    title: (prm, x) => ({
+      queue: t('Модерация кезегі', 'Очередь модерации')(x), reports: t('Шағымдар', 'Жалобы')(x), mentors: t('Менторларды жұптау', 'Подбор менторов')(x),
+      ambassadors: t('Амбассадорлар', 'Амбассадоры')(x), market: t('Тегін заттар: модерация', 'Отдам даром: модерация')(x),
+    } as Record<string, string>)[prm] ?? 'Student Hub',
+    tab: 'profile',
+  },
+  market: {
+    title: (prm, x) => (prm === 'new' ? t('Зат беру', 'Отдать вещь')(x) : prm === 'mine' ? t('Менің заттарым', 'Мои вещи')(x) : t('Тегін заттар', 'Отдам даром')(x)),
+    tab: 'home',
+  },
+  mentors: {
+    title: (prm, x) => (prm === 'become' ? t('Ментор болу', 'Стать ментором')(x) : prm === 'me' ? t('Менің менторлығым', 'Моё менторство')(x) : t('Менторлар', 'Менторы')(x)),
+    tab: 'home',
+  },
+  ambassador: {
+    title: (prm, x) => (prm === 'apply' ? t('Амбассадор болу', 'Стать амбассадором')(x) : prm === 'mentors' ? t('Менторларды жұптау', 'Подбор менторов')(x)
+      : prm === 'rating' ? t('Университеттер рейтингі', 'Рейтинг университетов')(x) : t('Амбассадор кабинеті', 'Кабинет амбассадора')(x)),
+    tab: 'profile',
+  },
+  certificate: { title: (_, x) => t('Сертификат', 'Сертификат')(x) },
+  checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
+  organize: {
+    title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),
+    tab: 'profile',
+  },
 };
 
 export function screenMeta(v: string, x: Ctx): { name: string; title: string; tab: string } {

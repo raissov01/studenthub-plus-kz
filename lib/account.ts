@@ -61,6 +61,43 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   return j as T;
 }
 
+/** multipart upload (market photos) with the same session and error handling as api() */
+export async function apiUpload<T = unknown>(path: string, form: FormData, lang?: 'kk' | 'ru'): Promise<T> {
+  const headers: Record<string, string> = { accept: 'application/json' };
+  if (token) headers.authorization = `Bearer ${token}`;
+  if (lang) headers['accept-language'] = lang;
+  let r: Response;
+  try {
+    r = await fetch(path, { method: 'POST', headers, credentials: 'same-origin', body: form });
+  } catch {
+    throw new ApiError(0, 'network', lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
+  }
+  let j: unknown = null;
+  try { j = await r.json(); } catch { /* empty body */ }
+  if (!r.ok) {
+    const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'));
+  }
+  return j as T;
+}
+
+/** a file the API serves only with the session (CSV export): fetched and saved through a blob link */
+export async function apiDownload(path: string, filename: string, lang?: 'kk' | 'ru'): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (token) headers.authorization = `Bearer ${token}`;
+  if (lang) headers['accept-language'] = lang;
+  const r = await fetch(path, { headers, credentials: 'same-origin' });
+  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось скачать файл.' : 'Файлды жүктеу мүмкін болмады.');
+  const url = URL.createObjectURL(await r.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string };
 const apply = (r: MeResp) => set({ loaded: true, user: r.user, needsConsent: !!r.user && r.needsConsent });
 

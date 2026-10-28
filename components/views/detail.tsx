@@ -2,9 +2,10 @@
 /* Detail screens: vacancy, opportunity, event. Job and opportunity pages carry the trust block. */
 import { useEffect } from 'react';
 import { useApp } from '@/components/app';
+import { CommunityReport } from '@/components/views/ambassador';
 import { track } from '@/features/analytics/track';
 import { remindLink } from '@/features/telegram/webapp';
-import { useConfig } from '@/lib/config';
+import { featureOn, useConfig } from '@/lib/config';
 import { openTelegramLink, useTelegram } from '@/lib/telegram';
 import { DemoBadge, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import { VerifiedSheet } from '@/components/views/sheets';
@@ -113,6 +114,7 @@ export function OppView({ id }: { id: string }) {
   const found = !!o;
   useEffect(() => { if (found) trackView('opportunity_view', id); }, [found, id]);
   const cfg = useConfig();
+  const ambOn = featureOn(cfg, 'ambassador');
   const tg = useTelegram();
   if (!o) return null;
   const remind = remindLink(cfg.botUsername, o.id);
@@ -132,6 +134,7 @@ export function OppView({ id }: { id: string }) {
         </div>
         <h1>{L(o.title)}</h1>
         <ShareRow path={pathOf('opp:' + o.id)} title={L(o.title)} kind="opp" id={o.id} />
+        {o.id.startsWith('amb-') && ambOn ? <CommunityReport kind="opportunity" id={o.id} /> : null}
         <p className="muted">{L(o.org)} <VerifiedBadge item={o} kind="opp" id={o.id} /></p>
         <p className={`small ${left <= 14 ? 'urgent' : ''}`}><Icon n="clock" s={14} /> {Number.isFinite(left)
           ? <>{tt('Қабылдау', 'Приём до')}: {I.fDate(dOff(left))} · {I.daysLeftTxt(left)}</>
