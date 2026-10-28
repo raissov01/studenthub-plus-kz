@@ -108,48 +108,35 @@
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 [hidden] { display: none !important; }
-/* Layout: calm phone app. Light top bar with the page title, flat white lists on a cool
-   neutral, one solid deep-mauve block per main screen, flat five-tab bar at the bottom.
-   Palette: pastel sage (actions), mauve (hero blocks, accents), warm taupe-grey neutrals; red only for destructive actions. */
+/* Theme tokens: the single palette (light blue page, royal-blue actions, tinted tiles per service).
+   Earlier sage/mauve layers were merged away; every colour is defined only here. */
 :root {
-  --bg: #F3F1EE;
-  --surface: #FFFFFF;
-  --surface-2: #ECE7DF;
-  --tint: #E4EAE2;
-  --line: #DCD6D1;
-  --text: #2E2A2D;
-  --muted: #655D62;
-  --primary: #5B7A58;
-  --primary-press: #4A6747;
-  --on-primary: #FFFFFF;
-  --primary-soft: #E2EBDF;
-  --accent: #CDBBC8;
-  --accent-soft: #F1EAEF;
-  --deep: #7A6274;
-  --on-deep: #FFFFFF;
-  --on-deep-muted: #F3ECF1;
-  --danger: #A8322B;
-  --danger-soft: #F7E3E0;
-  --font-display: "Geologica", "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --r: 16px;
-  --r-sm: 10px;
-  --nav-h: 66px;
-
-  /* aliases kept for older markup */
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --nav-h: 66px;
   --ink: var(--text); --sky: var(--primary); --on-sky: var(--on-primary); --sky-soft: var(--primary-soft);
-  --sun: var(--accent); --on-sun: var(--text); --sun-soft: var(--accent-soft);
-  --ok: var(--primary); --ok-soft: var(--primary-soft);
-  --warn: var(--danger); --warn-soft: var(--danger-soft);
-  --bad: var(--danger); --bad-soft: var(--danger-soft);
-  --head-bg: var(--deep); --head-fg: var(--on-deep); --head-muted: var(--on-deep-muted);
+  --sun: var(--accent); --on-sun: var(--text); --sun-soft: var(--accent-soft); --ok: var(--primary);
+  --ok-soft: var(--primary-soft); --warn: var(--danger); --warn-soft: var(--danger-soft);
+  --bad: var(--danger); --bad-soft: var(--danger-soft); --head-bg: var(--deep); --head-fg: var(--on-deep);
+  --head-muted: var(--on-deep-muted); --sw-sage: #E8EEFE; --sw-mauve: #EFEDFE; --sw-taupe: #FFF7DC;
+  --sw-mist: #E3E8F3; --sw-ice: #EAF2FE; --sw-ink: #141A33; --r: 14px; --r-sm: 10px; --r-sw: 6px;
+  --font-display: "Geologica", "Golos Text", system-ui, sans-serif; --c0: #2F57E8; --c1: #8B5CF6;
+  --c2: #12A594; --c3: #EF5A4C; --c4: #F2A516; --heart: #E5484D; --t-sage: #EEF1FE; --t-sage-ink: #3558DB;
+  --t-mauve: #E4F7F5; --t-mauve-ink: #0E9F9C; --t-taupe: #FFF7DC; --t-taupe-ink: #23983A; --t-ice: #EAF2FE;
+  --t-ice-ink: #2E6FE0; --t-mist: #EFEDFE; --t-mist-ink: #3A2DB0;
+}
+:root:not([data-theme="dark"]) {
+  color-scheme: light; --bg: #F5F8FE; --surface: #FFFFFF; --surface-2: #EEF2FB; --tint: #E8EEFE;
+  --line: #E3E8F3; --text: #141A33; --muted: #646C8A; --primary: #2F57E8; --primary-press: #2446C9;
+  --on-primary: #FFFFFF; --primary-soft: #E8EEFE; --accent: #EFE8FF; --accent-soft: #F5F1FF; --deep: #FFFFFF;
+  --on-deep: #141A33; --on-deep-muted: #646C8A; --danger: #D03A30; --danger-soft: #FFE6E3;
 }
 :root[data-theme="dark"] {
-  --bg: #161417; --surface: #1F1C20; --surface-2: #28242A; --tint: #2A3228; --line: #36313A;
-  --text: #EEE9EC; --muted: #B3AAB0; --primary: #A9C4A5; --primary-press: #BCD3B8; --on-primary: #1A2418;
-  --primary-soft: #2D3A2B; --accent: #6A5464; --accent-soft: #3A2F38; --deep: #3E3240; --on-deep: #F3ECF1; --on-deep-muted: #CDBDC8;
-  --danger: #F2B8B5; --danger-soft: #3D1A18;
-  color-scheme: dark;
+  --accent: #6A5464; --accent-soft: #3A2F38; --danger: #F2B8B5; --danger-soft: #3D1A18; color-scheme: dark;
+  --t-sage: #2A3528; --t-sage-ink: #B7CDB3; --t-mauve: #372D35; --t-mauve-ink: #DCC6D6; --t-taupe: #36312A;
+  --t-taupe-ink: #D8CBB2; --t-ice: #263034; --t-ice-ink: #BFD0D6; --t-mist: #2E2C2F; --t-mist-ink: #D2CDD2;
+  --heart: #E3A6CC; --bg: #0E1324; --surface: #161C31; --surface-2: #1D2440; --tint: #1E2A52;
+  --line: #283152; --text: #E9ECF8; --muted: #A3AAC6; --primary: #8EA6FF; --primary-press: #A8BAFF;
+  --on-primary: #0B1430; --primary-soft: #1E2A52; --deep: #161C31; --on-deep: #E9ECF8;
+  --on-deep-muted: #A3AAC6;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -277,6 +264,7 @@ a.row { text-decoration: none; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; margin-inline: -2px; padding-inline: 2px; }
 .chips::-webkit-scrollbar { display: none; }
 .chips.wrap { flex-wrap: wrap; overflow: visible; }
+.chips.wrap .chip { white-space: normal; text-align: left; max-width: 100%; }
 .chip {
   flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
   border: 1px solid var(--line); background: var(--surface); color: var(--text);
@@ -385,6 +373,7 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.45; }
 
 /* table */
 .table-wrap { overflow-x: auto; }
+@media (max-width: 400px) { .table-wrap th, .table-wrap td { white-space: normal; padding: 9px 8px; } }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
@@ -447,7 +436,7 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
   gap: 3px; color: var(--muted); font-size: .72rem; font-weight: 600; min-width: 0;
 }
 .tab .pill { width: 50px; height: 30px; border-radius: 15px; display: grid; place-items: center; }
-.tab span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 1px; }
+.tab span:last-child { letter-spacing: -.01em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 1px; }
 .tab[aria-current="page"] { color: var(--primary); }
 .tab[aria-current="page"] .pill { background: var(--primary-soft); }
 
@@ -491,20 +480,6 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
    Palette taken straight from the "In color balance" swatches: sage, mauve, taupe, mist, ice.
    Swatch colours are used as solid fills (tiles, stats, the brand mark); dark sage ink is the
    only action colour. Flat: solid fills + 1px lines, no shadows, no gradients. */
-:root {
-  --sw-sage: #8FA68C; --sw-mauve: #B39AAD; --sw-taupe: #A99A7F; --sw-mist: #CCC8CB; --sw-ice: #DCE3E5;
-  --sw-ink: #22252A;
-  --font-display: "Fira Sans Extra Condensed", "Golos Text", system-ui, sans-serif;
-  --r: 14px; --r-sm: 10px; --r-sw: 6px;
-}
-:root:not([data-theme="dark"]) {
-  --bg: #F3F4F2; --surface: #FFFFFF; --surface-2: #ECEDEA; --tint: #E3E9E1; --line: #DEDFDB;
-  --text: #2B2A2E; --muted: #615D65;
-  --primary: #4F6B4C; --primary-press: #405A3D; --on-primary: #FFFFFF; --primary-soft: #E2EADF;
-  --accent: #E8DDE5; --accent-soft: #F3EDF1;
-  --deep: #FFFFFF; --on-deep: #2B2A2E; --on-deep-muted: #615D65;
-  color-scheme: light;
-}
 
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0; }
 h1 { font-size: 2rem; line-height: 1.1; }
@@ -551,19 +526,6 @@ button.hero-stat:active { background: var(--sw-mist); }
 .sheet-back { background: rgba(34, 37, 42, .4); }
 
 /* ---------- Student Hub screens (client layout: home, search, notifications, profile) ---------- */
-:root {
-  --t-sage: #E6ECE3; --t-sage-ink: #4F6B4C;
-  --t-mauve: #F0E7EE; --t-mauve-ink: #75596E;
-  --t-taupe: #F0EBE2; --t-taupe-ink: #6F6249;
-  --t-ice: #E5EDEF; --t-ice-ink: #4A626B;
-  --t-mist: #EEECED; --t-mist-ink: #5C575D;
-  --heart: #8E5378;
-}
-:root[data-theme="dark"] {
-  --t-sage: #2A3528; --t-sage-ink: #B7CDB3; --t-mauve: #372D35; --t-mauve-ink: #DCC6D6;
-  --t-taupe: #36312A; --t-taupe-ink: #D8CBB2; --t-ice: #263034; --t-ice-ink: #BFD0D6;
-  --t-mist: #2E2C2F; --t-mist-ink: #D2CDD2; --heart: #E3A6CC;
-}
 
 .greet { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
 .greet h1 { font-size: 2.1rem; }
@@ -670,33 +632,24 @@ button.hero-stat:active { background: var(--sw-mist); }
 /* header bell + four-tab bar */
 #mine-btn .count { background: var(--heart); color: #FFFFFF; }
 .tabbar-in { grid-template-columns: repeat(4, 1fr); }
+/* narrow phones (320–400px): wrap long names instead of cutting them */
+.sr-main .row-title, .sr-main .row-sub, .sr-main .sr-role { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
+.sr-main .tag-inline { display: none; align-self: flex-start; margin-top: 4px; max-width: 100%; }
+.sticky-cta .btn { min-width: 0; white-space: normal; line-height: 1.2; }
+@media (max-width: 400px) {
+  .sticky-cta { flex-wrap: wrap; }
+  .sticky-cta .btn { flex: 1 1 100%; }
+  .tab { font-size: .68rem; }
+  /* search rows: badge moves under the text so the name keeps the full width */
+  .sr-end .tag { display: none; }
+  .sr-main .tag-inline { display: inline-block; }
+  .sr-end { justify-content: center; }
+}
+@media (max-width: 374px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 340px) { .top-title, #title { font-size: 1.05rem; } .tab { font-size: .64rem; } .tab span:last-child { letter-spacing: -.02em; } }
 
 /* ---------- client palette (from the Student Hub mockup): light blue page, royal-blue actions,
    one tinted tile colour per service. Overrides the earlier pastel layer. ---------- */
-:root:not([data-theme="dark"]) {
-  --bg: #F5F8FE; --surface: #FFFFFF; --surface-2: #EEF2FB; --tint: #E8EEFE; --line: #E3E8F3;
-  --text: #141A33; --muted: #646C8A;
-  --primary: #2F57E8; --primary-press: #2446C9; --on-primary: #FFFFFF; --primary-soft: #E8EEFE;
-  --accent: #EFE8FF; --accent-soft: #F5F1FF;
-  --deep: #FFFFFF; --on-deep: #141A33; --on-deep-muted: #646C8A;
-  --danger: #D03A30; --danger-soft: #FFE6E3;
-}
-:root[data-theme="dark"] {
-  --bg: #0E1324; --surface: #161C31; --surface-2: #1D2440; --tint: #1E2A52; --line: #283152;
-  --text: #E9ECF8; --muted: #A3AAC6; --primary: #8EA6FF; --primary-press: #A8BAFF; --on-primary: #0B1430;
-  --primary-soft: #1E2A52; --deep: #161C31; --on-deep: #E9ECF8; --on-deep-muted: #A3AAC6;
-}
-:root {
-  --font-display: "Geologica", "Golos Text", system-ui, sans-serif;
-  /* five accent hues for letter marks, news thumbs and notification icons */
-  --c0: #2F57E8; --c1: #8B5CF6; --c2: #12A594; --c3: #EF5A4C; --c4: #F2A516;
-  --heart: #E5484D;
-  --t-sage: #EEF1FE; --t-sage-ink: #3558DB;      /* tile 0: blue */
-  --t-mauve: #E4F7F5; --t-mauve-ink: #0E9F9C;    /* tile 1: teal */
-  --t-taupe: #FFF7DC; --t-taupe-ink: #23983A;    /* tile 2: yellow + green */
-  --t-ice: #EAF2FE; --t-ice-ink: #2E6FE0;        /* tile 3: sky */
-  --t-mist: #EFEDFE; --t-mist-ink: #3A2DB0;      /* tile 4: indigo */
-}
 h1, h2, h3, .top-title { font-weight: 700; letter-spacing: -.01em; }
 h1 { font-size: 1.6rem; line-height: 1.2; }
 h2 { font-size: 1.15rem; line-height: 1.3; }
@@ -737,7 +690,8 @@ h3 { font-size: 1rem; }
 
 /* coloured marks: white glyph on a solid accent */
 .thumb-0, .mk-0, .nico-0 { background: var(--c0); }
-.thumb-1, .mk-1, .nico-1 { background: var(--c1); }
+.thumb-1 { background: var(--primary); }
+.mk-1, .nico-1 { background: var(--c1); }
 .thumb-2, .mk-2, .nico-2 { background: var(--c2); }
 .thumb-3, .mk-3, .nico-3 { background: var(--c3); }
 .thumb-4, .mk-4, .nico-4 { background: var(--c4); }
@@ -777,7 +731,6 @@ h3 { font-size: 1rem; }
 #mine-btn .count { background: var(--heart); }
 .sheet-back { background: rgba(20, 26, 51, .4); }
 /* banner exactly as in the mockup: blue to violet */
-.promo { background: linear-gradient(115deg, #3A5CE6 0%, #5B6CF0 55%, #8A7CF6 100%); }
 .greet .wave { font-family: system-ui, sans-serif; }
 .sr-end .tag { max-width: 120px; }
 
@@ -3213,8 +3166,26 @@ const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const CITIES = {
   astana: { kk: 'Астана', ru: 'Астана' },
   almaty: { kk: 'Алматы', ru: 'Алматы' },
+  shymkent: { kk: 'Шымкент', ru: 'Шымкент' },
+  karaganda: { kk: 'Қарағанды', ru: 'Караганда' },
+  aktobe: { kk: 'Ақтөбе', ru: 'Актобе' },
+  taraz: { kk: 'Тараз', ru: 'Тараз' },
+  turkistan: { kk: 'Түркістан', ru: 'Туркестан' },
+  pavlodar: { kk: 'Павлодар', ru: 'Павлодар' },
+  oskemen: { kk: 'Өскемен', ru: 'Усть-Каменогорск' },
+  semey: { kk: 'Семей', ru: 'Семей' },
+  kostanay: { kk: 'Қостанай', ru: 'Костанай' },
+  atyrau: { kk: 'Атырау', ru: 'Атырау' },
+  aktau: { kk: 'Ақтау', ru: 'Актау' },
+  oral: { kk: 'Орал', ru: 'Уральск' },
+  kyzylorda: { kk: 'Қызылорда', ru: 'Кызылорда' },
+  petropavl: { kk: 'Петропавл', ru: 'Петропавловск' },
+  taldykorgan: { kk: 'Талдықорған', ru: 'Талдыкорган' },
+  kokshetau: { kk: 'Көкшетау', ru: 'Кокшетау' },
+  other: { kk: 'Басқа', ru: 'Другой' },
   remote: { kk: 'Қашықтан', ru: 'Удалённо' }
 };
+const HOME_CITIES = Object.keys(CITIES).filter(k => k !== 'remote');
 
 /* per: shift = for one shift, month = per month, hour = per hour */
 const JOBS = [
@@ -3566,7 +3537,22 @@ const DEMO_DECK = {
 'use strict';
 
 /* ================= state ================= */
-const KEY = 'studygo.v1';
+const KEY = 'studenthub.v1';
+const OLD_KEYS = ['studygo.v1'];
+/* one-time move from the app's old storage name; the old copy is removed only after the new one is written */
+(function migrateStorage() {
+  try {
+    const ls = window.localStorage;
+    if (ls.getItem(KEY) != null) return;
+    for (const k of OLD_KEYS) {
+      const v = ls.getItem(k);
+      if (v == null) continue;
+      ls.setItem(KEY, v);
+      if (ls.getItem(KEY) === v) ls.removeItem(k);
+      return;
+    }
+  } catch (e) { /* storage unavailable */ }
+})();
 const DAY = 86400000;
 const T0 = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
 const dOff = n => new Date(T0.getTime() + n * DAY);
@@ -3718,6 +3704,9 @@ function payText(j) {
 const JOB_TAGS = { noexp: ['Тәжірибесіз', 'Без опыта'], daily: ['Күнделікті төлем', 'Оплата в тот же день'], remote: ['Қашықтан', 'Удалённо'], near: ['Университетке жақын', 'Рядом с вузом'] };
 const OPP_TYPES = { mobility: ['Академиялық ұтқырлық', 'Академическая мобильность'], intl: ['Халықаралық бағдарлама', 'Международная программа'], company: ['Компаниядағы тағылымдама', 'Стажировка в компании'], grant: ['Грант / байқау', 'Грант / конкурс'] };
 const typeLabel = t => tt(...OPP_TYPES[t]);
+/* search category: grants/contests and academic mobility are their own groups, the rest are internships */
+const oppKind = o => o.type === 'grant' ? 'grant' : o.type === 'mobility' ? 'mobility' : 'intern';
+const OPP_KINDS = ['intern', 'grant', 'mobility'];
 
 function qualify(o) {
   const p = P(), r = o.req, res = [];
@@ -3866,19 +3855,22 @@ function fromHash(h) {
 }
 
 let navStarted = false;
+let activeTab = '';
 function go(v, opts = {}) {
   if (!opts.replace) navStarted = true;
   if (sheetOpen) { closeSheetDom(); opts.replace = true; }
   scrollMem[cur.v] = window.scrollY;
-  cur = { v };
-  try { history[opts.replace ? 'replaceState' : 'pushState']({ v }, '', toHash(v)); } catch (e) { /* history unavailable */ }
+  /* shared screens (a job, a match check, AI tools) stay under the tab the student came from */
+  const from = opts.replace ? cur.from : activeTab;
+  cur = { v, from };
+  try { history[opts.replace ? 'replaceState' : 'pushState']({ v, from }, '', toHash(v)); } catch (e) { /* history unavailable */ }
   render();
   window.scrollTo(0, 0);
 }
 window.addEventListener('popstate', e => {
-  if (sheetOpen) { closeSheetDom(); cur = (e.state && e.state.v) ? { v: e.state.v } : cur; return; }
+  if (sheetOpen) { closeSheetDom(); cur = (e.state && e.state.v) ? { v: e.state.v, from: e.state.from } : cur; return; }
   scrollMem[cur.v] = window.scrollY;
-  cur = (e.state && e.state.v) ? { v: e.state.v } : { v: fromHash(location.hash) };
+  cur = (e.state && e.state.v) ? { v: e.state.v, from: e.state.from } : { v: fromHash(location.hash) };
   if (!e.state) { try { history.replaceState({ v: cur.v }, '', toHash(cur.v)); } catch (er) { /* ignore */ } }
   render();
   window.scrollTo(0, scrollMem[cur.v] || 0);
@@ -3911,7 +3903,8 @@ function render() {
   document.getElementById('title').innerHTML = name === 'home' ? '<span class="brand"><i class="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>' : view.title;
   document.title = name === 'home' ? 'Student Hub' : view.title.replace(/<[^>]+>/g, '') + ' — Student Hub';
   document.getElementById('main').innerHTML = view.html;
-  const tabRoot = TAB_OF[view.tab] || view.tab || (root ? name : TAB_OF[name] || '');
+  const fixed = root ? name : (view.tab === 'profile' || view.tab === 'home') ? view.tab : '';
+  const tabRoot = activeTab = fixed || (ROOTS.includes(cur.from) && cur.from) || TAB_OF[view.tab] || view.tab || TAB_OF[name] || '';
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tabRoot) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
   const n = unreadCount(), badge = document.getElementById('mine-count'), mb = document.getElementById('mine-btn');
   if (badge) { badge.textContent = n; badge.hidden = !n; }
@@ -3929,7 +3922,7 @@ function render() {
 }
 
 function renderTabs() {
-  const tabs = [['home', 'home', tt('Басты бет', 'Главная')], ['search', 'search', tt('Іздеу', 'Поиск')], ['notif', 'bell', tt('Хабарламалар', 'Уведомления')], ['profile', 'user', tt('Профиль', 'Профиль')]];
+  const tabs = [['home', 'home', tt('Басты бет', 'Главная')], ['search', 'search', tt('Іздеу', 'Поиск')], ['notif', 'bell', tt('Хабарлар', 'Уведомления')], ['profile', 'user', tt('Профиль', 'Профиль')]];
   tabs.forEach(([k, i, l]) => {
     const b = document.querySelector(`.tab[data-tab="${k}"]`);
     if (b) b.innerHTML = `<span class="pill">${ico(i, 22)}</span><span>${l}</span>`;
@@ -3945,7 +3938,7 @@ function openSheet(html, mount) {
   back.addEventListener('click', e => { if (e.target === back) closeSheet(); });
   document.body.appendChild(back);
   sheetOpen = true;
-  try { history.pushState({ v: cur.v, sheet: true }, ''); } catch (e) { /* ignore */ }
+  try { history.pushState({ v: cur.v, from: cur.from, sheet: true }, ''); } catch (e) { /* ignore */ }
   if (mount) mount(back);
 }
 function closeSheetDom() { const b = document.querySelector('.sheet-back'); if (b) b.remove(); sheetOpen = false; }
@@ -4030,8 +4023,8 @@ function searchItems() {
     fav: !!S.fav[j.id]
   }));
   OPPS.forEach(o => items.push({
-    k: 'intern', id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title),
-    meta: `${tt('Стажировка', 'Стажировка')} · ${typeLabel(o.type)}`,
+    k: oppKind(o), id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title),
+    meta: typeLabel(o.type),
     badge: o.deadline <= 14 ? [daysLeftTxt(o.deadline), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null,
     fav: !!S.saved[o.id]
   }));
@@ -4042,7 +4035,7 @@ function searchItems() {
   return items;
 }
 function searchRow(it) {
-  const main = `${mark(it.id, it.org)}<span class="row-main"><span class="row-title">${esc(it.org)}</span><span class="sr-role">${esc(it.title)}</span><span class="row-sub">${esc(it.meta)}</span></span>`;
+  const main = `${mark(it.id, it.org)}<span class="row-main"><span class="row-title">${esc(it.org)}</span><span class="sr-role">${esc(it.title)}</span><span class="row-sub">${esc(it.meta)}</span>${it.badge ? `<span class="tag tag-${it.badge[1]} tag-inline">${esc(it.badge[0])}</span>` : ''}</span>`;
   const open = it.go ? `data-go="${it.go}"` : `data-act="${it.act}" data-id="${it.id}"`;
   return `<div class="sr">
     <button class="sr-main" type="button" ${open}>${main}</button>
@@ -4060,8 +4053,8 @@ function searchList() {
 }
 VIEWS.search = (k) => {
   if (k) ui.sk = k;
-  const kinds = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['intern', tt('Стажировка', 'Стажировки')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
-  const adv = { jobs: 'opps:jobs', intern: 'opps:intern', deals: 'bonus', all: 'opps:jobs' }[ui.sk];
+  const kinds = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['intern', tt('Тағылымдама', 'Стажировки')], ['grant', tt('Грант / байқау', 'Гранты / конкурсы')], ['mobility', tt('Академиялық ұтқырлық', 'Академическая мобильность')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
+  const adv = { jobs: 'opps:jobs', intern: 'opps:intern', grant: 'opps:intern', mobility: 'opps:intern', deals: 'bonus', all: 'opps:jobs' }[ui.sk];
   return {
     title: tt('Іздеу', 'Поиск'),
     html: `
@@ -4160,7 +4153,7 @@ VIEWS.home = () => {
   const now = new Date();
   const tiles = [
     ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
-    ['opps:intern', 'globe', tt('Стажировка', 'Стажировки')],
+    ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
     ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')],
     ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
     ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
@@ -4305,7 +4298,7 @@ VIEWS.opps = (tab) => {
         <div class="field"><label for="city">${tt('Қала', 'Город')}</label>
           <select class="input" id="city" data-on="city">
             <option value="all">${tt('Барлық қала', 'Все города')}</option>
-            ${Object.entries(CITIES).map(([k, c]) => `<option value="${k}" ${ui.city === k ? 'selected' : ''}>${L(c)}</option>`).join('')}
+            ${Object.entries(CITIES).filter(([k]) => JOBS.some(j => j.city === k)).map(([k, c]) => `<option value="${k}" ${ui.city === k ? 'selected' : ''}>${L(c)}</option>`).join('')}
           </select></div>
         <div class="field"><label for="sort">${tt('Ретімен', 'Порядок')}</label>
           <select class="input" id="sort" data-on="sort">
@@ -4397,7 +4390,7 @@ VIEWS.opp = (id) => {
   const docs = S.oppDocs[id] || {};
   const ready = o.docs.filter((_, i) => docs[i]).length;
   return {
-    title: typeLabel(o.type), tab: 'opps',
+    title: tt('Мүмкіндік', 'Возможность'), tab: 'opps',
     html: `
       <div class="detail-head">
         <div class="badges"><span class="badge b-sky">${typeLabel(o.type)}</span>${o.funded ? `<span class="badge b-ok">${tt('Қаржыландырылады', 'Финансируется')}</span>` : ''}</div>
@@ -4900,7 +4893,7 @@ function profileForm(compact, blank) {
     </div>
     <div class="grid-2">
       <div class="field"><label for="fEn">${tt('Ағылшын деңгейі', 'Уровень английского')}</label><select class="input" id="fEn">${LEVELS.map(l => `<option ${p.en === l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-      <div class="field"><label for="fCity">${tt('Қала', 'Город')}</label><select class="input" id="fCity">${['astana', 'almaty'].map(c => `<option value="${c}" ${p.city === c ? 'selected' : ''}>${L(CITIES[c])}</option>`).join('')}</select></div>
+      <div class="field"><label for="fCity">${tt('Қала', 'Город')}</label><select class="input" id="fCity">${HOME_CITIES.map(c => `<option value="${c}" ${p.city === c ? 'selected' : ''}>${L(CITIES[c])}</option>`).join('')}</select></div>
     </div>
     ${compact ? '' : `
     <div class="field"><span class="lbl">${tt('Дағдылар', 'Навыки')}</span><div class="chips wrap" id="fSkills">${Object.entries(SKILLS).map(([k, s]) => `<button class="chip" type="button" aria-pressed="${p.skills.includes(k)}" data-skill="${k}">${L(s)}</button>`).join('')}</div></div>
@@ -5280,9 +5273,9 @@ function nextClassCard() {
   if (!c) return `<div class="card next-class"><span class="row-title">${tt('Бүгінгі сабақтар бітті', 'Пары на сегодня закончились')}</span><span class="row-sub">${tt('Ертеңгі кесте осында шығады.', 'Завтрашнее расписание появится здесь.')}</span></div>`;
   const now = new Date(), [h, m] = c.t.split(':').map(Number), start = new Date(now); start.setHours(h, m, 0, 0);
   const left = Math.round((start - now) / 60000);
-  const when = left > 0 ? tt(`${left} минуттан кейін`, `через ${left} мин`) : tt('қазір жүріп жатыр', 'идёт сейчас');
+  const when = tt(`${left} минуттан кейін`, `через ${left} мин`);
   return `<div class="card next-class">
-    <span class="nc-top"><span class="tiny muted">${tt('Келесі сабақ', 'Следующая пара')}, ${when}</span><b class="num">${c.t}</b></span>
+    <span class="nc-top"><span class="tiny muted">${left > 0 ? tt('Келесі сабақ', 'Следующая пара') + ', ' + when : tt('Қазір жүріп жатыр', 'Идёт сейчас')}</span><b class="num">${c.t}</b></span>
     <span class="row-title">${esc(L(c.name))}</span>
     <span class="row-sub">${L(c.kind)}, ${classWhere(c)}</span>
     <button class="btn" type="button" data-act="routeTo" data-q="${c.room}">${ico('pin', 18)} ${tt('Картадан жолды көру', 'Показать путь на карте')}</button>
@@ -5467,7 +5460,7 @@ const ACT = {
     } else copyText(url);
   },
   fav(el) {
-    const id = el.dataset.id, box = el.dataset.k === 'intern' ? S.saved : S.fav;
+    const id = el.dataset.id, box = OPP_KINDS.includes(el.dataset.k) ? S.saved : S.fav;
     if (box[id]) delete box[id]; else box[id] = Date.now();
     save(); toast(box[id] ? tt('Сақталды', 'Сохранено') : tt('Сақталғаннан алынды', 'Убрано из сохранённых'));
     const list = document.getElementById('sList');
@@ -5559,7 +5552,7 @@ const ACT = {
       <p style="text-align:center"><span class="code">${studentCode()}</span></p>
       <p class="tiny muted">${tt('Прототипте QR-код студент мәртебесін көрсету үшін ғана. Ресми растау университет жүйесі қосылғанда іске қосылады.', 'В прототипе QR-код только демонстрирует статус студента. Официальная проверка появится после подключения системы университета.')}</p>`);
   },
-  starter(el) { toChat(el.dataset.t); },
+  starter(el) { ui.chatDraft = ''; go('chat'); sendChat(el.dataset.t); },
   clearChat() { S.chat = []; ui.chatErr = ''; save(); toast(tt('Чат тазаланды', 'Чат очищен')); render(); },
   copyResume() { copyText(resumeText(ui.resumeLang || S.lang)); },
   resumeAI() { toChat(tt('Мына түйіндемені жұмыс берушіге тартымды етіп жақсартып бер, құрылымын сақта:\n\n', 'Улучши это резюме, чтобы оно было убедительнее для работодателя, сохрани структуру:\n\n') + resumeText(ui.resumeLang || S.lang)); },
