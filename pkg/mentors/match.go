@@ -294,8 +294,8 @@ func sendIntros(ctx context.Context, p pairRow) {
 	if !mentor.IsAdult || !mentee.IsAdult {
 		mentor.Username, mentee.Username = "", ""
 	}
-	direct(ctx, mentor.ID, introText(mentor, mentee, p.Need, true))
-	direct(ctx, mentee.ID, introText(mentee, mentor, p.Need, false))
+	pairNews(ctx, mentor.ID, introText(mentor, mentee, p.Need, true))
+	pairNews(ctx, mentee.ID, introText(mentee, mentor, p.Need, false))
 }
 
 // ---- admin only ----
@@ -405,7 +405,7 @@ func adminEndPair(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	for _, id := range []int64{p.MentorID, p.MenteeID} {
 		if o, err := loadPerson(ctx, mustPool(ctx), id); err == nil {
-			direct(ctx, o.ID, endedText(o.Lang))
+			pairNews(ctx, o.ID, endedText(o.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -481,7 +481,7 @@ func adminSetStatus(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	for _, p := range ended {
 		if o, err := loadPerson(ctx, mustPool(ctx), p.MenteeID); err == nil {
-			direct(ctx, o.ID, endedText(o.Lang))
+			pairNews(ctx, o.ID, endedText(o.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "endedPairs": len(ended)})

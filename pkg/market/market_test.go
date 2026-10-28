@@ -105,7 +105,11 @@ func newUser(t *testing.T, o userOpt) (int64, int64) {
 		err := tx.QueryRow(ctx(), `insert into users (telegram_id, tg_username, name, university, role, consent_at, is_adult, created_at)
 			values ($1, nullif($2, '-'), $3, $4, $5::user_role, now(), $6, now() - make_interval(days => $7)) returning id`,
 			700000+n, o.username, "Giver "+strconv.FormatInt(n, 10), o.university, o.role, *o.adult, age).Scan(&id)
-		if err != nil || o.noRules {
+		if err != nil {
+			return err
+		}
+		// delivery independent of the wall clock: no quiet hours, high daily cap (pkg/notify tests cover both)
+		if _, err = tx.Exec(ctx(), `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 20)`, id); err != nil || o.noRules {
 			return err
 		}
 		_, err = tx.Exec(ctx(), `insert into market_rules (user_id) values ($1)`, id)

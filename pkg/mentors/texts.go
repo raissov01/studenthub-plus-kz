@@ -131,10 +131,21 @@ func endedText(lang string) string {
 		"🎓 Ваша менторская пара закрыта. Спасибо! При необходимости можно оставить новую заявку: "+site("/#/mentors"))
 }
 
-// direct sends an immediate message and only logs failures: a match or decision must not be
-// rolled back because Telegram is unreachable.
+// direct sends a transactional message (decisions on the student's own application or
+// report, admin alerts) and only logs failures: a match or decision must not be rolled back
+// because Telegram is unreachable.
 func direct(ctx context.Context, userID int64, text string) {
-	if err := notify.Direct(ctx, userID, text); err != nil {
+	send(ctx, userID, notify.CatModeration, text)
+}
+
+// pairNews is a "mentors" category message (match intro, pair closed): the student can switch
+// it off, and it waits for quiet hours / the daily cap in the outbox.
+func pairNews(ctx context.Context, userID int64, text string) {
+	send(ctx, userID, notify.CatMentors, text)
+}
+
+func send(ctx context.Context, userID int64, c notify.Category, text string) {
+	if _, err := notify.Send(ctx, userID, c, text, notify.Opts{}); err != nil {
 		log.Printf("mentors: notify %d: %v", userID, err)
 	}
 }

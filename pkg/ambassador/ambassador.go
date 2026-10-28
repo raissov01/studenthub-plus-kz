@@ -29,8 +29,9 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
-// Notify is the direct-message sender; tests replace it.
-var Notify = notify.Direct
+// Notify is the sender; tests replace it. Its only message is the term-renewal ask about the
+// student's own ambassador role, so it is transactional (always sent, immediately).
+var Notify = notify.For(notify.CatModeration)
 
 // Now is the clock; tests replace it.
 var Now = time.Now

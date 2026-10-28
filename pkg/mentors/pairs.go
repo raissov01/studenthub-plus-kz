@@ -279,7 +279,7 @@ func checkin(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	if ended != nil {
 		other, err := loadPerson(ctx, mustPool(ctx), ended.other(u.ID))
 		if err == nil {
-			direct(ctx, other.ID, endedText(other.Lang))
+			pairNews(ctx, other.ID, endedText(other.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, resp)
@@ -338,7 +338,7 @@ func endPair(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	if other, err := loadPerson(ctx, mustPool(ctx), p.other(u.ID)); err == nil {
-		direct(ctx, other.ID, endedText(other.Lang))
+		pairNews(ctx, other.ID, endedText(other.Lang))
 	}
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -454,7 +454,7 @@ func approveReport(ctx context.Context, tx pgx.Tx, s moderation.Submission) erro
 				continue
 			}
 			if o, err := loadPerson(ctx, tx, id); err == nil {
-				direct(ctx, o.ID, endedText(o.Lang))
+				pairNews(ctx, o.ID, endedText(o.Lang))
 			}
 		}
 	}

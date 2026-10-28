@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db/q"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 const (
@@ -195,6 +196,27 @@ func paused(u q.User, today string) bool {
 	return p != "" && p > today
 }
 
+// switchedOff maps student -> categories they switched off in notify_prefs (F8). Students
+// without a row keep the defaults (everything on). The daily run at 10:00 Almaty is outside
+// default quiet hours and already sends at most one message a day, so only the switches apply.
+func (b *Bot) switchedOff(ctx context.Context) (map[int64]map[notify.Category]bool, error) {
+	rows, err := b.Pool.Query(ctx, `select user_id, deadlines, digest from notify_prefs where not (deadlines and digest)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]map[notify.Category]bool{}
+	for rows.Next() {
+		var id int64
+		var deadlines, digest bool
+		if err := rows.Scan(&id, &deadlines, &digest); err != nil {
+			return nil, err
+		}
+		out[id] = map[notify.Category]bool{notify.CatDeadlines: !deadlines, notify.CatDigest: !digest}
+	}
+	return out, rows.Err()
+}
+
 // RunCron is the daily job for the Almaty day of now.
 func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 	if err := b.ready(); err != nil {
@@ -246,6 +268,10 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 	for _, r := range all {
 		byUser[r.UserID] = append(byUser[r.UserID], r)
 	}
+	off, err := b.switchedOff(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// 1. Deadline reminders.
 	err = inChunks(users, func(u q.User) error {
@@ -280,13 +306,16 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 				due = append(due, it)
 			}
 		}
-		if u.BotInactive || paused(u, today) || len(due) == 0 {
+		if u.BotInactive || paused(u, today) || len(due) == 0 || off[u.ID][notify.CatDeadlines] {
 			return nil
 		}
 		sort.SliceStable(due, func(i, j int) bool { return due[i].Deadline < due[j].Deadline })
 		msg, kb := b.reminderMessage(due, u.Lang, today)
 		status, err := b.deliver(ctx, qs, u, today, msg, kb)
 		count(status)
+		if err == nil && status == "sent" {
+			err = notify.RecordSend(ctx, b.Pool, u.ID, notify.CatDeadlines, now)
+		}
 		return err
 	})
 	if err != nil {
@@ -301,7 +330,7 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			return nil, err
 		}
 		err = inChunks(fresh, func(u q.User) error {
-			if u.BotInactive || text(u.DigestCity) == "" || text(u.DigestDirection) == "" || isoOf(u.DigestWeek) == week || paused(u, today) {
+			if u.BotInactive || text(u.DigestCity) == "" || text(u.DigestDirection) == "" || isoOf(u.DigestWeek) == week || paused(u, today) || off[u.ID][notify.CatDigest] {
 				return nil
 			}
 			saved := map[string]bool{}
@@ -319,6 +348,9 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			}
 			switch status {
 			case "sent":
+				if err := notify.RecordSend(ctx, b.Pool, u.ID, notify.CatDigest, now); err != nil {
+					return err
+				}
 				seen := append([]string{}, u.DigestSeen...)
 				for _, o := range list {
 					seen = append(seen, o.ID)

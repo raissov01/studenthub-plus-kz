@@ -90,7 +90,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			if kind == "month" {
 				text = monthText(d.lang)
 			}
-			status, err := notify.Digest(ctx, d.userID, now, text)
+			status, err := notify.DigestAs(ctx, d.userID, notify.CatMentors, now, text)
 			if err != nil {
 				log.Printf("mentors cron: %s %d: %v", kind, d.userID, err)
 				continue
