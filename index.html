@@ -3581,7 +3581,7 @@ function defaults() {
     events: { p1: { code: 'EV-P1-4821' }, p2: { code: 'EV-P2-1937' } },
     remind: {}, done: {}, certs: [],
     plans: [], decks: [], hideDemoDeck: false,
-    chat: [], ai: { key: '', model: 'claude-haiku-5-5' },
+    chat: [],
     gpaPlan: [
       { n: ru ? 'Микроэкономика' : 'Микроэкономика', cr: 5, g: 'B+' },
       { n: ru ? 'Статистика' : 'Статистика', cr: 5, g: 'B' },
@@ -3597,7 +3597,7 @@ function load() {
   if (!s || typeof s !== 'object') return d;
   return Object.assign(d, s, {
     profile: Object.assign(d.profile, s.profile || {}),
-    ai: Object.assign(d.ai, s.ai || {})
+    ai: undefined // old client-side API key setting, no longer used
   });
 }
 let S = load();
@@ -4416,7 +4416,6 @@ VIEWS.event = (id) => {
 
 /* ---------- AI ---------- */
 VIEWS.ai = () => {
-  const hasKey = true;
   const tools = [
     ['resume', 'doc', tt('Түйіндеме құрастыру', 'Конструктор резюме'), tt('Профиліңізден қазақша, орысша, ағылшынша', 'Из профиля: на казахском, русском, английском')],
     ['interview', 'mic', tt('Сұхбатқа дайындық', 'Подготовка к собеседованию'), tt('Жиі қойылатын 10 сұрақ және жаттығу', '10 частых вопросов и тренировка')],
@@ -4436,7 +4435,7 @@ VIEWS.ai = () => {
     html: `
       <section class="hero">
         <div class="hero-top"><span class="avatar">${ico('spark', 26)}</span>
-          <div style="min-width:0"><h1>Student Hub AI</h1><p class="muted small">${hasKey ? tt('Чат қосулы', 'Чат подключён') : ''}</p></div></div>
+          <div style="min-width:0"><h1>Student Hub AI</h1><p class="muted small">${tt('Чат қосулы', 'Чат подключён')}</p></div></div>
         <p class="small" style="color:var(--head-muted)">${tt('Түйіндеме, сұхбат, дәріс конспектісі және емтиханға дайындық — бір жерде.', 'Резюме, собеседование, конспекты лекций и подготовка к экзамену — в одном месте.')}</p>
         <button class="btn sun" type="button" data-go="chat">${ico('chat', 18)} ${tt('Чатты ашу', 'Открыть чат')}</button>
       </section>
@@ -4453,22 +4452,6 @@ function mdLite(s) {
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>');
 }
 VIEWS.chat = () => {
-  if (false) {
-    return {
-      title: tt('AI чат', 'AI-чат'), tab: 'ai',
-      html: `
-        <div class="card">
-          <span class="ico">${ico('spark')}</span>
-          <h2>${tt('AI чатты қосу', 'Подключить AI-чат')}</h2>
-          <p class="small">${tt('Чат AI моделімен жұмыс істейді. Ол үшін Anthropic API кілті керек — ол ақылы, шотқа аздаған сома салу жеткілікті. Кілт тек осы телефонда сақталады.', 'Чат работает на модели Claude. Для него нужен API-ключ Anthropic — он платный, достаточно небольшого пополнения. Ключ хранится только на этом телефоне.')}</p>
-          ${keyForm()}
-          <a class="small" href="https://docs.claude.com" target="_blank" rel="noopener">${tt('Кілтті қалай алуға болады (docs.claude.com)', 'Как получить ключ (docs.claude.com)')}</a>
-        </div>
-        <p class="small muted">${tt('Кілтсіз де жұмыс істейтін құралдар: түйіндеме, сұхбат, емтихан жоспары, карточкалар, вакансияға сәйкестік.', 'Без ключа работают: резюме, собеседование, план экзамена, карточки, совпадение с вакансией.')}</p>
-        <button class="btn ghost" type="button" data-go="ai">${tt('Құралдарға өту', 'К инструментам')}</button>`,
-      mount: mountKeyForm
-    };
-  }
   const msgs = S.chat;
   return {
     title: tt('AI чат', 'AI-чат'), tab: 'ai',
@@ -4480,7 +4463,7 @@ VIEWS.chat = () => {
         ${ui.chatErr ? `<div class="msg err">${esc(ui.chatErr)}</div>` : ''}
       </div>
       <form class="composer" id="composer">
-        <textarea class="input" id="chatIn" rows="1" placeholder="${tt('Сұрағыңызды жазыңыз…', 'Напишите вопрос…')}">${esc(ui.chatDraft || '')}</textarea>
+        <textarea class="input" id="chatIn" rows="1" maxlength="2000" placeholder="${tt('Сұрағыңызды жазыңыз…', 'Напишите вопрос…')}">${esc(ui.chatDraft || '')}</textarea>
         <button class="btn" type="submit" aria-label="${tt('Жіберу', 'Отправить')}" ${ui.chatBusy ? 'disabled' : ''}>${ico('send', 20)}</button>
       </form>
       ${msgs.length ? `<button class="link-btn" type="button" data-act="clearChat">${tt('Чатты тазалау', 'Очистить чат')}</button>` : ''}`,
@@ -4493,49 +4476,26 @@ VIEWS.chat = () => {
     }
   };
 };
-function keyForm() {
-  return `<form class="form" id="keyForm">
-    <div class="field"><label for="apiKey">${tt('Anthropic API кілті', 'API-ключ Anthropic')}</label>
-      <input class="input" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…" value="${esc(S.ai.key)}"></div>
-    <div class="field"><label for="model">${tt('Модель', 'Модель')}</label>
-      <select class="input" id="model">
-        <option value="claude-haiku-5-5" ${S.ai.model === 'claude-haiku-5-5' ? 'selected' : ''}>Claude Haiku 5.5 — ${tt('жылдам, арзан', 'быстрая, дешёвая')}</option>
-        <option value="claude-sonnet-5-5" ${S.ai.model === 'claude-sonnet-5-5' ? 'selected' : ''}>Claude Sonnet 5.5 — ${tt('күштірек', 'мощнее')}</option>
-      </select></div>
-    <button class="btn" type="submit">${tt('Сақтау', 'Сохранить')}</button>
-  </form>`;
-}
-function mountKeyForm() {
-  const f = document.getElementById('keyForm');
-  if (!f) return;
-  f.addEventListener('submit', ev => {
-    ev.preventDefault();
-    S.ai.key = document.getElementById('apiKey').value.trim();
-    S.ai.model = document.getElementById('model').value;
-    save(); toast(S.ai.key ? tt('Кілт сақталды', 'Ключ сохранён') : tt('Кілт өшірілді', 'Ключ удалён'));
-    render();
-  });
-}
 async function sendChat(text) {
   text = (text || '').trim();
   if (!text || ui.chatBusy) return;
   S.chat.push({ role: 'user', content: text });
   ui.chatDraft = ''; ui.chatErr = ''; ui.chatBusy = true; save(); render();
   const p = P();
-  const system = `You are Student Hub AI, an assistant inside a student app for S. Seifullin Kazakh Agrotechnical Research University (Astana, Kazakhstan). Reply in ${S.lang === 'ru' ? 'Russian' : 'Kazakh'} unless the student writes in another language. Be concise, warm and practical; use short paragraphs and simple lists. Student profile: name ${p.name}; specialty ${SPECS[p.spec].en}; year ${p.course}; GPA ${p.gpa} on a 4.0 scale (Kazakhstan credit system, letters A to F); English ${p.en}; skills ${p.skills.map(k => SKILLS[k].en).join(', ')}; experience: ${(p.exp || 'none').replace(/\n/g, '; ')}. Never invent specific real vacancies, deadlines, prices or official rules; when something depends on the university or an official body, tell the student to check the official source.`;
   let msgs = S.chat.slice(-16).map(m => ({ role: m.role, content: m.content }));
   while (msgs.length && msgs[0].role !== 'user') msgs.shift();
   try {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ system, messages: msgs })
+      body: JSON.stringify({ lang: S.lang, messages: msgs,
+        profile: { name: p.name, spec: p.spec, course: p.course, gpa: p.gpa, en: p.en, skills: p.skills, exp: p.exp } })
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       const m = data && data.error && data.error.message ? data.error.message : 'HTTP ' + r.status;
-      ui.chatErr = r.status === 401 || r.status === 503 ? tt('AI чат уақытша қолжетімсіз.', 'AI-чат временно недоступен.')
-        : r.status === 429 ? tt('Сұраныс тым көп немесе баланс таусылды. Кейінірек қайталаңыз.', 'Слишком много запросов или закончился баланс. Повторите позже.')
+      ui.chatErr = data && data.error && data.error.code ? m
+        : r.status === 503 ? tt('AI чат уақытша қолжетімсіз.', 'AI-чат временно недоступен.')
         : tt('Қате: ', 'Ошибка: ') + m;
     } else {
       const txt = (data.text || '').trim();
@@ -5551,7 +5511,6 @@ const ACT = {
   },
   starter(el) { toChat(el.dataset.t); },
   clearChat() { S.chat = []; ui.chatErr = ''; save(); toast(tt('Чат тазаланды', 'Чат очищен')); render(); },
-  delKey() { S.ai.key = ''; save(); toast(tt('Кілт өшірілді', 'Ключ удалён')); render(); },
   copyResume() { copyText(resumeText(ui.resumeLang || S.lang)); },
   resumeAI() { toChat(tt('Мына түйіндемені жұмыс берушіге тартымды етіп жақсартып бер, құрылымын сақта:\n\n', 'Улучши это резюме, чтобы оно было убедительнее для работодателя, сохрани структуру:\n\n') + resumeText(ui.resumeLang || S.lang)); },
   ivNext() { ui.iv = (ui.iv + 1) % INTERVIEW.length; render(); },
