@@ -4,6 +4,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@500;600;700&display=swap">
 <meta name="description" content="Student Hub — студентке арналған бәрі бір қосымшада: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.">
 <meta name="theme-color" content="#F5F8FE">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml"><link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/icons/icon-180.png"><link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Student Hub"><meta property="og:url" content="https://studenthub-plus-kz.vercel.app/">
+<meta property="og:title" content="Student Hub — студентке бәрі бір жерде"><meta property="og:description" content="Жұмыс, тағылымдама, гранттар, жеңілдіктер және AI-көмекші — Сейфуллин университетінің студенттеріне бір жерде.">
+<meta property="og:image" content="https://studenthub-plus-kz.vercel.app/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Student Hub — студентке бәрі бір жерде"><meta name="twitter:description" content="Жұмыс, тағылымдама, гранттар, жеңілдіктер және AI-көмекші — Сейфуллин университетінің студенттеріне бір жерде."><meta name="twitter:image" content="https://studenthub-plus-kz.vercel.app/og.png">
 <style>
 @font-face {
   font-family: 'Geologica';
@@ -346,6 +352,8 @@ textarea.input { min-height: 110px; resize: vertical; line-height: 1.45; }
 
 /* detail */
 .detail-head { display: flex; flex-direction: column; gap: 8px; }
+.share-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.share-row .chip { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: .94rem; margin: 0; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
@@ -3630,6 +3638,7 @@ const diffDays = d => Math.round((new Date(d).setHours(0, 0, 0, 0) - T0.getTime(
 
 /* ================= icons ================= */
 const IC = {
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
   home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
   spark: '<path d="M12 3l1.8 4.6 4.7 1.9-4.7 1.9L12 16l-1.8-4.6-4.7-1.9 4.7-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
@@ -3834,19 +3843,43 @@ const ROOTS = ['home', 'search', 'notif', 'profile'];
 const TAB_OF = { opps: 'search', bonus: 'search', ai: 'home' };
 const parse = v => { const i = v.indexOf(':'); return i < 0 ? [v, ''] : [v.slice(0, i), v.slice(i + 1)]; };
 const scrollMem = {};
+/* view id <-> URL hash, so every screen has its own shareable link: 'opp:x' <-> #/opportunity/x */
+const HASH_OF = { home: '', 'opps:jobs': 'jobs', 'opps:intern': 'internships', 'opps:events': 'events', bonus: 'discounts' };
+const NAME_OF = { opp: 'opportunity' };
+const VIEW_OF = Object.fromEntries(Object.entries(HASH_OF).map(([v, h]) => [h, v]));
+const NAME_BACK = Object.fromEntries(Object.entries(NAME_OF).map(([v, h]) => [h, v]));
+function toHash(v) {
+  if (v in HASH_OF) return HASH_OF[v] ? '#/' + HASH_OF[v] : location.pathname + location.search;
+  const [n, prm] = parse(v);
+  return '#/' + (NAME_OF[n] || n) + (prm ? '/' + encodeURIComponent(prm) : '');
+}
+function fromHash(h) {
+  const path = (h || '').replace(/^#\/?/, '');
+  if (!path) return 'home';
+  if (path in VIEW_OF) return VIEW_OF[path];
+  const i = path.indexOf('/');
+  const n = i < 0 ? path : path.slice(0, i);
+  let prm = i < 0 ? '' : path.slice(i + 1);
+  try { prm = decodeURIComponent(prm); } catch (e) { /* keep raw */ }
+  const name = NAME_BACK[n] || n;
+  return VIEWS[name] ? (prm ? name + ':' + prm : name) : 'home';
+}
 
+let navStarted = false;
 function go(v, opts = {}) {
+  if (!opts.replace) navStarted = true;
   if (sheetOpen) { closeSheetDom(); opts.replace = true; }
   scrollMem[cur.v] = window.scrollY;
   cur = { v };
-  try { history[opts.replace ? 'replaceState' : 'pushState']({ v }, ''); } catch (e) { /* history unavailable */ }
+  try { history[opts.replace ? 'replaceState' : 'pushState']({ v }, '', toHash(v)); } catch (e) { /* history unavailable */ }
   render();
   window.scrollTo(0, 0);
 }
 window.addEventListener('popstate', e => {
   if (sheetOpen) { closeSheetDom(); cur = (e.state && e.state.v) ? { v: e.state.v } : cur; return; }
   scrollMem[cur.v] = window.scrollY;
-  cur = (e.state && e.state.v) ? { v: e.state.v } : { v: 'home' };
+  cur = (e.state && e.state.v) ? { v: e.state.v } : { v: fromHash(location.hash) };
+  if (!e.state) { try { history.replaceState({ v: cur.v }, '', toHash(cur.v)); } catch (er) { /* ignore */ } }
   render();
   window.scrollTo(0, scrollMem[cur.v] || 0);
 });
@@ -3933,6 +3966,15 @@ function toast(msg) {
 function qrSvg(text) {
   try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 8, scalable: true }); }
   catch (e) { return `<div class="code">${esc(text)}</div>`; }
+}
+function shareUrl(v) { return location.origin + '/' + toHash(v); }
+function shareRow(v, title) {
+  const url = shareUrl(v), text = title + ' — Student Hub';
+  const tg = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+  return `<div class="share-row">
+    <button class="chip" type="button" data-act="share" data-url="${esc(url)}" data-t="${esc(text)}">${ico('share', 16)} ${tt('Бөлісу', 'Поделиться')}</button>
+    <a class="chip" href="${esc(tg)}" target="_blank" rel="noopener">${ico('send', 16)} Telegram</a>
+  </div>`;
 }
 function copyText(text) {
   const done = () => toast(tt('Көшірілді', 'Скопировано'));
@@ -4325,6 +4367,7 @@ VIEWS.job = (id) => {
       <div class="detail-head">
         <div class="badges">${j.today ? `<span class="badge b-sun">${ico('bolt', 12)} ${tt('Бүгінгі жұмыс', 'Работа на сегодня')}</span>` : ''}${j.tags.map(k => `<span class="badge b-line">${tt(...JOB_TAGS[k])}</span>`).join('')}</div>
         <h1>${esc(L(j.title))}</h1>
+        ${shareRow('job:' + j.id, L(j.title))}
         <p class="muted">${esc(L(j.org))} <span class="badge b-ok">${ico('shield', 12)} ${tt('Тексерілген', 'Проверен')}</span></p>
       </div>
       <div class="card">
@@ -4359,6 +4402,7 @@ VIEWS.opp = (id) => {
       <div class="detail-head">
         <div class="badges"><span class="badge b-sky">${typeLabel(o.type)}</span>${o.funded ? `<span class="badge b-ok">${tt('Қаржыландырылады', 'Финансируется')}</span>` : ''}</div>
         <h1>${esc(L(o.title))}</h1>
+        ${shareRow('opp:' + o.id, L(o.title))}
         <p class="muted">${esc(L(o.org))}</p>
         <p class="small ${o.deadline <= 14 ? 'urgent' : ''}">${ico('clock', 14)} ${tt('Қабылдау', 'Приём до')}: ${fDate(dOff(o.deadline))} · ${daysLeftTxt(o.deadline)}</p>
       </div>
@@ -5416,6 +5460,12 @@ VIEWS.settings = () => ({
 
 /* ================= actions ================= */
 const ACT = {
+  share(el) {
+    const url = el.dataset.url, title = el.dataset.t;
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      navigator.share({ title, text: title, url }).catch(() => { /* cancelled */ });
+    } else copyText(url);
+  },
   fav(el) {
     const id = el.dataset.id, box = el.dataset.k === 'intern' ? S.saved : S.fav;
     if (box[id]) delete box[id]; else box[id] = Date.now();
@@ -5447,7 +5497,7 @@ const ACT = {
     S.lang = el.dataset.v; save(); render();
     if (back) { back.querySelector('.sheet').innerHTML = '<div class="grab"></div>' + onboardingHtml(); bindOnboarding(back); }
   },
-  back() { if (sheetOpen) { closeSheet(); return; } const before = cur.v; try { history.back(); } catch (e) { /* ignore */ } setTimeout(() => { if (cur.v === before && !ROOTS.includes(parse(cur.v)[0])) go('home', { replace: true }); }, 350); },
+  back() { if (sheetOpen) { closeSheet(); return; } if (history.length <= 1 || !navStarted) { go('home', { replace: true }); return; } const before = cur.v; try { history.back(); } catch (e) { /* ignore */ } setTimeout(() => { if (cur.v === before && !ROOTS.includes(parse(cur.v)[0])) go('home', { replace: true }); }, 350); },
   oppTab(el) { ui.oppTab = el.dataset.v; ui.q = ''; go('opps:' + el.dataset.v, { replace: true }); },
   jf(el) { const k = el.dataset.k; ui.jf[k] = !ui.jf[k]; render(); },
   todayJobs() { ui.jf = { today: true }; go('opps:jobs'); },
@@ -5663,7 +5713,8 @@ function bindOnboarding(root) {
 function onboarding() { openSheet(onboardingHtml(), bindOnboarding); }
 
 /* ================= boot ================= */
-try { history.replaceState({ v: 'home' }, ''); } catch (e) { /* ignore */ }
+cur = { v: fromHash(location.hash) };
+try { history.replaceState({ v: cur.v }, '', toHash(cur.v)); } catch (e) { /* ignore */ }
 applyTheme();
 render();
 if (!S.onboarded) setTimeout(onboarding, 300);
