@@ -39,13 +39,15 @@ const (
 	minQuoteRunes  = 12
 )
 
-func aiKey() string      { return config.Str("OPENAI_API_KEY", "") }
-func aiBase() string     { return strings.TrimRight(config.Str("OPENAI_BASE_URL", "https://api.openai.com/v1"), "/") }
-func aiModel() string    { return config.Str("OPENAI_MODEL", "gpt-4.1-mini") }
+func aiKey() string { return config.Str("OPENAI_API_KEY", "") }
+func aiBase() string {
+	return strings.TrimRight(config.Str("OPENAI_BASE_URL", "https://api.openai.com/v1"), "/")
+}
+func aiModel() string     { return config.Str("OPENAI_MODEL", "gpt-4.1-mini") }
 func visionModel() string { return config.Str("OPENAI_VISION_MODEL", aiModel()) }
-func dailyUnits() int    { return config.Int("QUIZ_AI_DAILY_UNITS", 12) }
-func perMinute() int     { return config.Int("QUIZ_AI_PER_MIN", 3) }
-func visionCost() int    { return config.Int("QUIZ_AI_VISION_UNITS", 2) } // per photo, on top of 1 per generation
+func dailyUnits() int     { return config.Int("QUIZ_AI_DAILY_UNITS", 12) }
+func perMinute() int      { return config.Int("QUIZ_AI_PER_MIN", 3) }
+func visionCost() int     { return config.Int("QUIZ_AI_VISION_UNITS", 2) } // per photo, on top of 1 per generation
 
 var (
 	errUpstream = errors.New("ai_upstream")

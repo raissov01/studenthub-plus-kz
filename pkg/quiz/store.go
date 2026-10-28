@@ -189,10 +189,10 @@ func saveQuestions(ctx context.Context, tx pgx.Tx, quizID int64, qs []Question) 
 		if q.ID != 0 && slices.Contains(existing, q.ID) && !slices.Contains(kept, q.ID) {
 			if _, err := tx.Exec(ctx, `update quiz_questions set position = $2, type = $3, prompt = $4, data = $5,
 				explanation = $6, source_quote = $7, image = $8, audio = $9, time_limit = $10 where id = $1`,
-				q.ID, i+1, q.Type, q.Prompt, view, q.Explanation, q.SourceQuote, img, aud, tl); err != nil {
+				q.ID, i+1, q.Type, q.Prompt, string(view), q.Explanation, q.SourceQuote, img, aud, tl); err != nil {
 				return nil, err
 			}
-			if _, err := tx.Exec(ctx, `update quiz_answer_keys set answer = $2 where question_id = $1`, q.ID, key); err != nil {
+			if _, err := tx.Exec(ctx, `update quiz_answer_keys set answer = $2 where question_id = $1`, q.ID, string(key)); err != nil {
 				return nil, err
 			}
 			kept = append(kept, q.ID)
@@ -201,10 +201,10 @@ func saveQuestions(ctx context.Context, tx pgx.Tx, quizID int64, qs []Question) 
 		var qid int64
 		if err := tx.QueryRow(ctx, `insert into quiz_questions (quiz_id, position, type, prompt, data, explanation,
 			source_quote, image, audio, time_limit) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
-			quizID, i+1, q.Type, q.Prompt, view, q.Explanation, q.SourceQuote, img, aud, tl).Scan(&qid); err != nil {
+			quizID, i+1, q.Type, q.Prompt, string(view), q.Explanation, q.SourceQuote, img, aud, tl).Scan(&qid); err != nil {
 			return nil, err
 		}
-		if _, err := tx.Exec(ctx, `insert into quiz_answer_keys (question_id, quiz_id, answer) values ($1, $2, $3)`, qid, quizID, key); err != nil {
+		if _, err := tx.Exec(ctx, `insert into quiz_answer_keys (question_id, quiz_id, answer) values ($1, $2, $3)`, qid, quizID, string(key)); err != nil {
 			return nil, err
 		}
 		kept = append(kept, qid)

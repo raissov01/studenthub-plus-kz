@@ -233,7 +233,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			if _, err := tx.Exec(ctx, `insert into quiz_attempt_answers (attempt_id, position, question_id, type, prompt,
 				data, explanation, source_quote, image, given, correct_key, credit, is_correct, graded, time_spent)
 				values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-				aid, a.Position, q.ID, q.Type, q.Prompt, rawOr(a.View, "{}"), q.Explanation, q.SourceQuote, nullable(q.Image),
+				aid, a.Position, q.ID, q.Type, q.Prompt, string(rawOr(a.View, "{}")), q.Explanation, q.SourceQuote, nullable(q.Image),
 				rawOrNil(a.Given), rawOrNil(a.Correct), a.Credit, a.IsCorrect, a.Graded, a.TimeSpent); err != nil {
 				return err
 			}
@@ -444,16 +444,16 @@ func stats(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	type qstat struct {
-		QuestionID   int64            `json:"questionId"`
-		Position     int              `json:"position"`
-		Type         string           `json:"type"`
-		Prompt       string           `json:"prompt"`
-		Answered     int              `json:"answered"`
-		Correct      int              `json:"correct"`
-		Accuracy     int              `json:"accuracy"` // percent of answered
-		AvgTime      float64          `json:"avgTimeSpent"`
-		Distribution map[string]int   `json:"distribution,omitempty"` // mcq/dropdown/poll/true_false: given → count
-		Skipped      int              `json:"skipped"`
+		QuestionID   int64          `json:"questionId"`
+		Position     int            `json:"position"`
+		Type         string         `json:"type"`
+		Prompt       string         `json:"prompt"`
+		Answered     int            `json:"answered"`
+		Correct      int            `json:"correct"`
+		Accuracy     int            `json:"accuracy"` // percent of answered
+		AvgTime      float64        `json:"avgTimeSpent"`
+		Distribution map[string]int `json:"distribution,omitempty"` // mcq/dropdown/poll/true_false: given → count
+		Skipped      int            `json:"skipped"`
 	}
 	var out []*qstat
 	var attempts, players int

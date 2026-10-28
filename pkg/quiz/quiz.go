@@ -54,8 +54,8 @@ func init() {
 	})
 }
 
-// Routes wires /api/quiz/*, the admin hide/restore and the cron job; 404 while FEATURE_QUIZ is off.
-func Routes(mux *http.ServeMux) {
+// Routes wires /api/quiz/* and the admin hide/restore; 404 while FEATURE_QUIZ is off.
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	w := func(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.Need(fn)) }
 
@@ -96,10 +96,9 @@ func Routes(mux *http.ServeMux) {
 	h("POST /api/quiz/live/join", auth.Write(liveJoin))
 	h("GET /api/quiz/live/ws", liveWS)
 	h("GET /api/quiz/live/history", auth.Need(liveHistory))
-	// admin, cron
+	// admin
 	h("POST /api/admin/quiz/quizzes/{id}/hide", auth.Write(auth.NeedRole(adminHide, "admin")))
 	h("POST /api/admin/quiz/quizzes/{id}/restore", auth.Write(auth.NeedRole(adminRestore, "admin")))
-	h("GET /api/cron/quiz", cronHandler)
 }
 
 var msgs = map[string]httpx.Msg{
@@ -162,7 +161,9 @@ func bad(w http.ResponseWriter, r *http.Request) {
 	httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) { fail(w, r, "quiz_not_found", http.StatusNotFound) }
+func notFound(w http.ResponseWriter, r *http.Request) {
+	fail(w, r, "quiz_not_found", http.StatusNotFound)
+}
 
 func pathID(r *http.Request, name string) (int64, bool) {
 	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)

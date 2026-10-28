@@ -202,7 +202,7 @@ func parseSheet(b []byte, shared []string) ([][]string, error) {
 // column roles detected from a header row
 type cols struct {
 	question, typ, correct, explanation, time int
-	options                                  []int
+	options                                   []int
 }
 
 func headerRole(cell string) string {

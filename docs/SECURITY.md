@@ -32,6 +32,13 @@ Session signing/cookie settings and Telegram/cron secret checks remain covered b
 Local market files are removed before the SQL commit: retries are idempotent, but a later
 transaction failure can leave a surviving database row without its already-removed photo.
 The API assumes the trusted reverse proxy overwrites client IP forwarding headers.
+Quiz live games use the only WebSocket route, GET /api/quiz/live/ws: Vercel rewrites do not
+proxy WebSockets, so browsers connect to the API origin directly, where the site's cookies do
+not exist. The socket therefore accepts no cookie at all: it requires a signed 2-minute join
+token (HMAC with a key derived from SESSION_SECRET, separate from session cookies) issued by
+POST /api/quiz/live/join or /sessions over normal HTTPS, and an Origin in ALLOWED_HOSTS.
+Unlisted quizzes are readable by their 10-character share code (about 57 bits); answer keys
+are never part of a play view and live in a separate owner-only RLS table.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
@@ -45,6 +52,7 @@ The API assumes the trusted reverse proxy overwrites client IP forwarding header
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
@@ -112,6 +120,22 @@ The API assumes the trusted reverse proxy overwrites client IP forwarding header
 | GET | `/api/mentors/summary` | anonymous | no | yes | mentors |
 | GET | `/api/p/{slug}` | anonymous | yes | yes | portfolio |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
+| GET | `/api/quiz/attempts/{id}` | signed-in (own attempt, RLS) | no | yes | quiz |
+| GET | `/api/quiz/attempts/{id}/retry` | signed-in (own attempt, RLS) | no | yes | quiz |
+| GET | `/api/quiz/generate/usage` | signed-in | no | no (no input) | quiz |
+| GET | `/api/quiz/import/template.xlsx` | anonymous | no | no (no input) | quiz |
+| GET | `/api/quiz/live/history` | signed-in (own hosted games, RLS) | no | no (no input) | quiz |
+| GET | `/api/quiz/live/sessions/{code}` | anonymous (6-digit game code; title and counts only) | no | yes | quiz |
+| GET | `/api/quiz/live/ws` | anonymous (WebSocket upgrade: signed 2-minute join token from /join or /sessions, Origin must be in ALLOWED_HOSTS; 30 upgrades/IP/min, 5 msg/s per socket) | yes | yes | quiz |
+| GET | `/api/quiz/media/{name}` | anonymous (media of published public/unlisted quizzes or open live games; 128-bit random names); owner or admin otherwise | no | yes | quiz |
+| GET | `/api/quiz/mine` | signed-in | no | no (no input) | quiz |
+| GET | `/api/quiz/quizzes` | anonymous | no | yes | quiz |
+| GET | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS; includes answer keys) | no | yes | quiz |
+| GET | `/api/quiz/quizzes/{id}/play` | anonymous (published public quizzes, no answer keys); owner for private/unlisted/drafts | no | yes | quiz |
+| GET | `/api/quiz/quizzes/{id}/stats` | signed-in (owner only; aggregates, no player identities) | no | yes | quiz |
+| GET | `/api/quiz/s/{code}` | anonymous (share link: published public/unlisted quizzes by 10-char code, no answer keys) | no | yes | quiz |
+| GET | `/api/quiz/s/{code}/meta` | anonymous (share preview for generateMetadata: title, description, counts, cover; no author, no questions) | no | yes | quiz |
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
 | GET | `/api/university/me` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/posts` | university_staff (bound university) | no | no (no input) | b2b |
@@ -144,6 +168,8 @@ The API assumes the trusted reverse proxy overwrites client IP forwarding header
 | POST | `/api/admin/mentors/{userId}/status` | admin | yes | yes | mentors |
 | POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
 | POST | `/api/admin/queue/{id}/reject` | admin | yes | yes | — |
+| POST | `/api/admin/quiz/quizzes/{id}/hide` | admin | yes | yes | quiz |
+| POST | `/api/admin/quiz/quizzes/{id}/restore` | admin | yes | yes | quiz |
 | POST | `/api/admin/reports/dismiss` | admin | yes | yes | — |
 | POST | `/api/admin/role` | admin | yes | yes | — |
 | POST | `/api/admin/university-staff` | admin | yes | yes | b2b |
@@ -197,6 +223,19 @@ The API assumes the trusted reverse proxy overwrites client IP forwarding header
 | POST | `/api/mentors/requests` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/requests/close` | signed-in | yes | no (no input) | mentors |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
+| POST | `/api/quiz/generate/cards-from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
+| POST | `/api/quiz/generate/from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
+| POST | `/api/quiz/generate/from-text` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
+| POST | `/api/quiz/import/xlsx` | signed-in | yes | yes | quiz |
+| POST | `/api/quiz/live/join` | anonymous (nickname; session optional; 20 joins/IP/min) | yes | yes | quiz |
+| POST | `/api/quiz/live/sessions` | signed-in (consented; quiz playable by host; max 2 open games per host) | yes | yes | quiz |
+| POST | `/api/quiz/live/sessions/{code}/host-token` | signed-in (host of the game) | yes | yes | quiz |
+| POST | `/api/quiz/media` | signed-in (consented) | yes | yes | quiz |
+| POST | `/api/quiz/quizzes` | signed-in (consented) | yes | yes | quiz |
+| POST | `/api/quiz/quizzes/{id}/attempts` | anonymous (graded server-side; guest results not stored; unlisted needs share code) | yes | yes | quiz |
+| POST | `/api/quiz/quizzes/{id}/clone` | signed-in (consented; source quiz must be playable by caller) | yes | yes | quiz |
+| POST | `/api/quiz/quizzes/{id}/share/reset` | signed-in (owner only) | yes | yes | quiz |
+| POST | `/api/quiz/s/{code}/clone` | signed-in (consented; share code grants read) | yes | yes | quiz |
 | POST | `/api/reports` | signed-in | yes | yes | — |
 | POST | `/api/submissions` | signed-in | yes | yes | — |
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
@@ -205,3 +244,4 @@ The API assumes the trusted reverse proxy overwrites client IP forwarding header
 | PUT | `/api/admin/settings` | admin | yes | yes | — |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |

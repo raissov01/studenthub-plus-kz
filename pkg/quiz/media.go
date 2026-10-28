@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -17,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -177,7 +179,7 @@ func processMP3(data []byte, maxBytes int64) ([]byte, error) {
 	if frames == 0 {
 		return nil, errType
 	}
-	if frames < 3 && off < len(b) {
+	if off > len(b) || (frames < 3 && off < len(b)) {
 		return nil, errDecode
 	}
 	return append([]byte(nil), b...), nil
@@ -351,6 +353,7 @@ func uploadMedia(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		mediaErr(w, r, err)
 		return
 	}
+	maybeSweepOrphans()
 	name, err := registerMedia(r.Context(), u.ID, kind, ext, out)
 	if err != nil {
 		internal(w, r, "save media", err)
@@ -473,7 +476,58 @@ func deleteUserFiles(ctx context.Context, tx pgx.Tx, userID int64) error {
 	if err != nil {
 		return err
 	}
-	removeFiles(names)
+	for _, n := range names {
+		if !mediaNameRe.MatchString(n) {
+			return fmt.Errorf("invalid registered quiz media name")
+		}
+		if err := os.Remove(filepath.Join(UploadDir(), n)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("delete account quiz media: %w", err)
+		}
+	}
 	closeLiveForHost(userID)
 	return nil
+}
+
+// Uploads never attached to a quiz are removed after orphanAge. There is no cron job for the
+// quiz module: the sweep runs in the background at most once per orphanEvery, triggered by
+// uploads (no uploads means no new orphans).
+var (
+	orphanAge   = 24 * time.Hour
+	orphanEvery = time.Hour
+	orphanMu    sync.Mutex
+	orphanLast  time.Time
+)
+
+func maybeSweepOrphans() {
+	orphanMu.Lock()
+	defer orphanMu.Unlock()
+	if time.Since(orphanLast) < orphanEvery {
+		return
+	}
+	orphanLast = time.Now()
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if _, err := sweepOrphans(ctx, time.Now()); err != nil {
+			log.Printf("quiz: orphan sweep: %v", err)
+		}
+	}()
+}
+
+// sweepOrphans deletes unattached uploads older than orphanAge (rows first, then files).
+func sweepOrphans(ctx context.Context, now time.Time) (int, error) {
+	var names []string
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `delete from quiz_media where quiz_id is null and created_at < $1 returning name`, now.Add(-orphanAge))
+		if err != nil {
+			return err
+		}
+		names, err = pgx.CollectRows(rows, pgx.RowTo[string])
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+	removeFiles(names)
+	return len(names), nil
 }

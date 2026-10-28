@@ -11,7 +11,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dep
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o deploy/studenthub-migrate ./cmd/migrate
 
 ssh $VPS "id studenthub >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin studenthub; mkdir -p /opt/studenthub"
-ssh $VPS "mkdir -p /opt/studenthub/uploads/market && chown -R studenthub:studenthub /opt/studenthub/uploads && chmod 750 /opt/studenthub/uploads /opt/studenthub/uploads/market"
+ssh $VPS "mkdir -p /opt/studenthub/uploads/market /opt/studenthub/uploads/quiz && chown -R studenthub:studenthub /opt/studenthub/uploads && chmod 750 /opt/studenthub/uploads /opt/studenthub/uploads/market /opt/studenthub/uploads/quiz"
 ssh $VPS "test -f /opt/studenthub/.env" || scp -q .secrets/prod.env $VPS:/opt/studenthub/.env
 ssh $VPS "chown root:studenthub /opt/studenthub/.env && chmod 640 /opt/studenthub/.env"
 
@@ -32,6 +32,8 @@ ssh $VPS "mv /opt/studenthub/studenthub-api.new /opt/studenthub/studenthub-api &
 ssh $VPS "cd /opt/studenthub && set -a && . ./.env && set +a && ./studenthub-migrate"
 
 sed "s/__HOST__/$HOST/" deploy/studenthub.nginx.conf | ssh $VPS "test -f /etc/nginx/conf.d/studenthub.conf || cat > /etc/nginx/conf.d/studenthub.conf"
+# the file above is only written when absent: older servers get the quiz WebSocket/upload locations here (idempotent)
+ssh $VPS 'sh -s /etc/nginx/conf.d/studenthub.conf' < deploy/nginx-quiz-patch.sh
 scp -q deploy/studenthub-api.service deploy/studenthub-cron.service deploy/studenthub-cron.timer deploy/studenthub-notify.service deploy/studenthub-notify.timer $VPS:/etc/systemd/system/
 ssh $VPS "systemctl daemon-reload && systemctl enable --now studenthub-api studenthub-cron.timer studenthub-notify.timer && systemctl restart studenthub-api && nginx -t && systemctl reload nginx"
 ssh $VPS "grep -q 'listen 443' /etc/nginx/conf.d/studenthub.conf || certbot --nginx -d $HOST --non-interactive --agree-tos --register-unsafely-without-email --redirect >/dev/null"

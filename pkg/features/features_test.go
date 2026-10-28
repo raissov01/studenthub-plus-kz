@@ -59,7 +59,7 @@ func TestConfigEndpoint(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
 		t.Fatalf("config: %d %s", w.Code, w.Body)
 	}
-	if len(out.Features) != 6 || !out.Features["events"] || out.Features["b2b"] || out.Features["market"] {
+	if len(out.Features) != 7 || !out.Features["events"] || out.Features["b2b"] || out.Features["market"] {
 		t.Fatalf("features: %v", out.Features)
 	}
 	if out.BotUsername != "studenthub_kz_bot" || out.ReportURL == "" || out.SuggestFormURL == "" {

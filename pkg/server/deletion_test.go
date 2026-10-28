@@ -13,6 +13,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/market"
 	"github.com/raissov01/studenthub-plus-kz/pkg/me"
+	"github.com/raissov01/studenthub-plus-kz/pkg/quiz"
 	"github.com/raissov01/studenthub-plus-kz/pkg/testdb"
 )
 
@@ -88,6 +89,13 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 			t.Fatal(err)
 		}
 	}
+	quizFile := strings.Repeat("f", 32) + ".jpg"
+	if err := os.MkdirAll(quiz.UploadDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(quiz.UploadDir(), quizFile), []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.Background()
 	var company int64
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
@@ -151,6 +159,12 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into notify_outbox(user_id,category,text,not_before) values ($1,'events','fixture',now())`, uid)
 		exec(`insert into notify_sends(user_id,category) values ($1,'events')`, uid)
 		exec(`insert into discount_checks(discount_id,user_id,worked) values ('d1',$1,true)`, uid)
+		qz := id(`insert into quizzes(user_id,title,share_code) values ($1,'fixture','launchquiz') returning id`, uid)
+		exec(`insert into quiz_attempts(quiz_id,user_id,score,max_score,percentage,correct_count,total) values ($1,$2,1,1,100,1,1)`, qz, uid)
+		exec(`insert into quiz_media(name,user_id,quiz_id,kind,bytes) values ($1,$2,$3,'image',7)`, quizFile, uid, qz)
+		exec(`insert into quiz_ai_usage(user_id,day,units) values ($1,current_date,1)`, uid)
+		live := id(`insert into quiz_live_sessions(code,quiz_id,host_id,status) values ('123456',$1,$2,'finished') returning id`, qz, uid)
+		exec(`insert into quiz_live_results(session_id,rank,nickname,user_id,score,correct) values ($1,1,'fixture',$2,10,1)`, live, uid)
 		return nil
 	})
 	if err != nil {
@@ -206,6 +220,9 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		if _, err := os.Stat(filepath.Join(market.UploadDir(), name)); !os.IsNotExist(err) {
 			t.Errorf("deleted user's file survived: %s %v", name, err)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(quiz.UploadDir(), quizFile)); !os.IsNotExist(err) {
+		t.Errorf("deleted user's quiz media survived: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(market.UploadDir(), names[3])); err != nil {
 		t.Fatal("another user's file was deleted", err)

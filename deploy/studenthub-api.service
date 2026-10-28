@@ -14,7 +14,7 @@ User=studenthub
 MemoryMax=150M
 NoNewPrivileges=true
 ProtectSystem=strict
-# market photos (prompt 08) are the only files the API writes
+# market photos (prompt 08) and quiz media are the only files the API writes
 ReadWritePaths=-/opt/studenthub/uploads
 ProtectHome=true
 PrivateTmp=true

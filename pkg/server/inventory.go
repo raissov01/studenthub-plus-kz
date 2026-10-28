@@ -94,6 +94,13 @@ Session signing/cookie settings and Telegram/cron secret checks remain covered b
 Local market files are removed before the SQL commit: retries are idempotent, but a later
 transaction failure can leave a surviving database row without its already-removed photo.
 The API assumes the trusted reverse proxy overwrites client IP forwarding headers.
+Quiz live games use the only WebSocket route, GET /api/quiz/live/ws: Vercel rewrites do not
+proxy WebSockets, so browsers connect to the API origin directly, where the site's cookies do
+not exist. The socket therefore accepts no cookie at all: it requires a signed 2-minute join
+token (HMAC with a key derived from SESSION_SECRET, separate from session cookies) issued by
+POST /api/quiz/live/join or /sessions over normal HTTPS, and an Origin in ALLOWED_HOSTS.
+Unlisted quizzes are readable by their 10-character share code (about 57 bits); answer keys
+are never part of a play view and live in a separate owner-only RLS table.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |

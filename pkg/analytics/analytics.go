@@ -46,6 +46,10 @@ var Events = map[string]map[string]func(any) bool{
 	"roadmap_item_done":   {"item": isKey},
 	"telegram_open":       {"in_telegram": isBool},
 	"feedback":            {"score": intRange(1, 5), "missing": isFeedback},
+	// quiz module: categorical props only, never quiz titles or question text
+	"quiz_created":     {"source": isKey, "questions": intRange(1, 200)},
+	"quiz_played":      {"mode": isKey, "questions": intRange(1, 200), "percent": intRange(0, 100)},
+	"quiz_live_hosted": {"players": intRange(0, 500), "questions": intRange(1, 200)},
 }
 
 type event struct {
