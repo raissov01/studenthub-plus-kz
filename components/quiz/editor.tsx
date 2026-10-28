@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
+import { ApiError } from '@/lib/account';
 import { quizApi, type QuizInput, type QuestionType, type QuizLang } from '@/lib/quiz-api';
 import { ErrorText, Field, Loading, Select, TYPE_NAMES, useTask } from './common';
 import { emptyQuestion, QuestionEditor } from './question-editor';
@@ -27,6 +28,8 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
     [loadError, setLoadError] = useState(''),
     [review, setReview] = useState(false),
     [dirty, setDirty] = useState(false);
+  const [invalidQuestion, setInvalidQuestion] = useState(0),
+    [conflict, setConflict] = useState(false);
   const [mode, setMode] = useState<'manual' | 'text' | 'files' | 'excel'>(notes ? 'files' : 'manual');
   const [text, setText] = useState(''),
     [files, setFiles] = useState<File[]>([]),
@@ -152,11 +155,11 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
                 value={text}
                 multiline
                 required
-                maxLength={100000}
+                maxLength={60000}
                 onChange={setText}
               />
               <p className="note">
-                {tt('Кемінде 200 таңба.', 'Не менее 200 символов.')} {text.length}
+                {tt('200–60 000 таңба.', '200–60 000 символов.')} {text.length}
               </p>
             </>
           ) : (
@@ -291,9 +294,25 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
           onSubmit={(e) => {
             e.preventDefault();
             void task.run(async () => {
-              const r = await quizApi.save({ ...doc, isDraft: false }, lang, savedId, review ? 'excel' : '');
-              setDirty(false);
-              router.push(`/quiz/${r.quiz.id}`);
+              setInvalidQuestion(0);
+              setConflict(false);
+              try {
+                const r = await quizApi.save({ ...doc, isDraft: false }, lang, savedId, review ? 'excel' : '');
+                setDirty(false);
+                router.push(`/quiz/${r.quiz.id}`);
+              } catch (e) {
+                if (e instanceof ApiError) {
+                  if (e.code === 'version_conflict') setConflict(true);
+                  if (e.code === 'invalid_quiz') {
+                    const n = Number(e.detail.question);
+                    setInvalidQuestion(n);
+                    const section = document.getElementById(`quiz-question-${n}`);
+                    section?.focus();
+                    section?.scrollIntoView({ block: 'center' });
+                  }
+                }
+                throw e;
+              }
             });
           }}
         >
@@ -343,10 +362,16 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
                 checked={doc.shuffle}
                 onChange={(e) => patch({ shuffle: e.target.checked })}
               />
-              {tt('Сұрақтарды араластыру', 'Перемешивать вопросы')}
+              {tt('Жауап нұсқаларын араластыру', 'Перемешивать варианты ответов')}
             </label>
             {doc.questions.map((q, i) => (
-              <section className="card quiz-stack" key={`${savedId || 'new'}-${i}`}>
+              <section
+                className="card quiz-stack"
+                key={`${savedId || 'new'}-${i}`}
+                id={`quiz-question-${i + 1}`}
+                tabIndex={-1}
+                style={invalidQuestion === i + 1 ? { borderColor: 'var(--danger)' } : undefined}
+              >
                 <h2>
                   {tt('Сұрақ', 'Вопрос')} {i + 1}
                 </h2>
@@ -412,6 +437,21 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
         </p>
       )}
       <ErrorText error={task.error} />
+      {conflict && savedId && (
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={task.busy}
+          onClick={() => void task.run(async () => {
+            const latest = await quizApi.edit(savedId, lang);
+            setDoc({ ...latest.quiz, questions: latest.questions });
+            setDirty(false);
+            setConflict(false);
+          })}
+        >
+          {tt('Соңғы нұсқаны жүктеу (осы өзгерістер жойылады)', 'Загрузить последнюю версию (эти изменения будут потеряны)')}
+        </button>
+      )}
     </>
   );
 }

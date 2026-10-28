@@ -2,19 +2,19 @@ import { ApiError } from './account';
 import type { LiveCommand, LiveMessage } from './quiz-api';
 export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'ended';
 /** No Vercel rewrite: use the API's direct origin. Refresh the short-lived ticket on EVERY reconnect. */
-export function quizSocketURL(token: string): string {
+export function quizSocketURL(token: string, wsUrl?: string): string {
   const origin =
     process.env.NEXT_PUBLIC_API_WS_ORIGIN ||
     (process.env.NODE_ENV === 'development'
       ? 'ws://localhost:8080'
       : 'wss://studenthub.85-137-91-47.sslip.io');
-  const u = new URL('/api/quiz/live/ws', origin);
+  const u = wsUrl ? new URL(wsUrl) : new URL('/api/quiz/live/ws', origin);
   u.protocol = u.protocol === 'http:' || u.protocol === 'ws:' ? 'ws:' : 'wss:';
   u.searchParams.set('token', token);
   return u.toString();
 }
 export function connectQuizLive(
-  getToken: () => Promise<string>,
+  getTicket: () => Promise<{ token: string; wsUrl: string }>,
   receive: (m: LiveMessage) => void,
   status: (s: ConnectionState) => void,
 ) {
@@ -37,9 +37,9 @@ export function connectQuizLive(
     if (stopped) return;
     status(attempts ? 'reconnecting' : 'connecting');
     try {
-      const token = await getToken();
+      const { token, wsUrl } = await getTicket();
       if (stopped) return;
-      socket = new WebSocket(quizSocketURL(token));
+      socket = new WebSocket(quizSocketURL(token, wsUrl));
       socket.onopen = () => {
         attempts = 0;
         status('connected');

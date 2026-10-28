@@ -88,6 +88,8 @@ export function QuestionEditor({
             id: q.id,
             prompt: q.prompt,
             image: q.image,
+            audio: q.audio,
+            timeLimit: q.timeLimit,
             sourceQuote: q.sourceQuote,
             explanation: q.explanation,
           })

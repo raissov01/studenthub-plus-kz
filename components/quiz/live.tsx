@@ -79,7 +79,14 @@ export function QuizHost({ id }: { id: string }) {
     const i = code ? readLiveIdentity('host', code) : null;
     if (i) queueMicrotask(() => setIdentity(i));
   }, [id]);
-  if (identity) return <LiveBoard identity={identity} />;
+  if (identity)
+    return (
+      <LiveBoard identity={identity} restart={() => {
+        sessionStorage.removeItem(`studenthub.quiz.host.${id}`);
+        sessionStorage.removeItem(`studenthub.quiz.live.host.${identity.code}`);
+        setIdentity(null);
+      }} />
+    );
   return (
     <>
       <h1>{tt('Тікелей ойын', 'Игра в прямом эфире')}</h1>
@@ -128,7 +135,7 @@ export function QuizPlayer({ code }: { code: string }) {
     );
   return <LiveBoard identity={identity} />;
 }
-function LiveBoard({ identity }: { identity: LiveIdentity }) {
+function LiveBoard({ identity, restart }: { identity: LiveIdentity; restart?: () => void }) {
   const { tt, lang } = useApp();
   const [initialLang] = useState(lang);
   const host = identity.role === 'host';
@@ -209,10 +216,13 @@ function LiveBoard({ identity }: { identity: LiveIdentity }) {
       }
     };
     socket.current = connectQuizLive(
-      async () =>
-        host
-          ? (await quizApi.hostToken(identity.code, initialLang)).hostToken
-          : (await quizApi.join(identity.code, identity.nickname!, initialLang, identity.rejoinKey)).token,
+      async () => {
+        if (host) {
+          const ticket = await quizApi.hostToken(identity.code, initialLang);
+          return { token: ticket.hostToken, wsUrl: ticket.wsUrl };
+        }
+        return quizApi.join(identity.code, identity.nickname!, initialLang, identity.rejoinKey);
+      },
       receive,
       setConnection,
     );
@@ -315,6 +325,7 @@ function LiveBoard({ identity }: { identity: LiveIdentity }) {
             phase === 'question' && (
               <>
                 <AnswerControl
+                  key={question.id}
                   q={question}
                   value={answer}
                   change={setAnswer}
@@ -366,6 +377,16 @@ function LiveBoard({ identity }: { identity: LiveIdentity }) {
           )}
         </>
       )}
+      {!ended && phase === 'reveal' && !question && (
+        <>
+          <p>{tt('Сұрақ аяқталды. Келесі сұрақты күтіңіз.', 'Вопрос завершён. Ожидайте следующий вопрос.')}</p>
+          {host && (
+            <button className="btn" disabled={connection !== 'connected'} onClick={() => send('next')}>
+              {tt('Жалғастыру', 'Продолжить')}
+            </button>
+          )}
+        </>
+      )}
       {(phase === 'reveal' || ended) && (
         <section className="quiz-stack">
           <h2>{ended ? tt('Қорытынды орындар', 'Итоговый пьедестал') : tt('Көшбасшылар', 'Лидеры')}</h2>
@@ -401,9 +422,14 @@ function LiveBoard({ identity }: { identity: LiveIdentity }) {
         </button>
       )}
       {ended && (
-        <Link className="btn" href="/quiz">
-          {tt('Квиздерге оралу', 'К квизам')}
-        </Link>
+        <>
+          {restart && (
+            <button className="btn" onClick={restart}>{tt('Жаңа ойын', 'Новая игра')}</button>
+          )}
+          <Link className="btn" href="/quiz">
+            {tt('Квиздерге оралу', 'К квизам')}
+          </Link>
+        </>
       )}
     </div>
   );
