@@ -53,17 +53,18 @@ var NotifyUrgent = notify.For(notify.CatModeration)
 var Now = time.Now
 
 var (
-	MsgConsent   = httpx.Msg{KK: "Алдымен деректерді өңдеуге келісім беріңіз.", RU: "Сначала дайте согласие на обработку данных."}
-	MsgNoEvent   = httpx.Msg{KK: "Іс-шара табылмады.", RU: "Мероприятие не найдено."}
-	MsgClosed    = httpx.Msg{KK: "Бұл іс-шараға тіркелу жабық.", RU: "Регистрация на это мероприятие закрыта."}
-	MsgForeign   = httpx.Msg{KK: "Тек өз университетіңіздің іс-шарасын басқара аласыз.", RU: "Можно управлять только мероприятиями своего университета."}
-	MsgInvalid   = httpx.Msg{KK: "Іс-шара деректері толық емес не қате.", RU: "Данные мероприятия неполные или неверные."}
-	MsgNotReg    = httpx.Msg{KK: "Сіз бұл іс-шараға тіркелмегенсіз.", RU: "Вы не зарегистрированы на это мероприятие."}
-	MsgStatus    = httpx.Msg{KK: "Іс-шара күйін бұлай өзгертуге болмайды.", RU: "Так изменить статус мероприятия нельзя."}
-	MsgCapacity  = httpx.Msg{KK: "Орын саны тіркелгендерден аз болмауы керек.", RU: "Мест не может быть меньше, чем уже зарегистрировано."}
-	MsgNoUniv    = httpx.Msg{KK: "Профильде университетіңізді көрсетіңіз.", RU: "Укажите университет в профиле."}
-	MsgNotFinish = httpx.Msg{KK: "Пікір іс-шара біткен соң ғана қабылданады.", RU: "Отзыв принимается только после мероприятия."}
-	MsgNotCame   = httpx.Msg{KK: "Пікірді тек келгендер қалдыра алады.", RU: "Отзыв могут оставить только пришедшие."}
+	MsgConsent       = httpx.Msg{KK: "Алдымен деректерді өңдеуге келісім беріңіз.", RU: "Сначала дайте согласие на обработку данных."}
+	MsgNoEvent       = httpx.Msg{KK: "Іс-шара табылмады.", RU: "Мероприятие не найдено."}
+	MsgClosed        = httpx.Msg{KK: "Бұл іс-шараға тіркелу жабық.", RU: "Регистрация на это мероприятие закрыта."}
+	MsgForeign       = httpx.Msg{KK: "Тек өз университетіңіздің іс-шарасын басқара аласыз.", RU: "Можно управлять только мероприятиями своего университета."}
+	MsgInvalid       = httpx.Msg{KK: "Іс-шара деректері толық емес не қате.", RU: "Данные мероприятия неполные или неверные."}
+	MsgNotReg        = httpx.Msg{KK: "Сіз бұл іс-шараға тіркелмегенсіз.", RU: "Вы не зарегистрированы на это мероприятие."}
+	MsgStatus        = httpx.Msg{KK: "Іс-шара күйін бұлай өзгертуге болмайды.", RU: "Так изменить статус мероприятия нельзя."}
+	MsgGroupCapacity = httpx.Msg{KK: "Топтық кездесуде 5–10 орын болуы керек.", RU: "В групповой встрече должно быть 5–10 мест."}
+	MsgCapacity      = httpx.Msg{KK: "Орын саны тіркелгендерден аз болмауы керек.", RU: "Мест не может быть меньше, чем уже зарегистрировано."}
+	MsgNoUniv        = httpx.Msg{KK: "Профильде университетіңізді көрсетіңіз.", RU: "Укажите университет в профиле."}
+	MsgNotFinish     = httpx.Msg{KK: "Пікір іс-шара біткен соң ғана қабылданады.", RU: "Отзыв принимается только после мероприятия."}
+	MsgNotCame       = httpx.Msg{KK: "Пікірді тек келгендер қалдыра алады.", RU: "Отзыв могут оставить только пришедшие."}
 )
 
 // Routes wires /api/events/*, all behind the "events" switch.
@@ -618,7 +619,9 @@ func isRLS(err error) bool {
 
 func create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
-	if u.Role != "admin" && !slices.Contains(ManagerRoles, u.Role) {
+	// other roles get through only via ExtraManager (approved mentors, cat = mentoring); CanManage decides below
+	byRole := u.Role == "admin" || slices.Contains(ManagerRoles, u.Role)
+	if !byRole && ExtraManager == nil {
 		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
 		return
 	}
@@ -656,7 +659,16 @@ func create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	probe := &Event{University: univ, Cat: *in.Cat}
 	if !CanManage(ctx, u, probe) {
-		httpx.Error(w, r, http.StatusForbidden, "foreign_university", MsgForeign)
+		code, msg := "foreign_university", MsgForeign
+		if !byRole {
+			code, msg = "forbidden", httpx.MsgForbid
+		}
+		httpx.Error(w, r, http.StatusForbidden, code, msg)
+		return
+	}
+	// a mentor's group meeting is a small group: 5–10 seats (prompt 07)
+	if !byRole && (in.Capacity == nil || *in.Capacity < 5 || *in.Capacity > 10) {
+		httpx.Error(w, r, http.StatusBadRequest, "group_capacity", MsgGroupCapacity)
 		return
 	}
 	status := "draft"

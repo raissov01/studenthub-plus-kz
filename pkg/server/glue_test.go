@@ -2,8 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
@@ -124,5 +129,61 @@ func TestUniversityLockedForOrganizers(t *testing.T) {
 	}
 	if got := move(student); got != "ENU" {
 		t.Errorf("a plain student should be able to change university, got %s", got)
+	}
+}
+
+// Approved mentors open mentoring group meetings through the real HTTP endpoint (5–10 seats);
+// a plain student cannot create events at all.
+func TestMentorCreatesGroupMeetingOverHTTP(t *testing.T) {
+	testdb.Need(t)
+	t.Setenv("SESSION_SECRET", strings.Repeat("s", 40))
+	t.Setenv("FEATURE_EVENTS", "true")
+	t.Setenv("ALLOWED_HOSTS", "localhost")
+	ctx := context.Background()
+	var mentor, student int64
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		q := `insert into users (telegram_id, name, university, role, consent_at) values ($1, 'x', 'KATU', 'student', now()) returning id`
+		if err := tx.QueryRow(ctx, q, 921).Scan(&mentor); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, q, 922).Scan(&student); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `insert into mentors (user_id, university, areas, status) values ($1, 'KATU', '{study}', 'approved')`, mentor)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	post := func(uid int64, cat string, capacity int) int {
+		tok, err := auth.Sign(auth.Claims{UserID: uid, Version: 1, Exp: time.Now().Add(time.Hour).Unix()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		start := time.Now().Add(48 * time.Hour).UTC()
+		body := fmt.Sprintf(`{"title_kk":"Топтық кездесу","cat":%q,"starts_at":%q,"ends_at":%q,"capacity":%d,"place_text":"4-корпус","status":"published"}`,
+			cat, start.Format(time.RFC3339), start.Add(time.Hour).Format(time.RFC3339), capacity)
+		req := httptest.NewRequest("POST", "/api/events/create", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Origin", "http://localhost")
+		req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+		w := httptest.NewRecorder()
+		Handler().ServeHTTP(w, req)
+		if w.Code >= 300 {
+			t.Logf("uid %d cat %s cap %d -> %d %s", uid, cat, capacity, w.Code, w.Body)
+		}
+		return w.Code
+	}
+	if c := post(mentor, "mentoring", 7); c >= 300 {
+		t.Errorf("approved mentor creating a 7-seat mentoring meeting: %d", c)
+	}
+	if c := post(mentor, "mentoring", 20); c != http.StatusBadRequest {
+		t.Errorf("mentor meeting with 20 seats: %d, want 400", c)
+	}
+	if c := post(mentor, "career", 7); c != http.StatusForbidden {
+		t.Errorf("mentor creating a career event: %d, want 403", c)
+	}
+	if c := post(student, "mentoring", 7); c != http.StatusForbidden {
+		t.Errorf("plain student creating an event: %d, want 403", c)
 	}
 }
