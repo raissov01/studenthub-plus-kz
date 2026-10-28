@@ -1,0 +1,65 @@
+/* Header title and owning tab of every screen (the legacy view's {title, tab}). Pure, so the server can use it
+   for <title> and the client for the header. */
+import { EVENTS, EVENT_CATS } from '@/lib/data/static';
+import { allDecks } from '@/lib/domain';
+import type { I18n } from '@/lib/format';
+import { parseView } from '@/lib/routes';
+import type { UiState } from '@/lib/defaults';
+import type { AppState } from '@/lib/types';
+
+interface Ctx { I: I18n; S: AppState; ui: UiState }
+interface Meta { title: (prm: string, x: Ctx) => string; tab?: string }
+
+const t = (kk: string, ru: string) => ({ I }: Ctx) => I.tt(kk, ru);
+
+const META: Record<string, Meta> = {
+  home: { title: () => 'Student Hub' },
+  search: { title: (_, x) => t('Іздеу', 'Поиск')(x) },
+  notif: { title: (_, x) => t('Хабарламалар', 'Уведомления')(x) },
+  services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
+  materials: { title: (_, x) => t('Оқу материалдары', 'Учебные материалы')(x), tab: 'home' },
+  saved: { title: (_, x) => t('Сақталғандар', 'Сохранённое')(x), tab: 'profile' },
+  opps: { title: (_, x) => t('Мүмкіндіктер', 'Возможности')(x) },
+  mine: { title: (_, x) => t('Менің тізімім', 'Мой список')(x) },
+  job: { title: (_, x) => t('Вакансия', 'Вакансия')(x), tab: 'opps' },
+  opp: { title: (_, x) => t('Мүмкіндік', 'Возможность')(x), tab: 'opps' },
+  event: {
+    title: (id, x) => { const e = EVENTS.find(v => v.id === id); return e ? x.I.L(EVENT_CATS[e.cat]) : t('Іс-шара', 'Мероприятие')(x); },
+    tab: 'opps',
+  },
+  ai: { title: (_, x) => t('AI-көмекші', 'AI-помощник')(x) },
+  chat: { title: (_, x) => t('AI чат', 'AI-чат')(x), tab: 'ai' },
+  resume: { title: (_, x) => t('Түйіндеме', 'Резюме')(x), tab: 'ai' },
+  interview: { title: (_, x) => t('Сұхбатқа дайындық', 'Собеседование')(x), tab: 'ai' },
+  exam: { title: (_, x) => t('Емтиханға дайындық', 'Подготовка к экзамену')(x), tab: 'ai' },
+  plan: { title: (id, x) => x.S.plans.find(p => p.id === id)?.subject ?? t('Емтиханға дайындық', 'Подготовка к экзамену')(x), tab: 'ai' },
+  cards: { title: (_, x) => t('Карточкалар', 'Карточки')(x), tab: 'ai' },
+  deck: { title: (id, x) => allDecks(x.S, x.I).find(d => d.id === id)?.name ?? t('Карточкалар', 'Карточки')(x), tab: 'ai' },
+  study: {
+    title: (_, x) => {
+      const s = x.ui.study;
+      if (!s) return t('Карточкалар', 'Карточки')(x);
+      if (!s.queue.length) return t('Нәтиже', 'Результат')(x);
+      return s.mode === 'exam' ? t('Емтихан режимі', 'Режим экзамена')(x) : t('Оқу', 'Учёба')(x);
+    },
+    tab: 'ai',
+  },
+  match: { title: (_, x) => t('Вакансияға сәйкестік', 'Совпадение с вакансией')(x), tab: 'ai' },
+  bonus: { title: (_, x) => t('Бонустар мен жеңілдіктер', 'Бонусы и скидки')(x) },
+  profile: { title: (_, x) => t('Профиль', 'Профиль')(x) },
+  edit: { title: (_, x) => t('Профильді өзгерту', 'Изменить профиль')(x), tab: 'profile' },
+  gpa: { title: (_, x) => t('Менің оқуым', 'Моя учёба')(x), tab: 'profile' },
+  docs: { title: (_, x) => t('Құжаттар мен анықтамалар', 'Документы и справки')(x), tab: 'profile' },
+  doc: { title: (_, x) => t('Анықтама', 'Справка')(x), tab: 'profile' },
+  admission: { title: (_, x) => t('Түсу', 'Поступление')(x), tab: 'profile' },
+  map: { title: (prm, x) => (prm === 'near' ? t('Жақын маңда', 'Рядом с кампусом')(x) : t('Кампус картасы', 'Карта кампуса')(x)), tab: 'home' },
+  pay: { title: (_, x) => t('Оқу ақысы', 'Оплата обучения')(x), tab: 'profile' },
+  portfolio: { title: (_, x) => t('Портфолио', 'Портфолио')(x), tab: 'profile' },
+  settings: { title: (_, x) => t('Баптаулар', 'Настройки')(x), tab: 'profile' },
+};
+
+export function screenMeta(v: string, x: Ctx): { name: string; title: string; tab: string } {
+  const [name, prm] = parseView(v);
+  const m = META[name] || META.home;
+  return { name, title: m.title(prm, x), tab: m.tab ?? '' };
+}

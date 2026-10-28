@@ -10,7 +10,7 @@ type Props = Record<string, string | number | boolean>;
 const ID_KEY = "studenthub.anon";
 const REF_KEY = "studenthub.ref";
 const VISIT_KEY = "studenthub.lastVisit";
-let queue: { name: EventName; props?: Props }[] = [];
+const queue: { name: EventName; props?: Props }[] = [];
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function storage(): Storage | null {
