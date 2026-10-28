@@ -93,8 +93,8 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
-    const e = (j as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), j);
+    const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {}, j);
   }
   return j as T;
 }
