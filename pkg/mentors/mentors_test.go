@@ -95,6 +95,9 @@ func newUser(t *testing.T, o userOpt) (int64, int64) {
 			values ($1, nullif($2, '-'), $3, $4, nullif($5, ''), $6, $7::user_role, now(), $8, now() - make_interval(days => $9)) returning id`,
 			tgID, o.username, "User "+strconv.FormatInt(n, 10), o.university, o.faculty, course, o.role, *o.adult, o.ageDays).Scan(&id)
 	})
+	if err == nil { // delivery independent of the wall clock: no quiet hours, high daily cap (pkg/notify tests cover both)
+		exec(t, `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 20)`, id)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

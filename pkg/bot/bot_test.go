@@ -27,6 +27,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db/q"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 var (
@@ -851,4 +852,92 @@ func TestPureHelpers(t *testing.T) {
 	eq(t, safeEqual("x", ""), false)
 	eq(t, safeEqual("abc", "abc"), true)
 	eq(t, localDate(time.Date(2026, 10, 28, 19, 30, 0, 0, time.UTC)), "2026-10-29") // UTC+5
+}
+
+// F8: /settings toggles persist in notify_prefs and the daily job follows the switches.
+func TestSettingsTogglesPersist(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	h.say(800, "/settings")
+	var settings *call
+	for _, m := range h.messages(800) {
+		if strings.Contains(textOf(m), "Хабарлама баптаулары") {
+			settings = &m
+		}
+	}
+	if settings == nil {
+		t.Fatal("no settings message")
+	}
+	mustMatch(t, textOf(*settings), `22:00–09:00`)
+	mustMatch(t, textOf(*settings), `Модерация шешімдері`)
+	var data []string
+	for _, b := range flat(keyboard(*settings)) {
+		data = append(data, b["callback_data"].(string))
+	}
+	eq(t, strings.Join(data, ","), "set:deadlines,set:digest,set:events,set:mentors,set:market,set:jobs,set:quiet")
+
+	h.reset()
+	h.press(800, "set:deadlines", nil)
+	h.press(800, "set:quiet", nil)
+	h.press(800, "set:moderation", nil) // not a switch: ignored
+	h.press(800, "set:bogus", nil)
+	u := h.getUser(800)
+	p, err := notify.LoadPrefs(ctx, testPool, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	eq(t, p.Allows(notify.CatDeadlines), false, "deadlines off")
+	eq(t, p.QuietEnabled, false, "quiet off")
+	eq(t, p.Allows(notify.CatEvents), true, "events untouched")
+	var redraw *call
+	for _, c := range h.calls() {
+		if c.Method == "editMessageText" {
+			redraw = &c
+		}
+	}
+	if redraw == nil {
+		t.Fatal("settings message not redrawn")
+	}
+	for _, b := range flat(keyboard(*redraw)) {
+		if b["callback_data"] == "set:deadlines" && !strings.HasPrefix(b["text"].(string), "✗") {
+			t.Fatalf("deadlines button: %v", b["text"])
+		}
+	}
+
+	// the daily job skips deadline reminders while the switch is off
+	h.putReminder(u.ID, "o3", addDays(h.today, 3), "Мүмкіндік o3")
+	h.reset()
+	h.runCron(time.Now())
+	eq(t, len(h.messages(800)), 0, "deadlines off")
+	h.press(800, "set:deadlines", nil)
+	h.reset()
+	h.runCron(time.Now())
+	eq(t, len(h.messages(800)), 1, "deadlines back on")
+	eq(t, h.count("select count(*) from notify_sends where user_id = $1 and category = 'deadlines'", u.ID), 1, "counted for the daily cap")
+
+	// help lists the command in both languages; /stop clears the settings
+	h.reset()
+	h.say(800, "/help")
+	mustMatch(t, textOf(h.messages(800)[0]), `/settings`)
+	mustMatch(t, txt("ru").Help, `/settings — настройки уведомлений`)
+	h.press(800, "stop:yes", nil)
+	eq(t, h.count("select count(*) from notify_prefs where user_id = $1", u.ID), 0, "prefs gone after /stop")
+}
+
+func TestDigestRespectsSwitch(t *testing.T) {
+	h := newHarness(t)
+	h.b.Cfg.Digest = true
+	u := h.user(810, "kk")
+	_ = h.qs().BotSetDigestCity(context.Background(), q.BotSetDigestCityParams{ID: u.ID, DigestCity: pgText("astana")})
+	_ = h.qs().BotSetDigestDirection(context.Background(), q.BotSetDigestDirectionParams{ID: u.ID, DigestDirection: pgText("it")})
+	thu := nextWeekday(4)
+	h.mu.Lock()
+	h.opps = append(h.opps, h.opp("fresh", 30, map[string]any{"posted_at": localDate(thu)}))
+	h.mu.Unlock()
+	h.press(810, "set:digest", nil)
+	h.reset()
+	eq(t, h.runCron(thu).Digests, 0, "digest off")
+	h.press(810, "set:digest", nil)
+	h.reset()
+	eq(t, h.runCron(thu).Digests, 1, "digest on")
 }

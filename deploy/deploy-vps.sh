@@ -32,8 +32,8 @@ ssh $VPS "mv /opt/studenthub/studenthub-api.new /opt/studenthub/studenthub-api &
 ssh $VPS "cd /opt/studenthub && set -a && . ./.env && set +a && ./studenthub-migrate"
 
 sed "s/__HOST__/$HOST/" deploy/studenthub.nginx.conf | ssh $VPS "test -f /etc/nginx/conf.d/studenthub.conf || cat > /etc/nginx/conf.d/studenthub.conf"
-scp -q deploy/studenthub-api.service deploy/studenthub-cron.service deploy/studenthub-cron.timer $VPS:/etc/systemd/system/
-ssh $VPS "systemctl daemon-reload && systemctl enable --now studenthub-api studenthub-cron.timer && systemctl restart studenthub-api && nginx -t && systemctl reload nginx"
+scp -q deploy/studenthub-api.service deploy/studenthub-cron.service deploy/studenthub-cron.timer deploy/studenthub-notify.service deploy/studenthub-notify.timer $VPS:/etc/systemd/system/
+ssh $VPS "systemctl daemon-reload && systemctl enable --now studenthub-api studenthub-cron.timer studenthub-notify.timer && systemctl restart studenthub-api && nginx -t && systemctl reload nginx"
 ssh $VPS "grep -q 'listen 443' /etc/nginx/conf.d/studenthub.conf || certbot --nginx -d $HOST --non-interactive --agree-tos --register-unsafely-without-email --redirect >/dev/null"
 ssh $VPS 'for i in $(seq 1 20); do curl -sf localhost:8110/api/health >/dev/null && echo "api up" && exit 0; sleep 1; done; journalctl -u studenthub-api -n 30 --no-pager; exit 1'
 curl -sf "https://$HOST/api/health" && echo " https ok"

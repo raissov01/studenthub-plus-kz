@@ -125,7 +125,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			text = tr(d.lang, "🎁 Маркеттегі заттарыңның мерзімі 3 күннен кейін бітеді. Ұзарту немесе жабу: "+link,
 				"🎁 Твои объявления в маркете закроются через 3 дня. Продлить или закрыть: "+link)
 		}
-		st, err := notify.Digest(ctx, d.user, now, text)
+		st, err := notify.DigestAs(ctx, d.user, notify.CatMarket, now, text)
 		if err != nil {
 			log.Printf("market cron: remind %d: %v", d.user, err)
 			continue
@@ -193,7 +193,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		for _, u := range users {
 			text := tr(u.lang, "📦 Көшіп жатырсың ба? Керек емес заттарыңды жаңа студенттерге тегін бер: "+link,
 				"📦 Переезжаешь? Отдай ненужные вещи новым студентам бесплатно: "+link)
-			st, err := notify.Digest(ctx, u.id, now, text)
+			st, err := notify.DigestAs(ctx, u.id, notify.CatMarket, now, text)
 			if err != nil {
 				log.Printf("market cron: season %d: %v", u.id, err)
 				continue

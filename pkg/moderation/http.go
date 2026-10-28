@@ -268,8 +268,9 @@ func decide(approve bool) auth.Handler {
 	}
 }
 
-// Notify is the sender; tests replace it.
-var Notify = notify.Direct
+// Notify is the sender; tests replace it. Decisions about the author's own submission and
+// report alerts to admins are transactional: always sent, immediately.
+var Notify = notify.For(notify.CatModeration)
 
 func notifyAuthor(ctx context.Context, s Submission, approved bool) error {
 	lang := "kk"

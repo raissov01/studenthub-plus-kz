@@ -43,8 +43,8 @@ var ManagerRoles = []string{"ambassador", "university_staff"}
 // (or add a policy) for mentor-created rows as well.
 var ExtraManager func(ctx context.Context, u *auth.User, ev *Event) bool
 
-// Notify is the direct-message sender; tests replace it.
-var Notify = notify.Direct
+// Notify is the sender (category "events": switchable, quiet hours, daily cap); tests replace it.
+var Notify = notify.For(notify.CatEvents)
 
 // Now is the clock; tests replace it.
 var Now = time.Now

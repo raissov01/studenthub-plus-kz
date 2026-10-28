@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 var months = map[string][]string{
@@ -117,6 +119,11 @@ type texts struct {
 	DigestDeadline                                    func(date string) string
 	DigestFoot                                        string
 	RemindSaved                                       func(title, date string) string
+	// /settings (F8): category switches and quiet hours
+	SettingsHead  func(quietOn bool, start, end string, dailyCap int) string
+	CatLabel      map[notify.Category]string
+	BtnQuiet      func(on bool, start, end string) string
+	SettingsSaved string
 }
 
 var allTexts = map[string]*texts{
@@ -181,7 +188,7 @@ var allTexts = map[string]*texts{
 		StopNo:     "Жоқ, қалсын",
 		StopDone:   "Барлық деректерің өшірілді. Қайта керек болсаң, /start жаз.",
 		StopCancel: "Жарайды, ештеңе өшірілген жоқ.",
-		Help:       "Мен сайтта сақтаған мүмкіндіктеріңнің мерзімін еске саламын: 7, 3 және 1 күн қалғанда, күніне ең көбі бір хабарлама.\n\n/my — сақталған тізім\n/pause — 7 күнге кідірту\n/resume — қайта қосу\n/stop — барлық деректерді өшіру\n/help — анықтама",
+		Help:       "Мен сайтта сақтаған мүмкіндіктеріңнің мерзімін еске саламын: 7, 3 және 1 күн қалғанда, күніне ең көбі бір хабарлама.\n\n/my — сақталған тізім\n/pause — 7 күнге кідірту\n/resume — қайта қосу\n/settings — хабарлама баптаулары\n/stop — барлық деректерді өшіру\n/help — анықтама",
 		Stats: func(s statsData) string {
 			return fmt.Sprintf("Студенттер: %d (белсенді: %d)\nБелсенді еске салулар: %d\nСоңғы 7 күнде «Тапсырдым»: %d", s.Users, s.Active, s.Reminders, s.Submitted)
 		},
@@ -194,6 +201,25 @@ var allTexts = map[string]*texts{
 		RemindSaved: func(title, date string) string {
 			return fmt.Sprintf("«%s» сақталды, мерзімі — %s.", title, date)
 		},
+		SettingsHead: func(quietOn bool, start, end string, dailyCap int) string {
+			quiet := "өшірулі"
+			if quietOn {
+				quiet = start + "–" + end + " (Астана уақыты)"
+			}
+			return fmt.Sprintf("<b>Хабарлама баптаулары</b>\n\nҚайсысын алғың келетінін таңда — батырманы басу қосады не өшіреді.\n\nТыныш уақыт: %s. Бұл уақытта хабарлама жібермеймін, кейінге қалдырамын.\nКүніне ең көбі: %d хабарлама.\nМодерация шешімдері (өз өтінімдерің туралы) әрқашан келеді.", quiet, dailyCap)
+		},
+		CatLabel: map[notify.Category]string{
+			notify.CatDeadlines: "Мерзім еске салулары", notify.CatDigest: "Апталық топтама",
+			notify.CatEvents: "Іс-шаралар", notify.CatMentors: "Менторлар",
+			notify.CatMarket: "Маркет", notify.CatJobs: "Жұмыс ұсыныстары",
+		},
+		BtnQuiet: func(on bool, start, end string) string {
+			if on {
+				return "Тыныш уақыт: " + start + "–" + end
+			}
+			return "Тыныш уақыт: өшірулі"
+		},
+		SettingsSaved: "Сақталды.",
 	},
 	"ru": {
 		NoMoney:   "Бот никогда не просит денег. Если кто-то просит деньги от имени Student Hub — сообщите нам.",
@@ -256,7 +282,7 @@ var allTexts = map[string]*texts{
 		StopNo:     "Нет, оставить",
 		StopDone:   "Все ваши данные удалены. Если понадоблюсь — напишите /start.",
 		StopCancel: "Хорошо, ничего не удалено.",
-		Help:       "Я напоминаю о дедлайнах возможностей, сохранённых на сайте: за 7, 3 и 1 день, не больше одного сообщения в день.\n\n/my — сохранённый список\n/pause — пауза на 7 дней\n/resume — включить снова\n/stop — удалить все данные\n/help — справка",
+		Help:       "Я напоминаю о дедлайнах возможностей, сохранённых на сайте: за 7, 3 и 1 день, не больше одного сообщения в день.\n\n/my — сохранённый список\n/pause — пауза на 7 дней\n/resume — включить снова\n/settings — настройки уведомлений\n/stop — удалить все данные\n/help — справка",
 		Stats: func(s statsData) string {
 			return fmt.Sprintf("Студенты: %d (активные: %d)\nАктивные напоминания: %d\n«Подал(а)» за 7 дней: %d", s.Users, s.Active, s.Reminders, s.Submitted)
 		},
@@ -269,6 +295,25 @@ var allTexts = map[string]*texts{
 		RemindSaved: func(title, date string) string {
 			return fmt.Sprintf("«%s» сохранено, дедлайн — %s.", title, date)
 		},
+		SettingsHead: func(quietOn bool, start, end string, dailyCap int) string {
+			quiet := "выключены"
+			if quietOn {
+				quiet = start + "–" + end + " (время Астаны)"
+			}
+			return fmt.Sprintf("<b>Настройки уведомлений</b>\n\nВыберите, что хотите получать — нажатие на кнопку включает или выключает.\n\nТихие часы: %s. В это время сообщения не приходят, я отложу их.\nНе больше %d сообщений в день.\nРешения модерации (о ваших заявках) приходят всегда.", quiet, dailyCap)
+		},
+		CatLabel: map[notify.Category]string{
+			notify.CatDeadlines: "Напоминания о дедлайнах", notify.CatDigest: "Подборка недели",
+			notify.CatEvents: "Мероприятия", notify.CatMentors: "Менторы",
+			notify.CatMarket: "Маркет", notify.CatJobs: "Вакансии",
+		},
+		BtnQuiet: func(on bool, start, end string) string {
+			if on {
+				return "Тихие часы: " + start + "–" + end
+			}
+			return "Тихие часы: выкл"
+		},
+		SettingsSaved: "Сохранено.",
 	},
 }
 

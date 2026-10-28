@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db/q"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 // Update is the subset of a Telegram update the bot reads.
@@ -188,6 +190,8 @@ func (s *session) onMessage(ctx context.Context, msg *Message) error {
 			return s.send(ctx, L.Resumed, nil)
 		}
 		return s.send(ctx, L.NotPaused, nil)
+	case "settings":
+		return s.sendSettings(ctx, nil)
 	case "stop":
 		return s.send(ctx, L.StopAsk, [][]Button{{{Text: L.StopYes, CallbackData: "stop:yes"}, {Text: L.StopNo, CallbackData: "stop:no"}}})
 	case "stats":
@@ -496,6 +500,15 @@ func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 			return s.b.edit(ctx, msg.Chat.ID, msg.MessageID, L.DigestSaved, nil)
 		}
 		return s.send(ctx, L.DigestSaved, nil)
+	case "set":
+		if err := s.toggleSetting(ctx, value); err != nil {
+			if errors.Is(err, errUnknownSetting) {
+				return answer("", false)
+			}
+			return err
+		}
+		_ = answer(L.SettingsSaved, false)
+		return s.sendSettings(ctx, msg)
 	case "rem":
 		r, err := s.saveReminder(ctx, value, true)
 		if err != nil {
@@ -522,6 +535,60 @@ func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 	}
 }
 
+var errUnknownSetting = errors.New("bot: unknown setting")
+
+// settingsView is the /settings text and its toggle keyboard.
+func (s *session) settingsView(p notify.Prefs) (string, [][]Button) {
+	L := s.L()
+	start, end := notify.Clock(p.QuietStart), notify.Clock(p.QuietEnd)
+	var kb [][]Button
+	for _, c := range notify.Categories {
+		mark := "✓ "
+		if !p.Allows(c) {
+			mark = "✗ "
+		}
+		kb = append(kb, []Button{{Text: mark + L.CatLabel[c], CallbackData: "set:" + string(c)}})
+	}
+	qmark := "✓ "
+	if !p.QuietEnabled {
+		qmark = "✗ "
+	}
+	kb = append(kb, []Button{{Text: qmark + L.BtnQuiet(p.QuietEnabled, start, end), CallbackData: "set:quiet"}})
+	return L.SettingsHead(p.QuietEnabled, start, end, p.DailyCap), kb
+}
+
+// sendSettings shows the settings; with msg it redraws that message in place.
+func (s *session) sendSettings(ctx context.Context, msg *Message) error {
+	p, err := notify.LoadPrefs(ctx, s.b.Pool, s.user.ID)
+	if err != nil {
+		return err
+	}
+	text, kb := s.settingsView(p)
+	if msg != nil {
+		return s.b.edit(ctx, msg.Chat.ID, msg.MessageID, text, kb)
+	}
+	return s.send(ctx, text, kb)
+}
+
+// toggleSetting flips one category switch ("deadlines", ...) or quiet hours ("quiet").
+func (s *session) toggleSetting(ctx context.Context, key string) error {
+	p, err := notify.LoadPrefs(ctx, s.b.Pool, s.user.ID)
+	if err != nil {
+		return err
+	}
+	if key == "quiet" {
+		p.QuietEnabled = !p.QuietEnabled
+	} else if c := notify.Category(key); slices.Contains(notify.Categories, c) {
+		p.On[c] = !p.Allows(c)
+	} else {
+		return errUnknownSetting
+	}
+	if err := notify.SavePrefs(ctx, s.b.Pool, s.user.ID, p); err != nil {
+		return err
+	}
+	return notify.Reschedule(ctx, s.b.Pool, s.user.ID)
+}
+
 // DeleteUserData is /stop: reminders, day claims and the bot state go for real. A user
 // known only to the bot is deleted entirely; a site account keeps its row (the account
 // deletion flow owns that) with every bot column cleared. Events lose the user link.
@@ -533,6 +600,12 @@ func (b *Bot) DeleteUserData(ctx context.Context, userID int64) error {
 		}
 		if err := qs.BotDeleteUserSends(ctx, userID); err != nil {
 			return err
+		}
+		// notification settings and held-back messages are bot state too (F8)
+		for _, table := range []string{"notify_prefs", "notify_outbox", "notify_sends"} {
+			if _, err := t.Exec(ctx, "delete from "+table+" where user_id = $1", userID); err != nil {
+				return err
+			}
 		}
 		if err := qs.BotAnonymizeEvents(ctx, pgInt8(userID)); err != nil {
 			return err

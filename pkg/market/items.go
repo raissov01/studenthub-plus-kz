@@ -806,7 +806,7 @@ func tellOwner(ctx context.Context, owner int64, kk, ru string) {
 	if lang == "ru" {
 		text = ru
 	}
-	if err := notify.Direct(ctx, owner, text); err != nil {
+	if _, err := notify.Send(ctx, owner, notify.CatModeration, text, notify.Opts{}); err != nil {
 		log.Printf("market: notify %d: %v", owner, err)
 	}
 }
@@ -825,7 +825,7 @@ func notifyAdmins(ctx context.Context, text string) {
 		return
 	}
 	for _, id := range ids {
-		if err := notify.Direct(ctx, id, text); err != nil {
+		if _, err := notify.Send(ctx, id, notify.CatModeration, text, notify.Opts{}); err != nil {
 			log.Printf("market: notify admin %d: %v", id, err)
 		}
 	}
