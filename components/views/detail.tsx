@@ -174,8 +174,8 @@ export function OppBody({ o }: { o: Opportunity }) {
         </div>
         {showCheck ? (
           <>
-            <div>{q.res.map((r, i) => <div key={i} className="res"><span className={`dot ${r.ok ? (r.mid ? 'mid' : 'ok') : 'no'}`}>{r.ok ? '✓' : '✕'}</span><div className="row-main"><span className="row-title">{r.t}</span><span className="row-sub">{r.you}</span></div></div>)}</div>
-            <p className="small"><b>{q.ok ? tt('Негізгі талаптарға сәйкес келесіз.', 'Вы соответствуете основным требованиям.') : tt('Кейбір талаптар әзірге орындалмаған.', 'Некоторые требования пока не выполнены.')}</b></p>
+            <div>{q.res.map((r, i) => <div key={i} className="res"><span className={`dot ${r.mid ? 'mid' : r.ok ? 'ok' : 'no'}`}>{r.mid && !r.ok ? '?' : r.ok ? '✓' : '✕'}</span><div className="row-main"><span className="row-title">{r.t}</span><span className="row-sub">{r.you}</span></div></div>)}</div>
+            <p className="small"><b>{q.ok ? tt('Негізгі талаптарға сәйкес келесіз.', 'Вы соответствуете основным требованиям.') : tt('Кейбір талаптарды нақтылау қажет.', 'Некоторые требования нужно уточнить.')}</b></p>
             <p className="tiny muted">{tt('Бұл алдын ала бағалау. Соңғы шешімді бағдарлама ұйымдастырушысы қабылдайды.', 'Это предварительная оценка. Окончательное решение принимает организатор программы.')}</p>
             {!q.ok ? <button className="btn ghost" type="button" onClick={() => go('edit')}><Icon n="edit" s={18} /> {tt('Профильді жаңарту', 'Обновить профиль')}</button> : null}
           </>

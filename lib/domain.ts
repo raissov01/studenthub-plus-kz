@@ -24,6 +24,14 @@ export function payText(j: Job, I: I18n) {
   if (j.per === 'hour') return { main: money(j.pay), sub: tt('сағатына', 'в час') };
   return { main: money(j.pay), sub: tt(`ауысымға · ${j.hours} сағ`, `за смену · ${j.hours} ч`) };
 }
+/** Prefer the publisher's instructions, then an actual contact method; never invent one. */
+export function jobApplyText(j: Job, I: I18n): string {
+  if (j.apply && I.L(j.apply).trim()) return I.L(j.apply);
+  if (j.contact.email) return I.tt('Email арқылы: ', 'По email: ') + j.contact.email;
+  if (j.contact.phone) return I.tt('Телефон арқылы: ', 'По телефону: ') + j.contact.phone;
+  if (j.contact.site) return I.tt('Сайт арқылы: ', 'На сайте: ') + j.contact.site;
+  return I.tt('Өтінім әдісі көрсетілмеген', 'Способ отклика не указан');
+}
 export const typeLabel = (t: string, I: I18n) => I.tp(OPP_TYPES[t]);
 /** search category: grants/contests and academic mobility are their own groups, the rest are internships */
 export const oppKind = (o: Opportunity) => (o.type === 'grant' ? 'grant' : o.type === 'mobility' ? 'mobility' : 'intern');
@@ -45,7 +53,7 @@ export function qualify(o: Opportunity, p: Profile, I: I18n) {
   const r = o.req, res: QualRow[] = [];
   // a record without a course requirement (admin editor, student suggestions) has no course row
   if (r.course) res.push({ ok: p.course >= r.course, t: tt(`Курс: кемінде ${r.course}`, `Курс: не ниже ${r.course}`), you: tt(`Сізде: ${p.course}-курс`, `У вас: ${p.course} курс`) });
-  if (r.gpa) res.push({ ok: p.gpa >= r.gpa, t: `GPA ≥ ${r.gpa.toFixed(2)}`, you: tt(`Сізде: ${p.gpa.toFixed(2)}`, `У вас: ${p.gpa.toFixed(2)}`) });
+  if (r.gpa) res.push({ ok: p.gpa != null && p.gpa >= r.gpa, mid: p.gpa == null, t: `GPA ≥ ${r.gpa.toFixed(2)}`, you: p.gpa == null ? tt('GPA көрсетілмеген (міндетті емес)', 'GPA не указан (необязательно)') : tt(`Сізде: ${p.gpa.toFixed(2)}`, `У вас: ${p.gpa.toFixed(2)}`) });
   if (r.en) res.push({ ok: lvl(p.en) >= lvl(r.en), t: tt(`Ағылшын тілі: ${r.en} және жоғары`, `Английский: ${r.en} и выше`), you: tt(`Сізде: ${p.en}`, `У вас: ${p.en}`) });
   (r.skills || []).forEach(k => res.push({ ok: p.skills.includes(k), t: tt('Дағды: ', 'Навык: ') + L(SKILLS[k]), you: p.skills.includes(k) ? tt('Профильде бар', 'Есть в профиле') : tt('Профильде жоқ', 'Нет в профиле') }));
   if (!o.spec.includes('all')) res.push({ ok: o.spec.includes(p.spec), t: tt('Мамандық: ', 'Специальность: ') + o.spec.map(s => L(SPECS[s])).join(', '), you: tt('Сізде: ', 'У вас: ') + L(SPECS[p.spec]) });
@@ -151,7 +159,7 @@ export function resumeText(lang: 'kk' | 'ru' | 'en', S: AppState, I: I18n) {
   const certs = certificates(S, I).map(c => `• ${c.title} — ${c.org}, ${c.date.getFullYear()}`);
   const acts = EVENTS.filter(e => e.past && S.events[e.id]).map(e => `• ${l(e.title)}, ${dOff(e.day).getFullYear()}`);
   const exp = (p.exp || '').split('\n').map(s => s.trim()).filter(Boolean).map(s => '• ' + s);
-  const gpaLine = `GPA: ${p.gpa.toFixed(2)} / 4.0`;
+  const gpaLine = p.gpa == null ? '' : `GPA: ${p.gpa.toFixed(2)} / 4.0`;
   const grad = { kk: `бітіру жылы: ${gradYear(p)}`, ru: `год выпуска: ${gradYear(p)}`, en: `expected graduation: ${gradYear(p)}` }[lang];
   const out = [p.name.toUpperCase(), headline, contacts, '', H[0], about, '', H[1], `${uni}`, `${spec} · ${grad}`, gpaLine];
   if (exp.length) out.push('', H[2], ...exp);
@@ -164,7 +172,7 @@ export function resumeText(lang: 'kk' | 'ru' | 'en', S: AppState, I: I18n) {
 
 export function profileFill(S: AppState, I: I18n) {
   const p = S.profile;
-  const checks = [!!p.name, !!p.phone, !!p.email, !!(p.about || '').trim(), !!(p.exp || '').trim(), p.skills.length >= 3, p.credits > 0, certificates(S, I).length > 0, !p.demo, !!p.en];
+  const checks = [!!p.name, !!p.email, !!(p.about || '').trim(), !!(p.exp || '').trim(), p.skills.length >= 3, p.credits > 0, certificates(S, I).length > 0, !p.demo, !!p.en];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);
 }
 
@@ -207,13 +215,13 @@ export function notifs(S: AppState, I: I18n, C: Content): Notif[] {
 export const unreadCount = (S: AppState, I: I18n, C: Content) => notifs(S, I, C).filter(n => !S.read[n.id]).length;
 
 /* ---------- one list for jobs, internships and deals ---------- */
-export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean; noFav?: boolean }
+export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean; noFav?: boolean; detail?: string; truncateDetail?: boolean }
 export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
   const { tt, L } = I;
   const items: SearchItem[] = [];
   C.jobs.forEach((j, i) => items.push({
     k: 'jobs', id: j.id, go: 'job:' + j.id, org: L(j.org), title: L(j.title), meta: `${L(CITIES[j.city])} · ${tt('Жұмыс', 'Работа')}`,
-    badge: j.today ? [tt('Бүгін', 'Сегодня'), 'new'] : i < 6 ? [tt('Жаңа', 'Новое'), 'new'] : null, fav: !!S.fav[j.id], demo: j.is_demo,
+    badge: j.today ? [tt('Бүгін', 'Сегодня'), 'new'] : i < 6 ? [tt('Жаңа', 'Новое'), 'new'] : null, fav: !!S.fav[j.id], demo: j.is_demo, detail: tt('Өтінім: ', 'Отклик: ') + jobApplyText(j, I),
   }));
   openOpps(C.opportunities).forEach(o => {
     const left = oppLeft(o);
@@ -222,6 +230,6 @@ export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
       badge: left <= 14 ? [I.daysLeftTxt(left), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null, fav: !!S.saved[o.id], demo: o.is_demo,
     });
   });
-  C.discounts.forEach(d => items.push({ k: 'deals', id: d.id, act: 'deal', org: L(d.name), title: L(d.what), meta: L(DEAL_CATS[d.cat]), badge: [d.pct, 'deal'], fav: !!S.fav[d.id], demo: d.is_demo }));
+  C.discounts.forEach(d => items.push({ k: 'deals', id: d.id, act: 'deal', org: L(d.name), title: L(d.what), meta: L(DEAL_CATS[d.cat]), badge: [d.pct, 'deal'], fav: !!S.fav[d.id], demo: d.is_demo, detail: tt('Шарт: ', 'Условие: ') + L(d.cond), truncateDetail: true }));
   return items;
 }

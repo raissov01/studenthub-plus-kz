@@ -22,6 +22,7 @@ export interface Provenance {
   city: string;
 }
 export interface Job extends Provenance {
+  apply?: LText;
   id: string;
   today?: boolean;
   title: LText;
@@ -137,7 +138,7 @@ export interface Profile {
   name: string;
   spec: string;
   course: number;
-  gpa: number;
+  gpa: number | null;
   credits: number;
   en: string;
   city: string;
@@ -160,6 +161,8 @@ export interface AppState {
   theme: 'light' | 'dark' | string;
   noteSeen: boolean;
   profile: Profile;
+  /** Absent until the student explicitly changes the no-experience filter. */
+  jobNoExperience?: boolean;
   applied: Record<string, number>;
   saved: Record<string, number>;
   oppDocs: Record<string, Record<string, boolean>>;

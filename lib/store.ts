@@ -107,7 +107,10 @@ const uiListeners = new Set<() => void>();
 const subscribeUi = (l: () => void) => { uiListeners.add(l); return () => { uiListeners.delete(l); }; };
 export const getUi = () => ui;
 export function setUi(patch: Partial<UiState> | ((u: UiState) => Partial<UiState>)) {
-  const p = typeof patch === 'function' ? patch(ui) : patch;
+  // Give functional updates the effective default, not the empty transient flags.
+  const current = { ...ui, jf: { ...ui.jf, noexp: getState().jobNoExperience ?? [1, 2].includes(getState().profile.course) } };
+  const p = typeof patch === 'function' ? patch(current) : patch;
+  if (p.jf) update(s => { s.jobNoExperience = !!p.jf!.noexp; });
   ui = { ...ui, ...p };
   uiListeners.forEach(l => l());
 }

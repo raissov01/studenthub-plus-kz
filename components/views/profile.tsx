@@ -7,6 +7,7 @@ import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
 import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
 import { dOff, money } from '@/lib/format';
+import { demoProfile } from '@/lib/defaults';
 import { getState, resetState, update } from '@/lib/store';
 import { track } from '@/features/analytics/track';
 import { useTelegram } from '@/lib/telegram';
@@ -32,12 +33,12 @@ function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean 
           {Object.entries(SPECS).map(([k, s]) => <option key={k} value={k}>{L(s)}</option>)}
         </select></div>
       <div className="grid-2">
-        <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" defaultValue={String(p.course)}>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
-        <div className="field"><label htmlFor="fGpa">GPA (0–4)</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue={blank ? '' : String(p.gpa)} placeholder={tt('мысалы, 3.2', 'например, 3.2')} required={blank} /></div>
+        <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" required defaultValue={p.course ? String(p.course) : ''}><option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
+        <div className="field"><label htmlFor="fGpa">{tt("GPA (0–4, міндетті емес)", "GPA (0–4, необязательно)")}</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue={blank || p.gpa == null ? '' : String(p.gpa)} placeholder={tt('мысалы, 3.2', 'например, 3.2')} /></div>
       </div>
       <div className="grid-2">
-        <div className="field"><label htmlFor="fEn">{tt('Ағылшын деңгейі', 'Уровень английского')}</label><select className="input" id="fEn" defaultValue={p.en}>{LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
-        <div className="field"><label htmlFor="fCity">{tt('Қала', 'Город')}</label><select className="input" id="fCity" defaultValue={p.city}>{HOME_CITIES.map(c => <option key={c} value={c}>{L(CITIES[c])}</option>)}</select></div>
+        <div className="field"><label htmlFor="fEn">{tt('Ағылшын деңгейі', 'Уровень английского')}</label><select className="input" id="fEn" defaultValue={p.en}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
+        <div className="field"><label htmlFor="fCity">{tt('Қала', 'Город')}</label><select className="input" id="fCity" defaultValue={p.city}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{HOME_CITIES.map(c => <option key={c} value={c}>{L(CITIES[c])}</option>)}</select></div>
       </div>
       {compact ? null : (
         <>
@@ -50,7 +51,7 @@ function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean 
           <div className="field"><label htmlFor="fExp">{tt('Тәжірибе (әр жолға бір)', 'Опыт (по одному на строку)')}</label><textarea className="input" id="fExp" defaultValue={p.exp}></textarea></div>
           <div className="field"><label htmlFor="fAbout">{tt('Өзім туралы (түйіндеме үшін)', 'О себе (для резюме)')}</label><textarea className="input" id="fAbout" placeholder={tt('Бос қалса, үлгі мәтін қойылады', 'Если оставить пустым, подставим пример')} defaultValue={p.about}></textarea></div>
           <div className="grid-2">
-            <div className="field"><label htmlFor="fPhone">{tt('Телефон', 'Телефон')}</label><input className="input" id="fPhone" type="tel" defaultValue={p.phone} placeholder="+7 7__ ___ __ __" /></div>
+            <div className="field"><label htmlFor="fPhone">{tt('Телефон (міндетті емес)', 'Телефон (необязательно)')}</label><input className="input" id="fPhone" type="tel" defaultValue={p.phone} placeholder="+7 7__ ___ __ __" /></div>
             <div className="field"><label htmlFor="fEmail">Email</label><input className="input" id="fEmail" type="email" defaultValue={p.email} /></div>
           </div>
         </>
@@ -69,9 +70,9 @@ function readProfileForm(root: HTMLElement, keepDemo = false) {
     p.spec = v('fSpec') || p.spec;
     p.course = parseInt(v('fCourse') || '', 10) || p.course;
     const g = parseFloat(String(v('fGpa')).replace(',', '.'));
-    if (!isNaN(g)) p.gpa = Math.max(0, Math.min(4, g));
-    p.en = v('fEn') || p.en;
-    p.city = v('fCity') || p.city;
+    p.gpa = Number.isFinite(g) ? Math.max(0, Math.min(4, g)) : null;
+    p.en = v('fEn') || '';
+    p.city = v('fCity') || '';
     const sk = root.querySelector('#fSkills');
     if (sk) p.skills = [...sk.querySelectorAll<HTMLElement>('[aria-pressed="true"]')].map(b => b.dataset.skill || '').filter(Boolean);
     if (has('fCredits')) p.credits = Math.max(0, parseInt(v('fCredits') || '', 10) || 0);
@@ -108,7 +109,7 @@ export function Onboarding() {
       }}>
         <ProfileFields compact blank />
         <button className="btn" type="submit">{tt('Бастау', 'Начать')}</button>
-        <button className="btn ghost" type="button" id="obDemo" onClick={() => { update(s => { s.onboarded = true; }); closeSheet(); }}>{tt('Үлгі профильмен қарау', 'Посмотреть с примером профиля')}</button>
+        <button className="btn ghost" type="button" id="obDemo" onClick={() => { update(s => { s.profile = demoProfile(s.lang); s.onboarded = true; }); closeSheet(); }}>{tt('Үлгі профильмен қарау', 'Посмотреть с примером профиля')}</button>
       </form>
     </>
   );
@@ -146,13 +147,13 @@ export function Profile() {
         </label>
         <h1>{p.name}</h1>
         <p className="muted">{tt('Студент · Сейфуллин университеті', 'Студент · Университет им. С. Сейфуллина')}</p>
-        <p className="muted small">{L(SPECS[p.spec])}, {tt(`${p.course}-курс`, `${p.course} курс`)}, GPA {p.gpa.toFixed(2)}</p>
+        <p className="muted small">{L(SPECS[p.spec])}, {tt(`${p.course}-курс`, `${p.course} курс`)}, GPA {(p.gpa == null ? tt('көрсетілмеген', 'не указан') : p.gpa.toFixed(2))}</p>
         {S.photo ? <button className="link-btn" type="button" onClick={() => { update(s => { delete s.photo; }); toast(tt('Сурет өшірілді', 'Фото удалено')); }}>{tt('Суретті өшіру', 'Удалить фото')}</button> : null}
       </section>
       <button className="card fill" type="button" onClick={() => go('edit')}>
         <span className="fill-head"><span className="row-title">{tt('Профиль толықтығы', 'Заполненность профиля')}</span><b className="num">{fill}%</b></span>
         <span className="meter" role="progressbar" aria-valuenow={fill} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${fill}%` }}></i></span>
-        {fill < 100 ? <span className="row-sub">{tt('Телефон, тәжірибе мен өзіңіз туралы толтырсаңыз, түйіндеме мен іріктеме дәлірек болады.', 'Заполните телефон, опыт и «о себе», чтобы резюме и подборка были точнее.')}</span> : null}
+        {fill < 100 ? <span className="row-sub">{tt('Тәжірибе мен өзіңіз туралы толтырсаңыз, түйіндеме мен іріктеме дәлірек болады.', 'Заполните опыт и «о себе», чтобы резюме и подборка были точнее.')}</span> : null}
       </button>
       <RoadmapProgress />
       {p.demo ? <Note>{tt('Бұл — үлгі профиль. Өз деректеріңізді енгізіңіз.', 'Это пример профиля. Укажите свои данные.')}</Note> : null}
@@ -193,15 +194,15 @@ export function StudentCardHero() {
 export function BonusTiers() {
   const { S, tt, tp, go } = useApp();
   const p = S.profile;
-  const tier = TIERS.find(t => p.gpa >= t.min);
-  const next = TIERS.slice().reverse().find(t => p.gpa < t.min);
+  const tier = TIERS.find(t => p.gpa != null && p.gpa >= t.min);
+  const next = TIERS.slice().reverse().find(t => p.gpa != null && p.gpa < t.min);
   return (
     <section className="section">
       <h2>{tt('Үздік оқығаны үшін бонус', 'Бонусы за успеваемость')}</h2>
       <div className="card">
         <div className="card-row" style={{ alignItems: 'center' }}><span className={`ico ${tier ? 'sun' : ''}`}><Icon n="award" /></span>
           <div className="row-main"><span className="row-title">{tier ? tp(tier.name) : tt('Деңгей әзірге жоқ', 'Уровня пока нет')}</span>
-            <span className="row-sub">GPA {p.gpa.toFixed(2)}{next ? ' · ' + tt(`${tp(next.name)} үшін ${next.min.toFixed(2)} керек`, `для уровня «${tp(next.name)}» нужно ${next.min.toFixed(2)}`) : ''}</span></div></div>
+            <span className="row-sub">GPA {(p.gpa == null ? tt('көрсетілмеген', 'не указан') : p.gpa.toFixed(2))}{next ? ' · ' + tt(`${tp(next.name)} үшін ${next.min.toFixed(2)} керек`, `для уровня «${tp(next.name)}» нужно ${next.min.toFixed(2)}`) : ''}</span></div></div>
         {tier ? <ul className="bullets">{tier.perks.map((x, i) => <li key={i}>{tp(x)}</li>)}</ul> : null}
         <p className="tiny muted">{tt('Жоғары баға өздігінен жеңілдік бермейді: ереже мен қаржыландыру университетпен және серіктестермен келісіледі.', 'Высокие оценки сами по себе не дают права на скидку: правила и финансирование согласуются с университетом и партнёрами.')}</p>
         <button className="btn ghost" type="button" onClick={() => go('gpa')}><Icon n="chart" s={18} /> {tt('GPA калькуляторы', 'Калькулятор GPA')}</button>
@@ -217,10 +218,10 @@ export function Gpa() {
   const plan = S.gpaPlan;
   const addCr = plan.reduce((s, x) => s + (+x.cr || 0), 0);
   const addPts = plan.reduce((s, x) => s + (+x.cr || 0) * pts(x.g), 0);
-  const proj = (p.gpa * p.credits + addPts) / Math.max(1, p.credits + addCr);
+  const proj = ((p.gpa ?? 0) * p.credits + addPts) / Math.max(1, p.credits + addCr);
   const risk = plan.filter(x => pts(x.g) < 2.67);
   const target = ui.target || 3.5, nextCr = ui.nextCr || 60;
-  const need = (target * (p.credits + nextCr) - p.gpa * p.credits) / nextCr;
+  const need = (target * (p.credits + nextCr) - (p.gpa ?? 0) * p.credits) / nextCr;
   const needLetter = need <= 4 ? (GRADES.slice().reverse().find(x => x[1] >= need - 1e-9) || GRADES[0])[0] : null;
   // inputs keep what the student types; the numbers recompute when the field is committed (legacy: on change)
   const [draft, setDraft] = useState<{ target: string; next: string }>({ target: String(target), next: String(nextCr) });
@@ -234,8 +235,8 @@ export function Gpa() {
     <>
       <div className="card">
         <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div><span className="eyebrow">{tt('Ағымдағы GPA', 'Текущий GPA')}</span><div className="big-num">{p.gpa.toFixed(2)}</div></div>
-          <div style={{ textAlign: 'right' }}><span className="eyebrow">{tt('Сессиядан кейін', 'После сессии')}</span><div className="big-num" style={{ color: 'var(--sky)' }}>{proj.toFixed(2)}</div></div>
+          <div><span className="eyebrow">{tt('Ағымдағы GPA', 'Текущий GPA')}</span><div className="big-num">{p.gpa == null ? '—' : p.gpa.toFixed(2)}</div></div>
+          <div style={{ textAlign: 'right' }}><span className="eyebrow">{tt('Сессиядан кейін', 'После сессии')}</span><div className="big-num" style={{ color: 'var(--sky)' }}>{p.gpa == null ? '—' : proj.toFixed(2)}</div></div>
         </div>
         <span className="tiny muted num">{p.credits} {tt('кредит жиналды', 'кредитов набрано')} · {tt('4.0 шкаласы', 'шкала 4.0')}</span>
       </div>
@@ -268,7 +269,7 @@ export function Gpa() {
               onChange={e => setDraft(d => ({ ...d, next: e.target.value }))}
               onBlur={e => { const v = parseInt(e.target.value, 10); if (v > 0) setUi({ nextCr: v }); }} /></div>
         </div>
-        <p>{need <= 0 ? tt('Мақсатқа жеттіңіз — қазіргі деңгейді сақтаңыз.', 'Цель уже достигнута — держите уровень.')
+        <p>{p.gpa == null ? tt('Болжамды есептеу үшін GPA-ды профильде көрсетуге болады. Бұл міндетті емес.', 'Для расчёта прогноза можно указать GPA в профиле. Это необязательно.') : need <= 0 ? tt('Мақсатқа жеттіңіз — қазіргі деңгейді сақтаңыз.', 'Цель уже достигнута — держите уровень.')
           : need > 4 ? tt(`${nextCr} кредитте ${target.toFixed(2)}-ге жету мүмкін емес. Кредит санын көбейтіп көріңіз.`, `За ${nextCr} кредитов достичь ${target.toFixed(2)} невозможно. Попробуйте больше кредитов.`)
             : <>{tt(`Алдағы ${nextCr} кредитте орташа `, `В следующих ${nextCr} кредитах нужен средний балл `)}<b className="num">{need.toFixed(2)}</b>{tt(' алу керек — шамамен ', ' — примерно ')}<b>{needLetter}</b>{tt(' және жоғары.', ' и выше.')}</>}</p>
       </section>

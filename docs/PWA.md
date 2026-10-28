@@ -58,7 +58,7 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 - Бет кілті — тек жол (`/search?k=jobs` → `/search`), `/index.html` емес, `/`.
 - Тек `200`, сол origin, redirect емес, `text/html` жауап сақталады.
 - `Cache-Control: no-store` бет сақталмайды. Ерекшелік — сұраныс сайын рендерленетін, бірақ ішінде жеке дерек жоқ
-  қабық беттер: `/event/`, `/job/`, `/opportunity/`, `/market/`, `/organize/`, `/plan/`, `/deck/`, `/match/`,
+  қабық беттер: жоғарыдағы `SHELL_PAGES` нақты жолдары және `/event/`, `/job/`, `/opportunity/`, `/market/`, `/organize/`, `/plan/`, `/deck/`, `/match/`,
   `/certificate/`, `/employer/` (экран деректі клиентте жүктейді). Жаңа динамикалық бетке жеке дерек
   серверде қосылса — оны `SHELL_DYNAMIC` тізіміне ҚОСПА.
 - Авторизация жауаптары `/api/auth/*`, `/api/me` — `/api` астында, сондықтан ешқашан кэштелмейді.

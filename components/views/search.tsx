@@ -248,7 +248,7 @@ function CoursesResults() {
 
 /** a discount tile of the list (opens its sheet); also the admin editor's preview */
 export function DealCard({ d }: { d: Discount }) {
-  const { L, openSheet } = useApp();
+  const { L, tt, openSheet } = useApp();
   return (
     <div className="fav-card">
       <button className="card" type="button" onClick={() => openSheet(<DealSheet id={d.id} />)}>
@@ -256,6 +256,7 @@ export function DealCard({ d }: { d: Discount }) {
         <span className="deal-pct">{d.pct}</span>
         <span className="row-title">{L(d.name)}</span>
         <span className="row-sub">{L(d.what)}</span>
+        <span className="row-sub card-detail card-detail-truncate" title={L(d.cond)}>{tt("Шарт: ", "Условие: ")}{L(d.cond)}</span>
       </button>
       <Heart id={d.id} opp={false} />
     </div>

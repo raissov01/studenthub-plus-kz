@@ -6,7 +6,7 @@ import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
 import { DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
-import { deadlineText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
+import { deadlineText, jobApplyText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, diffDays } from '@/lib/format';
 import type { EventItem, Job, Opportunity, Plan } from '@/lib/types';
 
@@ -24,6 +24,7 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
         <span className="row-sub">{L(j.org)}, {L(CITIES[j.city])}</span>
         <span className="job-pay"><b className="pay">{pt.main}</b> <span className="tiny muted">{pt.sub}</span><DemoBadge show={j.is_demo} /></span>
         <EmployerJobBits j={j} />
+        <span className="row-sub card-detail">{tt("Өтінім: ", "Отклик: ")}{jobApplyText(j, I)}</span>
         {tags.length || applied ? (
           <span className="badges">
             {applied ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Өтінім жіберілді', 'Отклик отправлен')}</span> : null}

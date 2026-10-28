@@ -10,7 +10,8 @@
     "api": "go run ./cmd/server",
     "db:migrate": "go run ./cmd/migrate",
     "test:go": "go test ./...",
-    "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts lib/ics.test.ts lib/admincontent.test.ts lib/client-errors.test.ts"
+    "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts lib/ics.test.ts lib/admincontent.test.ts lib/client-errors.test.ts lib/profile.test.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "next": "16.4.3",
@@ -19,6 +20,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

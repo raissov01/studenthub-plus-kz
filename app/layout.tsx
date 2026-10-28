@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { connection } from 'next/server';
 import { AppRoot } from '@/components/AppRoot';
 import { getContent } from '@/lib/content';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_NAME, SITE_URL } from '@/lib/seo';
@@ -37,6 +38,8 @@ export const viewport: Viewport = {
 const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru')d.lang='ru';}else{d.setAttribute('data-theme','light');}}catch(e){}`;
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  // The feed is request-time data even when the API was unavailable (and returned no IDs) at build time.
+  await connection();
   const content = await getContent();
   return (
     <html lang="kk" data-theme="light" suppressHydrationWarning>
