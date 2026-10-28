@@ -101,7 +101,6 @@ func Routes(mux *http.ServeMux) {
 	h("POST /api/admin/ambassadors/{id}/certificate", auth.Write(auth.NeedRole(adminCertificate, "admin")))
 	h("POST /api/admin/ambassadors/expire", auth.Write(auth.NeedRole(adminExpire, "admin")))
 	h("GET /api/cron/ambassador", cronHandler)
-	moderation.Routes(mux, wrap)
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
