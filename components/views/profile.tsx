@@ -14,6 +14,7 @@ import { AccountSection } from '@/components/views/account';
 import { RoadmapProgress } from '@/components/views/roadmap';
 import { ProfileCommunity } from '@/components/views/entries';
 import { VerifiedAttendance } from '@/components/views/events';
+import { PublicPortfolioSection } from '@/components/views/portfolio';
 import type { Profile as ProfileT } from '@/lib/types';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
@@ -361,6 +362,7 @@ export function Portfolio() {
   const exp = (p.exp || '').split('\n').filter(s => s.trim());
   return (
     <>
+      <PublicPortfolioSection />
       <section className="section"><SectionHead title={tt('Сертификаттар', 'Сертификаты')} more={<button className="link-btn" type="button" onClick={() => openSheet(<AddCertSheet />)}>+ {tt('Қосу', 'Добавить')}</button>} />
         <div className="group">{certs.length ? certs.map((c, k) => (
           <Row key={k} icon="award" tone="sun" title={c.title} sub={`${c.org} · ${I.fDateY(c.date)}`} chev={false}

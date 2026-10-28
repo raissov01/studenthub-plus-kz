@@ -24,6 +24,7 @@ export function kindLabel(k: string, tt: (kk: string, ru: string) => string): st
     mentor_application: ['Ментор өтінімі', 'Заявка ментора'], mentor_report: ['Ментор жұбына шағым', 'Жалоба на пару ментора'],
     market_item: ['Тегін зат (жаңа аккаунт)', 'Вещь (новый аккаунт)'], market_report: ['Тегін затқа шағым', 'Жалоба на вещь'],
     employer_job: ['Жұмыс берушінің вакансиясы', 'Вакансия работодателя'],
+    employer_verification: ['Жұмыс берушіні тексеру', 'Проверка работодателя'], job_report: ['Вакансияға шағым', 'Жалоба на вакансию'],
   };
   return m[k] ? tt(m[k][0], m[k][1]) : k;
 }
@@ -62,6 +63,9 @@ function Queue() {
   );
 }
 
+/** nested objects in a payload (the job of an employer_job item, the applicant) as their own key/value list */
+const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
 const show = (v: unknown): string => {
   if (v == null || v === '') return '—';
   if (Array.isArray(v)) return v.map(show).join(', ');
@@ -80,7 +84,8 @@ function Payload({ it }: { it: QueueItem }) {
       {photos.length ? <div className="mk-thumbs">{photos.map(n => <span key={n} className="mk-thumb"><img src={'/api/market/photos/' + n} alt="" /></span>)}</div> : null}
       <dl className="kv payload">
         {entries.map(([k, v]) => (
-          <div key={k} className="kv-row"><dt>{k}</dt><dd>{typeof v === 'string' && /^https:\/\//.test(v) ? <a href={v} target="_blank" rel="noopener noreferrer">{v}</a> : show(v)}</dd></div>
+          <div key={k} className="kv-row"><dt>{k}</dt><dd>{typeof v === 'string' && /^https:\/\//.test(v) ? <a href={v} target="_blank" rel="noopener noreferrer">{v}</a>
+            : isPlain(v) ? <dl className="kv payload">{Object.entries(v).map(([k2, v2]) => <div key={k2} className="kv-row"><dt>{k2}</dt><dd>{show(v2)}</dd></div>)}</dl> : show(v)}</dd></div>
         ))}
       </dl>
       {it.kind === 'market_item' && typeof p.itemId === 'number' ? <a className="tiny" href={`/market/${p.itemId}`} target="_blank" rel="noopener">{tt('Затты ашу', 'Открыть вещь')}</a> : null}
@@ -318,6 +323,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
+  const b2b = useFeature('b2b');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
@@ -330,6 +336,8 @@ export function ModerationLinks() {
         {mentors ? <Row go="admin:mentors" icon="cap" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
         {market ? <Row go="admin:market" icon="gift" title={tt('Тегін заттар', 'Отдам даром')} /> : null}
         {events ? <Row go="organize" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} /> : null}
+        {b2b ? <Row go="admin:employers" icon="briefcase" title={tt('Жұмыс берушілер', 'Работодатели')} /> : null}
+        {b2b ? <Row go="admin:staff" icon="cap" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
       </div>
     </section>
   );

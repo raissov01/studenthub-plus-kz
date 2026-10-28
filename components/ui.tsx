@@ -111,14 +111,14 @@ export function ShareRow({ path, title, kind, id }: { path: string; title: strin
 }
 
 /** «Иә, жою» confirmation sheet */
-export function ConfirmSheet({ msg, yes }: { msg: string; yes: () => void }) {
+export function ConfirmSheet({ msg, yes, yesLabel }: { msg: string; yes: () => void; yesLabel?: string }) {
   const { tt, closeSheet, closeSheetDom } = useApp();
   return (
     <>
       <h2>{msg}</h2>
       <div className="btn-row">
         <button className="btn ghost" type="button" onClick={closeSheet}>{tt('Жоқ', 'Нет')}</button>
-        <button className="btn danger" type="button" onClick={() => { closeSheetDom(); yes(); }}>{tt('Иә, жою', 'Да, удалить')}</button>
+        <button className="btn danger" type="button" onClick={() => { closeSheetDom(); yes(); }}>{yesLabel ?? tt('Иә, жою', 'Да, удалить')}</button>
       </div>
     </>
   );
