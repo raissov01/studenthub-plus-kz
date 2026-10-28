@@ -138,7 +138,7 @@ func DeepLink(token string) string {
 }
 
 func WebLink(token string) string {
-	return config.SiteURL() + "/#/checkin?t=" + url.QueryEscape(TokenPrefix+token)
+	return config.SiteURL() + "/checkin?t=" + url.QueryEscape(TokenPrefix+token)
 }
 
 // CheckinResult is what a check-in did.

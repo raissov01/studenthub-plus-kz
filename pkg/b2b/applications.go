@@ -166,8 +166,8 @@ func apply(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return err
 	})
 	for _, m := range members {
-		tell(context.WithoutCancel(ctx), m, "📩 Жаңа өтінім: «"+esc(title)+"». Кабинет: "+siteLink("/#/employer"),
-			"📩 Новый отклик: «"+esc(title)+"». Кабинет: "+siteLink("/#/employer"))
+		tell(context.WithoutCancel(ctx), m, "📩 Жаңа өтінім: «"+esc(title)+"». Кабинет: "+siteLink("/employer"),
+			"📩 Новый отклик: «"+esc(title)+"». Кабинет: "+siteLink("/employer"))
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"application": map[string]any{"id": *appID, "status": "sent", "sharedFields": fields},
 		"company": company})
@@ -399,12 +399,12 @@ func setStatus(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			}
 			if body.Status == "invited" {
 				tell(context.WithoutCancel(ctx), student,
-					"🎉 «"+esc(company)+"» сізді «"+esc(title)+"» вакансиясы бойынша шақырды."+extra+"\n"+siteLink("/#/mine"),
-					"🎉 «"+esc(company)+"» пригласила вас по вакансии «"+esc(title)+"»."+extra+"\n"+siteLink("/#/mine"))
+					"🎉 «"+esc(company)+"» сізді «"+esc(title)+"» вакансиясы бойынша шақырды."+extra+"\n"+siteLink("/mine"),
+					"🎉 «"+esc(company)+"» пригласила вас по вакансии «"+esc(title)+"»."+extra+"\n"+siteLink("/mine"))
 			} else {
 				tell(context.WithoutCancel(ctx), student,
-					"«"+esc(company)+"» «"+esc(title)+"» бойынша бас тартты. Басқа вакансияларды қараңыз: "+siteLink("/#/jobs")+extra,
-					"«"+esc(company)+"» отказала по вакансии «"+esc(title)+"». Посмотрите другие вакансии: "+siteLink("/#/jobs")+extra)
+					"«"+esc(company)+"» «"+esc(title)+"» бойынша бас тартты. Басқа вакансияларды қараңыз: "+siteLink("/jobs")+extra,
+					"«"+esc(company)+"» отказала по вакансии «"+esc(title)+"». Посмотрите другие вакансии: "+siteLink("/jobs")+extra)
 			}
 		}
 	}

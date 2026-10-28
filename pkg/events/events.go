@@ -46,6 +46,9 @@ var ExtraManager func(ctx context.Context, u *auth.User, ev *Event) bool
 // Notify is the sender (category "events": switchable, quiet hours, daily cap); tests replace it.
 var Notify = notify.For(notify.CatEvents)
 
+// NotifyUrgent sends messages that must not be muted or deferred (an event was cancelled).
+var NotifyUrgent = notify.For(notify.CatModeration)
+
 // Now is the clock; tests replace it.
 var Now = time.Now
 

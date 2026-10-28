@@ -422,7 +422,7 @@ func reportPair(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	notifyAdmins(ctx, fmt.Sprintf("⚠️ Менторлық жұпқа шағым #%d (жұп %d, себеп: %s). Кезек: %s",
-		subID, p.ID, html.EscapeString(in.Reason), site("/#/admin/queue")))
+		subID, p.ID, html.EscapeString(in.Reason), site("/admin/queue")))
 	httpx.JSON(w, http.StatusCreated, map[string]any{"submissionId": subID})
 }
 

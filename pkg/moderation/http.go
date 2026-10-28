@@ -408,7 +408,7 @@ func notifyAdmins(ctx context.Context, kind, id, reason string) {
 	if err != nil {
 		return
 	}
-	text := fmt.Sprintf("⚠️ Жаңа шағым / Новая жалоба: %s #%s\n%s\n%s/#/admin/queue",
+	text := fmt.Sprintf("⚠️ Жаңа шағым / Новая жалоба: %s #%s\n%s\n%s/admin/queue",
 		html.EscapeString(kind), html.EscapeString(id), html.EscapeString(reason), config.SiteURL())
 	for _, a := range ids {
 		if err := Notify(ctx, a, text); err != nil {

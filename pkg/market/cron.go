@@ -117,7 +117,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		return nil, err
 	}
 	for _, d := range list {
-		link := config.SiteURL() + "/#/market/mine"
+		link := config.SiteURL() + "/market/mine"
 		t := html.EscapeString(d.title)
 		text := tr(d.lang, "🎁 «"+t+"» жарнамасының мерзімі 3 күннен кейін бітеді. Әлі бересің бе? Ұзарту немесе жабу: "+link,
 			"🎁 Объявление «"+t+"» закроется через 3 дня. Ещё отдаёшь? Продлить или закрыть: "+link)
@@ -189,7 +189,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		if err != nil {
 			return nil, err
 		}
-		link := config.SiteURL() + "/#/market/new"
+		link := config.SiteURL() + "/market/new"
 		for _, u := range users {
 			text := tr(u.lang, "📦 Көшіп жатырсың ба? Керек емес заттарыңды жаңа студенттерге тегін бер: "+link,
 				"📦 Переезжаешь? Отдай ненужные вещи новым студентам бесплатно: "+link)

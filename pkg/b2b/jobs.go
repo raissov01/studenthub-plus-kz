@@ -507,8 +507,8 @@ func jobNotice(s moderation.Submission, approved bool, lang string) string {
 	if !approved {
 		return ""
 	}
-	return pick(lang, "✅ Вакансияңыз тексерілді және жарияланды (30 күн).\n"+siteLink("/#/employer"),
-		"✅ Ваша вакансия проверена и опубликована (30 дней).\n"+siteLink("/#/employer"))
+	return pick(lang, "✅ Вакансияңыз тексерілді және жарияланды (30 күн).\n"+siteLink("/employer"),
+		"✅ Ваша вакансия проверена и опубликована (30 дней).\n"+siteLink("/employer"))
 }
 
 // ---------- reports ----------
@@ -651,7 +651,7 @@ func reportJob(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	if first {
-		go notifyAdmins(context.WithoutCancel(ctx), "⚠️ Вакансияға шағым / Жалоба на вакансию: «"+esc(title)+"» (#"+sid+", "+in.Reason+")\n"+siteLink("/#/admin/queue"))
+		go notifyAdmins(context.WithoutCancel(ctx), "⚠️ Вакансияға шағым / Жалоба на вакансию: «"+esc(title)+"» (#"+sid+", "+in.Reason+")\n"+siteLink("/admin/queue"))
 	}
 	httpx.JSON(w, http.StatusOK, res)
 }

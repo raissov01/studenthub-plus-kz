@@ -231,7 +231,7 @@ func TestApplicationReviewFlow(t *testing.T) {
 	if got := count(t, `select count(*) from users where id = $1 and role = 'ambassador'`, student); got != 1 {
 		t.Fatal("role not granted")
 	}
-	if msgs := box.of(student); !strings.Contains(msgs[len(msgs)-1], "#/ambassador") {
+	if msgs := box.of(student); !strings.HasSuffix(msgs[len(msgs)-1], "/ambassador") {
 		t.Fatalf("approval message: %v", msgs)
 	}
 	cab := decode(t, do(t, "GET", "/api/ambassador/me", student, nil))

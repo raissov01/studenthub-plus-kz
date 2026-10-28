@@ -74,8 +74,8 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	for _, r := range reminders {
 		n := strconv.Itoa(r.n)
 		for _, m := range r.members {
-			tell(ctx, m, "⏰ "+n+" өтінім 5 күннен бері қаралмады. Студенттер жауап күтіп отыр: "+siteLink("/#/employer"),
-				"⏰ "+n+" откликов не открыты уже 5 дней. Студенты ждут ответа: "+siteLink("/#/employer"))
+			tell(ctx, m, "⏰ "+n+" өтінім 5 күннен бері қаралмады. Студенттер жауап күтіп отыр: "+siteLink("/employer"),
+				"⏰ "+n+" откликов не открыты уже 5 дней. Студенты ждут ответа: "+siteLink("/employer"))
 		}
 		st.EmployerReminders++
 	}
@@ -125,8 +125,8 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 			continue
 		}
 		text := pick(d.lang,
-			"«"+esc(d.c)+"» компаниясы «"+esc(d.title)+"» бойынша 14 күнде жауап бермеді. Басқа вакансияларды қара: "+siteLink("/#/jobs"),
-			"Компания «"+esc(d.c)+"» не ответила по вакансии «"+esc(d.title)+"» за 14 дней. Посмотрите другие вакансии: "+siteLink("/#/jobs"))
+			"«"+esc(d.c)+"» компаниясы «"+esc(d.title)+"» бойынша 14 күнде жауап бермеді. Басқа вакансияларды қара: "+siteLink("/jobs"),
+			"Компания «"+esc(d.c)+"» не ответила по вакансии «"+esc(d.title)+"» за 14 дней. Посмотрите другие вакансии: "+siteLink("/jobs"))
 		res, err := Digest(ctx, d.user, now, text)
 		if err != nil {
 			log.Printf("b2b: no_response notify %d: %v", d.user, err)
@@ -182,7 +182,7 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 		st.LowRateWarnings++
 		for _, a := range admins {
 			_ = Notify(ctx, a, "⚠️ «"+esc(names[id])+"» өтінімдердің "+strconv.Itoa(*s.Rate)+"%-ына ғана жауап береді / отвечает лишь на "+
-				strconv.Itoa(*s.Rate)+"% откликов. "+siteLink("/#/admin/employers"))
+				strconv.Itoa(*s.Rate)+"% откликов. "+siteLink("/admin/employers"))
 		}
 		_ = db.Tx(ctx, func(tx pgx.Tx) error {
 			_, err := tx.Exec(ctx, `update employers set low_rate_warned_at = $2 where id = $1`, id, now)

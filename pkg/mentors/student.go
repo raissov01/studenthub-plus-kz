@@ -364,8 +364,8 @@ func approveApplication(ctx context.Context, tx pgx.Tx, s moderation.Submission)
 		return err
 	}
 	direct(ctx, p.ID, tr(p.Lang,
-		"🎓 Менторлық өтініміңіз бекітілді! Студенттермен жұптасқанда хабар береміз. Профиль: "+site("/#/mentors/me"),
-		"🎓 Ваша заявка ментора одобрена! Сообщим, когда появится пара. Профиль: "+site("/#/mentors/me")))
+		"🎓 Менторлық өтініміңіз бекітілді! Студенттермен жұптасқанда хабар береміз. Профиль: "+site("/mentors/me"),
+		"🎓 Ваша заявка ментора одобрена! Сообщим, когда появится пара. Профиль: "+site("/mentors/me")))
 	return nil
 }
 

@@ -676,7 +676,7 @@ func report(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	if first {
 		notifyAdmins(ctx, fmt.Sprintf("⚠️ Маркет: «%s» (#%d) затына шағым (%s). Кезек: %s",
-			html.EscapeString(title), id, in.Reason, config.SiteURL()+"/#/admin/queue"))
+			html.EscapeString(title), id, in.Reason, config.SiteURL()+"/admin/queue"))
 	}
 	httpx.JSON(w, http.StatusOK, res)
 }

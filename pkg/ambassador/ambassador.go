@@ -450,7 +450,7 @@ func applicationNotice(s moderation.Submission, approved bool, lang string) stri
 		return "" // generic message with the reason
 	}
 	if lang == "ru" {
-		return "🎉 Ваша заявка одобрена — теперь вы амбассадор Student Hub!\nКабинет: " + config.SiteURL() + "/#/ambassador"
+		return "🎉 Ваша заявка одобрена — теперь вы амбассадор Student Hub!\nКабинет: " + config.SiteURL() + "/ambassador"
 	}
-	return "🎉 Өтініміңіз бекітілді — енді сіз Student Hub амбассадорысыз!\nКабинет: " + config.SiteURL() + "/#/ambassador"
+	return "🎉 Өтініміңіз бекітілді — енді сіз Student Hub амбассадорысыз!\nКабинет: " + config.SiteURL() + "/ambassador"
 }

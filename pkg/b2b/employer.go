@@ -268,8 +268,8 @@ func verificationNotice(s moderation.Submission, approved bool, lang string) str
 		return "" // generic message with the reason
 	}
 	return pick(lang,
-		"✅ Компанияңыз тексерілді — «Тексерілген» белгісі қосылды.\n"+VerificationMeaning["kk"]+"\nКабинет: "+siteLink("/#/employer"),
-		"✅ Компания проверена — добавлен значок «Проверено».\n"+VerificationMeaning["ru"]+"\nКабинет: "+siteLink("/#/employer"))
+		"✅ Компанияңыз тексерілді — «Тексерілген» белгісі қосылды.\n"+VerificationMeaning["kk"]+"\nКабинет: "+siteLink("/employer"),
+		"✅ Компания проверена — добавлен значок «Проверено».\n"+VerificationMeaning["ru"]+"\nКабинет: "+siteLink("/employer"))
 }
 
 // ---------- cabinet ----------
@@ -474,7 +474,7 @@ func createInvite(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		internal(w, r, "invite", err)
 		return
 	}
-	httpx.JSON(w, http.StatusCreated, map[string]any{"code": code, "expiresAt": exp, "link": siteLink("/#/employer/join/" + code)})
+	httpx.JSON(w, http.StatusCreated, map[string]any{"code": code, "expiresAt": exp, "link": siteLink("/employer/join/" + code)})
 }
 
 // join: POST /api/employer/join {"code"} — a colleague joins the company.

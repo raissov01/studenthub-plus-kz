@@ -249,7 +249,7 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	if err != nil {
 		return st, err
 	}
-	link := config.SiteURL() + "/#/ambassador"
+	link := config.SiteURL() + "/ambassador"
 	for _, a := range asks {
 		text := "Амбассадорлық мерзіміңіз " + a.end.Format("02.01.2006") + " аяқталады. Келесі семестрде жалғастырасыз ба? " + link
 		if a.lang == "ru" {
@@ -305,7 +305,7 @@ func adminCertificate(w http.ResponseWriter, r *http.Request, admin *auth.User) 
 }
 
 // CertificateURL is the printable page and the verification link.
-func CertificateURL(code string) string { return config.SiteURL() + "/#/certificate/" + code }
+func CertificateURL(code string) string { return config.SiteURL() + "/certificate/" + code }
 
 // certificate: public data for #/certificate/<code> (exists only once an admin issued it).
 func certificate(w http.ResponseWriter, r *http.Request) {

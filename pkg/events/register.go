@@ -138,7 +138,7 @@ func promoteWaitlist(ctx context.Context, eventID int64) ([]int64, error) {
 	return out, err
 }
 
-func eventLink(id int64) string { return fmt.Sprintf("%s/#/event/%d", config.SiteURL(), id) }
+func eventLink(id int64) string { return fmt.Sprintf("%s/event/%d", config.SiteURL(), id) }
 
 func userLang(ctx context.Context, tx pgx.Tx, id int64) string {
 	lang := "kk"
@@ -146,14 +146,16 @@ func userLang(ctx context.Context, tx pgx.Tx, id int64) string {
 	return lang
 }
 
-func send(ctx context.Context, userID int64, kk, ru string) {
+func send(ctx context.Context, userID int64, kk, ru string) { sendWith(ctx, Notify, userID, kk, ru) }
+
+func sendWith(ctx context.Context, notifyFn func(context.Context, int64, string) error, userID int64, kk, ru string) {
 	lang := "kk"
 	_ = db.Tx(ctx, func(tx pgx.Tx) error { lang = userLang(ctx, tx, userID); return nil })
 	text := kk
 	if lang == "ru" {
 		text = ru
 	}
-	if err := Notify(ctx, userID, text); err != nil {
+	if err := notifyFn(ctx, userID, text); err != nil {
 		log.Printf("events: notify %d: %v", userID, err)
 	}
 }
@@ -187,7 +189,8 @@ func notifyCancelled(ctx context.Context, ev *Event) {
 	}
 	title := html.EscapeString(ev.TitleKK)
 	for _, id := range ids {
-		send(ctx, id, fmt.Sprintf("❌ «%s» іс-шарасы өтпейді (бас тартылды).", title),
+		// a cancellation changes the student's plans, so it is transactional: never muted or deferred
+		sendWith(ctx, NotifyUrgent, id, fmt.Sprintf("❌ «%s» іс-шарасы өтпейді (бас тартылды).", title),
 			fmt.Sprintf("❌ Мероприятие «%s» отменено.", title))
 	}
 }

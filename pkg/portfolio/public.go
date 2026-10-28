@@ -25,7 +25,7 @@ func isUnique(err error) bool {
 	return errors.As(err, &pe) && pe.Code == "23505"
 }
 
-func eventURL(id int64) string { return siteURL() + "/#/event/" + strconv.FormatInt(id, 10) }
+func eventURL(id int64) string { return siteURL() + "/event/" + strconv.FormatInt(id, 10) }
 
 // Bi is a two-language text.
 type Bi struct {

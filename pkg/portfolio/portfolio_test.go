@@ -168,7 +168,7 @@ func TestPublicPage(t *testing.T) {
 	if !p.NoIndex || p.Profile.Name != "Айгерім" || *p.Profile.University != "ENU" || *p.Profile.Course != 3 {
 		t.Fatalf("profile: %+v", p)
 	}
-	if len(p.Verified.Events) != 1 || !p.Verified.Events[0].Verified || !strings.Contains(p.Verified.Events[0].VerifyURL, "/#/event/") {
+	if len(p.Verified.Events) != 1 || !p.Verified.Events[0].Verified || !strings.Contains(p.Verified.Events[0].VerifyURL, "/event/") {
 		t.Fatalf("verified events: %+v", p.Verified.Events)
 	}
 	if len(p.Verified.Certificates) != 2 || len(p.Verified.Badges) != 1 || p.Verified.Badges[0].Badge != "mentor" {

@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("DB_MAX_CONNS", "8")
 	os.Setenv("CRON_SECRET", "cron-secret")
 	Notify = func(ctx context.Context, userID int64, text string) error { sent.add(userID, text); return nil }
+	NotifyUrgent = Notify
 	os.Exit(testdb.Main(m, "events"))
 }
 
