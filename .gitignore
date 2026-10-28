@@ -44,3 +44,6 @@ next-env.d.ts
 .secrets
 deploy/studenthub-api
 deploy/studenthub-migrate
+
+# market photos written by the Go API in local dev (UPLOAD_DIR default)
+/uploads/

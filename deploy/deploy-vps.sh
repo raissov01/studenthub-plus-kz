@@ -11,6 +11,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dep
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o deploy/studenthub-migrate ./cmd/migrate
 
 ssh $VPS "id studenthub >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin studenthub; mkdir -p /opt/studenthub"
+ssh $VPS "mkdir -p /opt/studenthub/uploads/market && chown -R studenthub:studenthub /opt/studenthub/uploads && chmod 750 /opt/studenthub/uploads /opt/studenthub/uploads/market"
 ssh $VPS "test -f /opt/studenthub/.env" || scp -q .secrets/prod.env $VPS:/opt/studenthub/.env
 ssh $VPS "chown root:studenthub /opt/studenthub/.env && chmod 640 /opt/studenthub/.env"
 
