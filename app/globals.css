@@ -979,3 +979,22 @@ main.bare { padding-block: 12px 40px; max-width: 760px; }
   .pf-url { display: inline; }
   .pf .badge { border: 1px solid #9A9A9A; }
 }
+
+/* ---------- offline (docs/PWA.md): «Интернет жоқ» line on top of the screen, «Жаңа нұсқа дайын» bar ---------- */
+.offline-bar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: .85rem; line-height: 1.35;
+}
+.offline-bar svg { flex: none; color: var(--muted); }
+.offline-bar span { min-width: 0; overflow-wrap: anywhere; }
+.update-bar {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px));
+  z-index: 49; width: max-content; max-width: calc(100% - 32px); display: flex; align-items: center; gap: 12px;
+  background: var(--text); color: var(--bg); padding: 8px 8px 8px 16px; border-radius: 12px; font-size: .9rem; font-weight: 600;
+}
+.update-bar span { min-width: 0; }
+.update-btn {
+  flex: none; min-height: 36px; padding: 6px 14px; border-radius: 10px; border: 1px solid var(--bg);
+  background: var(--bg); color: var(--text); font: inherit; font-weight: 700; cursor: pointer;
+}
+@media print { .offline-bar, .update-bar { display: none !important; } }

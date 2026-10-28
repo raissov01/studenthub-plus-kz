@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
 import { emptyRoadmap, type RoadmapState } from '@/features/roadmap/logic';
 import type { AppState } from '@/lib/types';
 import { defaults, UI_INIT, type UiState } from '@/lib/defaults';
+import { clearTickets } from '@/lib/tickets';
 
 export { defaults, type UiState };
 
@@ -84,6 +85,7 @@ export function update(mutate: (s: AppState) => void) {
 /** wipe everything (settings → delete all data) */
 export function resetState() {
   try { window.localStorage.removeItem(KEY); } catch { /* ignore */ }
+  clearTickets();
   state = defaults();
   state.onboarded = false;
   lsSet(JSON.stringify(state));

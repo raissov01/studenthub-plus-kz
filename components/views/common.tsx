@@ -7,6 +7,7 @@ import { Empty, Icon } from '@/components/ui';
 import { ConsentSheet, SignInSheet } from '@/components/views/account';
 import { api, ApiError, useAccount, type AccountState } from '@/lib/account';
 import { featureOn, useConfig, useConfigReady, type FeatureName } from '@/lib/config';
+import { useOnline } from '@/lib/pwa';
 
 /** the same screen as an unknown page: a switched-off feature or a foreign role must not be distinguishable */
 export function NotFound() {
@@ -67,10 +68,12 @@ export function SignInCard({ text }: { text: string }) {
   const { tt } = useApp();
   const need = useNeedAccount();
   const acc = useAccount();
+  const online = useOnline();
   return (
     <div className="card">
       <p className="small">{text}</p>
-      <button className="btn block" type="button" onClick={need}>
+      {online ? null : <p className="tiny muted">{tt('Кіру үшін интернет керек.', 'Для входа нужен интернет.')}</p>}
+      <button className="btn block" type="button" onClick={need} disabled={!online}>
         <Icon n="send" s={18} /> {acc.user && acc.needsConsent ? tt('Келісім беру', 'Дать согласие') : tt('Telegram арқылы кір', 'Войти через Telegram')}
       </button>
     </div>

@@ -3,6 +3,8 @@
    cookie may be blocked, so the token returned by /api/auth/telegram/webapp is kept in memory only and sent as
    «Authorization: Bearer». */
 import { useSyncExternalStore } from 'react';
+import { isOnline } from '@/lib/pwa';
+import { clearTickets } from '@/lib/tickets';
 
 export type Role = 'student' | 'ambassador' | 'admin' | 'university_staff' | 'employer';
 export interface AccountUser {
@@ -40,12 +42,17 @@ export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
 
+/** the device knows it has no network: fail at once with a clear reason instead of a long timeout */
+const offlineError = (lang?: 'kk' | 'ru') =>
+  new ApiError(0, 'offline', lang === 'ru' ? 'Нет интернета — для этого нужно подключение.' : 'Интернет жоқ — бұл әрекетке интернет керек.');
+
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
 export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru' } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (token) headers.authorization = `Bearer ${token}`;
   if (opts.lang) headers['accept-language'] = opts.lang;
+  if (!isOnline()) throw offlineError(opts.lang);
   let r: Response;
   try {
     r = await fetch(path, { method: opts.method || 'GET', headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
@@ -66,6 +73,7 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
   const headers: Record<string, string> = { accept: 'application/json' };
   if (token) headers.authorization = `Bearer ${token}`;
   if (lang) headers['accept-language'] = lang;
+  if (!isOnline()) throw offlineError(lang);
   let r: Response;
   try {
     r = await fetch(path, { method: 'POST', headers, credentials: 'same-origin', body: form });
@@ -86,6 +94,7 @@ export async function apiDownload(path: string, filename: string, lang?: 'kk' | 
   const headers: Record<string, string> = {};
   if (token) headers.authorization = `Bearer ${token}`;
   if (lang) headers['accept-language'] = lang;
+  if (!isOnline()) throw offlineError(lang);
   const r = await fetch(path, { headers, credentials: 'same-origin' });
   if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось скачать файл.' : 'Файлды жүктеу мүмкін болмады.');
   const url = URL.createObjectURL(await r.blob());
@@ -101,11 +110,12 @@ export async function apiDownload(path: string, filename: string, lang?: 'kk' | 
 type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string };
 const apply = (r: MeResp) => set({ loaded: true, user: r.user, needsConsent: !!r.user && r.needsConsent });
 
-/** GET /api/me once on start; failures mean «not signed in» */
+/** GET /api/me once on start; failures mean «not signed in». A definite «nobody» from the server also drops the
+    offline ticket copies (lib/tickets.ts); a network failure keeps them. */
 let loading: Promise<void> | null = null;
 export function loadMe(force = false): Promise<void> {
   if (loading && !force) return loading;
-  loading = api<MeResp>('/api/me').then(apply, () => set({ loaded: true, user: null, needsConsent: false }));
+  loading = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => set({ loaded: true, user: null, needsConsent: false }));
   return loading;
 }
 
@@ -133,6 +143,7 @@ export async function signInWidget(user: Record<string, unknown>, lang: 'kk' | '
 export async function signOut(all: boolean, lang: 'kk' | 'ru'): Promise<void> {
   await api('/api/auth/logout', { method: 'POST', body: { all }, lang });
   token = '';
+  clearTickets();
   set({ user: null, needsConsent: false });
 }
 
@@ -164,5 +175,6 @@ export async function downloadExport(lang: 'kk' | 'ru'): Promise<void> {
 export async function deleteAccount(lang: 'kk' | 'ru'): Promise<void> {
   await api('/api/me', { method: 'DELETE', body: { confirm: 'DELETE' }, lang });
   token = '';
+  clearTickets();
   set({ user: null, needsConsent: false });
 }

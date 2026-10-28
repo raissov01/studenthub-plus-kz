@@ -47,14 +47,29 @@ function season(v: unknown): Config['marketSeason'] {
   return typeof s.from === 'string' && typeof s.to === 'string' ? { from: s.from, to: s.to, active: !!s.active } : null;
 }
 
-/** Fetch /api/config once per page load; on any failure the defaults above stay. */
+/** the last /api/config answer, so a page opened without internet keeps the switches it had (e.g. events → tickets) */
+const CONFIG_KEY = 'studenthub.config';
+function cachedConfig(): unknown {
+  try { return JSON.parse(window.localStorage.getItem(CONFIG_KEY) || 'null'); } catch { return null; }
+}
+
+/** Fetch /api/config once per page load. No network: the last saved answer; any other failure: the defaults above. */
 export async function loadConfig(): Promise<void> {
   if (loaded || typeof window === 'undefined') return;
   loaded = true;
+  let j: Partial<Config> & { features?: Record<string, unknown> };
   try {
+    if (navigator.onLine === false) throw new Error('offline');
     const r = await fetch('/api/config', { headers: { accept: 'application/json' } });
     if (!r.ok) { markReady(); return; }
-    const j = await r.json() as Partial<Config> & { features?: Record<string, unknown> };
+    j = await r.json();
+    try { window.localStorage.setItem(CONFIG_KEY, JSON.stringify(j)); } catch { /* ignore */ }
+  } catch {
+    const c = cachedConfig();
+    if (!c || typeof c !== 'object') { markReady(); return; }
+    j = c as typeof j;
+  }
+  try {
     const features = { ...CONFIG.features };
     for (const k of Object.keys(features) as FeatureName[]) if (typeof j.features?.[k] === 'boolean') features[k] = j.features[k] as boolean;
     // CONFIG is mutated in place so plain helpers (reportHref) see the server's values too
@@ -68,7 +83,7 @@ export async function loadConfig(): Promise<void> {
     snapshot = { ...CONFIG, features: { ...features } };
     ready = true;
     listeners.forEach(l => l());
-  } catch { /* offline or no API: defaults */ }
+  } catch { /* unexpected shape: defaults */ }
   markReady();
 }
 

@@ -7,6 +7,7 @@ import { useApp } from '@/components/app';
 import { Boot } from '@/components/Boot';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
+import { OfflineBanner, UpdateBar } from '@/components/Pwa';
 import { unreadCount } from '@/lib/domain';
 import { IC } from '@/lib/icons';
 import { CHECKIN_KEY } from '@/lib/events';
@@ -118,7 +119,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main id="main" aria-live="polite">{hydrated ? children : null}</main>
+      <main id="main" aria-live="polite">{hydrated ? <><OfflineBanner />{children}</> : null}</main>
       {hydrated ? <Boot root={root} /> : null}
       <nav className="tabbar" aria-label="Student Hub">
         <div className="tabbar-in">
@@ -134,6 +135,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="sheet" role="dialog" aria-modal="true"><div className="grab"></div>{sheet}</div>
         </div>
       ) : null}
+      <UpdateBar />
       {toastMsg ? <div className="toast" role="status" key={toastMsg.key}>{toastMsg.text}</div> : null}
     </>
   );

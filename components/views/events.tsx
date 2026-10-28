@@ -2,7 +2,7 @@
 /* Events from the database (prompt 05): list cards, the event page with registration and e-ticket, QR check-in
    for students (/checkin), and the organizer screens (/organize, /organize/new, /organize/<id>) with the live
    rotating QR, a ticket scanner, the fallback list, teams, finish, CSV and feedback. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import {
@@ -10,6 +10,8 @@ import {
   toLocalInput, useFeature, useLoad, useNeedAccount,
 } from '@/components/views/common';
 import { api, apiDownload, useAccount } from '@/lib/account';
+import { keepPagesOffline, useOnline } from '@/lib/pwa';
+import { rememberEvent, rememberMine, savedTicket, savedTickets, withMy } from '@/lib/tickets';
 import { BUILDINGS } from '@/lib/data/campus';
 import {
   ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
@@ -57,9 +59,20 @@ function DbEvent_({ id }: { id: string }) {
   const att = useLoad<AttendeesResp>(`/api/events/${id}/attendees${acc.user ? '?u=' + acc.user.id : ''}`);
   const [busy, setBusy] = useState(false);
   const [prevTeam, setPrevTeam] = useState(false);
+  const online = useOnline();
+  // keep what the API said about my registration, so the ticket opens without internet (lib/tickets.ts)
+  const live = ev.data?.event;
+  const userId = acc.user?.id;
+  useEffect(() => {
+    if (!live) return;
+    rememberEvent(live, userId);
+    if (live.my) keepPagesOffline([`/event/${live.id}`]);
+  }, [live, userId]);
   if (ev.code === 'not_found' || ev.code === 'http_404') return <NotFound />;
-  if (ev.err) return <ErrorLine err={ev.err} />;
-  const e = ev.data?.event;
+  // no network: the saved copy of my ticket, if there is one
+  const saved = !live && (ev.code === 'offline' || ev.code === 'network') ? savedTicket(id) : null;
+  if (ev.err && !saved) return <ErrorLine err={ev.err} />;
+  const e = live ?? saved?.event;
   if (!e) return <Loading />;
   const d = almatyWall(e.starts_at);
   const b = BUILDINGS.find(x => x.id === e.building_id);
@@ -93,6 +106,7 @@ function DbEvent_({ id }: { id: string }) {
             {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}
           </div></div>
       </div>
+      {saved ? <p className="small muted" role="status">{tt(`Сақталған көшірме (${I.fDate(new Date(saved.savedAt))}). Интернет қосылғанда жаңарады.`, `Сохранённая копия (${I.fDate(new Date(saved.savedAt))}). Обновится, когда появится интернет.`)}</p> : null}
       {e.status === 'cancelled' ? <p className="draft-banner">{tt('Іс-шара өтпейді (ұйымдастырушы тоқтатты)', 'Мероприятие отменено организатором')}</p> : null}
       <div className="group">
         <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={`${hhmm(e.starts_at)}–${hhmm(e.ends_at)} · ${e.university}`} chev={false} />
@@ -116,8 +130,8 @@ function DbEvent_({ id }: { id: string }) {
                 <span className="tiny muted">{tt('Кіреберісте ұйымдастырушының QR-ын сканерлеңіз. Интернет болмаса — осы билетті көрсетіңіз.', 'На входе отсканируйте QR организатора. Нет интернета — покажите этот билет.')}</span></>}
           </div>
           <IcsLink id={e.id} />
-          {!started && open ? <button className="btn danger block" type="button" disabled={busy} onClick={unregister}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button> : null}
-          {e.status === 'finished' && my.checked_in_at && my.feedback_score == null ? <FeedbackForm id={e.id} onDone={reload} /> : null}
+          {!started && open ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button> : null}
+          {e.status === 'finished' && my.checked_in_at && my.feedback_score == null && online ? <FeedbackForm id={e.id} onDone={reload} /> : null}
           {my.feedback_score != null ? <p className="tiny muted">{tt('Пікіріңіз үшін рақмет!', 'Спасибо за отзыв!')}</p> : null}
         </>
       ) : my?.status === 'waitlist' ? (
@@ -125,20 +139,21 @@ function DbEvent_({ id }: { id: string }) {
           <div className="card"><b>{tt('Орын жоқ — күту тізіміндесіз', 'Мест нет — вы в листе ожидания')}</b>
             <span className="small muted">{tt('Біреу бас тартса, сізді автоматты тіркеп, Telegram-да хабарлаймыз.', 'Если кто-то откажется, запишем вас автоматически и сообщим в Telegram.')}</span></div>
           {open && !started ? <IcsLink id={e.id} /> : null}
-          {open && !started ? <button className="btn danger block" type="button" disabled={busy} onClick={unregister}>{tt('Күту тізімінен шығу', 'Выйти из листа ожидания')}</button> : null}
+          {open && !started ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Күту тізімінен шығу', 'Выйти из листа ожидания')}</button> : null}
         </>
       ) : open ? (
         <>
           {e.teams_enabled ? <label className="check"><input type="checkbox" checked={prevTeam} onChange={x => setPrevTeam(x.target.checked)} /><span className="small">{tt('Бұрынғы командаммен', 'С моей прошлой командой')}</span></label> : null}
           <div className="sticky-cta">
-            <button className="btn block" type="button" disabled={busy} onClick={register}><Icon n="check" s={18} /> {e.spots_left === 0 ? tt('Күту тізіміне жазылу', 'В лист ожидания') : tt('Тіркелу', 'Записаться')}</button>
+            <button className="btn block" type="button" disabled={busy || !online} onClick={register}><Icon n="check" s={18} /> {e.spots_left === 0 ? tt('Күту тізіміне жазылу', 'В лист ожидания') : tt('Тіркелу', 'Записаться')}</button>
           </div>
           <IcsLink id={e.id} />
         </>
       ) : null}
       {e.gives_cert ? <p className="tiny muted">{tt('Келгеніңіз QR арқылы расталса, сертификат портфолиоңызға өзі қосылады.', 'Если ваше присутствие подтверждено по QR, сертификат сам появится в портфолио.')}</p> : null}
       {e.status === 'published' ? <ShareRow path={`/event/${e.id}`} title={evTitle(e, lang)} kind="event" id={String(e.id)} /> : null}
-      {!acc.user ? <SignInCard text={tt('Тіркелу үшін Telegram арқылы кіріңіз — билет пен еске салу аккаунтқа байланады.', 'Чтобы записаться, войдите через Telegram — билет и напоминание привязываются к аккаунту.')} /> : null}
+      {!online ? <p className="tiny muted">{tt('Тіркелу мен бас тартуға интернет керек.', 'Для записи и отмены нужен интернет.')}</p> : null}
+      {!acc.user && online ? <SignInCard text={tt('Тіркелу үшін Telegram арқылы кіріңіз — билет пен еске салу аккаунтқа байланады.', 'Чтобы записаться, войдите через Telegram — билет и напоминание привязываются к аккаунту.')} /> : null}
     </>
   );
 }
@@ -278,8 +293,18 @@ export function VerifiedAttendance() {
 export function MyDbEvents() {
   const acc = useAccount();
   const on = useFeature('events');
-  const { data } = useLoad<{ registrations: { event: DbEvent }[] }>(on && acc.user ? '/api/events/my' : null);
-  const list = (data?.registrations ?? []).map(r => r.event).filter(e => e.status !== 'finished' && !isPast(e.ends_at));
+  const online = useOnline();
+  const { data, code } = useLoad<{ registrations: Parameters<typeof withMy>[0][] }>(on && acc.user ? '/api/events/my' : null);
+  const userId = acc.user?.id;
+  const fetched = useMemo(() => data ? data.registrations.map(withMy) : null, [data]);
+  useEffect(() => {
+    if (!fetched || userId == null) return;
+    rememberMine(fetched, userId);
+    keepPagesOffline(fetched.filter(e => e.my?.status === 'registered').map(e => `/event/${e.id}`));
+  }, [fetched, userId]);
+  // without network (or before /api/me answers offline): the tickets kept on this device
+  const fromCache = !fetched && on && (!online || code === 'offline' || code === 'network');
+  const list = (fetched ?? (fromCache ? savedTickets().map(t => t.event) : [])).filter(e => e.status !== 'finished' && !isPast(e.ends_at));
   if (!list.length) return null;
   return (
     <div className="list">
@@ -296,6 +321,8 @@ export function MyDbEvents() {
 /** «Күнтізбеге қосу»: the server's .ics of a DB event (GET /api/events/{id}/ics, in the UI language) */
 export function IcsLink({ id, small }: { id: number; small?: boolean }) {
   const { tt, lang } = useApp();
+  const online = useOnline();
+  if (!online) return null; // the file comes from the API
   return (
     <a className={small ? 'link-btn ics-link' : 'btn ghost block'} href={`/api/events/${id}/ics?lang=${lang}`} download={`event-${id}.ics`}>
       <Icon n="calendar" s={small ? 16 : 18} /> {tt('Күнтізбеге қосу', 'Добавить в календарь')}
