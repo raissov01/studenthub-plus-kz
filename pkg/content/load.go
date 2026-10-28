@@ -40,6 +40,7 @@ type Content struct {
 	Opportunities []Record `json:"opportunities"`
 	Jobs          []Record `json:"jobs"`
 	Discounts     []Record `json:"discounts"`
+	Places        []Record `json:"places,omitempty"` // only from extra sources (extra.go)
 	Source        string   `json:"source"`
 	UpdatedAt     *string  `json:"updated_at"`
 	Rejected      int      `json:"rejected"`
@@ -333,6 +334,14 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 	}
 	if updatedAt != "" {
 		out.UpdatedAt = &updatedAt
+	}
+	if extra := l.loadExtras(ctx); extra != nil {
+		if recs := FilterActive(extra["opportunities"], today); len(recs) > 0 {
+			out.Opportunities = append(out.Opportunities, recs...)
+		}
+		if recs := FilterActive(extra["places"], today); len(recs) > 0 {
+			out.Places = recs
+		}
 	}
 	return out
 }

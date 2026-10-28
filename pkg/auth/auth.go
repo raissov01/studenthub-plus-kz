@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -209,6 +210,7 @@ func Routes(mux *http.ServeMux) {
 func webappLogin(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		InitData string `json:"initData"`
+		Ref      string `json:"ref"` // optional stored ?ref= (amb_<code> / share), see CleanRef
 	}
 	if err := httpx.Decode(r, &body, 16<<10); err != nil || body.InitData == "" {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
@@ -218,7 +220,7 @@ func webappLogin(w http.ResponseWriter, r *http.Request) {
 	if !verified(w, r, err) {
 		return
 	}
-	login(w, r, tg, true)
+	login(w, r, tg, true, CleanRef(body.Ref))
 }
 
 func widgetLogin(w http.ResponseWriter, r *http.Request) {
@@ -229,11 +231,26 @@ func widgetLogin(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
 		return
 	}
+	// "ref" is ours, not Telegram's: it must not take part in the hash check.
+	ref, _ := raw["ref"].(string)
+	delete(raw, "ref")
 	tg, err := VerifyWidget(raw, config.Str("BOT_TOKEN", ""), time.Now())
 	if !verified(w, r, err) {
 		return
 	}
-	login(w, r, tg, false)
+	login(w, r, tg, false, CleanRef(ref))
+}
+
+var reAmbRef = regexp.MustCompile(`^amb_[a-z0-9_-]{1,30}$`)
+
+// CleanRef accepts "share" or "amb_<code>" (case-insensitive) and returns it lower-cased; "" otherwise.
+// Same rule as analytics.CleanRef.
+func CleanRef(ref string) string {
+	ref = strings.ToLower(strings.TrimSpace(ref))
+	if ref == "share" || reAmbRef.MatchString(ref) {
+		return ref
+	}
+	return ""
 }
 
 func verified(w http.ResponseWriter, r *http.Request, err error) bool {
@@ -268,8 +285,10 @@ func nullable(s string) *string {
 }
 
 // login links the Telegram identity to its users row (the bot may have created it already),
-// applies the ADMIN_TELEGRAM_IDS bootstrap and sets the session cookie.
-func login(w http.ResponseWriter, r *http.Request, tg TGUser, webapp bool) {
+// applies the ADMIN_TELEGRAM_IDS bootstrap and sets the session cookie. ref (already cleaned)
+// is recorded as users.referred_by only at sign-up: while the account has no consent yet and
+// no referral recorded.
+func login(w http.ResponseWriter, r *http.Request, tg TGUser, webapp bool, ref string) {
 	ctx := r.Context()
 	name := clip(tg.FirstName+" "+tg.LastName, 80)
 	lang := "kk"
@@ -288,6 +307,11 @@ func login(w http.ResponseWriter, r *http.Request, tg TGUser, webapp bool) {
 			returning `+UserColumns, tg.ID, nullable(clip(tg.Username, 64)), nullable(name), lang))
 		if err != nil || u.DeletedAt != nil {
 			return err
+		}
+		if ref != "" && u.ConsentAt == nil {
+			if _, err := tx.Exec(ctx, `update users set referred_by = $2 where id = $1 and referred_by is null`, u.ID, ref); err != nil {
+				return err
+			}
 		}
 		return bootstrapAdmin(ctx, tx, u)
 	})
