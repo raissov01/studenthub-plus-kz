@@ -82,3 +82,47 @@ func TestMentorGroupMeetingsAcrossFeatures(t *testing.T) {
 		t.Error("a team member must not match mentors")
 	}
 }
+
+// An ambassador or mentor must not switch university through their own profile to gain
+// organizer rights elsewhere.
+func TestUniversityLockedForOrganizers(t *testing.T) {
+	testdb.Need(t)
+	ctx := context.Background()
+	var amb, mentor, student int64
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		q := `insert into users (telegram_id, name, university, role, consent_at) values ($1, 'x', 'KATU', $2, now()) returning id`
+		if err := tx.QueryRow(ctx, q, 911, "ambassador").Scan(&amb); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, q, 912, "student").Scan(&mentor); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, q, 913, "student").Scan(&student); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `insert into mentors (user_id, university, areas, status) values ($1, 'KATU', '{study}', 'approved')`, mentor)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+	move := func(uid int64) string {
+		var uni string
+		err := db.WithUser(ctx, uid, func(tx pgx.Tx) error {
+			return tx.QueryRow(ctx, `update users set university = 'ENU' where id = $1 returning university`, uid).Scan(&uni)
+		})
+		if err != nil {
+			t.Fatalf("update %d: %v", uid, err)
+		}
+		return uni
+	}
+	if got := move(amb); got != "KATU" {
+		t.Errorf("ambassador moved to %s", got)
+	}
+	if got := move(mentor); got != "KATU" {
+		t.Errorf("mentor moved to %s", got)
+	}
+	if got := move(student); got != "ENU" {
+		t.Errorf("a plain student should be able to change university, got %s", got)
+	}
+}
