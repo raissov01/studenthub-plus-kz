@@ -89,7 +89,13 @@ func count(t *testing.T, sql string, args ...any) int {
 	return n
 }
 
-var mux = func() *http.ServeMux { m := http.NewServeMux(); Routes(m); return m }()
+// the shared moderation queue is wired by pkg/server outside this feature's switch; mount it here too
+var mux = func() *http.ServeMux {
+	m := http.NewServeMux()
+	Routes(m)
+	moderation.Routes(m, func(h http.Handler) http.Handler { return h })
+	return m
+}()
 
 func do(t *testing.T, method, path string, uid int64, body any) *httptest.ResponseRecorder {
 	t.Helper()
@@ -146,8 +152,7 @@ func makeAmbassador(t *testing.T, admin int64, univ string) int64 {
 
 func TestFeatureOffIs404(t *testing.T) {
 	t.Setenv("FEATURE_AMBASSADOR", "false")
-	for _, c := range [][2]string{{"POST", "/api/ambassador/apply"}, {"GET", "/api/ambassador/me"}, {"GET", "/api/admin/queue"},
-		{"POST", "/api/admin/queue/1/approve"}, {"POST", "/api/reports"}, {"POST", "/api/submissions"},
+	for _, c := range [][2]string{{"POST", "/api/ambassador/apply"}, {"GET", "/api/ambassador/me"}, {"POST", "/api/submissions"},
 		{"GET", "/api/ambassador/rating"}, {"GET", "/api/certificates/abcdefgh"}, {"GET", "/api/cron/ambassador"}} {
 		if w := do(t, c[0], c[1], 0, map[string]any{}); w.Code != 404 || errCode(w) != "not_found" {
 			t.Errorf("%s %s with ambassador off: %d", c[0], c[1], w.Code)
