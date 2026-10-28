@@ -76,12 +76,14 @@ func init() {
 	moderation.Notice(KindApplication, applicationNotice)
 	moderation.OnReport(KindOpportunity, reportTarget(KindOpportunity))
 	moderation.OnReport(KindPlace, reportTarget(KindPlace))
+	moderation.Editor(KindOpportunity, editPayload(KindOpportunity))
+	moderation.Editor(KindPlace, editPayload(KindPlace))
 	registerContent()
 	registerExports()
 }
 
-// Routes wires /api/ambassador/*, /api/submissions*, /api/certificates/*, the admin endpoints
-// for ambassadors and the shared queue / reports — all behind the "ambassador" switch.
+// Routes wires /api/ambassador/*, /api/certificates/* and the admin endpoints for ambassadors —
+// all behind the "ambassador" switch. Suggestions are in SubmissionRoutes.
 func Routes(mux *http.ServeMux) {
 	wrap := func(h http.Handler) http.Handler { return features.Require("ambassador", h) }
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, wrap(fn)) }
@@ -93,8 +95,6 @@ func Routes(mux *http.ServeMux) {
 	h("DELETE /api/ambassador/pause", auth.Write(auth.Need(unpause)))
 	h("POST /api/ambassador/renew", auth.Write(auth.Need(renew)))
 	h("GET /api/ambassador/rating", rating)
-	h("POST /api/submissions", auth.Write(auth.Need(submit)))
-	h("GET /api/submissions/my", auth.Need(mySubmissions))
 	h("GET /api/certificates/{code}", certificate)
 	h("GET /api/admin/ambassadors", auth.NeedRole(adminList, "admin"))
 	h("PATCH /api/admin/ambassadors/{id}", auth.Write(auth.NeedRole(adminPatch, "admin")))
@@ -102,6 +102,14 @@ func Routes(mux *http.ServeMux) {
 	h("POST /api/admin/ambassadors/{id}/certificate", auth.Write(auth.NeedRole(adminCertificate, "admin")))
 	h("POST /api/admin/ambassadors/expire", auth.Write(auth.NeedRole(adminExpire, "admin")))
 	h("GET /api/cron/ambassador", cronHandler)
+}
+
+// SubmissionRoutes wires the «Мүмкіндік ұсыну» suggestions (POST /api/submissions, GET
+// /api/submissions/my). Any signed-in, consented student may suggest, so they do not depend on
+// the "ambassador" switch (pkg/server registers them next to the shared queue).
+func SubmissionRoutes(mux *http.ServeMux) {
+	mux.Handle("POST /api/submissions", auth.Write(auth.Need(submit)))
+	mux.Handle("GET /api/submissions/my", auth.Need(mySubmissions))
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {

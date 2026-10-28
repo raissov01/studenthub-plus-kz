@@ -342,9 +342,15 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 		if recs := FilterActive(extra["jobs"], today); len(recs) > 0 {
 			out.Jobs = append(out.Jobs, recs...)
 		}
+		if recs := FilterActive(extra["discounts"], today); len(recs) > 0 {
+			out.Discounts = append(out.Discounts, recs...)
+		}
 		if recs := FilterActive(extra["places"], today); len(recs) > 0 {
 			out.Places = recs
 		}
+		out.Opportunities = l.dedupe("opportunities", out.Opportunities)
+		out.Jobs = l.dedupe("jobs", out.Jobs)
+		out.Discounts = l.dedupe("discounts", out.Discounts)
 	}
 	return out
 }

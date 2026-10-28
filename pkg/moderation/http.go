@@ -8,6 +8,7 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,6 +50,15 @@ var (
 	targets = map[string]ReportTarget{}
 )
 
+// EditFunc validates the admin's corrected payload of a pending submission (old is the stored
+// payload, in the new fields) and returns what to store; an error's text is the broken field.
+type EditFunc func(old, in map[string]any, today string) (map[string]any, error)
+
+var editors = map[string]EditFunc{}
+
+// Editor makes pending submissions of kind editable by the admin (PATCH /api/admin/queue/{id}).
+func Editor(kind string, fn EditFunc) { extMu.Lock(); editors[kind] = fn; extMu.Unlock() }
+
 // Notice registers the author message for a kind; kinds without one get a generic message.
 func Notice(kind string, fn NoticeFunc) { extMu.Lock(); notices[kind] = fn; extMu.Unlock() }
 
@@ -70,6 +80,7 @@ var (
 	MsgNoItem     = httpx.Msg{KK: "Мұндай жазба табылмады.", RU: "Запись не найдена."}
 	MsgKind       = httpx.Msg{KK: "Бұл түрге шағым қабылданбайды.", RU: "На этот тип нельзя пожаловаться."}
 	MsgConsent    = httpx.Msg{KK: "Алдымен деректерді өңдеуге келісім беріңіз.", RU: "Сначала дайте согласие на обработку данных."}
+	MsgNotEdit    = httpx.Msg{KK: "Бұл түрдегі ұсынысты өңдеуге болмайды.", RU: "Заявку этого типа нельзя редактировать."}
 	MsgRepReason  = httpx.Msg{KK: "Шағым себебін жазыңыз (3–300 таңба).", RU: "Укажите причину жалобы (3–300 символов)."}
 )
 
@@ -79,6 +90,7 @@ func Routes(mux *http.ServeMux, wrap func(http.Handler) http.Handler) {
 	h("GET /api/admin/queue", auth.NeedRole(listQueue, "admin"))
 	h("POST /api/admin/queue/{id}/approve", auth.Write(auth.NeedRole(decide(true), "admin")))
 	h("POST /api/admin/queue/{id}/reject", auth.Write(auth.NeedRole(decide(false), "admin")))
+	h("PATCH /api/admin/queue/{id}", auth.Write(auth.NeedRole(editPending, "admin")))
 	h("POST /api/reports", auth.Write(auth.Need(report)))
 	h("GET /api/admin/reports", auth.NeedRole(listReports, "admin"))
 	h("POST /api/admin/reports/dismiss", auth.Write(auth.NeedRole(dismiss, "admin")))
@@ -267,6 +279,94 @@ func decide(approve bool) auth.Handler {
 		httpx.JSON(w, http.StatusOK, map[string]any{"submission": s, "notified": notified})
 	}
 }
+
+// editPending: PATCH /api/admin/queue/{id} {"payload": {...}} — the admin corrects a pending
+// suggestion (typo, missing ru text, wrong deadline) before approving it. Validated by the kind's
+// EditFunc with the same rules as the original submission; recorded in audit_log.
+func editPending(w http.ResponseWriter, r *http.Request, admin *auth.User) {
+	ctx := r.Context()
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+		return
+	}
+	var body struct {
+		Payload map[string]any `json:"payload"`
+	}
+	if err := httpx.Decode(r, &body, 16<<10); err != nil || body.Payload == nil {
+		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+		return
+	}
+	today := time.Now().UTC().Add(5 * time.Hour).Format("2006-01-02")
+	var s Submission
+	var fieldErr error
+	err = db.Tx(ctx, func(tx pgx.Tx) error {
+		err := tx.QueryRow(ctx, `select id, kind, payload, submitted_by, university, status::text, reason
+			from submissions where id = $1 for update`, id).
+			Scan(&s.ID, &s.Kind, &s.Payload, &s.SubmittedBy, &s.University, &s.Status, &s.Reason)
+		if err != nil {
+			return err
+		}
+		if s.Status != "pending" {
+			return ErrNotPending
+		}
+		extMu.RLock()
+		fn := editors[s.Kind]
+		extMu.RUnlock()
+		if fn == nil {
+			return errNotEditable
+		}
+		var old map[string]any
+		if err := json.Unmarshal(s.Payload, &old); err != nil {
+			old = map[string]any{}
+		}
+		next, err := fn(old, body.Payload, today)
+		if err != nil {
+			fieldErr = err
+			return err
+		}
+		raw, err := json.Marshal(next)
+		if err != nil {
+			return err
+		}
+		changed := []string{}
+		for k, v := range next {
+			a, _ := json.Marshal(v)
+			b, _ := json.Marshal(old[k])
+			if string(a) != string(b) {
+				changed = append(changed, k)
+			}
+		}
+		sort.Strings(changed)
+		if _, err := tx.Exec(ctx, `update submissions set payload = $2::jsonb where id = $1`, id, string(raw)); err != nil {
+			return err
+		}
+		s.Payload = raw
+		ch, _ := json.Marshal(changed)
+		_, err = tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, meta)
+			values ($1, 'moderation_edit', $2, jsonb_build_object('submission', $3::bigint, 'kind', $4::text, 'changed', $5::jsonb))`,
+			admin.ID, s.SubmittedBy, s.ID, s.Kind, string(ch))
+		return err
+	})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		httpx.Error(w, r, http.StatusNotFound, "not_found", MsgNoItem)
+	case errors.Is(err, ErrNotPending):
+		httpx.Error(w, r, http.StatusConflict, "not_pending", MsgNotPending)
+	case errors.Is(err, errNotEditable):
+		httpx.Error(w, r, http.StatusBadRequest, "not_editable", MsgNotEdit)
+	case fieldErr != nil:
+		f := fieldErr.Error()
+		httpx.Error(w, r, http.StatusBadRequest, "invalid_"+f, httpx.Msg{
+			KK: "«" + f + "» өрісі дұрыс толтырылмаған.", RU: "Поле «" + f + "» заполнено неверно."})
+	case err != nil:
+		fail(w, r, "edit", err)
+	default:
+		httpx.JSON(w, http.StatusOK, map[string]any{"submission": s})
+	}
+}
+
+var errNotEditable = errors.New("moderation: kind is not editable")
 
 // Notify is the sender; tests replace it. Decisions about the author's own submission and
 // report alerts to admins are transactional: always sent, immediately.

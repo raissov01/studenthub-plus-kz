@@ -93,6 +93,7 @@ func count(t *testing.T, sql string, args ...any) int {
 var mux = func() *http.ServeMux {
 	m := http.NewServeMux()
 	Routes(m)
+	SubmissionRoutes(m)
 	moderation.Routes(m, func(h http.Handler) http.Handler { return h })
 	return m
 }()
@@ -152,7 +153,7 @@ func makeAmbassador(t *testing.T, admin int64, univ string) int64 {
 
 func TestFeatureOffIs404(t *testing.T) {
 	t.Setenv("FEATURE_AMBASSADOR", "false")
-	for _, c := range [][2]string{{"POST", "/api/ambassador/apply"}, {"GET", "/api/ambassador/me"}, {"POST", "/api/submissions"},
+	for _, c := range [][2]string{{"POST", "/api/ambassador/apply"}, {"GET", "/api/ambassador/me"},
 		{"GET", "/api/ambassador/rating"}, {"GET", "/api/certificates/abcdefgh"}, {"GET", "/api/cron/ambassador"}} {
 		if w := do(t, c[0], c[1], 0, map[string]any{}); w.Code != 404 || errCode(w) != "not_found" {
 			t.Errorf("%s %s with ambassador off: %d", c[0], c[1], w.Code)
@@ -610,5 +611,93 @@ func TestTermExpiryRenewalAndCertificate(t *testing.T) {
 	}
 	if w := do(t, "PATCH", fmt.Sprintf("/api/admin/ambassadors/%d", termID), admin, map[string]any{"hours_per_week": 3}); w.Code != 404 {
 		t.Fatalf("patch ended term: %d", w.Code)
+	}
+}
+
+// «Мүмкіндік ұсыну»: a student suggests with the ambassador switch off, the admin corrects the
+// pending payload, approves it; it is published as source = "student" and the author is told.
+func TestStudentSuggestionWithoutAmbassadorSwitch(t *testing.T) {
+	testdb.Need(t)
+	t.Setenv("FEATURE_AMBASSADOR", "false")
+	admin := newUser(t, "admin", "")
+	student := newUser(t, "student", "ENU")
+	other := newUser(t, "student", "ENU")
+	exec(t, `update users set consent_at = null where id = $1`, other)
+	deadline := time.Now().AddDate(0, 2, 0).Format("2006-01-02")
+	opp := map[string]any{"type": "grant", "title_kk": "Жас зерттеуші гарнты", "org_kk": "Ғылым қоры",
+		"desc_kk": "Студенттерге арналған зерттеу гранты", "source_url": "https://science.kz/grant",
+		"deadline": deadline, "free": true, "city": "astana"}
+
+	if w := do(t, "POST", "/api/submissions", 0, map[string]any{"kind": "opportunity", "payload": opp}); w.Code != 401 {
+		t.Fatalf("anonymous: %d", w.Code)
+	}
+	if w := do(t, "POST", "/api/submissions", other, map[string]any{"kind": "opportunity", "payload": opp}); w.Code != 403 || errCode(w) != "consent_required" {
+		t.Fatalf("no consent: %d %s", w.Code, w.Body)
+	}
+	w := do(t, "POST", "/api/submissions", student, map[string]any{"kind": "opportunity", "payload": opp})
+	if w.Code != 201 {
+		t.Fatalf("suggest with the switch off: %d %s", w.Code, w.Body)
+	}
+	sid := int64(decode(t, w)["id"].(float64))
+
+	// the admin fixes the typo and adds the ru title; same validation as the submission
+	path := fmt.Sprintf("/api/admin/queue/%d", sid)
+	fixed := map[string]any{}
+	for k, v := range opp {
+		fixed[k] = v
+	}
+	fixed["title_kk"], fixed["title_ru"] = "Жас зерттеуші гранты", "Грант молодого исследователя"
+	if w := do(t, "PATCH", path, student, map[string]any{"payload": fixed}); w.Code != 403 {
+		t.Fatalf("student edits the queue: %d", w.Code)
+	}
+	if w := do(t, "PATCH", path, 0, map[string]any{"payload": fixed}); w.Code != 401 {
+		t.Fatalf("anonymous edits the queue: %d", w.Code)
+	}
+	bad := map[string]any{}
+	for k, v := range fixed {
+		bad[k] = v
+	}
+	bad["source_url"] = "http://science.kz"
+	if w := do(t, "PATCH", path, admin, map[string]any{"payload": bad}); w.Code != 400 || errCode(w) != "invalid_source_url" {
+		t.Fatalf("invalid edit: %d %s", w.Code, w.Body)
+	}
+	w = do(t, "PATCH", path, admin, map[string]any{"payload": fixed})
+	if w.Code != 200 {
+		t.Fatalf("edit: %d %s", w.Code, w.Body)
+	}
+	var stored map[string]any
+	_ = db.Tx(ctx(), func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx(), `select payload from submissions where id = $1`, sid).Scan(&stored)
+	})
+	if stored["title_kk"] != "Жас зерттеуші гранты" || stored["author_role"] != "student" {
+		t.Fatalf("stored payload: %v", stored)
+	}
+	if n := count(t, `select count(*) from audit_log where action = 'moderation_edit' and actor_id = $1
+		and meta->>'submission' = $2 and meta->'changed' ? 'title_kk'`, admin, fmt.Sprint(sid)); n != 1 {
+		t.Fatalf("edit audit rows: %d", n)
+	}
+
+	if w := do(t, "POST", fmt.Sprintf("/api/admin/queue/%d/approve", sid), admin, map[string]any{}); w.Code != 200 || decode(t, w)["notified"] != true {
+		t.Fatalf("approve: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "PATCH", path, admin, map[string]any{"payload": fixed}); w.Code != 409 || errCode(w) != "not_pending" {
+		t.Fatalf("edit after approval: %d %s", w.Code, w.Body)
+	}
+	var cid int64
+	_ = db.Tx(ctx(), func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx(), `select id from community_content where submission_id = $1`, sid).Scan(&cid)
+	})
+	rec, ok := contentHas(t, "opportunities", fmt.Sprintf("amb-%d", cid))
+	if !ok || rec["source"] != "student" || rec["title"].(map[string]any)["ru"] != "Грант молодого исследователя" || rec["deadline"] != deadline {
+		t.Fatalf("published: %v %v", ok, rec)
+	}
+	if msgs := box.of(student); len(msgs) != 1 || !strings.Contains(msgs[0], fmt.Sprintf("№%d", sid)) {
+		t.Fatalf("author notice: %v", msgs)
+	}
+	// non-editable kinds
+	exec(t, `insert into submissions (kind, payload, submitted_by) values ('market_report', '{}', $1)`, student)
+	mid := pendingID(t, "market_report", student)
+	if w := do(t, "PATCH", fmt.Sprintf("/api/admin/queue/%d", mid), admin, map[string]any{"payload": map[string]any{}}); w.Code != 400 || errCode(w) != "not_editable" {
+		t.Fatalf("market_report edit: %d %s", w.Code, w.Body)
 	}
 }
