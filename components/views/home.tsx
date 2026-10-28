@@ -5,6 +5,9 @@ import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { RoadmapBoard } from '@/components/views/roadmap';
 import { ServicesCommunity } from '@/components/views/entries';
+import { hasAccount } from '@/components/views/common';
+import { InboxSection } from '@/components/views/inbox';
+import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
@@ -210,13 +213,25 @@ function NotifRow({ n }: { n: Notif }) {
   );
 }
 
+/** signed in: the server inbox first, then the device's own notices under their own heading; signed out: only those */
 export function Notifications() {
+  const signedIn = hasAccount(useAccount());
+  if (!signedIn) return <LocalNotices />;
+  return (
+    <>
+      <InboxSection />
+      <LocalNotices heading />
+    </>
+  );
+}
+
+function LocalNotices({ heading = false }: { heading?: boolean }) {
   const { S, ui, I, tt, setUi, update, content } = useApp();
   const kinds: [string, string][] = [['all', tt('Барлығы', 'Все')], ['jobs', tt('Жұмыс', 'Работа')], ['events', tt('Іс-шаралар', 'События')], ['deals', tt('Жеңілдіктер', 'Скидки')]];
   const all = notifs(S, I, content);
   const list = all.filter(n => ui.nk === 'all' || n.k === ui.nk);
   const unread = all.filter(n => !S.read[n.id]).length;
-  return (
+  const body = (
     <>
       <div className="chips">{kinds.map(([v, l]) => <Chip key={v} pressed={ui.nk === v} onClick={() => setUi({ nk: v })}>{l}</Chip>)}</div>
       {list.length
@@ -229,6 +244,13 @@ export function Notifications() {
         </button>
       ) : null}
     </>
+  );
+  if (!heading) return body;
+  return (
+    <section className="section" id="device-notices">
+      <SectionHead title={tt('Осы құрылғыдағы ескертулер', 'Подсказки на этом устройстве')} />
+      {body}
+    </section>
   );
 }
 

@@ -7,6 +7,10 @@ import { useApp } from '@/components/app';
 import { Boot } from '@/components/Boot';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
+import { hasAccount } from '@/components/views/common';
+import { useInboxPoll } from '@/components/views/inbox';
+import { useAccount } from '@/lib/account';
+import { badgeText } from '@/lib/inbox';
 import { OfflineBanner, UpdateBar } from '@/components/Pwa';
 import { unreadCount } from '@/lib/domain';
 import { IC } from '@/lib/icons';
@@ -91,7 +95,11 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', on);
   }, [sheet, closeSheet]);
 
-  const unread = hydrated ? unreadCount(S, I, content) : 0;
+  // badge: the device's own unread notices + the account inbox (GET /api/me inboxUnread), kept fresh by the poll
+  const acc = useAccount();
+  useInboxPoll();
+  const unread = hydrated ? unreadCount(S, I, content) + (hasAccount(acc) ? acc.inboxUnread : 0) : 0;
+  const badge = badgeText(unread);
   const onProfile = name === 'profile';
   const tabs: [string, 'home' | 'search' | 'bell' | 'user', string][] = [
     ['home', 'home', tt('Басты бет', 'Главная')], ['search', 'search', tt('Іздеу', 'Поиск')],
@@ -115,7 +123,7 @@ export function Shell({ children }: { children: ReactNode }) {
             aria-label={onProfile ? tt('Параметрлер', 'Параметры') : tt('Хабарламалар', 'Уведомления')}>
             <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
               dangerouslySetInnerHTML={{ __html: onProfile ? IC.gear : IC.bell }} />
-            <span className="count" id="mine-count" hidden={onProfile || !unread}>{unread || ''}</span>
+            <span className="count" id="mine-count" hidden={onProfile || !badge}>{badge}</span>
           </button>
         </div>
       </header>
@@ -125,7 +133,8 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="tabbar-in">
           {tabs.map(([k, i, l]) => (
             <button key={k} className="tab" type="button" aria-current={k === tabRoot ? 'page' : undefined} onClick={() => go(k)}>
-              <span className="pill"><Icon n={i} s={22} /></span><span>{l}</span>
+              <span className="pill"><Icon n={i} s={22} />{k === 'notif' && badge
+                ? <span className="count tab-count" aria-label={tt(`${unread} оқылмаған`, `${unread} непрочитанных`)}>{badge}</span> : null}</span><span>{l}</span>
             </button>
           ))}
         </div>

@@ -621,6 +621,15 @@ button.hero-stat:active { background: var(--sw-mist); }
 
 /* header bell + four-tab bar */
 #mine-btn .count { background: var(--heart); color: #FFFFFF; }
+.tab .pill { position: relative; }
+.tab .pill .tab-count {
+  position: absolute; top: -4px; left: 50%; margin-left: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--heart); color: #FFFFFF; font-size: .66rem; font-weight: 700; line-height: 18px; text-align: center;
+  letter-spacing: 0; max-width: none; overflow: visible; border: 1px solid var(--surface);
+}
+/* in-site inbox (components/views/inbox.tsx) */
+.inbox-text { overflow-wrap: anywhere; white-space: pre-line; }
+.inbox-actions { display: flex; flex-wrap: wrap; column-gap: 18px; align-items: center; }
 .tabbar-in { grid-template-columns: repeat(4, 1fr); }
 /* narrow phones (320–400px): wrap long names instead of cutting them */
 .sr-main .row-title, .sr-main .row-sub, .sr-main .sr-role { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }

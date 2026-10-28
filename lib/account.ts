@@ -26,10 +26,11 @@ export interface AccountUser {
   isAdult: boolean | null;
   createdAt: string;
 }
-export interface AccountState { loaded: boolean; user: AccountUser | null; needsConsent: boolean }
+/** inboxUnread: unread in-site inbox items (GET /api/me, docs/api/inbox.md); 0 when signed out */
+export interface AccountState { loaded: boolean; user: AccountUser | null; needsConsent: boolean; inboxUnread: number }
 
 let token = '';
-let state: AccountState = { loaded: false, user: null, needsConsent: false };
+let state: AccountState = { loaded: false, user: null, needsConsent: false, inboxUnread: 0 };
 const SERVER: AccountState = state;
 const listeners = new Set<() => void>();
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
@@ -38,6 +39,11 @@ function set(next: Partial<AccountState>) {
   listeners.forEach(l => l());
 }
 export const getAccount = () => state;
+/** the inbox endpoints answer the fresh unread count (GET /api/me/inbox, POST /api/me/inbox/read) */
+export function setInboxUnread(n: number) {
+  if (!state.user || !Number.isFinite(n) || n < 0 || n === state.inboxUnread) return;
+  set({ inboxUnread: n });
+}
 export function useAccount(): AccountState {
   return useSyncExternalStore(subscribe, () => state, () => SERVER);
 }
@@ -53,6 +59,14 @@ export class ApiError extends Error {
 const offlineError = (lang?: 'kk' | 'ru') =>
   new ApiError(0, 'offline', lang === 'ru' ? 'Нет интернета — для этого нужно подключение.' : 'Интернет жоқ — бұл әрекетке интернет керек.');
 
+/** Mini App sessions slide: a Bearer request may come back with a fresh token in X-Session-Token (docs/ACCOUNTS.md).
+    It replaces the in-memory token (never stored); cookie sessions are renewed by the server itself. */
+export const SESSION_TOKEN_HEADER = 'x-session-token';
+function renew(r: Response) {
+  const fresh = r.headers.get(SESSION_TOKEN_HEADER)?.trim();
+  if (fresh && token) token = fresh;
+}
+
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
 export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru'; cache?: RequestCache; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
@@ -66,6 +80,7 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
   } catch {
     throw new ApiError(0, 'network', opts.lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
   }
+  renew(r);
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
@@ -90,6 +105,7 @@ export async function apiUpload<T = unknown>(path: string, form: FormData, lang?
   } catch {
     throw new ApiError(0, 'network', lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
   }
+  renew(r);
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
@@ -106,6 +122,7 @@ export async function apiDownload(path: string, filename: string, lang?: 'kk' | 
   if (lang) headers['accept-language'] = lang;
   if (!isOnline()) throw offlineError(lang);
   const r = await fetch(path, { headers, credentials: 'same-origin' });
+  renew(r);
   if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось скачать файл.' : 'Файлды жүктеу мүмкін болмады.');
   const url = URL.createObjectURL(await r.blob());
   const a = document.createElement('a');
@@ -117,16 +134,30 @@ export async function apiDownload(path: string, filename: string, lang?: 'kk' | 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string };
-const apply = (r: MeResp) => set({ loaded: true, user: r.user, needsConsent: !!r.user && r.needsConsent });
+type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string; inboxUnread?: number };
+/* sign-in and profile replies carry no inboxUnread: the last known count stays until the next GET /api/me */
+const apply = (r: MeResp) => set({
+  loaded: true, user: r.user, needsConsent: !!r.user && r.needsConsent,
+  inboxUnread: !r.user ? 0 : typeof r.inboxUnread === 'number' ? r.inboxUnread : state.user?.id === r.user.id ? state.inboxUnread : 0,
+});
 
 /** GET /api/me once on start; failures mean «not signed in». A definite «nobody» from the server also drops the
     offline ticket copies (lib/tickets.ts); a network failure keeps them. */
 let loading: Promise<void> | null = null;
 export function loadMe(force = false): Promise<void> {
   if (loading && !force) return loading;
-  loading = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => set({ loaded: true, user: null, needsConsent: false }));
+  loading = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => set({ loaded: true, user: null, needsConsent: false, inboxUnread: 0 }));
   return loading;
+}
+
+/** quiet re-check of GET /api/me (focus, visibility, the inbox poll): only a real answer changes the state, so a
+    network hiccup never looks like a sign-out */
+let refreshing: Promise<void> | null = null;
+export function refreshMe(): Promise<void> {
+  if (refreshing) return refreshing;
+  refreshing = api<MeResp>('/api/me').then(r => { if (!r.user) clearTickets(); apply(r); }, () => { /* keep the state */ })
+    .finally(() => { refreshing = null; });
+  return refreshing;
 }
 
 const refParam = () => {
@@ -195,7 +226,7 @@ export async function signOut(all: boolean, lang: 'kk' | 'ru'): Promise<void> {
   await api('/api/auth/logout', { method: 'POST', body: { all }, lang });
   token = '';
   clearTickets();
-  set({ user: null, needsConsent: false });
+  set({ user: null, needsConsent: false, inboxUnread: 0 });
 }
 
 export async function giveConsent(isAdult: boolean | null, lang: 'kk' | 'ru'): Promise<void> {
@@ -227,5 +258,5 @@ export async function deleteAccount(lang: 'kk' | 'ru'): Promise<void> {
   await api('/api/me', { method: 'DELETE', body: { confirm: 'DELETE' }, lang });
   token = '';
   clearTickets();
-  set({ user: null, needsConsent: false });
+  set({ user: null, needsConsent: false, inboxUnread: 0 });
 }
