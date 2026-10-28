@@ -1,1 +1,1 @@
-{ "name": "studygo", "private": true, "type": "module" }
+{"name":"studygo","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs"}}
