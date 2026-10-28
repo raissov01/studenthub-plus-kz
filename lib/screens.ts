@@ -13,6 +13,7 @@ interface Meta { title: (prm: string, x: Ctx) => string; tab?: string }
 const t = (kk: string, ru: string) => ({ I }: Ctx) => I.tt(kk, ru);
 
 const META: Record<string, Meta> = {
+  quiz: { title: (_, x) => t('Квиздер', 'Квизы')(x), tab: 'home' },
   home: { title: () => 'Student Hub' },
   search: { title: (_, x) => t('Іздеу', 'Поиск')(x) },
   notif: { title: (_, x) => t('Хабарламалар', 'Уведомления')(x) },

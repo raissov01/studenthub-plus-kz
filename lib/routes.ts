@@ -8,22 +8,23 @@ export const parseView = (v: string): [string, string] => {
 
 /** screens that take no URL parameter */
 export const PLAIN = [
-  'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
+  'quiz', 'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions',
 ] as const;
 /** screens that need an id */
-export const WITH_ID = ['job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
+export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
 /** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
   'admin:employers', 'admin:staff', 'admin:content',
 ] as const;
-/** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest]
-    and app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along) */
-export const MULTI_SEGMENT = ['employer', 'admin'] as const;
+/** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
+    app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
+    and the quiz routes */
+export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
 export const ROOTS = ['home', 'search', 'notif', 'profile'];
 
 const FIXED: Record<string, string> = {

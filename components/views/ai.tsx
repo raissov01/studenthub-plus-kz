@@ -1,6 +1,8 @@
 'use client';
 /* AI helper and offline study tools: chat, résumé, interview practice, exam plans, flashcards, job match. */
+import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useConfig } from '@/lib/config';
 import { useApp, copyText, type App } from '@/components/app';
 import { track } from '@/features/analytics/track';
 import { ConfirmSheet, Icon, Row, Seg } from '@/components/ui';
@@ -52,6 +54,7 @@ const toChat = (app: App, prompt: string) => { app.setUi({ chatDraft: prompt });
 export function Ai() {
   const app = useApp();
   const { tt, go, S } = app;
+  const cfg = useConfig();
   const tools: [string, IconName, string, string][] = [
     ['resume', 'doc', tt('Түйіндеме құрастыру', 'Конструктор резюме'), tt('Профиліңізден қазақша, орысша, ағылшынша', 'Из профиля: на казахском, русском, английском')],
     ['interview', 'mic', tt('Сұхбатқа дайындық', 'Подготовка к собеседованию'), tt('Жиі қойылатын 10 сұрақ және жаттығу', '10 частых вопросов и тренировка')],
@@ -79,8 +82,9 @@ export function Ai() {
           <button key={s} className="chip" type="button" onClick={() => { setUi({ chatDraft: '' }); go('chat'); void sendChat(s, S.lang); }}>{s}</button>
         ))}</div></section>
       <section className="section"><h2>{tt('Құралдар', 'Инструменты')}</h2>
+        {cfg.features.quiz && <Row go="quiz" icon="cards" title={tt('Квиздер', 'Квизы')} sub={tt('Конспектіден тест, жаттығу және тікелей ойын', 'Тест из конспекта, тренировка и игра в прямом эфире')} />}
         <div className="group">{tools.map(([g, i, t, s]) => <Row key={g} go={g} icon={i} title={t} sub={s} />)}</div>
-        <p className="tiny muted">{tt('Құралдар интернетсіз жұмыс істейді. AI чатқа интернет керек.', 'Инструменты работают без интернета. AI-чату нужен интернет.')}</p>
+        <p className="tiny muted">{cfg.features.quiz ? tt('Карточкалар интернетсіз жұмыс істейді. Квиздер мен AI чатқа интернет керек.', 'Карточки работают без интернета. Для квизов и AI-чата нужен интернет.') : tt('Құралдар интернетсіз жұмыс істейді. AI чатқа интернет керек.', 'Инструменты работают без интернета. AI-чату нужен интернет.')}</p>
       </section>
     </>
   );
@@ -285,11 +289,14 @@ export function PlanView({ id }: { id: string }) {
 
 /* ---------- flashcards ---------- */
 export function Cards() {
+  const router = useRouter();
   const app = useApp();
   const { S, I, tt, go, toast } = app;
+  const cfg = useConfig();
   const decks = allDecks(S, I);
   return (
     <>
+      {cfg.features.quiz && <Row onClick={() => router.push('/quiz/new?notes=1')} icon="cards" title={tt('Квиз жасау', 'Создать квиз')} sub={tt('Конспект жүктеу немесе мәтінді қою', 'Загрузить конспект или вставить текст')} />}
       <div className="group">{decks.length ? decks.map(d => <Row key={d.id} go={'deck:' + d.id} icon="cards" title={d.name} sub={tt(`${d.cards.length} карточка`, `${d.cards.length} ${plural(d.cards.length, ['карточка', 'карточки', 'карточек'])}`)} />)
         : <div className="empty">{tt('Әзірге жиын жоқ', 'Пока нет наборов')}</div>}</div>
       <section className="card">
