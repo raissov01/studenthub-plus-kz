@@ -5,6 +5,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePathname, useRouter } from 'next/navigation';
 import { i18n, type I18n } from '@/lib/format';
 import { openOpps } from '@/lib/domain';
+import { useAccount } from '@/lib/account';
+import { jobsForViewer } from '@/lib/b2b';
 import { parseView, pathOf, ROOTS } from '@/lib/routes';
 import { setUi, update, useAppState, useUi, type UiState } from '@/lib/store';
 import type { AppState, Content } from '@/lib/types';
@@ -42,8 +44,10 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
   const pathRef = useRef(pathname);
   useEffect(() => { pathRef.current = pathname; }, [pathname]);
 
-  // past deadlines never show, whatever the source said
-  const content = useMemo(() => ({ ...raw, opportunities: openOpps(raw.opportunities) }), [raw]);
+  // past deadlines never show, whatever the source said; adult-only employer jobs never reach a signed-in minor
+  const acc = useAccount();
+  const signedIn = !!acc.user, isAdult = acc.user?.isAdult;
+  const content = useMemo(() => ({ ...raw, opportunities: openOpps(raw.opportunities), jobs: jobsForViewer(raw.jobs, signedIn, isAdult) }), [raw, signedIn, isAdult]);
 
   const [sheet, setSheet] = useState<ReactNode>(null);
   const sheetOpen = useRef(false);

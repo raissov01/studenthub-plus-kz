@@ -16,6 +16,9 @@ import { Market } from '@/components/views/market';
 import { AdminMentors, AmbassadorMentors, Mentors } from '@/components/views/mentors';
 import { AdminAmbassadors, AdminMarket, AdminQueue, AdminReports } from '@/components/views/moderation';
 import { NotFound } from '@/components/views/common';
+import { Announcements } from '@/components/views/jobs-b2b';
+import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/employer';
+import { UniversityCabinet } from '@/components/views/university';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -62,6 +65,8 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'mentors') return <AdminMentors />;
       if (prm === 'ambassadors') return <AdminAmbassadors />;
       if (prm === 'market') return <AdminMarket />;
+      if (prm === 'employers') return <AdminEmployers />;
+      if (prm === 'staff') return <AdminStaff />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
     case 'mentors': return <Mentors prm={prm} />;
@@ -69,6 +74,9 @@ export function Screen({ v }: { v: string }) {
     case 'organize': return <Organize prm={prm} />;
     case 'checkin': return <Checkin />;
     case 'certificate': return prm ? <CertificateView code={prm} /> : <NotFound />;
+    case 'employer': return <EmployerCabinet prm={prm} />;
+    case 'university': return <UniversityCabinet />;
+    case 'announcements': return <Announcements />;
     default: return <Home />;
   }
 }

@@ -4,6 +4,7 @@
 import { useApp } from '@/components/app';
 import { Row } from '@/components/ui';
 import { RatingEntry } from '@/components/views/ambassador';
+import { AnnouncementsEntry } from '@/components/views/jobs-b2b';
 import { useFeature } from '@/components/views/common';
 import { useAccount } from '@/lib/account';
 import { canCreateEvents } from '@/lib/events';
@@ -16,6 +17,7 @@ export function ServicesCommunity() {
     <>
       {market ? <Row go="market" icon="gift" title={tt('Тегін заттар', 'Отдам даром')} sub={tt('Кітап, конспект, жатақханаға керек заттар — тегін', 'Книги, конспекты, вещи для общежития — бесплатно')} /> : null}
       {mentors ? <Row go="mentors" icon="cap" title={tt('Менторлар', 'Менторы')} sub={tt('Алғашқы айда көмек: жатақхана, құжаттар, оқу', 'Помощь в первый месяц: общежитие, документы, учёба')} /> : null}
+      <AnnouncementsEntry />
     </>
   );
 }
@@ -25,6 +27,7 @@ export function ProfileCommunity() {
   const { tt } = useApp();
   const acc = useAccount();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
+  const b2b = useFeature('b2b');
   const u = acc.user;
   const rows = [
     amb ? (u?.role === 'ambassador' || u?.role === 'admin'
@@ -34,6 +37,10 @@ export function ProfileCommunity() {
     mentors && u ? <Row key="mentors" go="mentors:me" icon="cap" title={tt('Менің менторлығым', 'Моё менторство')} /> : null,
     events && canCreateEvents(u?.role) ? <Row key="org" go="organize" icon="calendar" title={tt('Ұйымдастырушы беті', 'Страница организатора')} /> : null,
     market && u ? <Row key="market" go="market:mine" icon="gift" title={tt('Менің заттарым', 'Мои вещи')} /> : null,
+    b2b && u?.role === 'university_staff' ? <Row key="uni" go="university" icon="cap" title={tt('Университет кабинеті', 'Кабинет университета')} /> : null,
+    b2b && u ? (u.role === 'employer'
+      ? <Row key="emp" go="employer" icon="briefcase" title={tt('Жұмыс беруші кабинеті', 'Кабинет работодателя')} />
+      : <Row key="emp" go="employer" icon="briefcase" title={tt('Жұмыс берушілерге', 'Для работодателей')} sub={tt('Компанияны тіркеу, вакансия жариялау', 'Регистрация компании, публикация вакансий')} />) : null,
   ].filter(Boolean);
   if (!rows.length) return null;
   return <div className="group">{rows}</div>;

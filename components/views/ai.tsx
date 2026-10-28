@@ -10,6 +10,8 @@ import { COURSES, INTERVIEW, SKILLS, SPECS } from '@/lib/data/static';
 import { allDecks, buildPlan, cardsFromText, matchJob, planDay, resumeText } from '@/lib/domain';
 import { dOff, diffDays, isoLocal, plural } from '@/lib/format';
 import { getState, getUi, setUi, update } from '@/lib/store';
+import { withPortfolioLink } from '@/lib/portfolio';
+import { ResumePortfolioCheck, usePortfolioLink } from '@/components/views/portfolio';
 import type { IconName } from '@/lib/types';
 
 /* ---------- chat ---------- */
@@ -125,11 +127,14 @@ export function Resume() {
   const app = useApp();
   const { S, ui, I, tt, go, setUi, toast } = app;
   const lang = (ui.resumeLang || S.lang) as 'kk' | 'ru' | 'en';
-  const text = resumeText(lang, S, I);
+  const [withPf, setWithPf] = useState(false);
+  const pfUrl = usePortfolioLink();
+  const text = withPf && pfUrl ? withPortfolioLink(resumeText(lang, S, I), pfUrl, lang) : resumeText(lang, S, I);
   return (
     <>
       <p className="small muted">{tt('Түйіндеме профиліңіз бен портфолиоңыздан жиналады. Деректерді өзгерту үшін профильді түзетіңіз.', 'Резюме собирается из профиля и портфолио. Чтобы изменить данные, отредактируйте профиль.')}</p>
       <Seg items={[['kk', 'Қазақша'], ['ru', 'Русский'], ['en', 'English']]} cur={lang} onPick={v => setUi({ resumeLang: v })} />
+      <ResumePortfolioCheck checked={withPf} onChange={setWithPf} />
       <div className="pre" id="resumeText">{text}</div>
       <div className="btn-row">
         <button className="btn" type="button" onClick={() => copyText(text, toast, tt)}><Icon n="copy" s={18} /> {tt('Көшіру', 'Скопировать')}</button>

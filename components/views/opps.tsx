@@ -4,6 +4,7 @@ import { useApp } from '@/components/app';
 import { featureOn, useConfig } from '@/lib/config';
 import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
+import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
 import { DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { deadlineText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
@@ -23,6 +24,7 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
         <span className="row-title">{L(j.title)}</span>
         <span className="row-sub">{L(j.org)}, {L(CITIES[j.city])}</span>
         <span className="job-pay"><b className="pay">{pt.main}</b> <span className="tiny muted">{pt.sub}</span><DemoBadge show={j.is_demo} /></span>
+        <EmployerJobBits j={j} />
         {tags.length || applied ? (
           <span className="badges">
             {applied ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Өтінім жіберілді', 'Отклик отправлен')}</span> : null}
@@ -82,6 +84,7 @@ export function OppCard({ o }: { o: Opportunity }) {
         <div className="badges">
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-line">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
+          <OfficialBadge o={o} />
           {S.saved[o.id] ? <span className="badge b-sun">{tt('Сақталған', 'Сохранено')}</span> : null}
           <DemoBadge show={o.is_demo} />
         </div>
@@ -106,6 +109,7 @@ export function Mine() {
   const empty = (msg: string, go: string, label: string) => <div className="group"><EmptyGo msg={msg} go={go} label={label} /></div>;
   return (
     <>
+      <MyApplications />
       <section className="section"><SectionHead title={tt('Өтінімдер', 'Отклики')} more={<span className="tiny muted num">{jobs.length}</span>} />
         {jobs.length ? <div className="group">{jobs.map(j => <JobRow key={j.id} j={j} />)}</div> : empty(tt('Әзірге өтінім жоқ.', 'Откликов пока нет.'), 'opps:jobs', tt('Жұмыс іздеу', 'Найти работу'))}</section>
       <section className="section"><SectionHead title={tt('Сақталған бағдарламалар', 'Сохранённые программы')} more={<span className="tiny muted num">{opps.length}</span>} />

@@ -921,3 +921,61 @@ body::before { height: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
 /* a long sheet scrolls instead of squeezing its blocks (the deal sheet grew a row) */
 .sheet > * { flex-shrink: 0; }
 @media (max-width: 374px) { .quiet-times { grid-template-columns: 1fr; } }
+/* ---------- public portfolio /p/<slug> and its preview (prompt 09) ---------- */
+main.bare { padding-block: 12px 40px; max-width: 760px; }
+.pf-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pf-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text); text-decoration: none; }
+.pf-bar .chip { text-decoration: none; }
+.pf { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.pf-head { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pf-name { font-size: 1.9rem; line-height: 1.15; overflow-wrap: anywhere; }
+.pf-headline { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.pf-where { color: var(--muted); overflow-wrap: anywhere; }
+.pf-bio { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.55; }
+.pf-tg { align-self: flex-start; margin-top: 4px; }
+.pf-print-only { display: none; }
+.pf-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pf-sec h2 { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; }
+.pf-sec h2 svg { color: var(--primary); flex: none; }
+.pf-sec h3 { font-family: var(--font-body); font-size: .9rem; color: var(--muted); font-weight: 600; margin-top: 4px; }
+.pf-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.pf-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; }
+.pf-item + .pf-item { border-top: 1px solid var(--line); }
+.pf-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; flex: none; }
+.pf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pf-meta, .pf-desc { font-size: .88rem; color: var(--muted); overflow-wrap: anywhere; }
+.pf-desc { white-space: pre-line; }
+.pf-verify { font-size: .86rem; overflow-wrap: anywhere; align-self: flex-start; }
+.pf-url { display: none; }
+.pf-end { flex: none; }
+.pf-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf-skills .badge { white-space: normal; overflow-wrap: anywhere; }
+.pf-empty { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; color: var(--muted); font-size: .92rem; }
+.pf-legend { display: flex; gap: 6px; align-items: flex-start; font-size: .86rem; color: var(--muted); }
+.pf-legend svg { color: var(--primary); flex: none; margin-top: 3px; }
+.pf-foot { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.pf-foot a { overflow-wrap: anywhere; }
+.pf-preview .pf-name { font-size: 1.5rem; }
+@media (max-width: 420px) {
+  .pf-item { flex-wrap: wrap; }
+  .pf-end { order: 3; flex-basis: 100%; padding-left: 48px; }
+  .pf-name { font-size: 1.6rem; }
+}
+@media print {
+  @page { size: A4; margin: 14mm; }
+  main.bare { max-width: none; padding: 0; gap: 12px; }
+  body::before { display: none; }
+  .pf-bar { display: none !important; }
+  .pf-print-only { display: block; }
+  .pf, .pf * { color: #000000 !important; background: transparent !important; }
+  .pf { gap: 12px; font-size: 11pt; }
+  .pf-head, .pf-list, .pf-empty { border-color: #9A9A9A; padding: 10px 12px; }
+  .pf-item { padding: 8px 10px; break-inside: avoid; }
+  .pf-sec h2 { break-after: avoid; }
+  .pf-ico { display: none; }
+  .pf-end { order: 0; flex-basis: auto; padding-left: 0; }
+  .pf a { text-decoration: none; }
+  .pf-url { display: inline; }
+  .pf .badge { border: 1px solid #9A9A9A; }
+}
