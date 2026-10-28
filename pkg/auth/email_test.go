@@ -285,6 +285,8 @@ func TestEmailLoginThrottled(t *testing.T) {
 		t.Fatalf("throttle: %d %s", w.Code, w.Body)
 	}
 	// per IP: one address after another from the same IP
+	// the limiter counts in fixed windows; don't let the loop straddle a window boundary
+	awayFromWindowEdge(loginPerIP.window, 20*time.Second)
 	ip := uniqueIP()
 	var last int
 	for i := 0; i <= loginPerIP.n; i++ {
@@ -727,5 +729,14 @@ func TestEmailTablesAreServerOnly(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// awayFromWindowEdge waits for the next fixed window to start when fewer than `margin` remain in the
+// current one, so a test that makes many requests counts them all in a single window.
+func awayFromWindowEdge(window, margin time.Duration) {
+	now := time.Now()
+	if left := now.Truncate(window).Add(window).Sub(now); left < margin {
+		time.Sleep(left + time.Second)
 	}
 }
