@@ -1,0 +1,9 @@
+[Unit]
+Description=Student Hub reminders every day at 10:00 Almaty
+
+[Timer]
+OnCalendar=*-*-* 10:00:00 Asia/Almaty
+Persistent=true
+
+[Install]
+WantedBy=timers.target

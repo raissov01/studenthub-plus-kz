@@ -1,0 +1,20 @@
+[Unit]
+Description=Student Hub API (Go): JSON API, Telegram webhook, daily reminders
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/opt/studenthub/.env
+WorkingDirectory=/opt/studenthub
+ExecStart=/opt/studenthub/studenthub-api
+Restart=always
+RestartSec=3
+User=studenthub
+MemoryMax=150M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

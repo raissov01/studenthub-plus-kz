@@ -42,4 +42,6 @@ func List(key, def string) []string {
 }
 
 // SiteURL is the public origin of the site, without a trailing slash.
-func SiteURL() string { return strings.TrimRight(Str("SITE_URL", "https://studenthub-plus-kz.vercel.app"), "/") }
+func SiteURL() string {
+	return strings.TrimRight(Str("SITE_URL", "https://studenthub-plus-kz.vercel.app"), "/")
+}
