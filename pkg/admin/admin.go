@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/pkg/analytics"
 	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/features"
@@ -33,6 +34,7 @@ var (
 func Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/summary", auth.NeedRole(summary, "admin"))
 	mux.HandleFunc("GET /api/admin/users", auth.NeedRole(users, "admin"))
+	mux.HandleFunc("GET /api/admin/analytics", auth.NeedRole(analyticsReport, "admin"))
 	// Write runs first (origin, rate limit), then the role check.
 	mux.HandleFunc("POST /api/admin/role", auth.Write(auth.NeedRole(setRole, "admin")))
 }
@@ -93,6 +95,20 @@ type userRow struct {
 }
 
 // users: ?q= matches name or username (substring) or an exact id / telegram id. Max 20 rows.
+// analyticsReport returns anonymous usage numbers for the last ?days= days (default 30).
+func analyticsReport(w http.ResponseWriter, r *http.Request, _ *auth.User) {
+	days, err := strconv.Atoi(r.URL.Query().Get("days"))
+	if err != nil || days < 1 || days > 365 {
+		days = 30
+	}
+	rep, err := analytics.Report(r.Context(), days)
+	if err != nil {
+		fail(w, r, "analytics", err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, rep)
+}
+
 func users(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	ctx := r.Context()
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
