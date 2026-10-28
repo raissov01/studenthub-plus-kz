@@ -1,0 +1,292 @@
+[
+  {
+    "id": "d1",
+    "cat": "food",
+    "pct": "−15%",
+    "name": {
+      "kk": "«Дала» кофеханасы",
+      "ru": "Кофейня «Дала»"
+    },
+    "what": {
+      "kk": "Кофе мен тоқаштарға",
+      "ru": "На кофе и выпечку"
+    },
+    "cond": {
+      "kk": "Студенттік QR-кодты көрсету жеткілікті",
+      "ru": "Достаточно показать студенческий QR-код"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-24",
+    "verified_at": "2026-10-26",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d2",
+    "cat": "cinema",
+    "pct": "1 500 ₸",
+    "name": {
+      "kk": "«Сапа» кинотеатры",
+      "ru": "Кинотеатр «Сапа»"
+    },
+    "what": {
+      "kk": "Студенттік билет",
+      "ru": "Студенческий билет"
+    },
+    "cond": {
+      "kk": "Жұмыс күндері 17:00-ге дейін",
+      "ru": "По будням до 17:00"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-23",
+    "verified_at": "2026-10-25",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d3",
+    "cat": "books",
+    "pct": "−10%",
+    "name": {
+      "kk": "«Кітап әлемі»",
+      "ru": "«Кітап әлемі»"
+    },
+    "what": {
+      "kk": "Оқулықтар мен көркем әдебиет",
+      "ru": "Учебники и художественная литература"
+    },
+    "cond": {
+      "kk": "Акциядағы тауарларға қолданылмайды",
+      "ru": "Не суммируется с акциями"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-22",
+    "verified_at": "2026-10-24",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d4",
+    "cat": "sport",
+    "pct": "−25%",
+    "name": {
+      "kk": "«Тұлпар» фитнес клубы",
+      "ru": "Фитнес-клуб «Тұлпар»"
+    },
+    "what": {
+      "kk": "Айлық абонемент",
+      "ru": "Месячный абонемент"
+    },
+    "cond": {
+      "kk": "Күндізгі уақытқа (16:00-ге дейін)",
+      "ru": "Дневной абонемент (до 16:00)"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-21",
+    "verified_at": "2026-10-23",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d5",
+    "cat": "clothes",
+    "pct": "−12%",
+    "name": {
+      "kk": "«Style Lab» киім дүкені",
+      "ru": "Магазин одежды «Style Lab»"
+    },
+    "what": {
+      "kk": "Жаңа коллекция",
+      "ru": "Новая коллекция"
+    },
+    "cond": {
+      "kk": "Бір чекке бір рет",
+      "ru": "Один раз на чек"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-20",
+    "verified_at": "2026-10-26",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d6",
+    "cat": "lang",
+    "pct": "−20%",
+    "name": {
+      "kk": "«Polyglot» тіл орталығы",
+      "ru": "Языковой центр «Polyglot»"
+    },
+    "what": {
+      "kk": "Ағылшын және корей тілі курстары",
+      "ru": "Курсы английского и корейского"
+    },
+    "cond": {
+      "kk": "Алғашқы айға",
+      "ru": "На первый месяц"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-19",
+    "verified_at": "2026-10-25",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d7",
+    "cat": "edu",
+    "pct": "−30%",
+    "name": {
+      "kk": "«SkillUp» онлайн-платформасы",
+      "ru": "Онлайн-платформа «SkillUp»"
+    },
+    "what": {
+      "kk": "Жылдық жазылым",
+      "ru": "Годовая подписка"
+    },
+    "cond": {
+      "kk": "Промокодты сайтта енгізу",
+      "ru": "Ввести промокод на сайте"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-18",
+    "verified_at": "2026-10-24",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d8",
+    "cat": "cowork",
+    "pct": "1 000 ₸",
+    "name": {
+      "kk": "«Bilim Hub» коворкингі",
+      "ru": "Коворкинг «Bilim Hub»"
+    },
+    "what": {
+      "kk": "Тәулікке орын",
+      "ru": "Место на день"
+    },
+    "cond": {
+      "kk": "Сессия кезінде 24/7 ашық",
+      "ru": "Во время сессии открыт 24/7"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-17",
+    "verified_at": "2026-10-23",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d9",
+    "cat": "print",
+    "pct": "15 ₸",
+    "name": {
+      "kk": "«Print Point»",
+      "ru": "«Print Point»"
+    },
+    "what": {
+      "kk": "Бір бет қара-ақ басып шығару",
+      "ru": "Чёрно-белая печать, 1 страница"
+    },
+    "cond": {
+      "kk": "Кампустағы барлық нүктелерде",
+      "ru": "Во всех точках на кампусе"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-16",
+    "verified_at": "2026-10-26",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  },
+  {
+    "id": "d10",
+    "cat": "food",
+    "pct": "−10%",
+    "name": {
+      "kk": "«Бауырсақ» асханасы",
+      "ru": "Столовая «Бауырсақ»"
+    },
+    "what": {
+      "kk": "Кешенді түскі ас",
+      "ru": "Комплексный обед"
+    },
+    "cond": {
+      "kk": "12:00–15:00 аралығында",
+      "ru": "С 12:00 до 15:00"
+    },
+    "source_url": "https://example.com/demo",
+    "posted_at": "2026-10-24",
+    "verified_at": "2026-10-25",
+    "verified_by": "Student Hub",
+    "contact": {
+      "phone": "",
+      "email": "",
+      "site": ""
+    },
+    "is_demo": true,
+    "deadline": null,
+    "city": "astana"
+  }
+]
