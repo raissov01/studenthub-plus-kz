@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
+	"github.com/raissov01/studenthub-plus-kz/pkg/cronrun"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/features"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
@@ -41,6 +42,10 @@ func cronHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := RunCron(r.Context(), time.Now())
 	if err != nil {
 		internal(w, r, "cron", err)
+		return
+	}
+	if err := cronrun.Success(r.Context(), "/api/cron/market"); err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "cron_record_failed", httpx.MsgInternal)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, res)

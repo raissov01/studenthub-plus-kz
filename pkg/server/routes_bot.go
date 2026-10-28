@@ -1,9 +1,9 @@
 package server
 
 import (
-	"net/http"
+	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/bot"
 )
 
-func init() { register(func(mux *http.ServeMux) { bot.Routes(mux) }) }
+func init() { register(func(mux httpx.Router) { bot.Routes(mux) }) }

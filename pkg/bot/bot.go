@@ -10,8 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
+	"github.com/raissov01/studenthub-plus-kz/pkg/cronrun"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 )
@@ -68,7 +70,7 @@ func (b *Bot) now() time.Time {
 }
 
 // Routes wires the bot into the API mux using env config and the shared pool.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	get := func(r *http.Request) (*Bot, error) {
 		p, err := db.Pool(r.Context())
 		return &Bot{Cfg: ConfigFromEnv(), Pool: p}, err
@@ -104,7 +106,7 @@ func Routes(mux *http.ServeMux) {
 }
 
 // Register wires this Bot (fixed config and pool) into mux; used by tests.
-func (b *Bot) Register(mux *http.ServeMux) {
+func (b *Bot) Register(mux httpx.Router) {
 	mux.HandleFunc("POST /api/telegram", b.ServeWebhook)
 	mux.HandleFunc("GET /api/cron", b.ServeCron)
 }
@@ -150,6 +152,10 @@ func (b *Bot) ServeCron(w http.ResponseWriter, r *http.Request) {
 	}
 	line, _ := json.Marshal(res)
 	log.Printf("cron %s", line)
+	if err := pgx.BeginFunc(r.Context(), b.Pool, func(tx pgx.Tx) error { return cronrun.SuccessTx(r.Context(), tx, "/api/cron") }); err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "cron_record_failed", httpx.MsgInternal)
+		return
+	}
 	httpx.JSON(w, http.StatusOK, struct {
 		OK bool `json:"ok"`
 		*CronResult

@@ -74,7 +74,7 @@ var (
 )
 
 // Routes wires the admin queue and the report endpoints; wrap applies the feature switch.
-func Routes(mux *http.ServeMux, wrap func(http.Handler) http.Handler) {
+func Routes(mux httpx.Router, wrap func(http.Handler) http.Handler) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, wrap(fn)) }
 	h("GET /api/admin/queue", auth.NeedRole(listQueue, "admin"))
 	h("POST /api/admin/queue/{id}/approve", auth.Write(auth.NeedRole(decide(true), "admin")))

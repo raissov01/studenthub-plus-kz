@@ -532,11 +532,11 @@ func TestLoadFallbackChain(t *testing.T) {
 // ---------- HTTP handler ----------
 
 func TestHandler(t *testing.T) {
-	t.Run("GET returns content with cache header", func(t *testing.T) {
+	t.Run("GET revalidates demo setting without CDN caching", func(t *testing.T) {
 		l := newLoader(nil, func(string) string { return "" }, nil)
 		rec := httptest.NewRecorder()
 		Handler(l)(rec, httptest.NewRequest(http.MethodGet, "/api/content", nil))
-		if rec.Code != 200 || rec.Header().Get("Cache-Control") != "public, s-maxage=600, stale-while-revalidate=86400" {
+		if rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-store" {
 			t.Fatalf("%d %v", rec.Code, rec.Header())
 		}
 		var body map[string]any

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"github.com/raissov01/studenthub-plus-kz/pkg/ratelimit"
@@ -88,8 +89,8 @@ func CleanRef(ref string) string {
 	return ""
 }
 
-func Routes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/events", ingest)
+func Routes(mux httpx.Router) {
+	mux.HandleFunc("POST /api/events", auth.Write(ingest))
 }
 
 func ingest(w http.ResponseWriter, r *http.Request) {

@@ -91,7 +91,7 @@ var (
 )
 
 // Routes wires /api/me*.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	mux.HandleFunc("GET /api/me", get)
 	mux.HandleFunc("POST /api/me/consent", auth.Write(auth.Need(consent)))
 	mux.HandleFunc("PATCH /api/me", auth.Write(auth.Need(patch)))

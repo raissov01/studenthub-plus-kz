@@ -81,7 +81,7 @@ func init() {
 
 // Routes wires /api/ambassador/*, /api/submissions*, /api/certificates/*, the admin endpoints
 // for ambassadors and the shared queue / reports — all behind the "ambassador" switch.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	wrap := func(h http.Handler) http.Handler { return features.Require("ambassador", h) }
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, wrap(fn)) }
 	h("POST /api/ambassador/apply", auth.Write(auth.Need(apply)))

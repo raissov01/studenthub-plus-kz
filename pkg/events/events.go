@@ -64,7 +64,7 @@ var (
 )
 
 // Routes wires /api/events/*, all behind the "events" switch.
-func Routes(mux *http.ServeMux) {
+func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.Require("events", fn)) }
 	// public / student
 	h("GET /api/events", list)

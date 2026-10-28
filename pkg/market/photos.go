@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -380,7 +381,14 @@ func deleteUserFiles(ctx context.Context, tx pgx.Tx, userID int64) error {
 	if err != nil {
 		return err
 	}
-	removeFiles(names)
+	for _, name := range names {
+		if !nameRe.MatchString(name) {
+			return fmt.Errorf("invalid registered photo name")
+		}
+		if err := os.Remove(filepath.Join(UploadDir(), name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("delete account photo: %w", err)
+		}
+	}
 	return nil
 }
 

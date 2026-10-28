@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"net/http"
 
 	"github.com/raissov01/studenthub-plus-kz/pkg/moderation"
@@ -9,7 +10,7 @@ import (
 // The shared review queue and reports serve every feature (events, mentors, market, employers),
 // so they are not tied to any single feature switch. Admin-only routes still require role admin.
 func init() {
-	register(func(mux *http.ServeMux) {
+	register(func(mux httpx.Router) {
 		moderation.Routes(mux, func(h http.Handler) http.Handler { return h })
 	})
 }
