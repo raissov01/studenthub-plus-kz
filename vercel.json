@@ -2,5 +2,6 @@
   "framework": "nextjs",
   "rewrites": [{ "source": "/api/:path*", "destination": "/api/index" }],
   "functions": { "api/index.go": { "includeFiles": "data/**" } },
+  "crons": [{ "path": "/api/cron", "schedule": "0 5 * * *" }],
   "headers": [{ "source": "/(.*)", "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }] }]
 }

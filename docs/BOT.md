@@ -4,20 +4,25 @@
 Сайт `https://t.me/<BOT_USERNAME>?start=remind_<id>` сілтемесін береді, бот мерзімге 7, 3 және 1 күн
 қалғанда (Алматы уақыты) еске салады. Бір студентке күніне ең көбі **бір** хабарлама жіберіледі.
 
+Бот Go-да жазылған (`pkg/bot`), деректер Postgres-те (Supabase) сақталады. Ескі Node.js + Upstash Redis
+нұсқасы `legacy/` ішінде тек анықтама ретінде қалды — ол енді деплой болмайды, Upstash керек емес.
+
 ## Файлдар
 
 | Файл | Не істейді |
 | --- | --- |
-| `api/telegram.js` | Telegram webhook (`X-Telegram-Bot-Api-Secret-Token` тексереді, қате болса 401) |
-| `api/cron.js` | Күнделікті жұмыс (`Authorization: Bearer <CRON_SECRET>` тексереді, қате болса 401) |
-| `lib/bot/bot.js` | `/start remind_<id>`, `/my`, `/pause`, `/resume`, `/stop`, `/help`, `/stats`, батырмалар |
-| `lib/bot/cron.js` | 7/3/1 күндік еске салу, апталық дайджест |
-| `lib/bot/store.js` | Сақтау интерфейсі: Upstash Redis REST және тесттерге арналған жадтағы нұсқа |
-| `lib/bot/texts.js` | Боттың барлық мәтіні, қазақша және орысша |
-| `lib/bot/content.js` | Мүмкіндіктерді `SITE_URL/api/content` арқылы алады, болмаса `SITE_URL/data/opportunities.json` |
-| `tests/bot.test.mjs` | Тесттер: `npm test` немесе `node --test tests/*.test.mjs` |
+| `pkg/bot/bot.go` | `POST /api/telegram` (webhook, `X-Telegram-Bot-Api-Secret-Token` тексереді, қате болса 401) және `GET /api/cron` (`Authorization: Bearer <CRON_SECRET>`, қате болса 401) |
+| `pkg/bot/handlers.go` | `/start remind_<id>`, `/my`, `/pause`, `/resume`, `/stop`, `/help`, `/stats`, батырмалар |
+| `pkg/bot/cron.go` | 7/3/1 күндік еске салу, апталық дайджест |
+| `pkg/bot/texts.go` | Боттың барлық мәтіні, қазақша және орысша |
+| `pkg/bot/content.go` | Мүмкіндіктерді `SITE_URL/api/content` арқылы алады, болмаса `SITE_URL/data/opportunities.json` (бір шақыруға бір рет) |
+| `pkg/bot/telegram.go` | Telegram Bot API клиенті (тек stdlib `net/http`) |
+| `pkg/db/queries/bot.sql` | Барлық SQL сұраныстары; Go коды `sqlc generate` арқылы `pkg/db/q/` ішіне жасалады |
+| `pkg/server/routes_bot.go` | Ботты ортақ `/api/*` роутерге қосады |
+| `supabase/migrations/20261028000003_bot.sql` | Бот үшін қосымша бағандар (`reminders.title_ru`, дайджест күйі) |
+| `pkg/bot/bot_test.go` | Тесттер: `go test ./pkg/bot/...` |
 
-Ескерту: Node 22-де `node --test tests/` (папка) жұмыс істемейді — файл үлгісін (glob) беру керек.
+Барлық `/api/*` бір ғана Vercel Go функциясы арқылы жүреді (`api/index.go`), бот бөлек функция қоспайды.
 
 ## 1. BotFather-де бот жасау
 
@@ -34,29 +39,42 @@ Vercel → Project → Settings → Environment Variables → **Production** (қ
 
 | Айнымалы | Мәні |
 | --- | --- |
+| `DATABASE_URL` | Supabase Postgres қосылым жолы (3-бөлім). Бүкіл Go API-мен ортақ |
 | `BOT_TOKEN` | BotFather берген токен |
 | `WEBHOOK_SECRET` | кездейсоқ жол, тек `A-Z a-z 0-9 _ -`, 1–256 таңба. Жасау: `openssl rand -hex 32` |
 | `CRON_SECRET` | кездейсоқ жол, кемінде 16 таңба: `openssl rand -hex 32`. Vercel Cron оны өзі `Authorization: Bearer ...` тақырыбында жібереді |
-| `SITE_URL` | `https://studenthub-plus-kz.vercel.app` |
+| `SITE_URL` | `https://studenthub-plus-kz.vercel.app` (соңында `/` жоқ) |
 | `ADMIN_IDS` | `/stats` көре алатын Telegram user id-лер, үтір арқылы: `123456789,987654321`. Өз id-ңді [@userinfobot](https://t.me/userinfobot) арқылы біл |
 | `DIGEST_ENABLED` | `false` (әдепкі). Апталық дайджестті қосу үшін `true` |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash-ты Vercel Marketplace арқылы қоссаң, өзі қосылады (3-бөлім) |
-| немесе `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Upstash консолінен қолмен алсаң |
+| `TELEGRAM_API_BASE` | қоймау керек (әдепкі `https://api.telegram.org`); тек тесттерге арналған |
 
 Айнымалыларды өзгерткеннен кейін **қайта деплой** керек (Deployments → ... → Redeploy).
-Сақтау орны бапталмаса, бот әдейі қате береді (жадта сақтап, деректі жоғалтып алмас үшін).
+`DATABASE_URL` жоқ болса, `/api/telegram` пен `/api/cron` 503 қайтарады (секрет тексерілгеннен кейін) —
+бот деректі жадта сақтап, жоғалтып алмас үшін әдейі солай.
 
-## 3. Upstash Redis қосу (Vercel Marketplace)
+## 3. Postgres (Supabase)
 
-1. Vercel → Project → **Storage** → **Create Database** (немесе Marketplace) → **Upstash** → **Upstash for Redis**.
-2. Аймақты таңда (Еуропаға жақыны, мысалы `eu-central-1` / Frankfurt), **Free** жоспарын таңда.
-3. Дерекқорды осы жобаға **Connect** ет — Vercel `KV_REST_API_URL` және `KV_REST_API_TOKEN` айнымалыларын өзі қосады
-   (жаңа нұсқаларында `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` деп те қосуы мүмкін — бот екеуін де оқиды).
-4. Қайта деплой жаса.
+1. Supabase жобасында: Project Settings → Database → **Connection string** → **Transaction pooler** (порт `6543`).
+   Құпия сөзді қойып, `DATABASE_URL` ретінде Vercel-ге сал. Go API prepared statement қолданбайды, сондықтан
+   transaction pooler-мен жұмыс істейді.
+2. Миграцияларды қолдан (`supabase/migrations/*.sql` ретімен, әрқайсысы бір рет):
 
-Redis-тегі кілттер: `users` (id жиыны), `u:<id>` (студент), `r:<id>` (еске салулар), `d:<id>` (бүгін хабарлама
-кетті белгісі, 3 күнде өзі өшеді), `ev:submitted` (анонимді «Тапсырдым» оқиғалары, 60 күн сақталады).
-`/stop` студенттің `u:`, `r:`, `d:` кілттерін және `users` жиынындағы жазбасын шынымен өшіреді.
+   ```bash
+   DATABASE_URL='postgresql://...' go run ./cmd/migrate
+   ```
+
+Бот қолданатын кестелер:
+
+| Кесте | Не сақталады |
+| --- | --- |
+| `users` | студент `telegram_id` бойынша. Тек бот арқылы келген студенттің жолы да осында (`consent_at` бос). Бот бағандары: `bot_started_at`, `bot_inactive`, `paused_until`, `safety_note_sent`, `lang`, `digest_city`, `digest_direction`, `digest_asked`, `digest_week`, `digest_seen` |
+| `reminders` | `(user_id, opportunity_id)`, `title` (kk), `title_ru`, `deadline`, `status`: `active` / `submitted` («Тапсырдым») / `dismissed` («Қажет емес») |
+| `bot_daily_sends` | `(user_id, day)` — «бүгін хабарлама кетті» белгісі; 3 күннен ескісін cron өзі өшіреді |
+| `bot_events` | `submitted`, `dismissed` оқиғалары (`/stats` үшін) |
+
+`/stop` → «Иә, бәрін өшір»: студенттің `reminders` және `bot_daily_sends` жолдары шынымен өшеді, `bot_events`-тегі
+сілтемесі алынады (статистика анонимді қалады). Сайтта аккаунты жоқ болса (`consent_at` бос) — `users` жолы да
+өшеді. Сайтта аккаунты бар болса — аккаунт қалады, тек бот бағандары тазаланады (аккаунтты өшіру — сайттың өз ісі).
 
 ## 4. Webhook орнату
 
@@ -119,6 +137,7 @@ curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" -H 'Content-Ty
 Қолмен іске қосу:
 
 ```bash
+CRON_SECRET='...'   # Vercel-дегімен бірдей
 curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub-plus-kz.vercel.app/api/cron
 # {"ok":true,"date":"2026-11-07","reminders":1,"digests":0,"alreadySent":0,"blocked":0,"failed":0,"cleaned":0}
 ```
@@ -134,21 +153,40 @@ curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub-plus-kz.ve
    жауап береді, бірінші рет болса — «Бот ешқашан ақша сұрамайды…» ескертуін де жібереді.
 3. `/my` жаз — мүмкіндік тізімде, жанында «Өшіру» батырмасы бар.
 4. Cron-ды қолмен іске қос (5-бөлімдегі curl). Жауапта `"reminders":1`.
-5. Telegram-да бір хабарлама келеді: атауы, қалған күн, құжаттар тізімі, «Ашу», «Тапсырдым ✅», «Қажет емес».
+5. Telegram-да бір хабарлама келеді: атауы, қалған күн, құжаттар тізімі, «Ашу» (`SITE_URL/opportunity/<id>`),
+   «Тапсырдым ✅», «Қажет емес».
 6. Curl-ды тағы іске қос — хабарлама келмейді, `"alreadySent":1`.
 7. «Тапсырдым ✅» бас — батырмалар жоғалады, `/my` бос. Админ ретінде `/stats` жазсаң, «Тапсырдым» саны 1.
-8. `/stop` → «Иә, бәрін өшір» — Redis-тен `u:<id>`, `r:<id>`, `d:<id>` жоғалады.
+8. `/stop` → «Иә, бәрін өшір». Supabase SQL Editor-да тексер (`<TG_ID>` — өз Telegram id-ң):
 
-Жергілікті тесттер: `npm test` (Telegram мен сайт fetch-пен имитацияланады, нақты API шақырылмайды).
+   ```sql
+   select count(*) from users where telegram_id = <TG_ID>;          -- 0 (сайтта аккаунт болмаса)
+   select count(*) from reminders r join users u on u.id = r.user_id where u.telegram_id = <TG_ID>;  -- 0
+   ```
+
+Жергілікті тесттер (Telegram мен сайт `httptest` арқылы имитацияланады, нақты API шақырылмайды):
+
+```bash
+go test ./pkg/bot/...
+```
+
+Тесттер `postgres://postgres:dev@localhost:54329/studenthub` серверінде (басқасы керек болса — `TEST_DATABASE_URL`)
+уақытша `studenthub_bot_test_<pid>` дерекқорын жасап, барлық миграцияны қолданады, соңында өшіреді.
+Postgres қолжетімсіз болса, DB тесттері `SKIP` болады.
+
+SQL сұранысын өзгертсең: `pkg/db/queries/bot.sql` → `sqlc generate` (`~/go/bin/sqlc`).
 
 ## 7. Мінез-құлық ережелері
 
 - Күніне бір хабарлама: бір студенттің сол күні мерзімі келген барлық еске салуы бір хабарламаға біріктіріледі,
-  ең жақын мерзім бірінші. Хабарлама алдында `d:<id>` белгісі атомды түрде қойылады (`SET ... GET`).
-- Студент ботты бұғаттаса (Telegram 403) — `active=false`, келесі cron-дар оны өткізіп жібереді.
-  Ботқа қайта жазса, қайта белсенді болады.
-- «Тапсырдым ✅» мен «Қажет емес» екеуі де еске салуды тоқтатады; тек «Тапсырдым» статистикаға кіреді.
-- Мерзімі өткен еске салулар cron кезінде автоматты өшіріледі. Сайтта мерзім өзгерсе, бот жаңа мерзімді алады.
+  ең жақын мерзім бірінші. Хабарлама алдында `bot_daily_sends`-ке `(user_id, бүгін)` жолы атомды түрде
+  қосылады (`on conflict do nothing`); жол бұрыннан болса — жіберілмейді. Жіберу 403-тен басқа қатемен құласа,
+  белгі алынады (сол күні қайталауға болады).
+- Студент ботты бұғаттаса (Telegram 403 немесе `my_chat_member` → `kicked`) — `bot_inactive = true`, келесі
+  cron-дар оны өткізіп жібереді. Ботқа қайта жазса, қайта белсенді болады.
+- «Тапсырдым ✅» мен «Қажет емес» екеуі де еске салуды тоқтатады (`reminders.status` → `submitted` / `dismissed`,
+  `bot_events`-ке жазылады); `/stats`-қа тек «Тапсырдым» кіреді.
+- Мерзімі өткен белсенді еске салулар cron кезінде автоматты өшіріледі. Сайтта мерзім өзгерсе, бот жаңа мерзімді алады.
 - `/pause` — 7 күнге кідірту, `/resume` — қайта қосу.
 - Апталық дайджест (`DIGEST_ENABLED=true` болғанда ғана): алғашқы еске салудан кейін студенттен бір рет қала мен
   бағытты сұрайды; бейсенбі күні соңғы 7 күнде қосылған 2–3 сай мүмкіндікті жібереді. Сол күні еске салу кеткен
@@ -162,14 +200,6 @@ curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub-plus-kz.ve
 - ең жиі — **күніне бір рет** (жиірек өрнек деплойда қате береді);
 - дәлдік — **сағат ішінде (±59 мин)**: `0 5 * * *` 05:00–05:59 UTC аралығында іске қосылады;
 - cron кәдімгі Vercel Function-ды шақырады, сондықтан функция шектері мен бағасы қолданылады.
-- Hobby-де бір деплойда ең көбі 12 serverless функция: бот тек 2 функция қосады (`api/telegram.js`, `api/cron.js`).
+- Бот жаңа функция қоспайды: бүкіл `/api/*` бір Go функциясында.
 
-**Upstash Redis Free** ([upstash.com/pricing/redis](https://upstash.com/pricing/redis)):
-- айына **500 000 команда**;
-- деректер көлемі **256 MB** (беттің бір жерінде 250 MB деп жазылған);
-- айына **10 GB** трафик;
-- **1 дерекқор**;
-- сұраныс көлемі ең көбі 10 MB, жазба 100 MB, секундына 10 000 команда.
-
-Шамамен есеп: cron күніне `2 + 2N` команда жұмсайды (N — студент саны) + әр хабарлама үшін 1, әр webhook жаңартуы
-3–5 команда. 1000 студентке айына ~70 000 команда — тегін шектен әлдеқайда төмен.
+Postgres жүктемесі аз: cron күніне бірнеше сұраныс + әр студентке бір `insert`, әр webhook жаңартуы 2–4 сұраныс.
