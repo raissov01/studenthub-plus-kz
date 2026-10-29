@@ -30,4 +30,10 @@ update notify_outbox o set notification_id = (
 -- HTML/plain-text matches and absent inbox rows are repaired transactionally by the
 -- dispatcher using the same PlainText conversion as new messages before any delivery.
 -- Old in-flight sends have unknown outcomes; never blindly retry them after upgrading.
-update notify_outbox set state = 'uncertain' where state = 'sending';
+-- They might already have reached Telegram, so reserve their original day's budget too.
+insert into notify_sends(user_id, category, sent_at, kind, outbox_id)
+  select user_id, category, coalesce(claimed_at, created_at), kind, id
+  from notify_outbox where state = 'sending'
+  on conflict (outbox_id) do nothing;
+update notify_outbox set state = 'uncertain', done_at = coalesce(claimed_at, created_at)
+  where state = 'sending';
