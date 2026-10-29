@@ -25,13 +25,17 @@ test('11-014: university staff → official content → privacy-safe aggregates 
   await p.goto('/university');
   await expect(p.getByRole('heading', { name: university, exact: true })).toBeVisible();
   const stats = await (await p.request.get('/api/university/stats')).json();
-  expect(stats).toMatchObject({ university, students: 9, byFaculty: { 'Small faculty': '< 5', 'Large faculty': 5 }, byCourse: { '1': '< 5', '2': 5 } });
+  expect(stats).toMatchObject({ university, students: 9, byFaculty: { other: '< 5', 'Large faculty': 5 }, byCourse: { other: '< 5', '2': 5 } });
+  // 10-032: a group of 1–4 is never named, it is merged into "other"
+  expect(stats.byFaculty).not.toHaveProperty('Small faculty');
+  expect(stats.byCourse).not.toHaveProperty('1');
   expect(stats.byFaculty).not.toHaveProperty('Other faculty');
   expect(JSON.stringify(stats)).not.toContain('Private student');
-  await expect(p.locator('.row').filter({ hasText: 'Small faculty' }).locator('.num')).toHaveText('< 5');
+  await expect(p.locator('.row').filter({ hasText: 'Small faculty' })).toHaveCount(0);
   await expect(p.locator('.row').filter({ hasText: 'Large faculty' }).locator('.num')).toHaveText('5');
   const csv = await (await p.request.get('/api/university/stats.csv')).text();
-  expect(csv).toContain('faculty:Small faculty,< 5');
+  expect(csv).toContain('faculty:other,< 5');
+  expect(csv).not.toContain('Small faculty');
   expect(csv).toContain('faculty:Large faculty,5');
   expect(csv).not.toContain('Private student');
   expect(csv).not.toContain('Other faculty');

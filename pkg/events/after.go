@@ -21,6 +21,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"github.com/raissov01/studenthub-plus-kz/pkg/me"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 func init() {
@@ -373,12 +374,6 @@ type DailyStats struct {
 
 func almatyDay(t time.Time) string { return t.UTC().Add(5 * time.Hour).Format("2006-01-02") }
 
-// claimDay applies the bot's hard rule: at most one message per student per Almaty day.
-func claimDay(ctx context.Context, tx pgx.Tx, userID int64, day string) (bool, error) {
-	tag, err := tx.Exec(ctx, `insert into bot_daily_sends (user_id, day) values ($1, $2::date) on conflict do nothing`, userID, day)
-	return tag.RowsAffected() == 1, err
-}
-
 type dueMsg struct {
 	eventID, userID int64
 	lang, title     string
@@ -408,12 +403,11 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 		})
 		return out, err
 	}
-	people := `join users u on u.id = r.user_id and u.deleted_at is null and not u.bot_inactive
-		and (u.paused_until is null or u.paused_until < $2)`
+	people := `join users u on u.id = r.user_id and u.deleted_at is null`
 	reminders, err := collect(`select r.event_id, r.user_id, u.lang, e.title_kk, e.title_ru, e.starts_at
 		from event_regs r join events e on e.id = r.event_id `+people+`
 		where e.status = 'published' and r.status = 'registered' and r.reminded_at is null
-			and ((e.starts_at at time zone 'Asia/Almaty')::date) = $1::date`, tomorrow, now)
+			and ((e.starts_at at time zone 'Asia/Almaty')::date) = $1::date`, tomorrow)
 	if err != nil {
 		return st, err
 	}
@@ -428,25 +422,22 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	}
 	process := func(list []dueMsg, mark string, text func(m dueMsg) string) (sent, skipped int) {
 		for _, m := range list {
-			var claimed bool
-			err := db.Tx(ctx, func(tx pgx.Tx) error {
-				var err error
-				if claimed, err = claimDay(ctx, tx, m.userID, today); err != nil || !claimed {
-					return err
-				}
-				_, err = tx.Exec(ctx, "update event_regs set "+mark+" = now() where event_id = $1 and user_id = $2", m.eventID, m.userID)
-				return err
-			})
+			key := fmt.Sprintf("event:%d:%s", m.eventID, mark)
+			status, err := notify.DigestAs(notify.WithKey(ctx, key), m.userID, notify.CatEvents, now, text(m))
 			if err != nil {
 				log.Printf("events: daily %d/%d: %v", m.eventID, m.userID, err)
 				continue
 			}
-			if !claimed {
+			if !notify.DigestAccepted(status) {
 				skipped++
 				continue
 			}
-			if err := Notify(ctx, m.userID, text(m)); err != nil {
-				log.Printf("events: daily notify %d: %v", m.userID, err)
+			err = db.Tx(ctx, func(tx pgx.Tx) error {
+				_, err := tx.Exec(ctx, "update event_regs set "+mark+" = $3 where event_id = $1 and user_id = $2", m.eventID, m.userID, now)
+				return err
+			})
+			if err != nil {
+				log.Printf("events: daily mark %d/%d: %v", m.eventID, m.userID, err)
 				continue
 			}
 			sent++

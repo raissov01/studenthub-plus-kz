@@ -11,3 +11,6 @@ ExecStart=-/bin/sh -c 'curl -fsS -m 300 -H "Authorization: Bearer $CRON_SECRET" 
 ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/events'
 ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/ambassador'
 ExecStart=-/bin/sh -c 'curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/b2b'
+
+# Flush only after every producer has queued its digest items. Hourly flush handles deferrals.
+ExecStart=/bin/sh -c 'curl -fsS -m 300 -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/notify'

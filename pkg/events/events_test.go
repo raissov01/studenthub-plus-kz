@@ -740,23 +740,23 @@ func TestDailyRemindersRespectOnePerDay(t *testing.T) {
 	}
 	// "busy" already got a bot message today
 	exec(t, `insert into bot_daily_sends (user_id, day) values ($1, (now() at time zone 'Asia/Almaty')::date)`, busy)
-	before, beforeBusy := len(sent.of(u)), len(sent.of(busy))
 	st, err := Daily(ctx(), time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sent.of(u))-before != 1 || len(sent.of(busy)) != beforeBusy {
-		t.Fatalf("messages: u=%d busy=%d stats=%+v", len(sent.of(u))-before, len(sent.of(busy))-beforeBusy, st)
+	for _, uid := range []int64{u, busy} {
+		if n := count(t, `select count(*) from notifications where user_id=$1 and category='events'`, uid); n != 2 {
+			t.Fatalf("inbox for %d: %d, stats=%+v", uid, n, st)
+		}
+		if n := count(t, `select count(*) from notify_outbox where user_id=$1 and kind='digest'`, uid); n != 2 {
+			t.Fatalf("digest items for %d: %d", uid, n)
+		}
 	}
-	if st.ReminderSkips < 2 {
-		t.Fatalf("skips: %+v", st)
-	}
-	// running again the same day sends nothing new
 	if _, err := Daily(ctx(), time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	if len(sent.of(u))-before != 1 {
-		t.Fatal("second run sent again")
+	if n := count(t, `select count(*) from notifications where user_id=$1`, u); n != 2 {
+		t.Fatal("retry duplicated inbox")
 	}
 	// cron endpoint needs the secret
 	if w := do(t, "GET", "/api/cron/events", 0, nil); w.Code != 401 {

@@ -753,7 +753,7 @@ func upholdReport(ctx context.Context, tx pgx.Tx, s moderation.Submission) error
 		return err
 	}
 	t := html.EscapeString(title)
-	tellOwner(ctx, owner, "Маркеттегі «"+t+"» затыңыз ережеге сай емес деп жасырылды.", "Ваша вещь «"+t+"» скрыта за нарушение правил маркета.")
+	tellOwner(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), owner, "Маркеттегі «"+t+"» затыңыз ережеге сай емес деп жасырылды.", "Ваша вещь «"+t+"» скрыта за нарушение правил маркета.")
 	return nil
 }
 
@@ -782,7 +782,7 @@ func approveItem(ctx context.Context, tx pgx.Tx, s moderation.Submission) error 
 		return err
 	}
 	t := html.EscapeString(title)
-	tellOwner(ctx, owner, "«"+t+"» затыңыз жарияланды. Рақмет!", "Ваша вещь «"+t+"» опубликована. Спасибо!")
+	tellOwner(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), owner, "«"+t+"» затыңыз жарияланды. Рақмет!", "Ваша вещь «"+t+"» опубликована. Спасибо!")
 	return nil
 }
 
@@ -806,7 +806,7 @@ func rejectItem(ctx context.Context, tx pgx.Tx, s moderation.Submission) error {
 	}
 	removeFiles(names)
 	t, why := html.EscapeString(title), html.EscapeString(deref(s.Reason))
-	tellOwner(ctx, owner, "«"+t+"» заты жарияланбады. Себебі: "+why, "Вещь «"+t+"» не опубликована. Причина: "+why)
+	tellOwner(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), owner, "«"+t+"» заты жарияланбады. Себебі: "+why, "Вещь «"+t+"» не опубликована. Причина: "+why)
 	return nil
 }
 

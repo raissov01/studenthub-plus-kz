@@ -387,7 +387,7 @@ func notifyAuthor(ctx context.Context, s Submission, approved bool) error {
 	if text == "" {
 		text = GenericNotice(s, approved, lang)
 	}
-	return Notify(ctx, *s.SubmittedBy, text)
+	return Notify(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), *s.SubmittedBy, text)
 }
 
 // GenericNotice is the default author message: published, or returned with the reason.

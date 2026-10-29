@@ -201,11 +201,11 @@ func (q *Queries) BotFinishReminder(ctx context.Context, arg BotFinishReminderPa
 
 const botListUsers = `-- name: BotListUsers :many
 select id, telegram_id, tg_username, name, lang, university, faculty, course, city, role, consent_at, session_version, bot_started_at, bot_inactive, paused_until, safety_note_sent, digest_city, digest_direction, created_at, deleted_at, is_adult, last_seen_at, digest_asked, digest_week, digest_seen, referred_by, email, email_verified_at from users
-where bot_started_at is not null and deleted_at is null and telegram_id is not null
+where deleted_at is null and (bot_started_at is not null or exists (select 1 from reminders r where r.user_id=users.id and r.status='active'))
 order by id
 `
 
-// Email-only accounts (telegram_id null) are never bot users.
+// Include email-only reminder owners: inbox delivery does not require a Telegram chat.
 func (q *Queries) BotListUsers(ctx context.Context) ([]User, error) {
 	rows, err := q.db.Query(ctx, botListUsers)
 	if err != nil {

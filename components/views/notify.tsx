@@ -1,15 +1,14 @@
 'use client';
 /* F8: Settings → «Хабарламалар» (docs/api/notifications.md, pkg/notify/http.go): a switch per category, quiet hours
-   and the daily cap of the Telegram bot's messages. «moderation» is always on (shown locked). Every change is a PUT of
+   and the daily cap of the Telegram bot's messages. All categories can be switched off. Every change is a PUT of
    only the changed field; the reply's full prefs replace the local copy. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { Icon } from '@/components/ui';
 import { ErrorLine, errText, hasAccount, Loading, useLoad } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
 
-type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation';
+type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface NotifyPrefs {
   categories: Record<Cat, boolean>;
   quietHours: { enabled: boolean; start: string; end: string; timezone: string };
@@ -24,6 +23,8 @@ const CATS: [Cat, [string, string], [string, string]][] = [
   ['events', ['Іс-шаралар', 'Мероприятия'], ['Күту тізімінен орын, еске салу, пікір сұрау', 'Место из листа ожидания, напоминание, отзыв']],
   ['mentors', ['Менторлар', 'Менторы'], ['Жұп туралы хабар және кейінгі сұрақтар', 'О паре с ментором и вопросы после встреч']],
   ['market', ['Маркет', 'Маркет'], ['Хабарландыру мерзімі бітуде, маусымдық ұсыныс', 'Срок объявления истекает, сезонные подсказки']],
+  ['community', ['Қауымдастық және бот жауаптары', 'Сообщество и ответы бота'], ['Қауымдастық жаңалықтары, боттан жауаптар', 'Новости сообщества, ответы бота']],
+  ['moderation', ['Модерация шешімдері', 'Решения модерации'], ['Өз өтінімдерің туралы шешімдер', 'Решения по вашим заявкам']],
   ['jobs', ['Жұмыс ұсыныстары', 'Вакансии'], ['Жұмыс берушілердің ұсыныстары', 'Предложения от работодателей']],
 ];
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -76,13 +77,7 @@ function NotifySection_() {
                   onChange={e => save({ categories: { [k]: e.target.checked } }, { ...prefs, categories: { ...prefs.categories, [k]: e.target.checked } })} />
               </label>
             ))}
-            <label className="row toggle-row locked">
-              <span className="row-main">
-                <span className="row-title">{tt('Модерация шешімдері', 'Решения модерации')} <Icon n="shield" s={14} /></span>
-                <span className="row-sub">{tt('Өз өтінімдерің туралы шешімдер әрқашан келеді — өшірілмейді.', 'Решения по вашим заявкам приходят всегда — отключить нельзя.')}</span>
-              </span>
-              <input type="checkbox" checked disabled />
-            </label>
+
           </div>
 
           <div className="group">
@@ -103,12 +98,12 @@ function NotifySection_() {
           </div>
 
           <div className="field">
-            <label htmlFor="nfCap">{tt('Күніне ең көбі', 'Не больше в день')}</label>
+            <label htmlFor="nfCap">{tt('Күніне тікелей хабарлама', 'Прямых сообщений в день')}</label>
             <select className="input" id="nfCap" value={prefs.dailyCap} disabled={saving}
               onChange={e => { const n = Number(e.target.value); save({ dailyCap: n }, { ...prefs, dailyCap: n }); }}>
-              {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{tt(`${n} хабарлама`, `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'сообщение' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'сообщения' : 'сообщений'}`)}</option>)}
+              {Array.from({ length: 3 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{tt(`${n} хабарлама`, `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'сообщение' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'сообщения' : 'сообщений'}`)}</option>)}
             </select>
-            <span className="tiny muted">{tt('Шектен асқаны келесі күні келеді.', 'Сверх лимита придёт на следующий день.')}</span>
+            <span className="tiny muted">{tt('Шектен асқаны келесі күні келеді. Дайджест бөлек: күніне ең көбі біреу.', 'Сверх лимита придёт на следующий день. Дайджест отдельно: не больше одного в день.')}</span>
           </div>
           <ErrorLine err={error} />
           <p className="note">

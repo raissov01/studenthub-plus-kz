@@ -96,7 +96,7 @@ func newUser(t *testing.T, o userOpt) (int64, int64) {
 			tgID, o.username, "User "+strconv.FormatInt(n, 10), o.university, o.faculty, course, o.role, *o.adult, o.ageDays).Scan(&id)
 	})
 	if err == nil { // delivery independent of the wall clock: no quiet hours, high daily cap (pkg/notify tests cover both)
-		exec(t, `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 20)`, id)
+		exec(t, `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 3)`, id)
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -530,8 +530,11 @@ func TestWeek3QuestionRespectsOnePerDay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Check3Sent != 1 || res.Postponed != 1 {
+	if res.Check3Sent != 2 || res.Postponed != 0 {
 		t.Fatalf("first run: %+v", res)
+	}
+	if _, err := notify.Flush(ctx(), now); err != nil {
+		t.Fatal(err)
 	}
 	if len(sent(menteeTG)) != before || len(sent(mentorTG)) != mentorBefore+1 {
 		t.Fatal("day budget broken on the first run")
@@ -545,8 +548,11 @@ func TestWeek3QuestionRespectsOnePerDay(t *testing.T) {
 	}
 	// tomorrow the mentee gets it, exactly once
 	res, err = RunCron(ctx(), now.Add(24*time.Hour))
-	if err != nil || res.Check3Sent != 1 {
+	if err != nil || res.Check3Sent != 0 {
 		t.Fatalf("next day: %+v %v", res, err)
+	}
+	if _, err := notify.Flush(ctx(), now.Add(24*time.Hour)); err != nil {
+		t.Fatal(err)
 	}
 	if len(sent(menteeTG)) != before+1 {
 		t.Fatal("mentee not asked the next day")

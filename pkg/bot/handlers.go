@@ -84,6 +84,7 @@ func (b *Bot) HandleUpdate(ctx context.Context, up *Update) error {
 	if err := b.ready(); err != nil {
 		return err
 	}
+	ctx = context.WithValue(ctx, updateKey{}, up.UpdateID)
 	qs := q.New(b.Pool)
 	if up.MyChatMember != nil {
 		return b.onChatMember(ctx, qs, up.MyChatMember)
@@ -184,6 +185,9 @@ func (s *session) onMessage(ctx context.Context, msg *Message) error {
 		p := s.pausedUntil()
 		was := p != "" && p > today
 		if err := s.q.BotSetPausedUntil(ctx, q.BotSetPausedUntilParams{ID: s.user.ID}); err != nil {
+			return err
+		}
+		if err := notify.Reschedule(ctx, s.b.Pool, s.user.ID); err != nil {
 			return err
 		}
 		if was {
@@ -589,23 +593,19 @@ func (s *session) toggleSetting(ctx context.Context, key string) error {
 	return notify.Reschedule(ctx, s.b.Pool, s.user.ID)
 }
 
-// DeleteUserData is /stop: reminders, day claims and the bot state go for real. A user
+// DeleteUserData is /stop: reminders and bot state are removed; pending sends are cancelled. A user
 // known only to the bot is deleted entirely; a site account keeps its row (the account
-// deletion flow owns that) with every bot column cleared. Events lose the user link.
+// deletion flow owns that). Shared budget/idempotency receipts survive for retained accounts.
 func (b *Bot) DeleteUserData(ctx context.Context, userID int64) error {
 	return pgx.BeginFunc(ctx, b.Pool, func(t pgx.Tx) error {
 		qs := q.New(t)
 		if err := qs.BotDeleteUserReminders(ctx, userID); err != nil {
 			return err
 		}
-		if err := qs.BotDeleteUserSends(ctx, userID); err != nil {
+		// Keep shared budget/idempotency receipts for retained site accounts. Account
+		// deletion cascades them for bot-only users. Cancel pending delivery on /stop.
+		if _, err := t.Exec(ctx, `update notify_outbox set state='dropped',done_at=now() where user_id=$1 and state='pending'`, userID); err != nil {
 			return err
-		}
-		// notification settings and held-back messages are bot state too (F8)
-		for _, table := range []string{"notify_prefs", "notify_outbox", "notify_sends"} {
-			if _, err := t.Exec(ctx, "delete from "+table+" where user_id = $1", userID); err != nil {
-				return err
-			}
 		}
 		if err := qs.BotAnonymizeEvents(ctx, pgInt8(userID)); err != nil {
 			return err
@@ -614,6 +614,9 @@ func (b *Bot) DeleteUserData(ctx context.Context, userID int64) error {
 		if err != nil || n > 0 {
 			return err
 		}
-		return qs.BotClearUser(ctx, userID)
+		if err := qs.BotClearUser(ctx, userID); err != nil {
+			return err
+		}
+		return qs.BotSetInactive(ctx, q.BotSetInactiveParams{ID: userID, BotInactive: true})
 	})
 }

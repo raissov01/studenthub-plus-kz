@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/cronrun"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 // RenewAskDays: the "continue next semester?" question appears this many days before term_end.
@@ -234,10 +236,9 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	}
 	var asks []ask
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `update ambassador_terms t set renew_asked_at = now() from users u
-			where u.id = t.user_id and t.status = 'active' and t.renew_asked_at is null and t.renew_answer is null
-				and t.term_end >= $1::date and t.term_end <= $1::date + $2::int
-			returning t.id, t.user_id, u.lang, t.term_end`, AlmatyToday(now), RenewAskDays)
+		rows, err := tx.Query(ctx, `select t.id, t.user_id, u.lang, t.term_end from ambassador_terms t join users u on u.id=t.user_id
+			where u.deleted_at is null and t.status = 'active' and t.renew_asked_at is null and t.renew_answer is null
+				and t.term_end >= $1::date and t.term_end <= $1::date + $2::int`, AlmatyToday(now), RenewAskDays)
 		if err != nil {
 			return err
 		}
@@ -256,9 +257,15 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 		if a.lang == "ru" {
 			text = "Ваш срок амбассадора заканчивается " + a.end.Format("02.01.2006") + ". Продолжите в следующем семестре? " + link
 		}
-		if err := Notify(ctx, a.user, text); err != nil {
+		if err := Notify(notify.WithKey(ctx, fmt.Sprintf("ambassador-term:%d:renew", a.id)), a.user, text); err != nil {
 			log.Printf("ambassador: renew ask %d: %v", a.user, err)
 			continue
+		}
+		if err := db.Tx(ctx, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `update ambassador_terms set renew_asked_at=$2 where id=$1`, a.id, now)
+			return err
+		}); err != nil {
+			return st, err
 		}
 		st.RenewAsks++
 	}

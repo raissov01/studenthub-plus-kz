@@ -97,10 +97,11 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		lang  string
 		items []int64
 		title string
+		key   string
 	}
 	var list []due
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select i.user_id, u.lang, array_agg(i.id order by i.expires_at), min(i.title)
+		rows, err := tx.Query(ctx, `select i.user_id, u.lang, array_agg(i.id order by i.expires_at), min(i.title), md5(string_agg(i.id::text || ':' || i.expires_at::text, ',' order by i.id))
 			from market_items i join users u on u.id = i.user_id
 			where i.status in ('active', 'reserved') and i.reminded_at is null
 				and i.expires_at <= $1::timestamptz + interval '3 days' and u.deleted_at is null
@@ -111,7 +112,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		defer rows.Close()
 		for rows.Next() {
 			var d due
-			if err := rows.Scan(&d.user, &d.lang, &d.items, &d.title); err != nil {
+			if err := rows.Scan(&d.user, &d.lang, &d.items, &d.title, &d.key); err != nil {
 				return err
 			}
 			list = append(list, d)
@@ -130,12 +131,12 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			text = tr(d.lang, "🎁 Маркеттегі заттарыңның мерзімі 3 күннен кейін бітеді. Ұзарту немесе жабу: "+link,
 				"🎁 Твои объявления в маркете закроются через 3 дня. Продлить или закрыть: "+link)
 		}
-		st, err := notify.DigestAs(ctx, d.user, notify.CatMarket, now, text)
+		st, err := notify.DigestAs(notify.WithKey(ctx, "market-expiry:"+d.key), d.user, notify.CatMarket, now, text)
 		if err != nil {
 			log.Printf("market cron: remind %d: %v", d.user, err)
 			continue
 		}
-		if st != notify.DigestSent {
+		if !notify.DigestAccepted(st) {
 			res.Postponed++
 			continue
 		}
@@ -172,7 +173,7 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		}
 		err = db.Tx(ctx, func(tx pgx.Tx) error {
 			rows, err := tx.Query(ctx, `select u.id, u.lang from users u
-				where u.deleted_at is null and u.consent_at is not null and not u.bot_inactive
+				where u.deleted_at is null and u.consent_at is not null
 					and not exists (select 1 from market_season_sends s where s.season = $1 and s.user_id = u.id)
 				order by u.id limit $2`, s.Key(), config.Int("MARKET_SEASON_BATCH", 1000))
 			if err != nil {
@@ -198,12 +199,12 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		for _, u := range users {
 			text := tr(u.lang, "📦 Көшіп жатырсың ба? Керек емес заттарыңды жаңа студенттерге тегін бер: "+link,
 				"📦 Переезжаешь? Отдай ненужные вещи новым студентам бесплатно: "+link)
-			st, err := notify.DigestAs(ctx, u.id, notify.CatMarket, now, text)
+			st, err := notify.DigestAs(notify.WithKey(ctx, "market-season:"+s.Key()), u.id, notify.CatMarket, now, text)
 			if err != nil {
 				log.Printf("market cron: season %d: %v", u.id, err)
 				continue
 			}
-			if st != notify.DigestSent {
+			if !notify.DigestAccepted(st) {
 				res.SeasonPending++
 				continue
 			}

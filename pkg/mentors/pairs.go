@@ -14,6 +14,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"github.com/raissov01/studenthub-plus-kz/pkg/moderation"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 const (
@@ -279,7 +280,7 @@ func checkin(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	if ended != nil {
 		other, err := loadPerson(ctx, mustPool(ctx), ended.other(u.ID))
 		if err == nil {
-			pairNews(ctx, other.ID, endedText(other.Lang))
+			pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:ended", ended.ID)), other.ID, endedText(other.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, resp)
@@ -338,7 +339,7 @@ func endPair(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	if other, err := loadPerson(ctx, mustPool(ctx), p.other(u.ID)); err == nil {
-		pairNews(ctx, other.ID, endedText(other.Lang))
+		pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:ended", p.ID)), other.ID, endedText(other.Lang))
 	}
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -454,12 +455,12 @@ func approveReport(ctx context.Context, tx pgx.Tx, s moderation.Submission) erro
 				continue
 			}
 			if o, err := loadPerson(ctx, tx, id); err == nil {
-				pairNews(ctx, o.ID, endedText(o.Lang))
+				pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:ended", p.ID)), o.ID, endedText(o.Lang))
 			}
 		}
 	}
 	if rep, err := loadPerson(ctx, tx, pl.ReporterID); err == nil {
-		direct(ctx, rep.ID, tr(rep.Lang, "Шағымыңыз қаралды, шара қолданылды. Рақмет, бұл қауіпсіздік үшін маңызды.",
+		direct(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), rep.ID, tr(rep.Lang, "Шағымыңыз қаралды, шара қолданылды. Рақмет, бұл қауіпсіздік үшін маңызды.",
 			"Ваша жалоба рассмотрена, меры приняты. Спасибо, это важно для безопасности."))
 	}
 	return nil
@@ -471,7 +472,7 @@ func rejectReport(ctx context.Context, tx pgx.Tx, s moderation.Submission) error
 		return err
 	}
 	if rep, err := loadPerson(ctx, tx, pl.ReporterID); err == nil {
-		direct(ctx, rep.ID, tr(rep.Lang, "Шағымыңыз қаралды. Әзірге шара қолданылмады. Себебі: ",
+		direct(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), rep.ID, tr(rep.Lang, "Шағымыңыз қаралды. Әзірге шара қолданылмады. Себебі: ",
 			"Ваша жалоба рассмотрена. Пока меры не приняты. Причина: ")+html.EscapeString(deref(s.Reason)))
 	}
 	return nil

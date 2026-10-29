@@ -17,6 +17,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/config"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 func readBody(r *http.Request, max int64) ([]byte, error) {
@@ -167,7 +168,14 @@ func notifyPromoted(ctx context.Context, ev *Event, users []int64) {
 	}
 	title := html.EscapeString(ev.TitleKK)
 	for _, id := range users {
-		send(ctx, id,
+		var ticket string
+		if err := db.Tx(ctx, func(tx pgx.Tx) error {
+			return tx.QueryRow(ctx, `select ticket from event_regs where event_id=$1 and user_id=$2 and status='registered'`, ev.ID, id).Scan(&ticket)
+		}); err != nil {
+			log.Printf("events: promotion ticket %d/%d: %v", ev.ID, id, err)
+			continue
+		}
+		send(notify.WithKey(ctx, fmt.Sprintf("event:%d:promoted:%s", ev.ID, ticket)), id,
 			fmt.Sprintf("🎉 «%s» іс-шарасында орын босады — сіз енді тіркелдіңіз!\n%s", title, eventLink(ev.ID)),
 			fmt.Sprintf("🎉 На «%s» освободилось место — вы зарегистрированы!\n%s", title, eventLink(ev.ID)))
 	}
@@ -190,7 +198,7 @@ func notifyCancelled(ctx context.Context, ev *Event) {
 	title := html.EscapeString(ev.TitleKK)
 	for _, id := range ids {
 		// a cancellation changes the student's plans, so it is transactional: never muted or deferred
-		sendWith(ctx, NotifyUrgent, id, fmt.Sprintf("❌ «%s» іс-шарасы өтпейді (бас тартылды).", title),
+		sendWith(notify.WithKey(ctx, fmt.Sprintf("event:%d:cancelled", ev.ID)), NotifyUrgent, id, fmt.Sprintf("❌ «%s» іс-шарасы өтпейді (бас тартылды).", title),
 			fmt.Sprintf("❌ Мероприятие «%s» отменено.", title))
 	}
 }

@@ -16,14 +16,15 @@
 | Ботты бұғаттаған (`users.bot_inactive`) | жоқ | ✓ |
 | Санат өшірілген (`notify_prefs`) | жоқ | ✓ |
 | Тыныш уақыт / күндік шек | кейін (`notify_outbox`) | ✓ бірден |
-| `digest` (күніне бір, cron қайталайды) | бір рет | ✓ бір рет (14 күн ішіндегі бірдей мәтін қайталанбайды) |
+| `digest` (күніне бір, cron қайталайды) | бір рет | ✓ бір рет (source key бойынша, receipt 90 күн сақталады) |
 
 Go: `notify.Send`, `notify.Direct` / `DirectAs` / `DirectFor`, `notify.Digest` / `DigestAs` — бәрі inbox-қа
-жазады; Telegram бөлігінің ережелері өзгерген жоқ (транзакциялық — бірден; қалғаны — баптау, тыныш уақыт, шек).
+жазады; Telegram-ға бәрі ортақ dispatcher арқылы өтеді: direct ≤3, digest ≤1, тыныш уақыт 22:00–08:00.
+Модерация да осы ережелерге бағынады; санат өшсе — тек inbox.
 
 - `text` — студенттің тіліндегі (kk/ru) сол мәтін, бірақ **жай мәтін**: бот HTML тегтері алынып,
   `&amp;` т.б. ашылған. Сайт оны бәрібір `esc()` арқылы шығарады.
-- `category` — `deadlines | digest | events | mentors | market | jobs | moderation`.
+- `category` — `deadlines | digest | events | mentors | market | jobs | community | moderation`.
 - `link` — сайт ішіндегі жол (`/event/12`, `/mentors/me`, `/jobs`) немесе `null`. Ол не
   `notify.Opts{Link}` / `notify.WithLink(ctx, path)` арқылы беріледі, не мәтіндегі бірінші
   `SITE_URL/...` сілтемесінен алынады. Тек `/`-пен басталатын жол (`//host`, `https://…` емес) сақталады.

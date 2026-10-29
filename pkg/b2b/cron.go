@@ -37,22 +37,22 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 		employer int64
 		n        int
 		members  []int64
+		ids      []int64
+		key      string
 	}
 	var reminders []remind
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `with due as (
-				update applications a set reminded_at = $1
-				from employers e
-				where e.id = a.employer_id and e.status = 'verified' and a.status = 'sent' and a.reminded_at is null
-					and a.created_at <= $1::timestamptz - make_interval(days => $2)
-				returning a.employer_id)
-			select employer_id, count(*) from due group by employer_id`, now, RemindAfterDays)
+		rows, err := tx.Query(ctx, `select a.employer_id, count(*), array_agg(a.id order by a.id), md5(string_agg(a.id::text, ',' order by a.id))
+            from applications a join employers e on e.id=a.employer_id
+            where e.status='verified' and a.status='sent' and a.reminded_at is null
+                and a.created_at <= $1::timestamptz - make_interval(days => $2)
+            group by a.employer_id`, now, RemindAfterDays)
 		if err != nil {
 			return err
 		}
 		for rows.Next() {
 			var r remind
-			if err := rows.Scan(&r.employer, &r.n); err != nil {
+			if err := rows.Scan(&r.employer, &r.n, &r.ids, &r.key); err != nil {
 				rows.Close()
 				return err
 			}
@@ -74,9 +74,22 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	}
 	for _, r := range reminders {
 		n := strconv.Itoa(r.n)
+		accepted := true
 		for _, m := range r.members {
-			tell(ctx, m, "⏰ "+n+" өтінім 5 күннен бері қаралмады. Студенттер жауап күтіп отыр: "+siteLink("/employer"),
-				"⏰ "+n+" откликов не открыты уже 5 дней. Студенты ждут ответа: "+siteLink("/employer"))
+			if err := tell(notify.WithKey(ctx, "employer-reminder:"+r.key), m,
+				"⏰ "+n+" өтінім 5 күннен бері қаралмады. Студенттер жауап күтіп отыр: "+siteLink("/employer"),
+				"⏰ "+n+" откликов не открыты уже 5 дней. Студенты ждут ответа: "+siteLink("/employer")); err != nil {
+				accepted = false
+			}
+		}
+		if !accepted {
+			continue
+		}
+		if err := db.Tx(ctx, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `update applications set reminded_at=$2 where id=any($1)`, r.ids, now)
+			return err
+		}); err != nil {
+			return st, err
 		}
 		st.EmployerReminders++
 	}
@@ -104,7 +117,7 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	var list []due
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `select a.id, a.user_id, u.lang, j.title_kk, e.name from applications a
-			join users u on u.id = a.user_id and u.deleted_at is null and not u.bot_inactive
+			join users u on u.id = a.user_id and u.deleted_at is null
 			join jobs j on j.id = a.job_id join employers e on e.id = a.employer_id
 			where a.status = 'no_response' and a.student_notified_at is null order by a.id limit 500`)
 		if err != nil {
@@ -119,22 +132,16 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	if err != nil {
 		return st, err
 	}
-	told := map[int64]bool{}
 	for _, d := range list {
-		if told[d.user] {
-			st.StudentsDeferred++
-			continue
-		}
 		text := pick(d.lang,
 			"«"+esc(d.c)+"» компаниясы «"+esc(d.title)+"» бойынша 14 күнде жауап бермеді. Басқа вакансияларды қара: "+siteLink("/jobs"),
 			"Компания «"+esc(d.c)+"» не ответила по вакансии «"+esc(d.title)+"» за 14 дней. Посмотрите другие вакансии: "+siteLink("/jobs"))
-		res, err := Digest(ctx, d.user, now, text)
+		res, err := Digest(notify.WithKey(ctx, "application-no-response:"+strconv.FormatInt(d.id, 10)), d.user, now, text)
 		if err != nil {
 			log.Printf("b2b: no_response notify %d: %v", d.user, err)
 			continue
 		}
-		told[d.user] = true
-		if res != notify.DigestSent {
+		if !notify.DigestAccepted(res) {
 			st.StudentsDeferred++
 			continue
 		}
@@ -148,22 +155,24 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 	// low response rate -> admins
 	var ids []int64
 	names := map[int64]string{}
+	keys := map[int64]string{}
 	var admins []int64
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select id, name from employers where status = 'verified'
+		rows, err := tx.Query(ctx, `select id, name, coalesce(low_rate_warned_at::text,'first') from employers where status = 'verified'
 			and (low_rate_warned_at is null or low_rate_warned_at < $1::timestamptz - interval '30 days')`, now)
 		if err != nil {
 			return err
 		}
 		for rows.Next() {
 			var id int64
-			var n string
-			if err := rows.Scan(&id, &n); err != nil {
+			var n, key string
+			if err := rows.Scan(&id, &n, &key); err != nil {
 				rows.Close()
 				return err
 			}
 			ids = append(ids, id)
 			names[id] = n
+			keys[id] = key
 		}
 		rows.Close()
 		admins, err = adminIDs(ctx, tx)
@@ -180,11 +189,18 @@ func Daily(ctx context.Context, now time.Time) (DailyStats, error) {
 		if !s.Low() {
 			continue
 		}
-		st.LowRateWarnings++
+		accepted := true
 		for _, a := range admins {
-			_ = Notify(ctx, a, "⚠️ «"+esc(names[id])+"» өтінімдердің "+strconv.Itoa(*s.Rate)+"%-ына ғана жауап береді / отвечает лишь на "+
-				strconv.Itoa(*s.Rate)+"% откликов. "+siteLink("/admin/employers"))
+			if err := Notify(notify.WithKey(ctx, "employer-low-rate:"+strconv.FormatInt(id, 10)+":"+keys[id]), a, "⚠️ «"+esc(names[id])+"» өтінімдердің "+strconv.Itoa(*s.Rate)+"%-ына ғана жауап береді / отвечает лишь на "+
+				strconv.Itoa(*s.Rate)+"% откликов. "+siteLink("/admin/employers")); err != nil {
+				log.Printf("b2b: low rate notify %d: %v", a, err)
+				accepted = false
+			}
 		}
+		if !accepted {
+			continue
+		}
+		st.LowRateWarnings++
 		_ = db.Tx(ctx, func(tx pgx.Tx) error {
 			_, err := tx.Exec(ctx, `update employers set low_rate_warned_at = $2 where id = $1`, id, now)
 			return err

@@ -55,11 +55,13 @@ const (
 	MaxInviteMessage = 500
 )
 
-// Notify is the direct-message sender (immediate; inbox category "jobs"); tests replace it.
-var Notify = notify.DirectFor(notify.CatJobs)
+// Notify uses the shared direct budget and jobs preferences; tests replace it.
+var Notify = notify.For(notify.CatJobs)
 
 // Digest is the one-per-day sender; tests replace it.
-var Digest = notify.Digest
+var Digest = func(ctx context.Context, userID int64, now time.Time, text string) (string, error) {
+	return notify.DigestAs(ctx, userID, notify.CatJobs, now, text)
+}
 
 // Now is the clock; tests replace it.
 var Now = time.Now
@@ -264,14 +266,16 @@ func userLang(ctx context.Context, tx pgx.Tx, userID int64) string {
 }
 
 // tell sends a direct message (in the receiver's language) after the transaction; failures are logged.
-func tell(ctx context.Context, userID int64, kk, ru string) {
+func tell(ctx context.Context, userID int64, kk, ru string) error {
 	lang := "kk"
 	if p, err := db.Pool(ctx); err == nil {
 		_ = p.QueryRow(ctx, `select lang from users where id = $1`, userID).Scan(&lang)
 	}
 	if err := Notify(ctx, userID, pick(lang, kk, ru)); err != nil {
 		log.Printf("b2b: notify %d: %v", userID, err)
+		return err
 	}
+	return nil
 }
 
 // memberIDs lists the live members of a company.

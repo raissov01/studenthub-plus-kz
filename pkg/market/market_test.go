@@ -109,7 +109,7 @@ func newUser(t *testing.T, o userOpt) (int64, int64) {
 			return err
 		}
 		// delivery independent of the wall clock: no quiet hours, high daily cap (pkg/notify tests cover both)
-		if _, err = tx.Exec(ctx(), `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 20)`, id); err != nil || o.noRules {
+		if _, err = tx.Exec(ctx(), `insert into notify_prefs (user_id, quiet_enabled, daily_cap) values ($1, false, 3)`, id); err != nil || o.noRules {
 			return err
 		}
 		_, err = tx.Exec(ctx(), `insert into market_rules (user_id) values ($1)`, id)
@@ -698,13 +698,16 @@ func TestCronExpiryReminderOrphansSeason(t *testing.T) {
 	if fileExists(photo) || fileExists(loose) {
 		t.Fatal("expired/orphan photo files kept")
 	}
+	if _, err := notify.Flush(ctx(), now); err != nil {
+		t.Fatal(err)
+	}
 	msgs := sentTo(tgID)
 	if len(msgs) != 1 || !strings.Contains(msgs[0], "3 күн") {
 		t.Fatalf("reminder: %q", msgs)
 	}
 	// already claimed today: the reminder is not repeated and nothing else goes out today
 	exec(t, `update market_items set reminded_at = null where id = $1`, soon)
-	if res, _ := RunCron(ctx(), now); res.Reminded != 0 || res.Postponed < 1 {
+	if res, _ := RunCron(ctx(), now); res.Reminded != 1 || res.Postponed != 0 {
 		t.Fatalf("second run: %+v", res)
 	}
 	// season: once per student per season

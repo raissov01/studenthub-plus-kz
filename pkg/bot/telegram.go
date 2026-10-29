@@ -5,11 +5,14 @@ package bot
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 // Button is one inline keyboard button: either a URL or callback data.
@@ -100,13 +103,27 @@ type sendParams struct {
 	ReplyMarkup        *markup        `json:"reply_markup,omitempty"`
 }
 
-// send posts an HTML message; keyboard nil means no reply_markup at all.
+func (b *Bot) dispatcher() *notify.Dispatcher {
+	return &notify.Dispatcher{Pool: b.Pool, Token: b.Cfg.Token, APIBase: b.Cfg.APIBase, Client: b.client()}
+}
+
+type updateKey struct{}
+
+// send is also a direct notification: commands cannot create a hidden budget bypass.
+// Editing an existing command menu and callback acknowledgements do not send messages.
 func (b *Bot) send(ctx context.Context, chatID int64, text string, keyboard [][]Button) error {
-	p := sendParams{ChatID: chatID, Text: text, ParseMode: "HTML", LinkPreviewOptions: map[string]any{"is_disabled": true}}
-	if keyboard != nil {
-		p.ReplyMarkup = &markup{keyboard}
+	var uid int64
+	if err := b.Pool.QueryRow(ctx, `select id from users where telegram_id=$1 and deleted_at is null`, chatID).Scan(&uid); err != nil {
+		return err
 	}
-	_, err := b.tg(ctx, "sendMessage", p)
+	opts := notify.Opts{Now: b.now()}
+	if updateID, ok := ctx.Value(updateKey{}).(int64); ok {
+		opts.Key = fmt.Sprintf("bot:update:%d:%x", updateID, sha256.Sum256([]byte(text)))
+	}
+	if keyboard != nil {
+		opts.ReplyMarkup, _ = json.Marshal(markup{keyboard})
+	}
+	_, err := b.dispatcher().Send(ctx, uid, notify.CatCommunity, text, opts)
 	return err
 }
 

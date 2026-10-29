@@ -17,6 +17,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
 	"github.com/raissov01/studenthub-plus-kz/pkg/moderation"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 // cleanText trims s and checks length and control characters (newlines are allowed).
@@ -363,7 +364,7 @@ func approveApplication(ctx context.Context, tx pgx.Tx, s moderation.Submission)
 	if err != nil {
 		return err
 	}
-	direct(ctx, p.ID, tr(p.Lang,
+	direct(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), p.ID, tr(p.Lang,
 		"🎓 Менторлық өтініміңіз бекітілді! Студенттермен жұптасқанда хабар береміз. Профиль: "+site("/mentors/me"),
 		"🎓 Ваша заявка ментора одобрена! Сообщим, когда появится пара. Профиль: "+site("/mentors/me")))
 	return nil
@@ -382,7 +383,7 @@ func rejectApplication(ctx context.Context, tx pgx.Tx, s moderation.Submission) 
 	if err != nil {
 		return err
 	}
-	direct(ctx, p.ID, tr(p.Lang, "Менторлық өтініміңіз әзірге қабылданбады. Себебі: ", "Заявка ментора пока не принята. Причина: ")+
+	direct(notify.WithKey(ctx, fmt.Sprintf("submission:%d:decision", s.ID)), p.ID, tr(p.Lang, "Менторлық өтініміңіз әзірге қабылданбады. Себебі: ", "Заявка ментора пока не принята. Причина: ")+
 		html.EscapeString(deref(s.Reason)))
 	return nil
 }

@@ -499,6 +499,12 @@ type Mentor struct {
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
+type MentorMeetingNotice struct {
+	EventID int64              `json:"event_id"`
+	UserID  int64              `json:"user_id"`
+	SentAt  pgtype.Timestamptz `json:"sent_at"`
+}
+
 type MentorPair struct {
 	ID          int64              `json:"id"`
 	MentorID    int64              `json:"mentor_id"`
@@ -542,17 +548,31 @@ type MentorRequest struct {
 	ClosedAt   pgtype.Timestamptz `json:"closed_at"`
 }
 
-type NotifyOutbox struct {
+type Notification struct {
 	ID        int64              `json:"id"`
 	UserID    int64              `json:"user_id"`
 	Category  string             `json:"category"`
 	Text      string             `json:"text"`
-	NotBefore pgtype.Timestamptz `json:"not_before"`
-	State     string             `json:"state"`
-	Attempts  int32              `json:"attempts"`
-	ClaimedAt pgtype.Timestamptz `json:"claimed_at"`
-	DoneAt    pgtype.Timestamptz `json:"done_at"`
+	Link      pgtype.Text        `json:"link"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ReadAt    pgtype.Timestamptz `json:"read_at"`
+}
+
+type NotifyOutbox struct {
+	ID             int64              `json:"id"`
+	UserID         int64              `json:"user_id"`
+	Category       string             `json:"category"`
+	Text           string             `json:"text"`
+	NotBefore      pgtype.Timestamptz `json:"not_before"`
+	State          string             `json:"state"`
+	Attempts       int32              `json:"attempts"`
+	ClaimedAt      pgtype.Timestamptz `json:"claimed_at"`
+	DoneAt         pgtype.Timestamptz `json:"done_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	Kind           string             `json:"kind"`
+	DeliveryKey    pgtype.Text        `json:"delivery_key"`
+	NotificationID pgtype.Int8        `json:"notification_id"`
+	ReplyMarkup    []byte             `json:"reply_markup"`
 }
 
 type NotifyPref struct {
@@ -568,6 +588,8 @@ type NotifyPref struct {
 	QuietEnd     pgtype.Time        `json:"quiet_end"`
 	DailyCap     int16              `json:"daily_cap"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Community    bool               `json:"community"`
+	Moderation   bool               `json:"moderation"`
 }
 
 type NotifySend struct {
@@ -575,6 +597,8 @@ type NotifySend struct {
 	Category string             `json:"category"`
 	SentAt   pgtype.Timestamptz `json:"sent_at"`
 	ID       int64              `json:"id"`
+	Kind     string             `json:"kind"`
+	OutboxID pgtype.Int8        `json:"outbox_id"`
 }
 
 type PortfolioItem struct {
@@ -609,6 +633,119 @@ type PortfolioSetting struct {
 	SlugRotatedAt  pgtype.Timestamptz `json:"slug_rotated_at"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Quiz struct {
+	ID              int64              `json:"id"`
+	UserID          int64              `json:"user_id"`
+	Title           string             `json:"title"`
+	Description     string             `json:"description"`
+	Subject         string             `json:"subject"`
+	Visibility      string             `json:"visibility"`
+	IsDraft         bool               `json:"is_draft"`
+	ShareCode       string             `json:"share_code"`
+	TimePerQuestion int32              `json:"time_per_question"`
+	Shuffle         bool               `json:"shuffle"`
+	Source          string             `json:"source"`
+	ClonedFrom      pgtype.Int8        `json:"cloned_from"`
+	QuestionCount   int32              `json:"question_count"`
+	Plays           int32              `json:"plays"`
+	Version         int32              `json:"version"`
+	HiddenAt        pgtype.Timestamptz `json:"hidden_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type QuizAiUsage struct {
+	UserID int64       `json:"user_id"`
+	Day    pgtype.Date `json:"day"`
+	Units  int32       `json:"units"`
+}
+
+type QuizAnswerKey struct {
+	QuestionID int64  `json:"question_id"`
+	QuizID     int64  `json:"quiz_id"`
+	Answer     []byte `json:"answer"`
+}
+
+type QuizAttempt struct {
+	ID           int64              `json:"id"`
+	QuizID       int64              `json:"quiz_id"`
+	UserID       int64              `json:"user_id"`
+	Mode         string             `json:"mode"`
+	RetryOf      pgtype.Int8        `json:"retry_of"`
+	Score        pgtype.Numeric     `json:"score"`
+	MaxScore     int32              `json:"max_score"`
+	Percentage   int32              `json:"percentage"`
+	CorrectCount int32              `json:"correct_count"`
+	Total        int32              `json:"total"`
+	TimeSpent    int32              `json:"time_spent"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type QuizAttemptAnswer struct {
+	AttemptID   int64       `json:"attempt_id"`
+	Position    int32       `json:"position"`
+	QuestionID  pgtype.Int8 `json:"question_id"`
+	Type        string      `json:"type"`
+	Prompt      string      `json:"prompt"`
+	Data        []byte      `json:"data"`
+	Explanation string      `json:"explanation"`
+	SourceQuote string      `json:"source_quote"`
+	Image       pgtype.Text `json:"image"`
+	Given       []byte      `json:"given"`
+	CorrectKey  []byte      `json:"correct_key"`
+	Credit      float32     `json:"credit"`
+	IsCorrect   bool        `json:"is_correct"`
+	Graded      bool        `json:"graded"`
+	TimeSpent   int32       `json:"time_spent"`
+}
+
+type QuizLiveResult struct {
+	ID        int64       `json:"id"`
+	SessionID int64       `json:"session_id"`
+	Rank      int32       `json:"rank"`
+	Nickname  string      `json:"nickname"`
+	UserID    pgtype.Int8 `json:"user_id"`
+	Score     int32       `json:"score"`
+	Correct   int32       `json:"correct"`
+}
+
+type QuizLiveSession struct {
+	ID            int64              `json:"id"`
+	Code          string             `json:"code"`
+	QuizID        int64              `json:"quiz_id"`
+	HostID        int64              `json:"host_id"`
+	Status        string             `json:"status"`
+	Players       int32              `json:"players"`
+	QuestionStats []byte             `json:"question_stats"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	FinishedAt    pgtype.Timestamptz `json:"finished_at"`
+}
+
+type QuizMedium struct {
+	Name      string             `json:"name"`
+	UserID    int64              `json:"user_id"`
+	QuizID    pgtype.Int8        `json:"quiz_id"`
+	Kind      string             `json:"kind"`
+	Bytes     int32              `json:"bytes"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type QuizQuestion struct {
+	ID          int64              `json:"id"`
+	QuizID      int64              `json:"quiz_id"`
+	Position    int32              `json:"position"`
+	Type        string             `json:"type"`
+	Prompt      string             `json:"prompt"`
+	Data        []byte             `json:"data"`
+	Explanation string             `json:"explanation"`
+	SourceQuote string             `json:"source_quote"`
+	Image       pgtype.Text        `json:"image"`
+	Audio       pgtype.Text        `json:"audio"`
+	TimeLimit   pgtype.Int4        `json:"time_limit"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type RateLimit struct {

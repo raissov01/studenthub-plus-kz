@@ -27,9 +27,8 @@ func init() {
 }
 
 var (
-	MsgLocked = httpx.Msg{KK: "Модерация шешімдері туралы хабарламаларды өшіруге болмайды.", RU: "Уведомления о решениях модерации отключить нельзя."}
-	MsgQuiet  = httpx.Msg{KK: "Тыныш уақыт ҚҚ:ММ форматында болуы керек, басы мен соңы әртүрлі.", RU: "Тихие часы — в формате ЧЧ:ММ, начало и конец должны отличаться."}
-	MsgCap    = httpx.Msg{KK: "Күндік шек 1-ден 20-ға дейін болуы керек.", RU: "Дневной лимит — от 1 до 20."}
+	MsgQuiet = httpx.Msg{KK: "Тыныш уақыт ҚҚ:ММ форматында болуы керек, басы мен соңы әртүрлі.", RU: "Тихие часы — в формате ЧЧ:ММ, начало и конец должны отличаться."}
+	MsgCap   = httpx.Msg{KK: "Күндік шек 1-ден 3-ке дейін болуы керек.", RU: "Дневной лимит — от 1 до 3."}
 )
 
 // Routes wires GET/PUT /api/me/notifications, the in-site inbox (GET /api/me/inbox, POST
@@ -59,7 +58,7 @@ type QuietJSON struct {
 
 // JSON renders p for the API.
 func (p Prefs) JSON() PrefsJSON {
-	cats := map[Category]bool{CatModeration: true}
+	cats := map[Category]bool{}
 	for _, c := range Categories {
 		cats[c] = p.Allows(c)
 	}
@@ -67,7 +66,7 @@ func (p Prefs) JSON() PrefsJSON {
 		Categories: cats,
 		QuietHours: QuietJSON{Enabled: p.QuietEnabled, Start: Clock(p.QuietStart), End: Clock(p.QuietEnd), Timezone: "Asia/Almaty"},
 		DailyCap:   p.DailyCap,
-		Locked:     []Category{CatModeration},
+		Locked:     []Category{},
 	}
 }
 
@@ -106,10 +105,6 @@ func (b prefsPatch) apply(p *Prefs) (string, httpx.Msg) {
 	for k, on := range b.Categories {
 		c := Category(k)
 		switch {
-		case c == CatModeration:
-			if !on {
-				return "moderation_locked", MsgLocked
-			}
 		case c.valid():
 			p.On[c] = on
 		default:
