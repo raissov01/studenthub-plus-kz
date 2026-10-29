@@ -184,29 +184,34 @@ export function hue(id: string) {
 }
 
 /* ---------- notifications: derived from the student's own data, so they stay truthful ---------- */
-export interface Notif { id: string; k: string; icon: IconName; tone: number; go?: string; act?: 'deal'; data?: string; h: number; title: string; text: string }
+/** demo: built from a sample record — the list marks it «үлгі» (11-025) */
+export interface Notif { id: string; k: string; icon: IconName; tone: number; go?: string; act?: 'deal'; data?: string; h: number; title: string; text: string; demo?: boolean }
 export function notifs(S: AppState, I: I18n, C: Content): Notif[] {
   const { tt, L } = I;
   const p = S.profile, out: Notif[] = [];
   C.jobs.filter(j => j.spec.includes('all') || j.spec.includes(p.spec)).slice(0, 2).forEach((j, i) => out.push({
-    id: 'nj-' + j.id, k: 'jobs', icon: 'briefcase', tone: 0, go: 'job:' + j.id, h: 2 + i * 5,
+    id: 'nj-' + j.id, k: 'jobs', icon: 'briefcase', tone: 0, go: 'job:' + j.id, h: 2 + i * 5, demo: !!j.is_demo,
     title: tt('Жаңа жұмыс мүмкіндігі', 'Новая вакансия для вас'), text: tt(`${plainOrg(L(j.org))}: «${L(j.title)}», сізге сәйкес келеді`, `${plainOrg(L(j.org))}: «${L(j.title)}» подходит вам`),
   }));
   EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).forEach((e, i) => out.push({
-    id: 'ne-' + e.id, k: 'events', icon: 'calendar', tone: 1, go: 'event:' + e.id, h: 20 + i * 14,
+    id: 'ne-' + e.id, k: 'events', icon: 'calendar', tone: 1, go: 'event:' + e.id, h: 20 + i * 14, demo: true, // EVENTS are the sample list
     title: S.events[e.id] ? tt('Сіз тіркелген іс-шара жақында', 'Скоро ваше мероприятие') : tt('Іс-шара есігінде', 'Скоро мероприятие'),
     text: `${L(e.title)}, ${I.fDate(dOff(e.day))}, ${e.time}`,
   }));
   Object.keys(S.applied).forEach(id => {
     const j = C.jobs.find(x => x.id === id);
-    if (j) out.push({ id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, title: tt('Өтінім жіберілді', 'Отклик отправлен'), text: tt(`«${L(j.title)}» бойынша жұмыс берушінің жауабын күтіңіз`, `Ждите ответа работодателя по вакансии «${L(j.title)}»`) });
+    if (!j) return;
+    out.push(j.is_demo
+      // a sample job has no employer behind it: nothing is sent and no reply will come
+      ? { id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, demo: true, title: tt('Өтінім белгіленді', 'Отклик отмечен'), text: tt(`«${L(j.title)}» — үлгі вакансия: өтінім тек осы құрылғыда сақталды, жұмыс берушіге жіберілмейді`, `«${L(j.title)}» — пример вакансии: отклик сохранён только на этом устройстве и работодателю не отправляется`) }
+      : { id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, title: tt('Өтінім жіберілді', 'Отклик отправлен'), text: tt(`«${L(j.title)}» бойынша жұмыс берушінің жауабын күтіңіз`, `Ждите ответа работодателя по вакансии «${L(j.title)}»`) });
   });
   C.discounts.slice(0, 2).forEach((d, i) => out.push({
-    id: 'nd-' + d.id, k: 'deals', icon: 'tag', tone: 2, act: 'deal', data: d.id, h: 26 + i * 22,
+    id: 'nd-' + d.id, k: 'deals', icon: 'tag', tone: 2, act: 'deal', data: d.id, h: 26 + i * 22, demo: !!d.is_demo,
     title: tt('Жеңілдік жаңартылды', 'Скидка обновлена'), text: `${plainOrg(L(d.name))}: ${d.pct}, ${L(d.what).toLowerCase()}`,
   }));
   openOpps(C.opportunities).filter(o => oppLeft(o) <= 21).slice(0, 1).forEach(o => out.push({
-    id: 'no-' + o.id, k: 'jobs', icon: 'clock', tone: 3, go: 'opp:' + o.id, h: 30,
+    id: 'no-' + o.id, k: 'jobs', icon: 'clock', tone: 3, go: 'opp:' + o.id, h: 30, demo: !!o.is_demo,
     title: tt('Өтінім мерзімі жақын', 'Скоро дедлайн'), text: `${L(o.title)}: ${I.daysLeftTxt(oppLeft(o)).toLowerCase()}`,
   }));
   out.push({ id: 'nm-study', k: 'study', icon: 'book', tone: 4, go: 'materials', h: 72, title: tt('Жаңа оқу материалы', 'Новые учебные материалы'), text: tt('Емтиханға дайындық пен карточкалар бөлімін қараңыз', 'Загляните в подготовку к экзаменам и карточки') });

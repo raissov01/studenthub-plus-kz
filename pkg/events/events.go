@@ -121,6 +121,7 @@ type Event struct {
 	CheckinStarted *time.Time `json:"checkin_started_at"`
 	FinishedAt     *time.Time `json:"finished_at"`
 	CreatedAt      time.Time  `json:"created_at"`
+	IsDemo         bool       `json:"is_demo"` // a sample event: the site marks it «үлгі» (11-025)
 
 	Registered int    `json:"registered"`
 	Waitlist   int    `json:"waitlist"`
@@ -142,7 +143,7 @@ type MyReg struct {
 
 const eventCols = `e.id, e.title_kk, e.title_ru, e.desc_kk, e.desc_ru, e.cat, e.starts_at, e.ends_at, e.university,
 	e.building_id, e.place_text, e.capacity, e.walk_in_allowed, e.gives_cert, e.teams_enabled, e.status::text,
-	e.created_by, e.checkin_started_at, e.finished_at, e.created_at, e.checkin_key,
+	e.created_by, e.checkin_started_at, e.finished_at, e.created_at, e.checkin_key, e.is_demo,
 	(select count(*) from event_regs r where r.event_id = e.id and r.status = 'registered'),
 	(select count(*) from event_regs r where r.event_id = e.id and r.status = 'waitlist'),
 	(select count(*) from event_regs r where r.event_id = e.id and r.checked_in_at is not null)`
@@ -151,7 +152,7 @@ func scanEvent(row pgx.Row) (*Event, error) {
 	var e Event
 	err := row.Scan(&e.ID, &e.TitleKK, &e.TitleRU, &e.DescKK, &e.DescRU, &e.Cat, &e.StartsAt, &e.EndsAt, &e.University,
 		&e.BuildingID, &e.PlaceText, &e.Capacity, &e.WalkIn, &e.GivesCert, &e.TeamsEnabled, &e.Status,
-		&e.CreatedBy, &e.CheckinStarted, &e.FinishedAt, &e.CreatedAt, &e.checkinKey,
+		&e.CreatedBy, &e.CheckinStarted, &e.FinishedAt, &e.CreatedAt, &e.checkinKey, &e.IsDemo,
 		&e.Registered, &e.Waitlist, &e.CheckedIn)
 	if err != nil {
 		return nil, err

@@ -12,7 +12,7 @@
    taps «Жаңарту» (message SKIP_WAITING); it never takes over a page on its own. */
 'use strict';
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev';
 const PREFIX = 'studenthub-';
 const PAGES = `${PREFIX}pages-${VERSION}-${BUILD}`;
@@ -20,8 +20,9 @@ const STATIC = `${PREFIX}static-${VERSION}-${BUILD}`;
 const CURRENT = [PAGES, STATIC];
 
 const OFFLINE_URL = '/offline.html';
-/** saved on install: the screens that must open without internet (schedule is on «/», the map on «/map») */
-const SHELL_PAGES = ['/', '/map', '/settings', '/roadmap', '/profile', '/mine', '/events', '/search', '/notifications', '/saved', '/services'];
+/** saved on install: the screens that must open without internet (schedule is on «/», the map on «/map», the student
+    QR card on «/discounts» — it is drawn from the profile in localStorage, the HTML holds no personal data) */
+const SHELL_PAGES = ['/', '/map', '/settings', '/roadmap', '/profile', '/mine', '/events', '/search', '/notifications', '/saved', '/services', '/discounts'];
 /** saved on install (all must exist: a missing one fails the install, and the old worker stays) */
 const STATIC_FILES = [
   OFFLINE_URL, '/manifest.webmanifest', '/campus-map.jpg', '/favicon.ico',

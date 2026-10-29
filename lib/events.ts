@@ -10,7 +10,7 @@ export interface DbEvent {
   capacity: number | null; walk_in_allowed: boolean; gives_cert: boolean; teams_enabled: boolean;
   status: 'draft' | 'published' | 'finished' | 'cancelled'; created_by: number | null; checkin_started_at: string | null;
   finished_at: string | null; created_at: string; registered: number; waitlist: number; checked_in: number;
-  spots_left: number | null; my?: MyReg; can_manage: boolean;
+  spots_left: number | null; my?: MyReg; can_manage: boolean; is_demo?: boolean;
 }
 export interface LiveView {
   token: string; deep_link: string; web_link: string; rotates_in_sec: number; open: boolean;
