@@ -73,6 +73,7 @@ export function QuizPlayScreen({
       setResult(null);
     });
   if (loadError) return <ErrorText error={loadError} />;
+  const resultShare = share || (data?.quiz.visibility === 'unlisted' ? data.quiz.shareCode : '');
   if (result)
     return (
       <>
@@ -93,8 +94,13 @@ export function QuizPlayScreen({
               {tt('Қате жауаптарды қайталау', 'Повторить ошибки')}
             </button>
           )}
-          <Link className="btn ghost" href={`/quiz/${result.quizId}`}>
-            {tt('Квизге оралу', 'К квизу')}
+          <Link
+            className="btn ghost"
+            href={resultShare
+              ? `/quiz/s/${encodeURIComponent(resultShare)}`
+              : data ? `/quiz/${result.quizId}` : '/quiz'}
+          >
+            {data || share ? tt('Квизге оралу', 'К квизу') : tt('Квиздерге оралу', 'К квизам')}
           </Link>
           <Link className="btn ghost" href="/quiz?tab=history">
             {tt('Тарих', 'История')}
@@ -131,7 +137,7 @@ export function QuizPlayScreen({
             lang,
             data.questions.map((x) => x.id),
             data.retryOf,
-            share,
+            share || data.quiz.shareCode || '',
           ),
         );
         return;
@@ -163,10 +169,20 @@ export function QuizPlayScreen({
         {q.prompt}
       </h1>
       {!['hotspot', 'labeling'].includes(q.type) && <QuestionMedia q={q} />}
-      <AnswerControl q={q} value={answer} change={setAnswer} disabled={expired || task.busy} />
+      <AnswerControl
+        key={q.id}
+        q={q}
+        value={answer}
+        change={setAnswer}
+        disabled={task.busy}
+        shuffle={data.quiz.shuffle}
+      />
       {expired && (
         <p role="status">
-          {tt('Уақыт бітті. Келесі сұраққа өтіңіз.', 'Время вышло. Перейдите к следующему вопросу.')}
+          {tt(
+            'Уақыт бітті. Жаттығуда жауап беруді жалғастыра аласыз.',
+            'Время вышло. В тренировке можно продолжить отвечать.',
+          )}
         </p>
       )}
       <button type="button" className="btn" disabled={task.busy} onClick={next}>

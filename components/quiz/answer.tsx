@@ -39,14 +39,27 @@ export function AnswerControl({
   value,
   change,
   disabled = false,
+  shuffle = false,
 }: {
   q: PlayQuestion;
   value: Answer;
   change: (v: Answer) => void;
   disabled?: boolean;
+  shuffle?: boolean;
 }) {
   const { tt } = useApp();
   const id = useId();
+  // Shuffle only the visual order. The API grades the original option indexes.
+  const [optionOrder] = useState(() => {
+    const indexes = (q.options || []).map((_, i) => i);
+    if (shuffle) {
+      for (let i = indexes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+      }
+    }
+    return indexes;
+  });
   const map = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<
     string,
     Answer
@@ -70,7 +83,7 @@ export function AnswerControl({
     <fieldset className="quiz-answers" disabled={disabled}>
       <legend className="sr-only">{tt('Сіздің жауабыңыз', 'Ваш ответ')}</legend>
       {['mcq', 'mcq_multi', 'poll'].includes(q.type) &&
-        q.options?.map((o, i) => (
+        optionOrder.map((i) => (
           <label className="quiz-choice" key={i}>
             <input
               type={q.type === 'mcq_multi' ? 'checkbox' : 'radio'}
@@ -85,7 +98,7 @@ export function AnswerControl({
                 } else change(i);
               }}
             />
-            <span>{o}</span>
+            <span>{q.options![i]}</span>
           </label>
         ))}
       {q.type === 'dropdown' && (
@@ -95,9 +108,9 @@ export function AnswerControl({
           onChange={(v) => change(v === '' ? null : Number(v))}
         >
           <option value="">{choose}</option>
-          {q.options?.map((o, i) => (
+          {optionOrder.map((i) => (
             <option value={i} key={i}>
-              {o}
+              {q.options![i]}
             </option>
           ))}
         </Select>
@@ -230,6 +243,7 @@ export function AnswerControl({
                 value={map[s.id] ?? null}
                 change={(v) => change({ ...map, [s.id]: v })}
                 disabled={disabled}
+                shuffle={shuffle}
               />
             </section>
           ))}

@@ -180,6 +180,7 @@ export interface GeneratedDraft {
 }
 export interface LiveTicket {
   token: string;
+  wsUrl: string;
   playerId: string;
   nickname: string;
   rejoinKey: string;
@@ -189,6 +190,7 @@ export interface LiveTicket {
 export interface HostTicket {
   code: string;
   hostToken: string;
+  wsUrl: string;
   expiresAt: number;
   title: string;
 }
@@ -262,7 +264,7 @@ async function preparePhoto(file: File, lang: QuizLang): Promise<File> {
     );
   }
   try {
-    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -362,8 +364,7 @@ export const quizApi = {
       );
     const form = new FormData();
     form.append('file', prepared);
-    form.append('kind', 'image');
-    return apiUpload<{ name: string; url: string }>(`${root}/media`, form, lang);
+    return apiUpload<{ name: string; url: string }>(`${root}/media?kind=image`, form, lang);
   },
   media: (url: string, lang: QuizLang) => apiBlob(url, lang),
   imageUrl: (name: string) => `${root}/media/${enc(name)}`,
@@ -371,7 +372,7 @@ export const quizApi = {
   host: (quizId: number, lang: QuizLang) =>
     api<HostTicket>(`${root}/live/sessions`, { method: 'POST', body: { quizId }, lang }),
   hostToken: (code: string, lang: QuizLang) =>
-    api<Pick<HostTicket, 'hostToken' | 'expiresAt'>>(`${root}/live/sessions/${enc(code)}/host-token`, {
+    api<Pick<HostTicket, 'hostToken' | 'expiresAt' | 'wsUrl'>>(`${root}/live/sessions/${enc(code)}/host-token`, {
       method: 'POST',
       lang,
     }),
