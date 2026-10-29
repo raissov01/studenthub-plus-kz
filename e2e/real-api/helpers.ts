@@ -28,9 +28,10 @@ export function initData(id: number) {
   return fields.toString();
 }
 export async function response(page: Page, path: string, action: () => Promise<unknown>, method = 'POST') {
-  const waiting = page.waitForResponse(r => new URL(r.url()).pathname === path && r.request().method() === method);
-  await action();
-  const r = await waiting;
+  const [r] = await Promise.all([
+    page.waitForResponse(r => new URL(r.url()).pathname === path && r.request().method() === method),
+    action(),
+  ]);
   expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBe(true);
   return r.json();
 }
@@ -76,7 +77,16 @@ export const test = base.extend<{
       await response(page, '/api/me', () => page.getByRole('button', { name: label(lang, 'Аккаунтпен синхрондау', 'Синхронизировать с аккаунтом') }).click(), 'PATCH');
       return { page, id: user.id, telegramID, name };
     });
-    for (const context of contexts) await context.close();
+    for (const [i, context] of contexts.entries()) {
+      if (info.status !== info.expectedStatus || failures.length) {
+        for (const [j, page] of context.pages().entries()) {
+          const screenshot = info.outputPath(`actor-${i}-page-${j}.png`);
+          await page.screenshot({ path: screenshot, fullPage: true }).catch(() => {});
+          await info.attach(`actor-${i}-page-${j}`, { path: screenshot, contentType: 'image/png' });
+        }
+      }
+      await context.close();
+    }
     expect(failures, 'Uncaught browser errors').toEqual([]);
   },
 });

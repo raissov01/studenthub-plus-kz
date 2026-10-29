@@ -1,0 +1,40 @@
+import { test, expect, label, response, approve, sql } from './helpers';
+
+test('11-011: mentor request → mentor approval → manual match → week-three check-in', async ({ actor, lang }) => {
+  const student = await actor(`Mentee ${lang}`, { course: 1 });
+  const mentor = await actor(`Mentor ${lang}`, { course: 3 });
+  const admin = await actor(`Matching admin ${lang}`, { admin: true });
+  await student.page.goto('/mentors');
+  await student.page.getByRole('button', { name: label(lang, 'Оқу', 'Учёба'), exact: true }).click();
+  await student.page.locator('#mGoal').fill('Help me plan my first semester');
+  await response(student.page, '/api/mentors/requests', () => student.page.getByRole('button', { name: label(lang, 'Сұраныс қалдыру', 'Оставить заявку'), exact: true }).click());
+  await mentor.page.goto('/mentors/become');
+  await mentor.page.getByRole('button', { name: label(lang, 'Оқу', 'Учёба'), exact: true }).click();
+  await mentor.page.locator('#bAbout').fill('I can help first year students with their studies.');
+  await response(mentor.page, '/api/mentors/apply', () => mentor.page.getByRole('button', { name: label(lang, 'Өтінім жіберу', 'Отправить заявку'), exact: true }).click());
+  await approve(admin.page, lang, mentor.name);
+  await admin.page.goto('/admin/mentors');
+  await admin.page.getByRole('button', { name: new RegExp(student.name) }).click();
+  const candidate = admin.page.locator('.row').filter({ hasText: mentor.name });
+  const matched = await response(admin.page, '/api/admin/mentors/match', () => candidate.getByRole('button', { name: label(lang, 'Жұптау', 'Связать'), exact: true }).click());
+  expect(matched).toBeTruthy();
+  await student.page.goto('/mentors/me');
+  await expect(student.page.getByText(mentor.name, { exact: true })).toBeVisible();
+  await expect(student.page.getByText(label(lang, 'Кездестіңдер ме?', 'Вы встретились?'), { exact: true })).toBeHidden();
+  const before = await (await student.page.request.get('/api/mentors/pairs')).json();
+  const pair = before.pairs[0];
+  expect(pair.due).toEqual([]);
+  // Only the date changes; request, approval and pairing went through the UI and real API.
+  sql("update mentor_pairs set started_at=now()-interval '22 days' where id=$1", pair.id);
+  await student.page.reload();
+  await expect(student.page.getByText(label(lang, 'Кездестіңдер ме?', 'Вы встретились?'), { exact: true })).toBeVisible();
+  await student.page.getByRole('button', { name: label(lang, 'Иә', 'Да'), exact: true }).click();
+  await student.page.getByRole('button', { name: '5', exact: true }).click();
+  await response(student.page, `/api/mentors/pairs/${pair.id}/checkin`, () => student.page.getByRole('button', { name: label(lang, 'Жауап беру', 'Ответить'), exact: true }).click());
+  await student.page.reload();
+  await expect(student.page.getByText(label(lang, 'Кездестіңдер ме?', 'Вы встретились?'), { exact: true })).toBeHidden();
+  const after = await (await student.page.request.get('/api/mentors/pairs')).json();
+  expect(after.pairs[0].due).not.toContain('check3');
+  await mentor.page.goto('/mentors/me');
+  await expect(mentor.page.getByText(label(lang, 'Кездестіңдер ме?', 'Вы встретились?'), { exact: true })).toBeVisible();
+});

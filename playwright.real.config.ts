@@ -15,6 +15,7 @@ export default defineConfig({
   outputDir: 'test-results/real',
   use: {
     baseURL: `http://127.0.0.1:${port}`, browserName: 'chromium',
+    actionTimeout: 15_000, navigationTimeout: 60_000,
     serviceWorkers: 'block', trace: 'retain-on-failure', screenshot: 'only-on-failure',
   },
   projects: [
