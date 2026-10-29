@@ -3,6 +3,7 @@ package mentors
 import (
 	"context"
 	"crypto/subtle"
+	"fmt"
 	"html"
 	"log"
 	"net/http"
@@ -100,12 +101,12 @@ func RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			if kind == "month" {
 				text = monthText(d.lang)
 			}
-			status, err := notify.DigestAs(ctx, d.userID, notify.CatMentors, now, text)
+			status, err := notify.DigestAs(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:%s", d.pairID, kind)), d.userID, notify.CatMentors, now, text)
 			if err != nil {
 				log.Printf("mentors cron: %s %d: %v", kind, d.userID, err)
 				continue
 			}
-			if status != notify.DigestSent {
+			if !notify.DigestAccepted(status) {
 				res.Postponed++
 				continue
 			}
@@ -214,19 +215,13 @@ func meetingNotices(ctx context.Context, now time.Time, res *CronResult) error {
 	if err != nil {
 		return err
 	}
-	told := map[int64]bool{}
 	for _, m := range list {
-		if told[m.userID] { // one meeting per student per run; the next one tomorrow
-			res.MeetingPostponed++
-			continue
-		}
-		told[m.userID] = true
-		st, err := notify.DigestAs(notify.WithLink(ctx, "/event/"+strconv.FormatInt(m.eventID, 10)), m.userID, notify.CatMentors, now, meetingText(m))
+		st, err := notify.DigestAs(notify.WithKey(notify.WithLink(ctx, "/event/"+strconv.FormatInt(m.eventID, 10)), fmt.Sprintf("mentor-meeting:%d", m.eventID)), m.userID, notify.CatMentors, now, meetingText(m))
 		if err != nil {
 			log.Printf("mentors cron: meeting %d to %d: %v", m.eventID, m.userID, err)
 			continue
 		}
-		if st != notify.DigestSent && st != notify.DigestOff {
+		if !notify.DigestAccepted(st) {
 			res.MeetingPostponed++
 			continue
 		}

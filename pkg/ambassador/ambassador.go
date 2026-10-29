@@ -30,7 +30,7 @@ import (
 )
 
 // Notify is the sender; tests replace it. Its only message is the term-renewal ask about the
-// student's own ambassador role, so it is transactional (always sent, immediately).
+// student's own ambassador role; it obeys moderation preferences, quiet hours and caps.
 var Notify = notify.For(notify.CatModeration)
 
 // Now is the clock; tests replace it.

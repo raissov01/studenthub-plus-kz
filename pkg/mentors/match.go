@@ -3,6 +3,7 @@ package mentors
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -14,6 +15,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/httpx"
+	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
 
 // scope is who is matching: an admin (any university, optional ?university= filter) or an
@@ -295,8 +297,8 @@ func sendIntros(ctx context.Context, p pairRow) {
 		mentor.Username, mentee.Username = "", ""
 		mentor.TelegramID, mentee.TelegramID = 0, 0
 	}
-	pairNews(ctx, mentor.ID, introText(mentor, mentee, p.Need, true))
-	pairNews(ctx, mentee.ID, introText(mentee, mentor, p.Need, false))
+	pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:intro", p.ID)), mentor.ID, introText(mentor, mentee, p.Need, true))
+	pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:intro", p.ID)), mentee.ID, introText(mentee, mentor, p.Need, false))
 }
 
 // ---- admin only ----
@@ -406,7 +408,7 @@ func adminEndPair(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	for _, id := range []int64{p.MentorID, p.MenteeID} {
 		if o, err := loadPerson(ctx, mustPool(ctx), id); err == nil {
-			pairNews(ctx, o.ID, endedText(o.Lang))
+			pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:ended", p.ID)), o.ID, endedText(o.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -482,7 +484,7 @@ func adminSetStatus(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	for _, p := range ended {
 		if o, err := loadPerson(ctx, mustPool(ctx), p.MenteeID); err == nil {
-			pairNews(ctx, o.ID, endedText(o.Lang))
+			pairNews(notify.WithKey(ctx, fmt.Sprintf("mentor-pair:%d:ended", p.ID)), o.ID, endedText(o.Lang))
 		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "endedPairs": len(ended)})

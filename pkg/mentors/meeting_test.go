@@ -53,6 +53,9 @@ func TestGroupMeetingNotifiesWaitingStudents(t *testing.T) {
 	if _, err := RunCron(ctx(), now); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := notify.Flush(ctx(), now); err != nil {
+		t.Fatal(err)
+	}
 	if count(waitingTG) != 1 || count(minorTG) != 1 || !strings.Contains(sent(waitingTG)[len(sent(waitingTG))-1], "Сессияға дайындық") {
 		t.Fatalf("waiting students not told: %q %q", sent(waitingTG), sent(minorTG))
 	}
@@ -75,6 +78,9 @@ func TestGroupMeetingNotifiesWaitingStudents(t *testing.T) {
 	}
 	// tomorrow the busy student gets it; still once per meeting for the others
 	if _, err := RunCron(ctx(), now.Add(24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := notify.Flush(ctx(), now.Add(24*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	if count(busyTG) != 1 || count(waitingTG) != 1 || count(minorTG) != 1 {

@@ -187,10 +187,18 @@ func newHarness(t *testing.T) *harness {
 			Admins: map[string]bool{"900": true, "901": true},
 		},
 		Pool: testPool,
+		Now:  func() time.Time { return almatyNoon(time.Now()) },
 	}
 	h.mux = http.NewServeMux()
 	h.b.Register(h.mux)
 	return h
+}
+
+// Bot delivery tests use an explicit daytime clock; quiet hours have dedicated tests.
+func almatyNoon(t time.Time) time.Time {
+	loc := time.FixedZone("Asia/Almaty", 5*3600)
+	n := t.In(loc)
+	return time.Date(n.Year(), n.Month(), n.Day(), 12, 0, 0, 0, loc)
 }
 
 func (h *harness) opp(id string, inDays any, extra ...map[string]any) map[string]any {
@@ -279,13 +287,22 @@ func (h *harness) cron(auth string) int {
 	}
 	rec := httptest.NewRecorder()
 	h.mux.ServeHTTP(rec, req)
+	if rec.Code == 200 {
+		if _, err := h.b.dispatcher().Flush(context.Background(), h.b.now()); err != nil {
+			h.t.Fatal(err)
+		}
+	}
 	return rec.Code
 }
 
 func (h *harness) runCron(now time.Time) *CronResult {
 	h.t.Helper()
+	now = almatyNoon(now)
 	r, err := h.b.RunCron(context.Background(), now)
 	if err != nil {
+		h.t.Fatal(err)
+	}
+	if _, err := h.b.dispatcher().Flush(context.Background(), now); err != nil {
 		h.t.Fatal(err)
 	}
 	return r
@@ -450,10 +467,10 @@ func TestNotFoundExpiredNoDeadline(t *testing.T) {
 		{"nope", `таба алмадым`}, {"old", `аяқталып қойыпты`}, {"nodl", `нақты мерзім жоқ`},
 		{"o1", `уақыт қалмады`}, {"bad$id", `таба алмадым`},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		h.reset()
-		h.say(104, "/start remind_"+c.id)
-		m := h.messages(104)[0]
+		h.say(int64(104+i), "/start remind_"+c.id)
+		m := h.messages(int64(104 + i))[0]
 		mustMatch(t, textOf(m), c.re)
 		eq(t, keyboard(m)[0][0]["url"].(string), h.site.URL+"/", c.id)
 	}
@@ -507,7 +524,7 @@ func TestCronSecondRunSameDaySendsNothing(t *testing.T) {
 	eq(t, len(h.messages(201)), 1)
 	second := h.runCron(time.Now())
 	eq(t, len(h.messages(201)), 1)
-	eq(t, second.AlreadySent, 1)
+	eq(t, second.Reminders, 1, "idempotent receipt acknowledged")
 	eq(t, h.count("select count(*) from bot_daily_sends where user_id = $1", u.ID), 1)
 }
 
@@ -522,9 +539,9 @@ func TestCron403MarksInactive(t *testing.T) {
 		return nil
 	}
 	r := h.runCron(time.Now())
-	eq(t, r.Blocked, 1)
+	eq(t, r.Reminders, 1, "item accepted before dispatch")
 	eq(t, h.getUser(202).BotInactive, true)
-	eq(t, h.count("select count(*) from bot_daily_sends where user_id = $1", u.ID), 1, "403 keeps the day claimed")
+	eq(t, h.count("select count(*) from bot_daily_sends where user_id = $1", u.ID), 0, "explicit 403 rejection releases the day")
 	h.reset()
 	h.runCron(time.Now().Add(4 * day)) // o7 now has 3 days left
 	eq(t, len(h.messages(202)), 0)
@@ -630,6 +647,7 @@ func TestDoneAndSkipStopReminders(t *testing.T) {
 
 func TestMyListAndDelete(t *testing.T) {
 	h := newHarness(t)
+	h.user(301, "kk") // isolate list behavior from first-contact safety notification
 	h.say(301, "/start remind_o20")
 	h.say(301, "/start remind_o10")
 	h.reset()
@@ -781,17 +799,26 @@ func TestDigestEnabled(t *testing.T) {
 	h.reset()
 	r1 := h.runCron(thu)
 	eq(t, r1.Reminders, 1)
-	eq(t, r1.Digests, 0)
-	eq(t, len(h.messages(700)), 1)
-	h.reset()
-	fri := thu.Add(day)
-	r2 := h.runCron(fri)
-	eq(t, r2.Digests, 1)
-	d := textOf(h.messages(700)[0])
+	eq(t, r1.Digests, 1, "weekly and deadlines combined")
+	// Deferred command replies can also use today's independent direct budget.
+	var d string
+	for _, m := range h.messages(700) {
+		if strings.Contains(textOf(m), "new1") {
+			d = textOf(m)
+		}
+	}
+	if d == "" {
+		t.Fatal("combined digest missing")
+	}
 	mustMatch(t, d, `new1`)
 	if strings.Contains(d, "new2") {
 		t.Fatal("other city filtered out")
 	}
+	h.reset()
+	fri := thu.Add(day)
+	r2 := h.runCron(fri)
+	eq(t, r2.Digests, 0, "weekly item already accepted")
+	eq(t, len(h.messages(700)), 0)
 	h.reset()
 	r3 := h.runCron(fri.Add(day))
 	eq(t, r3.Digests, 0, "one digest per week")
@@ -868,18 +895,18 @@ func TestSettingsTogglesPersist(t *testing.T) {
 	if settings == nil {
 		t.Fatal("no settings message")
 	}
-	mustMatch(t, textOf(*settings), `22:00–09:00`)
-	mustMatch(t, textOf(*settings), `Модерация шешімдері`)
+	mustMatch(t, textOf(*settings), `22:00–08:00`)
+	mustMatch(t, textOf(*settings), `Модерацияны да өшіруге болады`)
 	var data []string
 	for _, b := range flat(keyboard(*settings)) {
 		data = append(data, b["callback_data"].(string))
 	}
-	eq(t, strings.Join(data, ","), "set:deadlines,set:digest,set:events,set:mentors,set:market,set:jobs,set:quiet")
+	eq(t, strings.Join(data, ","), "set:deadlines,set:digest,set:events,set:mentors,set:market,set:jobs,set:community,set:moderation,set:quiet")
 
 	h.reset()
 	h.press(800, "set:deadlines", nil)
 	h.press(800, "set:quiet", nil)
-	h.press(800, "set:moderation", nil) // not a switch: ignored
+	h.press(800, "set:moderation", nil) // moderation is switchable too
 	h.press(800, "set:bogus", nil)
 	u := h.getUser(800)
 	p, err := notify.LoadPrefs(ctx, testPool, u.ID)
@@ -887,6 +914,7 @@ func TestSettingsTogglesPersist(t *testing.T) {
 		t.Fatal(err)
 	}
 	eq(t, p.Allows(notify.CatDeadlines), false, "deadlines off")
+	eq(t, p.Allows(notify.CatModeration), false, "moderation off")
 	eq(t, p.QuietEnabled, false, "quiet off")
 	eq(t, p.Allows(notify.CatEvents), true, "events untouched")
 	var redraw *call
@@ -911,8 +939,8 @@ func TestSettingsTogglesPersist(t *testing.T) {
 	eq(t, len(h.messages(800)), 0, "deadlines off")
 	h.press(800, "set:deadlines", nil)
 	h.reset()
-	h.runCron(time.Now())
-	eq(t, len(h.messages(800)), 1, "deadlines back on")
+	h.runCron(time.Now().Add(2 * day))
+	eq(t, len(h.messages(800)), 1, "next checkpoint after re-enabling deadlines")
 	eq(t, h.count("select count(*) from notify_sends where user_id = $1 and category = 'deadlines'", u.ID), 1, "counted for the daily cap")
 
 	// help lists the command in both languages; /stop clears the settings
@@ -939,12 +967,18 @@ func TestDigestRespectsSwitch(t *testing.T) {
 	eq(t, h.runCron(thu).Digests, 0, "digest off")
 	h.press(810, "set:digest", nil)
 	h.reset()
-	eq(t, h.runCron(thu).Digests, 1, "digest on")
+	eq(t, h.runCron(thu).Digests, 0, "disabled receipt is not replayed when re-enabled")
+	eq(t, len(h.messages(810)), 0)
+	next := thu.Add(7 * day)
+	h.mu.Lock()
+	h.opps = append(h.opps, h.opp("fresh-next", 30, map[string]any{"posted_at": localDate(next)}))
+	h.mu.Unlock()
+	eq(t, h.runCron(next).Digests, 1, "next weekly digest follows the updated switch")
 }
 
 // Email-only accounts (telegram_id null) are invisible to the bot: the cron skips them even
 // if a row somehow carries bot state, and nothing is sent to chat 0.
-func TestCronIgnoresEmailOnlyUsers(t *testing.T) {
+func TestCronWritesInboxForEmailOnlyUsers(t *testing.T) {
 	h := newHarness(t)
 	var id int64
 	if err := testPool.QueryRow(context.Background(), `insert into users (email, email_verified_at, consent_at, bot_started_at, lang)
@@ -967,11 +1001,17 @@ func TestCronIgnoresEmailOnlyUsers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	found := false
 	for _, x := range users {
 		if x.ID == id {
-			t.Fatal("BotListUsers returned an email-only user")
+			found = true
 		}
 	}
+	if !found {
+		t.Fatal("email-only reminder owner was skipped")
+	}
+	eq(t, h.count("select count(*) from notifications where user_id=$1 and category='deadlines'", id), 1, "email-only user has an inbox reminder")
+
 }
 
 // /stop deletes a bot-only row entirely, but never an account with an email sign-in, even

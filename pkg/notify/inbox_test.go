@@ -100,11 +100,11 @@ func TestDigestInboxDedupe(t *testing.T) {
 	testdb.Need(t)
 	uid, _ := newUser(t)
 	now := at(12, 0)
-	if st, _ := DigestAs(ctx(), uid, CatMentors, now, "check-in"); st != DigestSent {
+	if st, _ := DigestAs(ctx(), uid, CatMentors, now, "check-in"); st != DigestQueued {
 		t.Fatalf("first: %s", st)
 	}
 	for i := 0; i < 3; i++ { // same day: claimed, retried on later runs
-		if st, _ := DigestAs(ctx(), uid, CatMentors, now.Add(time.Duration(i)*time.Hour), "check-in"); st != DigestClaimed {
+		if st, _ := DigestAs(ctx(), uid, CatMentors, now.Add(time.Duration(i)*time.Hour), "check-in"); st != DigestQueued {
 			t.Fatalf("retry %d: %s", i, st)
 		}
 	}
@@ -112,10 +112,10 @@ func TestDigestInboxDedupe(t *testing.T) {
 	if got := inboxTexts(t, uid); len(got) != 2 {
 		t.Fatalf("dedupe: %v", got)
 	}
-	// Send (an event, not a retry) is never deduplicated.
+	// Legacy callers without explicit source keys deduplicate identical content too.
 	send(t, uid, CatEvents, "same", now)
 	send(t, uid, CatEvents, "same", now)
-	if got := inboxTexts(t, uid); len(got) != 4 {
+	if got := inboxTexts(t, uid); len(got) != 3 {
 		t.Fatalf("send dedupe: %v", got)
 	}
 }

@@ -3,7 +3,7 @@
    runs this file under plain Node. */
 import type { IconName } from './icons';
 
-export type InboxCategory = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation';
+export type InboxCategory = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface InboxItem {
   id: number;
   category: InboxCategory | string;
@@ -38,6 +38,7 @@ const CATS: Record<InboxCategory, { kk: string; ru: string; icon: IconName; tone
   mentors: { kk: 'Менторлар', ru: 'Менторы', icon: 'user', tone: 2 },
   market: { kk: 'Маркет', ru: 'Маркет', icon: 'tag', tone: 2 },
   jobs: { kk: 'Жұмыс', ru: 'Работа', icon: 'briefcase', tone: 0 },
+  community: { kk: 'Қауымдастық', ru: 'Сообщество', icon: 'bell', tone: 4 },
   moderation: { kk: 'Модерация', ru: 'Модерация', icon: 'shield', tone: 3 },
 };
 /** label, icon and colour of a category; an unknown one (a newer server) reads as a plain notice */

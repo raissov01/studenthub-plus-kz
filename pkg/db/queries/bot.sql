@@ -36,9 +36,9 @@ update users set digest_direction = $2 where id = $1;
 update users set digest_week = $2, digest_seen = $3 where id = $1;
 
 -- name: BotListUsers :many
--- Email-only accounts (telegram_id null) are never bot users.
+-- Include email-only reminder owners: inbox delivery does not require a Telegram chat.
 select * from users
-where bot_started_at is not null and deleted_at is null and telegram_id is not null
+where deleted_at is null and (bot_started_at is not null or exists (select 1 from reminders r where r.user_id=users.id and r.status='active'))
 order by id;
 
 -- name: BotActiveReminders :many

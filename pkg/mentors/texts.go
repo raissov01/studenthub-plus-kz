@@ -170,7 +170,7 @@ func endedText(lang string) string {
 		"🎓 Ваша менторская пара закрыта. Спасибо! При необходимости можно оставить новую заявку: "+site("/mentors"))
 }
 
-// direct sends a transactional message (decisions on the student's own application or
+// direct queues a moderated decision (the student's own application or
 // report, admin alerts) and only logs failures: a match or decision must not be rolled back
 // because Telegram is unreachable.
 func direct(ctx context.Context, userID int64, text string) {

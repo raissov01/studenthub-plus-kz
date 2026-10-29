@@ -5,6 +5,10 @@ import { getContent } from '@/lib/content';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_NAME, SITE_URL } from '@/lib/seo';
 import './globals.css';
 
+// Content IDs can appear after build time. Keep their fallback renders dynamic too,
+// rather than entering on-demand static generation and failing at connection().
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: SITE_NAME, template: '%s — Student Hub' },

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"html"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -27,7 +26,6 @@ import (
 
 const (
 	inboxMaxText   = 4096
-	inboxDedupe    = 14 * 24 * time.Hour // a digest retried by a cron is stored once in this window
 	InboxRetention = 90 * 24 * time.Hour // read rows older than this are deleted (pkg/cronrun)
 	inboxPageMax   = 50
 	inboxPageDef   = 20
@@ -84,31 +82,17 @@ func linkFor(ctx context.Context, text string) string {
 	return CleanLink(rest)
 }
 
-// record writes the inbox row. dedupe (digests, which crons retry until the bot message goes
-// out) skips it when the same text in the same category is already in the inbox from the
-// last two weeks. Deleted or blocked accounts get nothing.
-func record(ctx context.Context, q Querier, userID int64, c Category, raw string, dedupe bool) error {
-	text := PlainText(raw)
-	if text == "" {
-		return nil
-	}
+// record is part of the same transaction as accepting an outbox item. Any failure
+// aborts acceptance; Telegram can never run without a durable inbox row.
+func record(ctx context.Context, q Querier, userID int64, c Category, raw string, now time.Time) (int64, error) {
 	var link *string
 	if l := linkFor(ctx, raw); l != "" {
 		link = &l
 	}
-	_, err := q.Exec(ctx, `insert into notifications (user_id, category, text, link)
-		select $1, $2, $3, $4 where exists (select 1 from users where id = $1 and deleted_at is null)
-			and not ($5 and exists (select 1 from notifications where user_id = $1 and category = $2 and text = $3
-				and created_at > now() - make_interval(secs => $6::float8)))`,
-		userID, string(c), text, link, dedupe, inboxDedupe.Seconds())
-	return err
-}
-
-// recordLogged writes the inbox row; a failure is logged and never blocks the bot message.
-func recordLogged(ctx context.Context, q Querier, userID int64, c Category, text string, dedupe bool) {
-	if err := record(ctx, q, userID, c, text, dedupe); err != nil {
-		log.Printf("notify: inbox %d (%s): %v", userID, c, err)
-	}
+	var id int64
+	err := q.QueryRow(ctx, `insert into notifications (user_id, category, text, link, created_at)
+  values ($1, $2, $3, $4, $5) returning id`, userID, string(c), PlainText(raw), link, now).Scan(&id)
+	return id, err
 }
 
 // Unread is the number of unread inbox rows (GET /api/me "inboxUnread").

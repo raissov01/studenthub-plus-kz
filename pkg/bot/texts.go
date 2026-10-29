@@ -206,12 +206,13 @@ var allTexts = map[string]*texts{
 			if quietOn {
 				quiet = start + "–" + end + " (Астана уақыты)"
 			}
-			return fmt.Sprintf("<b>Хабарлама баптаулары</b>\n\nҚайсысын алғың келетінін таңда — батырманы басу қосады не өшіреді.\n\nТыныш уақыт: %s. Бұл уақытта хабарлама жібермеймін, кейінге қалдырамын.\nКүніне ең көбі: %d хабарлама.\nМодерация шешімдері (өз өтінімдерің туралы) әрқашан келеді.", quiet, dailyCap)
+			return fmt.Sprintf("<b>Хабарлама баптаулары</b>\n\nҚайсысын алғың келетінін таңда — батырманы басу қосады не өшіреді.\n\nТыныш уақыт: %s. Бұл уақытта хабарлама жібермеймін, кейінге қалдырамын.\nКүніне ең көбі: %d тікелей хабарлама және 1 дайджест.\nМодерацияны да өшіруге болады; сайттағы жәшікке бәрі түседі.", quiet, dailyCap)
 		},
 		CatLabel: map[notify.Category]string{
 			notify.CatDeadlines: "Мерзім еске салулары", notify.CatDigest: "Апталық топтама",
 			notify.CatEvents: "Іс-шаралар", notify.CatMentors: "Менторлар",
 			notify.CatMarket: "Маркет", notify.CatJobs: "Жұмыс ұсыныстары",
+			notify.CatCommunity: "Қауымдастық және бот жауаптары", notify.CatModeration: "Модерация",
 		},
 		BtnQuiet: func(on bool, start, end string) string {
 			if on {
@@ -300,12 +301,13 @@ var allTexts = map[string]*texts{
 			if quietOn {
 				quiet = start + "–" + end + " (время Астаны)"
 			}
-			return fmt.Sprintf("<b>Настройки уведомлений</b>\n\nВыберите, что хотите получать — нажатие на кнопку включает или выключает.\n\nТихие часы: %s. В это время сообщения не приходят, я отложу их.\nНе больше %d сообщений в день.\nРешения модерации (о ваших заявках) приходят всегда.", quiet, dailyCap)
+			return fmt.Sprintf("<b>Настройки уведомлений</b>\n\nВыберите, что хотите получать — нажатие на кнопку включает или выключает.\n\nТихие часы: %s. В это время сообщения не приходят, я отложу их.\nНе больше %d прямых сообщений и 1 дайджеста в день.\nМодерацию тоже можно отключить; всё останется во входящих на сайте.", quiet, dailyCap)
 		},
 		CatLabel: map[notify.Category]string{
 			notify.CatDeadlines: "Напоминания о дедлайнах", notify.CatDigest: "Подборка недели",
 			notify.CatEvents: "Мероприятия", notify.CatMentors: "Менторы",
 			notify.CatMarket: "Маркет", notify.CatJobs: "Вакансии",
+			notify.CatCommunity: "Сообщество и ответы бота", notify.CatModeration: "Модерация",
 		},
 		BtnQuiet: func(on bool, start, end string) string {
 			if on {

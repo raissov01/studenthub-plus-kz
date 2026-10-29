@@ -115,15 +115,15 @@ func TestQuietHoursMath(t *testing.T) {
 	for _, c := range []struct {
 		hh, mm int
 		quiet  bool
-	}{{21, 59, false}, {22, 0, true}, {23, 30, true}, {0, 0, true}, {8, 59, true}, {9, 0, false}, {12, 0, false}} {
+	}{{21, 59, false}, {22, 0, true}, {23, 30, true}, {0, 0, true}, {7, 59, true}, {8, 0, false}, {12, 0, false}} {
 		if got := p.Quiet(at(c.hh, c.mm)); got != c.quiet {
 			t.Errorf("%02d:%02d quiet=%v, want %v", c.hh, c.mm, got, c.quiet)
 		}
 	}
-	if end := p.QuietEnds(at(23, 0)); !end.Equal(at(9, 0).AddDate(0, 0, 1)) {
+	if end := p.QuietEnds(at(23, 0)); !end.Equal(at(8, 0).AddDate(0, 0, 1)) {
 		t.Errorf("23:00 -> %v", end)
 	}
-	if end := p.QuietEnds(at(3, 0)); !end.Equal(at(9, 0)) {
+	if end := p.QuietEnds(at(3, 0)); !end.Equal(at(8, 0)) {
 		t.Errorf("03:00 -> %v", end)
 	}
 	day := Prefs{QuietEnabled: true, QuietStart: 13 * 60, QuietEnd: 15 * 60}
@@ -158,7 +158,7 @@ func TestCategoryOffSendsNothing(t *testing.T) {
 	if r := send(t, uid, CatEvents, "event news at night", at(23, 0)); r != Off {
 		t.Fatalf("night result %s", r)
 	}
-	if len(sent(tg)) != 0 || count(t, "select count(*) from notify_outbox where user_id = $1", uid) != 0 {
+	if len(sent(tg)) != 0 || count(t, "select count(*) from notify_outbox where user_id = $1 and state = 'pending'", uid) != 0 {
 		t.Fatal("switched-off category was sent or queued")
 	}
 	// Digest (one per day) respects its category switch and does not take the day
@@ -177,27 +177,26 @@ func TestCategoryOffSendsNothing(t *testing.T) {
 	}
 }
 
-func TestTransactionalAlwaysSent(t *testing.T) {
+func TestModerationHasNoExemption(t *testing.T) {
 	testdb.Need(t)
 	uid, tg := newUser(t)
 	p := Defaults()
-	for _, c := range Categories {
-		p.On[c] = false
+	p.On[CatModeration] = false
+	if err := SavePrefs(ctx(), mustPool(t), uid, p); err != nil {
+		t.Fatal(err)
 	}
-	p.DailyCap = 1
-	_ = SavePrefs(ctx(), mustPool(t), uid, p)
-	_ = RecordSend(ctx(), mustPool(t), uid, CatMarket, at(23, 0)) // cap already used
-	for i, now := range []time.Time{at(12, 0), at(23, 30), at(3, 0)} {
-		if r := send(t, uid, CatModeration, "decision", now); r != Sent {
-			t.Fatalf("#%d: %s", i, r)
-		}
+	if got := send(t, uid, CatModeration, "decision off", at(12, 0)); got != Off {
+		t.Fatal(got)
 	}
-	if len(sent(tg)) != 3 || count(t, "select count(*) from notify_outbox where user_id = $1", uid) != 0 {
-		t.Fatalf("transactional: %v", sent(tg))
+	if len(sent(tg)) != 0 || len(inboxTexts(t, uid)) != 1 {
+		t.Fatal("disabled moderation must be inbox-only")
 	}
-	// For() keeps the old func(ctx, id, text) error shape
-	if err := For(CatModeration)(ctx(), uid, "via For"); err != nil || len(sent(tg)) != 4 {
-		t.Fatalf("For: %v %d", err, len(sent(tg)))
+	p.On[CatModeration] = true
+	if err := SavePrefs(ctx(), mustPool(t), uid, p); err != nil {
+		t.Fatal(err)
+	}
+	if got := send(t, uid, CatModeration, "decision at night", at(23, 0)); got != Queued {
+		t.Fatal(got)
 	}
 	if _, err := Send(ctx(), uid, Category("spam"), "x", Opts{}); err == nil {
 		t.Fatal("unknown category accepted")
@@ -218,7 +217,7 @@ func TestQuietHoursDeferThenFlush(t *testing.T) {
 	_ = db.Tx(ctx(), func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx(), "select not_before from notify_outbox where user_id = $1", uid).Scan(&notBefore)
 	})
-	if want := at(9, 0).AddDate(0, 0, 1); !notBefore.Equal(want) {
+	if want := at(8, 0).AddDate(0, 0, 1); !notBefore.Equal(want) {
 		t.Fatalf("not_before %v, want %v", notBefore, want)
 	}
 	// still night: the hourly run leaves it alone
@@ -250,22 +249,19 @@ func TestDailyCap(t *testing.T) {
 	if got[0] != Sent || got[1] != Sent || got[2] != Queued || len(sent(tg)) != 2 {
 		t.Fatalf("cap 2: %v %v", got, sent(tg))
 	}
-	// transactional messages do not count and are not capped
-	if send(t, uid, CatModeration, "decision", noon.Add(3*time.Minute)) != Sent {
-		t.Fatal("transactional capped")
+	// Moderation uses the same direct budget; digest has its own one-per-day budget.
+	if send(t, uid, CatModeration, "decision", noon.Add(3*time.Minute)) != Queued {
+		t.Fatal("moderation bypassed cap")
 	}
-	// a digest-style message is also held back by the cap
-	if st, _ := DigestAs(ctx(), uid, CatMarket, noon, "digest"); st != DigestDeferred {
-		t.Fatalf("digest over cap: %s", st)
+	if st, err := DigestAs(ctx(), uid, CatMarket, noon, "digest"); st != DigestQueued || err != nil {
+		t.Fatalf("digest: %s %v", st, err)
 	}
-	// same day: still capped
 	flush(t, noon.Add(time.Hour))
 	if len(sent(tg)) != 3 {
-		t.Fatalf("cap broken same day: %v", sent(tg))
+		t.Fatalf("separate budgets: %v", sent(tg))
 	}
-	// next day after quiet hours
 	flush(t, noon.AddDate(0, 0, 1))
-	if s := sent(tg); len(s) != 4 || s[3] != "3" {
+	if s := sent(tg); len(s) != 5 || s[3] != "3" || s[4] != "decision" {
 		t.Fatalf("next day: %v", s)
 	}
 }
@@ -297,7 +293,7 @@ func TestOutboxFlushIdempotent(t *testing.T) {
 	}
 }
 
-func TestFlushDropsSwitchedOffAndStale(t *testing.T) {
+func TestFlushDropsSwitchedOffButKeepsDeferred(t *testing.T) {
 	testdb.Need(t)
 	uid, tg := newUser(t)
 	send(t, uid, CatMarket, "market at night", at(23, 0))
@@ -308,12 +304,12 @@ func TestFlushDropsSwitchedOffAndStale(t *testing.T) {
 	if r.Dropped < 1 || len(sent(tg)) != 0 {
 		t.Fatalf("switched off meanwhile: %+v %v", r, sent(tg))
 	}
-	// a message that waited longer than the TTL is not worth sending
+	// Quiet/cap deferrals are durable even if cron was down for more than 72 hours.
 	uid2, tg2 := newUser(t)
 	send(t, uid2, CatEvents, "old", at(23, 0))
 	flush(t, at(10, 0).AddDate(0, 0, 4))
-	if len(sent(tg2)) != 0 {
-		t.Fatal("stale message sent")
+	if len(sent(tg2)) != 1 {
+		t.Fatal("deferred message was dropped")
 	}
 }
 
@@ -390,7 +386,7 @@ func TestPrefsAPI(t *testing.T) {
 	prefs := w.json(t)["prefs"].(map[string]any)
 	cats := prefs["categories"].(map[string]any)
 	q := prefs["quietHours"].(map[string]any)
-	if len(cats) != 7 || cats["events"] != true || cats["moderation"] != true || q["start"] != "22:00" || q["end"] != "09:00" ||
+	if len(cats) != 8 || cats["events"] != true || cats["moderation"] != true || q["start"] != "22:00" || q["end"] != "08:00" ||
 		q["enabled"] != true || prefs["dailyCap"] != float64(3) {
 		t.Fatalf("defaults: %s", w.Body)
 	}
@@ -398,7 +394,7 @@ func TestPrefsAPI(t *testing.T) {
 	w = do(t, "PUT", "/api/me/notifications", uid, map[string]any{
 		"categories": map[string]bool{"market": false, "jobs": false},
 		"quietHours": map[string]any{"start": "23:30", "end": "07:00"},
-		"dailyCap":   5,
+		"dailyCap":   2,
 	})
 	if w.Code != 200 {
 		t.Fatalf("put: %d %s", w.Code, w.Body)
@@ -407,7 +403,7 @@ func TestPrefsAPI(t *testing.T) {
 	prefs = w.json(t)["prefs"].(map[string]any)
 	cats = prefs["categories"].(map[string]any)
 	q = prefs["quietHours"].(map[string]any)
-	if cats["market"] != false || cats["jobs"] != false || cats["events"] != true || q["start"] != "23:30" || q["end"] != "07:00" || prefs["dailyCap"] != float64(5) {
+	if cats["market"] != false || cats["jobs"] != false || cats["events"] != true || q["start"] != "23:30" || q["end"] != "07:00" || prefs["dailyCap"] != float64(2) {
 		t.Fatalf("after put: %s", w.Body)
 	}
 	// partial update keeps the rest
@@ -415,7 +411,7 @@ func TestPrefsAPI(t *testing.T) {
 		t.Fatalf("quiet off: %d", w.Code)
 	}
 	p, _ := LoadPrefs(ctx(), mustPool(t), uid)
-	if p.QuietEnabled || p.Allows(CatMarket) || p.DailyCap != 5 || p.QuietStart != 23*60+30 {
+	if p.QuietEnabled || p.Allows(CatMarket) || p.DailyCap != 2 || p.QuietStart != 23*60+30 {
 		t.Fatalf("stored: %+v", p)
 	}
 
@@ -423,19 +419,18 @@ func TestPrefsAPI(t *testing.T) {
 		body any
 		code string
 	}{
-		{map[string]any{"categories": map[string]bool{"moderation": false}}, "moderation_locked"},
 		{map[string]any{"categories": map[string]bool{"spam": false}}, "unknown_category"},
 		{map[string]any{"quietHours": map[string]any{"start": "25:00"}}, "invalid_quiet_hours"},
 		{map[string]any{"quietHours": map[string]any{"start": "07:00", "end": "07:00"}}, "invalid_quiet_hours"},
 		{map[string]any{"dailyCap": 0}, "invalid_daily_cap"},
-		{map[string]any{"dailyCap": 21}, "invalid_daily_cap"},
+		{map[string]any{"dailyCap": 4}, "invalid_daily_cap"},
 	} {
 		if w := do(t, "PUT", "/api/me/notifications", uid, c.body); w.Code != 400 || w.code() != c.code {
 			t.Errorf("%v: %d %s", c.body, w.Code, w.Body)
 		}
 	}
-	if w := do(t, "PUT", "/api/me/notifications", uid, map[string]any{"categories": map[string]bool{"moderation": true}}); w.Code != 200 {
-		t.Errorf("moderation true is a no-op: %d", w.Code)
+	if w := do(t, "PUT", "/api/me/notifications", uid, map[string]any{"categories": map[string]bool{"moderation": false, "community": false}}); w.Code != 200 {
+		t.Errorf("moderation and community must be switchable: %d", w.Code)
 	}
 	// auth.Write: foreign origin refused
 	if w := do(t, "PUT", "/api/me/notifications", uid, map[string]any{"dailyCap": 4}, "Origin", "https://evil.example"); w.Code != 403 {
@@ -560,16 +555,16 @@ func TestEmailOnlyUserNeverMessaged(t *testing.T) {
 		t.Fatalf("Direct: %v", err)
 	}
 	for _, c := range Categories {
-		if r := send(t, uid, c, "x", at(12, 0)); r != Off && !c.Transactional() {
+		if r := send(t, uid, c, "x", at(12, 0)); r != Off {
 			t.Fatalf("%s: %s", c, r)
 		}
 	}
 	send(t, uid, CatEvents, "night", at(23, 30)) // would be queued for a Telegram user
-	if n := count(t, "select count(*) from notify_outbox where user_id = $1", uid); n != 0 {
+	if n := count(t, "select count(*) from notify_outbox where user_id = $1 and state = 'pending'", uid); n != 0 {
 		t.Fatalf("outbox has %d rows for an email-only user", n)
 	}
 	// a row queued earlier (e.g. before an unlink) is handled without error
-	exec(t, `insert into notify_outbox (user_id, category, text, not_before, created_at) values ($1, 'events', 'old', $2, $2)`, uid, at(9, 0))
+	exec(t, `insert into notify_outbox (user_id, category, text, not_before, created_at) values ($1, 'events', 'old', $2, $2)`, uid, at(8, 0))
 	if _, err := Flush(ctx(), at(12, 0)); err != nil {
 		t.Fatalf("flush: %v", err)
 	}

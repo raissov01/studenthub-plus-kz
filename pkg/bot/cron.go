@@ -1,11 +1,11 @@
 package bot
 
 // Daily job: deadline reminders (7/3/1 days left) and the optional weekly digest.
-// Hard rule: at most ONE message per student per Almaty calendar day (bot_daily_sends).
+// Producers persist digest items; pkg/notify combines and dispatches at most one/day.
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"log"
 	"slices"
@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db/q"
 	"github.com/raissov01/studenthub-plus-kz/pkg/notify"
 )
@@ -143,31 +142,13 @@ func pickDigest(u q.User, opps []Opp, saved map[string]bool, today string) []Opp
 	return out[:min(len(out), 3)]
 }
 
-// deliver sends one message under the day claim: "sent" | "claimed" | "blocked" | "failed".
-func (b *Bot) deliver(ctx context.Context, qs *q.Queries, u q.User, today, msg string, kb [][]Button) (string, error) {
-	if !u.TelegramID.Valid {
-		// an email-only account has no chat; BotListUsers already leaves them out
-		return "blocked", nil
-	}
-	day := pgDate(today)
-	if _, err := qs.BotClaimDay(ctx, q.BotClaimDayParams{UserID: u.ID, Day: day}); errors.Is(err, pgx.ErrNoRows) {
-		return "claimed", nil
-	} else if err != nil {
+// enqueueDigest preserves the bot's action keyboard in the shared durable queue.
+func (b *Bot) enqueueDigest(ctx context.Context, u q.User, category notify.Category, key string, now time.Time, msg string, kb [][]Button) (string, error) {
+	markup, err := json.Marshal(markup{kb})
+	if err != nil {
 		return "", err
 	}
-	err := b.send(ctx, u.TelegramID.Int64, msg, kb)
-	if err == nil {
-		return "sent", nil
-	}
-	if isBlocked(err) {
-		return "blocked", qs.BotSetInactive(ctx, q.BotSetInactiveParams{ID: u.ID, BotInactive: true})
-	}
-	// allow a retry run later the same day
-	if rerr := qs.BotReleaseDay(ctx, q.BotReleaseDayParams{UserID: u.ID, Day: day}); rerr != nil {
-		return "", rerr
-	}
-	log.Printf("cron send failed %d: %v", u.TelegramID.Int64, err)
-	return "failed", nil
+	return b.dispatcher().Digest(ctx, u.ID, category, msg, notify.Opts{Now: now, Key: key, ReplyMarkup: markup})
 }
 
 // inChunks runs fn over list, parallel at a time; the first error wins.
@@ -195,32 +176,6 @@ func inChunks(list []q.User, fn func(q.User) error) error {
 	return nil
 }
 
-func paused(u q.User, today string) bool {
-	p := pauseISO(u.PausedUntil)
-	return p != "" && p > today
-}
-
-// switchedOff maps student -> categories they switched off in notify_prefs (F8). Students
-// without a row keep the defaults (everything on). The daily run at 10:00 Almaty is outside
-// default quiet hours and already sends at most one message a day, so only the switches apply.
-func (b *Bot) switchedOff(ctx context.Context) (map[int64]map[notify.Category]bool, error) {
-	rows, err := b.Pool.Query(ctx, `select user_id, deadlines, digest from notify_prefs where not (deadlines and digest)`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := map[int64]map[notify.Category]bool{}
-	for rows.Next() {
-		var id int64
-		var deadlines, digest bool
-		if err := rows.Scan(&id, &deadlines, &digest); err != nil {
-			return nil, err
-		}
-		out[id] = map[notify.Category]bool{notify.CatDeadlines: !deadlines, notify.CatDigest: !digest}
-	}
-	return out, rows.Err()
-}
-
 // RunCron is the daily job for the Almaty day of now.
 func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 	if err := b.ready(); err != nil {
@@ -234,7 +189,7 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 		mu.Lock()
 		defer mu.Unlock()
 		switch status {
-		case "sent":
+		case "sent", "queued":
 			res.Reminders++
 		case "claimed":
 			res.AlreadySent++
@@ -272,10 +227,6 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 	for _, r := range all {
 		byUser[r.UserID] = append(byUser[r.UserID], r)
 	}
-	off, err := b.switchedOff(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// 1. Deadline reminders.
 	err = inChunks(users, func(u q.User) error {
@@ -310,16 +261,13 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 				due = append(due, it)
 			}
 		}
-		if u.BotInactive || paused(u, today) || len(due) == 0 || off[u.ID][notify.CatDeadlines] {
+		if len(due) == 0 {
 			return nil
 		}
 		sort.SliceStable(due, func(i, j int) bool { return due[i].Deadline < due[j].Deadline })
 		msg, kb := b.reminderMessage(due, u.Lang, today)
-		status, err := b.deliver(ctx, qs, u, today, msg, kb)
+		status, err := b.enqueueDigest(ctx, u, notify.CatDeadlines, "bot:deadlines:"+today, now, msg, kb)
 		count(status)
-		if err == nil && status == "sent" {
-			err = notify.RecordSend(ctx, b.Pool, u.ID, notify.CatDeadlines, now)
-		}
 		return err
 	})
 	if err != nil {
@@ -334,7 +282,7 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 			return nil, err
 		}
 		err = inChunks(fresh, func(u q.User) error {
-			if u.BotInactive || text(u.DigestCity) == "" || text(u.DigestDirection) == "" || isoOf(u.DigestWeek) == week || paused(u, today) || off[u.ID][notify.CatDigest] {
+			if text(u.DigestCity) == "" || text(u.DigestDirection) == "" || isoOf(u.DigestWeek) == week {
 				return nil
 			}
 			saved := map[string]bool{}
@@ -346,15 +294,12 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 				return nil
 			}
 			msg, kb := b.digestMessage(list, u.Lang, today)
-			status, err := b.deliver(ctx, qs, u, today, msg, kb)
+			status, err := b.enqueueDigest(ctx, u, notify.CatDigest, "bot:weekly:"+week, now, msg, kb)
 			if err != nil {
 				return err
 			}
 			switch status {
-			case "sent":
-				if err := notify.RecordSend(ctx, b.Pool, u.ID, notify.CatDigest, now); err != nil {
-					return err
-				}
+			case "sent", "queued", "off":
 				seen := append([]string{}, u.DigestSeen...)
 				for _, o := range list {
 					seen = append(seen, o.ID)
@@ -366,7 +311,9 @@ func (b *Bot) RunCron(ctx context.Context, now time.Time) (*CronResult, error) {
 					return err
 				}
 				mu.Lock()
-				res.Digests++
+				if status != notify.DigestOff {
+					res.Digests++
+				}
 				mu.Unlock()
 			case "claimed":
 			default:
