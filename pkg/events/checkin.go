@@ -492,6 +492,11 @@ func regs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if out == nil {
 			out = []regRow{}
 		}
+		if agg { // 10-032: staff counters hide groups of 1–4 as "< 5"
+			httpx.JSON(w, http.StatusOK, map[string]any{"registered": groupCount(ev.Registered), "checked_in": groupCount(ev.CheckedIn),
+				"waitlist": groupCount(ev.Waitlist), "regs": out, "aggregate_only": true})
+			return
+		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"registered": ev.Registered, "checked_in": ev.CheckedIn,
 			"waitlist": ev.Waitlist, "regs": out, "aggregate_only": agg})
 	}

@@ -98,12 +98,12 @@ are never part of a play view and live in a separate owner-only RLS table.
 | GET | `/api/events/my` | signed-in | no | yes | events |
 | GET | `/api/events/my/attendance` | signed-in | no | yes | events |
 | GET | `/api/events/{id}` | anonymous | no | yes | events |
-| GET | `/api/events/{id}/attendees` | anonymous (count); names for organizers and registered students, never university_staff | no | yes | events |
+| GET | `/api/events/{id}/attendees` | anonymous (count); names for organizers and registered students, never university_staff (count 1–4 as "< 5") | no | yes | events |
 | GET | `/api/events/{id}/attendees.csv` | ambassador, university_staff (own university; university_staff: aggregate metric,value CSV only), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/checkin/live` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university; university_staff: distribution from 5 answers, no comments), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/ics` | anonymous | no | yes | events |
-| GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, 1–4 as "< 5", empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/health` | anonymous | no | no (no input) | — |
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
@@ -140,8 +140,8 @@ are never part of a play view and live in a separate owner-only RLS table.
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
 | GET | `/api/university/me` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/posts` | university_staff (bound university) | no | no (no input) | b2b |
-| GET | `/api/university/stats` | university_staff (bound university) | no | yes | b2b |
-| GET | `/api/university/stats.csv` | university_staff (bound university) | no | yes | b2b |
+| GET | `/api/university/stats` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
+| GET | `/api/university/stats.csv` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
 | PATCH | `/api/admin/ambassadors/{id}` | admin | yes | yes | ambassador |
 | PATCH | `/api/admin/queue/{id}` | admin | yes | yes | — |
 | PATCH | `/api/employer/jobs/{id}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |

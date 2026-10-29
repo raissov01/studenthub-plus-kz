@@ -643,7 +643,8 @@ func TestUniversityCabinet(t *testing.T) {
 	s := do(t, "GET", "/api/university/stats", staff, nil)
 	want(t, s, 200, "")
 	body := s.Body.String()
-	if !strings.Contains(body, `"Physics":"\u003c 5"`) {
+	// 10-032: a faculty with 1–4 students is not named, it is folded into "other"
+	if strings.Contains(body, "Physics") || !strings.Contains(body, `"other":"\u003c 5"`) {
 		t.Fatalf("small group shown: %s", body)
 	}
 	if strings.Contains(body, "Name ") || strings.Contains(body, "telegram") || strings.Contains(body, `"u1`) {
@@ -653,7 +654,7 @@ func TestUniversityCabinet(t *testing.T) {
 		t.Fatalf("average with < 5 ratings: %s", body)
 	}
 	csv := do(t, "GET", "/api/university/stats.csv", staff, nil)
-	if !strings.Contains(csv.Body.String(), "faculty:Physics,< 5") {
+	if strings.Contains(csv.Body.String(), "Physics") || !strings.Contains(csv.Body.String(), "faculty:other,< 5") {
 		t.Fatalf("csv: %s", csv.Body)
 	}
 	// staff reach no student-level data: employer cabinets and admin endpoints are closed

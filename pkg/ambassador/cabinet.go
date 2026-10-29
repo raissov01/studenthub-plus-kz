@@ -27,6 +27,23 @@ func (c Count) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Itoa(int(c))), nil
 }
 
+// OtherGroup is the key that collects every subgroup smaller than 5 (10-032): a breakdown
+// never names a faculty or course with 1–4 people in it. The merged group itself is still a
+// Count, so it shows "< 5" when it is small too.
+const OtherGroup = "other"
+
+// MergeSmall folds every group with 1–4 people into OtherGroup.
+func MergeSmall(m map[string]int) map[string]Count {
+	out := map[string]Count{}
+	for k, n := range m {
+		if n > 0 && n < 5 {
+			k = OtherGroup
+		}
+		out[k] += Count(n)
+	}
+	return out
+}
+
 // Workload: an ambassador never gets more work in a week than the hours they promised. There
 // is no task system yet, so the unit is "one useful item" (a submission or an event created)
 // ≈ one hour. Available is the gate any future task assignment / nudge must check.
@@ -180,14 +197,16 @@ func Stats(ctx context.Context, tx pgx.Tx, univ string) (UniversityStats, error)
 		return s, err
 	}
 	defer rows.Close()
+	fac := map[string]int{}
 	for rows.Next() {
 		var f string
 		var n int
 		if err := rows.Scan(&f, &n); err != nil {
 			return s, err
 		}
-		s.ByFaculty[f] = Count(n)
+		fac[f] = n
 	}
+	s.ByFaculty = MergeSmall(fac) // 10-032: a faculty with 1–4 students is not named
 	return s, rows.Err()
 }
 

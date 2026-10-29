@@ -75,7 +75,11 @@ func Clean(in []event) []event {
 		for k, v := range e.Props {
 			if check, ok := allowed[k]; ok && check(v) {
 				if s, isStr := v.(string); isStr && k == "missing" {
-					v = strings.TrimSpace(s)
+					s = Scrub(s)
+					if s == "" {
+						continue
+					}
+					v = s
 				}
 				props[k] = v
 			}
@@ -83,6 +87,44 @@ func Clean(in []event) []event {
 		out = append(out, event{Name: e.Name, Props: props})
 	}
 	return out
+}
+
+// The only free text we keep is the optional «Не жетіспейді?» answer (02-014). The form asks
+// for no name or phone, but people type them anyway, so contacts, long numbers and
+// name-like word pairs are replaced before the text is stored (and again when it is read,
+// for rows from before this rule).
+var (
+	reEmail  = regexp.MustCompile(`(?i)[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}`)
+	reURL    = regexp.MustCompile(`(?i)\b(?:https?://|www\.|t\.me/|wa\.me/)\S+`)
+	reHandle = regexp.MustCompile(`@[A-Za-z0-9_]{3,}`)
+	// 5+ digits, allowing spaces, dashes, dots, brackets between them: phones, IIN, cards, ids.
+	reDigits = regexp.MustCompile(`\+?\d(?:[\s().-]*\d){4,}`)
+	// Two or more capitalised words in a row ("Айгерім Сапарова", "Иван Петров"): likely a name.
+	reName = regexp.MustCompile(`\p{Lu}\p{Ll}+(?:[\s-]+\p{Lu}\p{Ll}+)+`)
+	// GPA and grades: "GPA 3.4", "gpa: 3,67".
+	reGPA = regexp.MustCompile(`(?i)\b(?:gpa|жпа|гпа)\s*[:=-]?\s*\d(?:[.,]\d+)?`)
+)
+
+// Hidden replaces anything personal in feedback text.
+const Hidden = "[жасырылды]"
+
+// MaxFeedback is the longest feedback text kept, in runes.
+const MaxFeedback = 300
+
+// Scrub removes contacts, numbers, GPA and name-like word pairs from free text, collapses
+// whitespace and cuts it to MaxFeedback runes.
+func Scrub(s string) string {
+	for _, re := range []*regexp.Regexp{reEmail, reURL, reHandle, reGPA, reDigits, reName} {
+		s = re.ReplaceAllString(s, Hidden)
+	}
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > MaxFeedback {
+		s = strings.TrimSpace(string(r[:MaxFeedback]))
+	}
+	if strings.Trim(strings.ReplaceAll(s, Hidden, ""), " .,;:!?-") == "" {
+		return "" // nothing but removed parts
+	}
+	return s
 }
 
 // CleanRef accepts "share" or "amb_<code>" only.
@@ -191,7 +233,9 @@ from cohort c`, days).Scan(&s.Devices, &s.EligibleDay1, &s.ReturnedDay1, &s.Elig
 			if err := rows.Scan(&t); err != nil {
 				return err
 			}
-			s.FeedbackRecent = append(s.FeedbackRecent, t)
+			if t = Scrub(t); t != "" {
+				s.FeedbackRecent = append(s.FeedbackRecent, t)
+			}
 		}
 		return rows.Err()
 	})

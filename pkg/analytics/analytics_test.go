@@ -125,3 +125,33 @@ func TestIngestAndReport(t *testing.T) {
 		t.Errorf("feedback = %+v", s)
 	}
 }
+
+// 02-014: the free-text feedback answer is stored without contacts, numbers, GPA or names.
+func TestFeedbackTextScrubbed(t *testing.T) {
+	cases := map[string]string{
+		"Маған Айгерім Сапарова деп жазыңыз, тел +7 (701) 234-56-78": Hidden + " деп жазыңыз, тел " + Hidden,
+		"пишите на ivan.petrov@mail.ru или @ivan_petrov":             "пишите на " + Hidden + " или " + Hidden,
+		"ИИН 010203456789, GPA 3.4, мой сайт https://vk.com/id1":     "ИИН " + Hidden + ", " + Hidden + ", мой сайт " + Hidden,
+		"Иван Петров": "",
+		"  Жатақхана   туралы ақпарат керек  ": "Жатақхана туралы ақпарат керек",
+	}
+	for in, want := range cases {
+		if got := Scrub(in); got != want {
+			t.Errorf("Scrub(%q) = %q, want %q", in, got, want)
+		}
+	}
+	got := Clean([]event{
+		{Name: "feedback", Props: map[string]any{"score": float64(4), "missing": "Звоните 87071234567, Асель Нурланова"}},
+		{Name: "feedback", Props: map[string]any{"score": float64(5), "missing": "+77001234567"}},
+		{Name: "feedback", Props: map[string]any{"score": float64(3), "missing": strings.Repeat("карта ", 80)}},
+	})
+	if m := got[0].Props["missing"].(string); strings.ContainsAny(m, "0123456789") || strings.Contains(m, "Асель") {
+		t.Errorf("personal data kept: %q", m)
+	}
+	if _, ok := got[1].Props["missing"]; ok || got[1].Props["score"] != float64(5) {
+		t.Errorf("only-a-phone answer kept: %v", got[1].Props)
+	}
+	if n := len([]rune(got[2].Props["missing"].(string))); n > MaxFeedback {
+		t.Errorf("feedback text %d runes", n)
+	}
+}

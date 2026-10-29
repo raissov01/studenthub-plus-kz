@@ -186,8 +186,16 @@ func csvAggregate(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		facs = append(facs, f)
 	}
 	sort.Strings(facs)
+	small := 0
 	for _, f := range facs {
+		if n := byFaculty[f]; n < minGroup {
+			small += n // 10-032: a faculty with 1–4 people is not named
+			continue
+		}
 		out = append(out, []string{csvCell("checked_in_faculty:" + f), groupCell(byFaculty[f])})
+	}
+	if small > 0 {
+		out = append(out, []string{"checked_in_faculty:other", groupCell(small)})
 	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="event-%d-summary.csv"`, ev.ID))

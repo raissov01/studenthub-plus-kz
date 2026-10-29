@@ -418,6 +418,9 @@ func attendees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := map[string]any{"count": count}
+	if AggregateOnly(u) {
+		resp["count"] = groupCount(count) // 10-032
+	}
 	if people != nil {
 		resp["attendees"] = people
 	}

@@ -192,7 +192,7 @@ function Breakdown({ title, rows, label }: { title: string; rows: Record<string,
   return (
     <section className="section">
       <h3>{title}</h3>
-      {list.length ? <div className="group">{list.map(([k, n]) => <Row key={k} title={label(k)} end={<b className="num">{n}</b>} chev={false} />)}</div>
+      {list.length ? <div className="group">{list.map(([k, n]) => <Row key={k} title={k === 'other' ? tt('Басқа (әрқайсысында 5-тен аз)', 'Другие (в каждой меньше 5)') : label(k)} end={<b className="num">{n}</b>} chev={false} />)}</div>
         : <div className="group"><div className="empty">{tt('Дерек жоқ', 'Нет данных')}</div></div>}
     </section>
   );
@@ -206,7 +206,7 @@ function Stats() {
   return (
     <section className="section">
       <SectionHead title={tt('Жиынтық статистика', 'Сводная статистика')} more={s.data ? <span className="tiny muted">{tt(`соңғы ${s.data.periodDays} күн`, `за ${s.data.periodDays} дн.`)}</span> : null} />
-      <p className="tiny muted">{tt('Тек жиынтық сандар. 5 адамнан аз топ «< 5» болып көрсетіледі; жеке аттар мен жеке студенттің әрекеті жоқ.', 'Только сводные числа. Группы меньше 5 человек показаны как «< 5»; имён и действий отдельных студентов нет.')}</p>
+      <p className="tiny muted">{tt('Тек жиынтық сандар. 5 адамнан аз топ «< 5» болып көрсетіледі, шағын факультет пен курс «Басқа» ішіне біріктіріледі; жеке аттар мен жеке студенттің әрекеті жоқ.', 'Только сводные числа. Группы меньше 5 человек показаны как «< 5», маленькие факультеты и курсы объединены в «Другие»; имён и действий отдельных студентов нет.')}</p>
       {!s.data ? (s.err ? <ErrorLine err={s.err} /> : <Loading />) : (
         <>
           <div className="stat-grid">

@@ -31,10 +31,8 @@ func TestUniversityStaffSeesAggregatesOnly(t *testing.T) {
 	}
 	leak := func(name, body string) {
 		t.Helper()
-		pii := []string{"Private Person", "private_handle", "user_id"}
-		if name != "csv" { // the CSV has a per-faculty aggregate (as "< 5" here)
-			pii = append(pii, "Secret Faculty")
-		}
+		// a faculty with fewer than 5 people is never named, not even in the CSV aggregate (10-032)
+		pii := []string{"Private Person", "private_handle", "user_id", "Secret Faculty"}
 		for _, s := range pii {
 			if strings.Contains(body, s) {
 				t.Fatalf("%s leaks %q: %s", name, s, body)
@@ -45,12 +43,12 @@ func TestUniversityStaffSeesAggregatesOnly(t *testing.T) {
 	// list endpoints: counts, no rows
 	w := do(t, "GET", path(ev, "/regs"), staff, nil)
 	out := decode(t, w)
-	if w.Code != 200 || len(out["regs"].([]any)) != 0 || out["aggregate_only"] != true || out["registered"].(float64) != 4 {
+	if w.Code != 200 || len(out["regs"].([]any)) != 0 || out["aggregate_only"] != true || out["registered"] != "< 5" {
 		t.Fatalf("staff regs: %d %s", w.Code, w.Body)
 	}
 	leak("regs", w.Body.String())
 	w = do(t, "GET", path(ev, "/attendees"), staff, nil)
-	if w.Code != 200 || decode(t, w)["attendees"] != nil || decode(t, w)["count"].(float64) != 4 {
+	if w.Code != 200 || decode(t, w)["attendees"] != nil || decode(t, w)["count"] != "< 5" {
 		t.Fatalf("staff attendees: %s", w.Body)
 	}
 	leak("attendees", w.Body.String())
@@ -76,7 +74,7 @@ func TestUniversityStaffSeesAggregatesOnly(t *testing.T) {
 	w = do(t, "GET", path(ev, "/attendees.csv"), staff, nil)
 	body := w.Body.String()
 	if w.Code != 200 || !strings.Contains(body, "metric,value") || !strings.Contains(body, "checked_in,< 5") ||
-		!strings.Contains(body, "registered,< 5") || !strings.Contains(body, "checked_in_faculty:Secret Faculty,< 5") ||
+		!strings.Contains(body, "registered,< 5") || !strings.Contains(body, "checked_in_faculty:other,< 5") ||
 		strings.Contains(body, "checked_in_at") {
 		t.Fatalf("staff csv: %d %q", w.Code, body)
 	}

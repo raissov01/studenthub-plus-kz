@@ -425,6 +425,7 @@ func announcements(w http.ResponseWriter, r *http.Request) {
 // ---------- aggregate statistics ----------
 
 // UniversityStats are aggregate numbers only; every head count goes through Count ("< 5"),
+// faculties/courses with fewer than 5 students are merged into "other" (ambassador.OtherGroup),
 // averages need at least 5 answers. No names, no per-student rows, anywhere.
 type UniversityStats struct {
 	University     string           `json:"university"`
@@ -483,6 +484,7 @@ func Stats(ctx context.Context, univ string) (UniversityStats, error) {
 			return err
 		}
 		defer rows.Close()
+		fac, course := map[string]int{}, map[string]int{}
 		for rows.Next() {
 			var kind, key string
 			var n int
@@ -490,11 +492,13 @@ func Stats(ctx context.Context, univ string) (UniversityStats, error) {
 				return err
 			}
 			if kind == "f" {
-				s.ByFaculty[key] = Count(n)
+				fac[key] = n
 			} else {
-				s.ByCourse[key] = Count(n)
+				course[key] = n
 			}
 		}
+		// 10-032: a faculty or course with 1–4 students is not named; they go to "other".
+		s.ByFaculty, s.ByCourse = ambassador.MergeSmall(fac), ambassador.MergeSmall(course)
 		return rows.Err()
 	})
 	return s, err

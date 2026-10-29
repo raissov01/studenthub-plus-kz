@@ -157,7 +157,7 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
               <Stat v={s.registrations} l={tt('Тіркелу', 'Записи')} />
               <Stat v={s.check_ins} l={tt('Келгендер', 'Пришли')} />
             </div>
-            {Object.keys(s.by_faculty).length ? <div className="group">{Object.entries(s.by_faculty).map(([f, n]) => <Row key={f} title={f} end={<b className="num">{n}</b>} chev={false} />)}</div> : null}
+            {Object.keys(s.by_faculty).length ? <div className="group">{Object.entries(s.by_faculty).map(([f, n]) => <Row key={f} title={f === 'other' ? tt('Басқа (әрқайсысында 5-тен аз)', 'Другие (в каждом меньше 5)') : f} end={<b className="num">{n}</b>} chev={false} />)}</div> : null}
             <p className="tiny muted">{tt('Тек жиынтық сандар. 5-тен аз топ «< 5» болып көрсетіледі.', 'Только общие числа. Группы меньше 5 показаны как «< 5».')}</p>
           </>
         ) : stats.err ? <ErrorLine err={stats.err} /> : <Loading />}

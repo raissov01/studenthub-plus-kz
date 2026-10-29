@@ -277,8 +277,16 @@ func TestCabinetStatsOwnUniversityOnly(t *testing.T) {
 		t.Fatalf("stats: %d %s", w.Code, w.Body)
 	}
 	s := decode(t, w)
-	if s["university"] != "SDU" || s["students"] != "< 5" || s["by_faculty"].(map[string]any)["IT"] != "< 5" {
+	if s["university"] != "SDU" || s["students"] != "< 5" || s["by_faculty"].(map[string]any)["other"] != "< 5" || s["by_faculty"].(map[string]any)["IT"] != nil {
 		t.Fatalf("stats: %v", s)
+	}
+	// 10-032: a faculty with 5+ students is named, the small ones are only "other"
+	for range 5 {
+		newUser(t, "student", "SDU")
+	}
+	exec(t, `update users set faculty = 'Law' where university = 'SDU' and faculty is null and role = 'student'`)
+	if f := decode(t, do(t, "GET", "/api/ambassador/stats", amb, nil))["by_faculty"].(map[string]any); f["Law"] != float64(5) || f["other"] != "< 5" || f["IT"] != nil {
+		t.Fatalf("by_faculty: %v", f)
 	}
 	if w := do(t, "GET", "/api/ambassador/stats?university=ENU", amb, nil); w.Code != 403 {
 		t.Fatalf("foreign stats: %d", w.Code)
