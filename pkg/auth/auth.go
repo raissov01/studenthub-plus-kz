@@ -109,10 +109,14 @@ func lookup(r *http.Request) *cached {
 		return &cached{}
 	}
 	var u *User
+	var revoked bool
 	err = db.WithUser(r.Context(), c.UserID, func(tx pgx.Tx) error {
 		var err error
 		u, err = ScanUser(tx.QueryRow(r.Context(), "select "+UserColumns+" from users where id = app_user_id()"))
-		return err
+		if err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select exists(select 1 from revoked_sessions where sid = $1)`, c.sid()).Scan(&revoked)
 	})
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, db.ErrNoDB) {
@@ -120,7 +124,7 @@ func lookup(r *http.Request) *cached {
 		}
 		return &cached{}
 	}
-	if u.DeletedAt != nil || u.SessionVersion != c.Version || !c.validFor(u.Role, now) {
+	if revoked || u.DeletedAt != nil || u.SessionVersion != c.Version || !c.validFor(u.Role, now) {
 		return &cached{}
 	}
 	return &cached{u: u, claims: c, bearer: bearer}
@@ -477,14 +481,27 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		All bool `json:"all"`
 	}
 	_ = httpx.Decode(r, &body, 1<<10) // body is optional
-	if u := Current(r); u != nil && body.All {
-		// "Log out everywhere": every token carries the old session_version and stops working.
+	r = attach(r)
+	if c, _ := r.Context().Value(ctxKey{}).(*cached); c != nil && c.u != nil {
+		u := c.u
 		err := db.WithUser(r.Context(), u.ID, func(tx pgx.Tx) error {
-			_, err := tx.Exec(r.Context(), `update users set session_version = session_version + 1 where id = app_user_id()`)
+			if body.All {
+				// "Log out everywhere": every token carries the old session_version and stops working.
+				_, err := tx.Exec(r.Context(), `update users set session_version = session_version + 1 where id = app_user_id()`)
+				return err
+			}
+			// This device only: the session id is revoked on the server, so a copy of the token
+			// (or a refreshed X-Session-Token of the same session) gets 401 from now on.
+			if _, err := tx.Exec(r.Context(), `delete from revoked_sessions where user_id = app_user_id() and expires_at < now()`); err != nil {
+				return err
+			}
+			_, err := tx.Exec(r.Context(), `insert into revoked_sessions (sid, user_id, expires_at)
+				values ($1, app_user_id(), now() + make_interval(secs => $2)) on conflict (sid) do nothing`,
+				c.claims.sid(), int64(StudentSessionTTL.Seconds()))
 			return err
 		})
 		if err != nil {
-			log.Printf("auth: logout all %d: %v", u.ID, err)
+			log.Printf("auth: logout %d (all=%v): %v", u.ID, body.All, err)
 			httpx.Error(w, r, http.StatusInternalServerError, "internal", httpx.MsgInternal)
 			return
 		}

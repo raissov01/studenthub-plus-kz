@@ -36,6 +36,8 @@ func uniqueIP() string {
 func mux() *http.ServeMux {
 	m := http.NewServeMux()
 	Routes(m)
+	// A signed-in write that keeps the session (logout now revokes it), for the rate-limit test.
+	m.HandleFunc("POST /write", Write(Need(func(w http.ResponseWriter, r *http.Request, u *User) { w.Write([]byte("ok")) })))
 	m.HandleFunc("GET /whoami", func(w http.ResponseWriter, r *http.Request) {
 		if u := Current(r); u != nil {
 			w.Write([]byte(strconv.FormatInt(u.ID, 10)))
@@ -274,7 +276,7 @@ func TestWriteRateLimit(t *testing.T) {
 	t.Setenv("RATE_WRITE_PER_MIN", "2")
 	var last int
 	for i := 0; i < 3; i++ {
-		last = post(t, "/api/auth/logout", nil, func(r *http.Request) { r.AddCookie(c) }).Code
+		last = post(t, "/write", nil, func(r *http.Request) { r.AddCookie(c) }).Code
 	}
 	if last != 429 {
 		t.Fatalf("per-user limit not applied: %d", last)

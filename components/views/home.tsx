@@ -211,7 +211,7 @@ function NotifRow({ n }: { n: Notif }) {
   return (
     <button className={`nrow ${read ? '' : 'unread'}`} type="button" onClick={open}>
       <span className={`nico nico-${n.tone}`}><Icon n={n.icon} s={22} /></span>
-      <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.text}</span><span className="tiny muted">{agoTxt(n.h, tt)}</span></span>
+      <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.text}{n.demo ? <> <DemoBadge show /></> : null}</span><span className="tiny muted">{agoTxt(n.h, tt)}</span></span>
       <span className="ndot" aria-label={read ? '' : tt('Оқылмаған', 'Непрочитано')}></span>
     </button>
   );

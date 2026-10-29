@@ -58,9 +58,14 @@
 `PATCH /api/me` оларды жіберсе, 400 `not_stored` қайтарады.
 
 Сессия — `sh_session` cookie: `base64url(JSON{u: id, v: session_version, e: мерзім, i: берілген уақыт,
-a: кірген уақыт}) + "." + base64url(HMAC-SHA256(SESSION_SECRET, payload))`. HttpOnly, Secure
+a: кірген уақыт, s: сессия id}) + "." + base64url(HMAC-SHA256(SESSION_SECRET, payload))`. HttpOnly, Secure
 (localhost-тан басқа), SameSite=Lax, Path=/. Әр сұраныста `role`, `session_version` және `deleted_at`
 дерекқордан қайта оқылады: рөл алынса немесе аккаунт бұғатталса — бірден күшіне енеді.
+**Бір құрылғыдан шығу** (`POST /api/auth/logout`, `all` жоқ): токеннің `s` id-і (кездейсоқ, жаңартуда
+сақталады) `revoked_sessions` кестесіне жазылады, сол сессияның кез келген көшірмесі (cookie, Bearer,
+жаңартылған `X-Session-Token`) бұдан былай 401 алады; басқа құрылғылар кірген күйі қалады. `s`-сыз ескі
+токендер `u<id>.a<кірген уақыт>` атымен тоқтатылады. Мерзімі өткен жолдар келесі шығуда өшеді.
+`{all:true}` — `session_version + 1`, барлық құрылғы шығады.
 Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кіргенде жауапта `token` алады, оны тек
 жадта ұстап, `Authorization: Bearer <token>` етіп жібереді.
 

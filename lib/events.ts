@@ -10,7 +10,7 @@ export interface DbEvent {
   capacity: number | null; walk_in_allowed: boolean; gives_cert: boolean; teams_enabled: boolean;
   status: 'draft' | 'published' | 'finished' | 'cancelled'; created_by: number | null; checkin_started_at: string | null;
   finished_at: string | null; created_at: string; registered: number; waitlist: number; checked_in: number;
-  spots_left: number | null; my?: MyReg; can_manage: boolean;
+  spots_left: number | null; my?: MyReg; can_manage: boolean; is_demo?: boolean;
 }
 export interface LiveView {
   token: string; deep_link: string; web_link: string; rotates_in_sec: number; open: boolean;
@@ -21,7 +21,8 @@ export interface RegRow {
   status: 'registered' | 'waitlist'; ticket_short: string; registered_at: string; checked_in_at: string | null;
   checkin_method: string | null; checkin_revoked: boolean; team_no: number | null; feedback_score: number | null;
 }
-export interface RegsResp { registered: number; checked_in: number; waitlist: number; regs: RegRow[] }
+/** University staff (aggregate_only) get counters of 1–4 as "< 5" (10-032). */
+export interface RegsResp { registered: number | string; checked_in: number | string; waitlist: number | string; regs: RegRow[]; aggregate_only?: boolean }
 export interface CheckinResult { status: 'checked_in' | 'already'; team_no: number | null; method: 'qr' | 'walk_in' | 'manual'; message: string }
 export interface FeedbackSummary { count: number; average: number | null; distribution: number[]; comments: { score: number; text: string; at: string }[] }
 export interface Attendance { event_id: number; title_kk: string; title_ru: string | null; cat: string; university: string; starts_at: string; checked_in_at: string; has_certificate: boolean; verified: boolean }

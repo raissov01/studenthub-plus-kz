@@ -4,7 +4,7 @@
    rotating QR, a ticket scanner, the fallback list, teams, finish, CSV and feedback. */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
+import { Chip, DemoBadge, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
   toLocalInput, useFeature, useLoad, useNeedAccount,
@@ -31,6 +31,7 @@ export function DbEventCard({ e }: { e: DbEvent }) {
           <span className="row-sub">{wd[d.getDay()]}, {hhmm(e.starts_at)}{e.place_text ? `. ${e.place_text}` : ''}</span>
           <span className="badges" style={{ marginTop: 6 }}>
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
+            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun">{tt('Сертификат', 'Сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'cancelled' ? <span className="badge b-bad">{tt('Өтпейді', 'Отменено')}</span> : null}
@@ -45,7 +46,7 @@ export function DbEventCard({ e }: { e: DbEvent }) {
 }
 
 /* ---------- event page ---------- */
-interface AttendeesResp { count: number; attendees?: { name: string; faculty: string | null }[] }
+interface AttendeesResp { count: number | string; attendees?: { name: string; faculty: string | null }[] }
 
 export function DbEventView({ id }: { id: string }) {
   return <Feature name="events"><DbEvent_ id={id} /></Feature>;
@@ -101,6 +102,7 @@ function DbEvent_({ id }: { id: string }) {
         <div className="detail-head" style={{ minWidth: 0 }}><h1>{evTitle(e, lang)}</h1>
           <div className="badges">
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
+            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}

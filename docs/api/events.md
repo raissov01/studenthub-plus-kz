@@ -38,13 +38,14 @@
   "created_at": "...",
   "registered": 87, "waitlist": 0, "checked_in": 0, "spots_left": 33,
   "my": {"status": "registered", "ticket": "Vq3...", "checked_in_at": null, "team_no": null, "feedback_score": null},
-  "can_manage": false
+  "can_manage": false, "is_demo": false
 }
 ```
 
 - `cat`: `career, youth, volunteer, sport, training, conf, holiday, mentoring, other`.
 - `status`: `draft` (тек ұйымдастырушыға көрінеді) → `published` → `finished` | `cancelled`.
 - `capacity: null` = шексіз; `spots_left: null` = шексіз.
+- `is_demo: true` — үлгі іс-шара; сайт оны барлық жерде «үлгі» / «пример» белгісімен көрсетеді (11-025).
 - `my` тек кірген адам тіркелген болса; `ticket` — электрондық билеттің коды (QR-ға салу үшін).
 - `building_id` — фронттағы `BUILDINGS` картасының id-і (`b1`, `b2` …) → «Кампус картасынан көру».
 
@@ -112,9 +113,10 @@
 
 **university_staff — тек жиынтық сандар (10-004).** Қызметкер өз университетінің іс-шарасын құрып,
 QR арқылы тіркеуді жүргізе алады, бірақ жеке студент дерегін еш жерден алмайды:
-`/regs` → `regs: []`, `aggregate_only: true` (санағыштар бар); `/attendees` → тек `count`;
+`/regs` → `regs: []`, `aggregate_only: true` (санағыштар бар, 1–4 → `"< 5"`); `/attendees` → тек `count` (1–4 → `"< 5"`);
 `/attendees.csv` → `metric,value` жиынтық CSV (registered, waitlist, checked_in, cancelled,
-checkin_revoked, ratings, avg_rating, `checked_in_faculty:<факультет>`; 1–4 → `< 5`); `/feedback` →
+checkin_revoked, ratings, avg_rating, `checked_in_faculty:<факультет>`; 1–4 → `< 5`; 5-тен аз адамы бар
+факультет аталмайды — бәрі бір `checked_in_faculty:other` жолына қосылады, 10-032); `/feedback` →
 пікірлер жоқ, бөлу мен орташа баға тек 5 жауаптан бастап, `count` 1–4 болса `"< 5"`;
 `/checkin/manual` — тек `ticket` (студент көрсеткен электронды билет коды), `user_id` → `403 aggregate_only`;
 `/checkin/revoke` → `403 aggregate_only`. Амбассадор, бекітілген ментор (өз кездесуі) және admin — бұрынғыдай толық тізім.

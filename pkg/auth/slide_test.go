@@ -167,3 +167,61 @@ func TestStaffSessionIsAbsoluteFourteenDays(t *testing.T) {
 		t.Fatalf("legacy student token rejected: %d", w.Code)
 	}
 }
+
+// 04-016: a plain logout ends that one session on the server, including copies of the token
+// and its sliding refreshes (X-Session-Token), while other devices stay signed in.
+func TestLogoutRevokesThisSessionOnly(t *testing.T) {
+	testdb.Need(t)
+	tg := 7300 + ipSeq.Add(1)
+	w, out := loginWebApp(t, tg)
+	phone := sessionCookie(t, w)
+	uid := int64(out["user"].(map[string]any)["id"].(float64))
+	w2, _ := loginWebApp(t, tg)
+	laptop := sessionCookie(t, w2)
+
+	// An old token of the phone's session gets refreshed: the refresh keeps the session id.
+	cl, err := Parse(phone.Value, time.Now())
+	if err != nil || cl.Session == "" {
+		t.Fatalf("no session id: %+v %v", cl, err)
+	}
+	now := time.Now()
+	cl.Issued, cl.Exp = now.Add(-50*day).Unix(), now.Add(40*day).Unix()
+	old, _ := Sign(cl)
+	rw := callNeed(old, true)
+	copied := rw.Header().Get(TokenHeader)
+	if rw.Code != 200 || copied == "" {
+		t.Fatalf("refresh: %d %q", rw.Code, copied)
+	}
+	if c2, _ := Parse(copied, time.Now()); c2.Session != cl.Session {
+		t.Fatal("refresh dropped the session id")
+	}
+
+	lw := post(t, "/api/auth/logout", nil, func(r *http.Request) { r.AddCookie(phone) })
+	if lw.Code != 200 {
+		t.Fatal(lw.Body)
+	}
+	for name, tok := range map[string]string{"cookie": phone.Value, "old copy": old, "refreshed copy": copied} {
+		if w := callNeed(tok, true); w.Code != 401 {
+			t.Fatalf("%s still accepted after logout: %d", name, w.Code)
+		}
+	}
+	if whoami(laptop) == "nobody" {
+		t.Fatal("logout on one device signed the other out")
+	}
+	if n := count(t, "select count(*) from revoked_sessions where user_id = $1", uid); n != 1 {
+		t.Fatalf("revoked rows %d", n)
+	}
+
+	// Tokens from before the session id existed are revoked by user + sign-in time.
+	legacy := signLegacy(t, uid, now.Add(10*day))
+	if w := callNeed(legacy, false); w.Code != 200 {
+		t.Fatalf("legacy token: %d", w.Code)
+	}
+	post(t, "/api/auth/logout", nil, func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+legacy) })
+	if w := callNeed(legacy, false); w.Code != 401 {
+		t.Fatalf("legacy token survived logout: %d", w.Code)
+	}
+	if whoami(laptop) == "nobody" {
+		t.Fatal("legacy logout signed the laptop out")
+	}
+}

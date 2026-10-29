@@ -2,9 +2,11 @@ package auth
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -56,6 +58,24 @@ type Claims struct {
 	Exp     int64 `json:"e"`
 	Issued  int64 `json:"i,omitempty"` // when this token was signed (unix)
 	Auth    int64 `json:"a,omitempty"` // when the user actually signed in; kept across refreshes
+	// Session is a random id for one sign-in on one device, kept across refreshes; logout
+	// writes it to revoked_sessions so that copies of the token stop working (04-016).
+	Session string `json:"s,omitempty"`
+}
+
+// sid names the session for revoked_sessions; tokens from before "s" existed are named by
+// user and sign-in time.
+func (c Claims) sid() string {
+	if c.Session != "" {
+		return c.Session
+	}
+	return fmt.Sprintf("u%d.a%d", c.UserID, c.authAt().Unix())
+}
+
+func newSessionID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 // issued and authAt date a token; tokens from before these fields existed had a 30-day life.
@@ -75,7 +95,8 @@ func (c Claims) authAt() time.Time {
 
 // newClaims starts a session for a user with role at now.
 func newClaims(userID int64, version int, role string, now time.Time) Claims {
-	return Claims{UserID: userID, Version: version, Issued: now.Unix(), Auth: now.Unix(), Exp: now.Add(SessionTTLFor(role)).Unix()}
+	return Claims{UserID: userID, Version: version, Issued: now.Unix(), Auth: now.Unix(), Exp: now.Add(SessionTTLFor(role)).Unix(),
+		Session: newSessionID()}
 }
 
 // validFor applies the role rules on top of the signature/expiry check: a staff session
