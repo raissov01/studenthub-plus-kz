@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "api": "go run ./cmd/server",
     "db:migrate": "go run ./cmd/migrate",
     "test:go": "go test ./...",
     "test:ts": "tsx --test features/roadmap/logic.test.ts features/feedback/logic.test.ts lib/ics.test.ts lib/admincontent.test.ts lib/client-errors.test.ts lib/inbox.test.ts lib/profile.test.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:real": "playwright test --config=playwright.real.config.ts"
   },
   "dependencies": {
     "next": "16.4.3",

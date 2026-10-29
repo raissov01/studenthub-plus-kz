@@ -1,5 +1,31 @@
 # Браузерлік тексеру (Playwright)
 
+## Нақты жергілікті Go API: рөлдік ағындар
+
+```bash
+# Postgres: postgres://postgres:dev@127.0.0.1:54329/postgres
+npm run e2e:real
+# Бір тіл / экран:
+npm run e2e:real -- --project=kk-390
+```
+
+`playwright.real.config.ts` — бөлек жиынтық: kk/390 px және ru/360 px.
+Әр іске қосу `studenthub_browser_<pid>_<random>` уақытша базасын жасайды,
+`cmd/migrate` миграцияларын қолданады, нақты Go HTTP handler мен `next dev --webpack`
+серверлерін ашады. Соңында серверлер тоқтап, база мен жүктелген фотолар өшіріледі.
+Порттар: 4320 (Next), 4321 (Go); `E2E_REAL_PORT` / `E2E_REAL_API_PORT` арқылы өзгертуге болады.
+`DATABASE_URL` еленбейді: бұл runner тек жергілікті Postgres-ке қосылады.
+
+`e2e/real-api/` ішінде API жауаптары ауыстырылмайды. Telegram widget callback-іне
+тест BOT_TOKEN арқылы HMAC-пен қол қойылған деректер беріледі; кәдімгі кіру,
+келісім, cookie және рөл тексерістері орындалады. Сыртқы Telegram скрипті ғана
+оқшауланған; хабарлама жеткізу жабық жергілікті портқа бағытталады. Сайт ішіндегі
+хабарламалар нақты базаға жазылады. Production кіруінде айналма жол жоқ.
+Фото файлдары мен SQL көмекшісінің binary-і еленбейтін `.fe-deps/` ішінде.
+Қате кезінде trace пен скриншоттар `test-results/real/`, HTML — `playwright-report/real/`.
+Бұл жиынтықты production build немесе басқа Next серверімен қатар іске қоспаңыз.
+Төмендегі жылдам mocked жиынтықтың конфигурациясы өзгермейді.
+
 Тесттер Chromium-да **production Next.js** арқылы жүреді: `next dev` қолданылмайды.
 `@playwright/test` нұсқасы `package.json` және lock-файлда нақты бекітілген.
 Go сервері, Postgres, Telegram аккаунты немесе AI кілті қажет емес.
