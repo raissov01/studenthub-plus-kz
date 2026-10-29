@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { Screen } from '@/components/Screen';
 import { OPP_TYPES } from '@/lib/data/static';
-import { getContent, getOpportunity } from '@/lib/content';
+import { getOpportunity } from '@/lib/content';
 import { pageMeta } from '@/lib/seo';
 
-export async function generateStaticParams() {
-  return (await getContent()).opportunities.map(o => ({ id: o.id }));
-}
-
 export async function generateMetadata({ params }: PageProps<'/opportunity/[id]'>): Promise<Metadata> {
+  // Content can be published after build time, including when the API was offline during build.
+  await connection();
   const { id } = await params;
   const o = await getOpportunity(id);
   if (!o) return {};
@@ -23,6 +22,7 @@ export async function generateMetadata({ params }: PageProps<'/opportunity/[id]'
 }
 
 export default async function Page({ params }: PageProps<'/opportunity/[id]'>) {
+  await connection();
   const { id } = await params;
   // unknown or expired (past deadline) opportunities fall back to the list
   if (!(await getOpportunity(id))) redirect('/internships');

@@ -1,16 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { Screen } from '@/components/Screen';
 import { CITIES } from '@/lib/data/static';
-import { apiOrigin, getContent, getJob } from '@/lib/content';
+import { apiOrigin, getJob } from '@/lib/content';
 import { jobDbId } from '@/lib/b2b';
 import type { Job } from '@/lib/types';
 import { money } from '@/lib/format';
 import { pageMeta } from '@/lib/seo';
-
-export async function generateStaticParams() {
-  return (await getContent()).jobs.map(j => ({ id: j.id }));
-}
 
 /** an employer job approved after the content cache was filled: GET /api/jobs/{id} (anonymous = no age filter) */
 async function liveJob(id: string): Promise<Job | null> {
@@ -24,6 +21,7 @@ async function liveJob(id: string): Promise<Job | null> {
 const findJob = async (id: string) => (await getJob(id)) ?? (await liveJob(id));
 
 export async function generateMetadata({ params }: PageProps<'/job/[id]'>): Promise<Metadata> {
+  await connection();
   const { id } = await params;
   const j = await findJob(id);
   if (!j) return {};
@@ -37,6 +35,7 @@ export async function generateMetadata({ params }: PageProps<'/job/[id]'>): Prom
 }
 
 export default async function Page({ params }: PageProps<'/job/[id]'>) {
+  await connection();
   const { id } = await params;
   if (!(await findJob(id))) redirect('/jobs');
   return <Screen v={`job:${id}`} />;
