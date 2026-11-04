@@ -163,7 +163,8 @@ export interface Profile {
 export interface PlanItem { d: number; k: 'learn' | 'test' | 'review' | 'mock'; t: string; done: boolean }
 export interface Plan { id: string; subject: string; exam: string; lectures: number; hard: string; created: string; items: PlanItem[] }
 export interface Card { q: string; a: string }
-export interface Deck { id: string; name: string; cards: Card[]; demo?: boolean }
+/** `subject`: the «Пәндер» subject id (lib/subjects.ts) a deck made from a note belongs to; older decks link by name */
+export interface Deck { id: string; name: string; cards: Card[]; demo?: boolean; subject?: string }
 export interface ChatMsg { role: 'user' | 'assistant'; content: string }
 export interface AppState {
   v: 1;

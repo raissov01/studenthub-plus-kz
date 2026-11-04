@@ -18,6 +18,8 @@ import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, typ
 import { dOff } from '@/lib/format';
 import { buildScheduleIcs } from '@/lib/ics';
 import type { IconName } from '@/lib/types';
+import { HomeReviewDue } from '@/components/views/review';
+import { subjectId } from '@/lib/subjects';
 
 const firstName = (name: string, fb: string) => (name || '').trim().split(/\s+/)[0] || fb;
 const Mark = ({ id, label }: { id: string; label: string }) => (
@@ -49,6 +51,9 @@ function NextClassCard() {
       <span className="row-sub">{L(c.kind)}, {classWhere(c, I)}</span>
       <button className="btn" type="button" onClick={() => { setUi({ mapQ: c.room, mapSel: null, geoAuto: true }); go('map:campus'); }}>
         <Icon n="pin" s={18} /> {tt('Картадан жолды көру', 'Показать путь на карте')}
+      </button>
+      <button className="link-btn" type="button" id="ncSubject" onClick={() => go('subjects:' + subjectId(c.name.kk))}>
+        {tt('Пән беті: конспект, карточка, емтихан', 'Страница предмета: конспекты, карточки, экзамен')}
       </button>
     </div>
   );
@@ -123,6 +128,7 @@ export function Home() {
       </section>
 
       <UpcomingDeadlines />
+      <HomeReviewDue />
 
       <section className="section">
         <SectionHead title={tt('Бүгінгі сабақтар', 'Пары сегодня')} more={<span className="tiny muted">{wd[now.getDay()]}</span>} />

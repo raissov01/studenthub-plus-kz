@@ -101,6 +101,9 @@ const META: Record<string, Meta> = {
   suggestions: { title: (_, x) => t('Менің ұсыныстарым', 'Мои предложения')(x), tab: 'profile' },
   calendar: { title: (_, x) => t('Күнтізбе', 'Календарь')(x) },
   points: { title: (_, x) => t('Ұпайлар', 'Баллы')(x), tab: 'profile' },
+  subjects: { title: (_, x) => t('Пәндер', 'Предметы')(x), tab: 'home' },
+  notes: { title: (_, x) => t('Конспектілер', 'Конспекты')(x), tab: 'home' },
+  review: { title: (_, x) => t('Қайталау', 'Повторение')(x), tab: 'home' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

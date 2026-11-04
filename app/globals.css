@@ -1429,3 +1429,50 @@ main.quiz-host-main { max-width: 1200px; }
 .np-health circle { fill: var(--map-rose); } .np-post circle { fill: var(--map-study); } .np-sport circle { fill: var(--map-other); }
 .ent line { stroke: var(--map-ent); } .ent polygon { fill: var(--map-ent); } .ent-key { background: var(--map-ent); }
 
+/* ---------- «Пәндер», «Конспектілер», «Қайталау» (components/views/subjects.tsx, notes.tsx, review.tsx) ---------- */
+.subj-title { font-size: 1.3rem; overflow-wrap: anywhere; }
+.review-due { gap: 10px; }
+.review-home { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.sr-grades { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sr-grades .btn { flex-direction: column; gap: 2px; min-width: 0; }
+@media (min-width: 520px) { .sr-grades { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.note-ed { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.note-head { display: flex; justify-content: flex-end; min-height: 20px; }
+.note-status { color: var(--muted); }
+.note-status.bad { color: var(--danger); }
+.note-title { font-weight: 600; font-size: 1.05rem; }
+.note-tools { position: sticky; top: calc(var(--tg-top, 0px) + 56px); z-index: 5; display: flex; gap: 4px; align-items: center; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.note-tools select.input { flex: 1 1 auto; min-width: 0; padding-top: 6px; padding-bottom: 6px; }
+.note-tools .icon-btn[disabled] { opacity: .4; }
+.note-tools .icon-btn[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); }
+.rot-up { transform: rotate(-90deg); }
+.rot-down { transform: rotate(90deg); }
+.note-zone { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nz-title { font-size: .95rem; color: var(--muted); }
+.note-blocks { display: flex; flex-direction: column; gap: 6px; }
+.nb { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.nb-in { padding-left: 24px; }
+.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; min-height: 40px; line-height: 1.45; }
+.nb-h { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.nb-dot { flex: none; width: 12px; padding-top: 10px; text-align: center; color: var(--muted); }
+.nb-check { flex: none; width: 20px; height: 20px; margin-top: 10px; accent-color: var(--primary); }
+.nb-callout { border: 1px solid var(--line); border-left: 3px solid var(--primary); border-radius: var(--r-sm); padding: 6px; background: var(--primary-soft); }
+.nb-callout .nb-text { background: var(--surface); }
+.nb-flag { flex: none; padding-top: 10px; color: var(--primary); }
+.nb-cur > .nb-text { border-color: var(--primary); }
+.nb-fig { margin: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.nb-fig img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.note-add { display: flex; flex-wrap: wrap; gap: 6px; }
+.note-add .chip { font-size: .82rem; }
+.cornell { display: flex; flex-direction: column; gap: 16px; }
+.cornell .note-zone { border: 1px solid var(--line); border-radius: var(--r); padding: 10px; background: var(--surface); }
+@media (min-width: 640px) {
+  .cornell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .cornell .nz-sum { grid-column: 1 / -1; }
+}
+.ai-note { gap: 10px; }
+.ai-err { color: var(--danger); }
+.ai-draft { display: flex; flex-direction: column; gap: 12px; }
+.ai-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: aic; }
+.ai-card { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.ai-card .link-btn { align-self: flex-start; color: var(--danger); }

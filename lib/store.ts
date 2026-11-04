@@ -7,6 +7,7 @@ import { cleanDeadlines, cleanPins } from '@/lib/calendar';
 import type { AppState } from '@/lib/types';
 import { defaults, UI_INIT, type UiState } from '@/lib/defaults';
 import { clearTickets } from '@/lib/tickets';
+import { clearStudyData } from '@/lib/studydb';
 
 export { defaults, type UiState };
 
@@ -87,6 +88,7 @@ export function update(mutate: (s: AppState) => void) {
 export function resetState() {
   try { window.localStorage.removeItem(KEY); } catch { /* ignore */ }
   clearTickets();
+  void clearStudyData(); // notes, photos, subjects, review states (IndexedDB)
   state = defaults();
   state.onboarded = false;
   lsSet(JSON.stringify(state));

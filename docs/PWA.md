@@ -18,7 +18,9 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 ## Интернетсіз не ашылады
 
 - **Қолданба қабығы**: `/`, `/map`, `/settings`, `/roadmap`, `/profile`, `/mine`, `/events`, `/search`,
-  `/notifications`, `/saved`, `/services`, `/discounts` (студенттік QR профильден, localStorage-тан салынады) — worker орнатылғанда бірден сақталады. Басқа кез келген бет бір рет
+  `/notifications`, `/saved`, `/services`, `/discounts` (студенттік QR профильден, localStorage-тан салынады), `/calendar`,
+  `/subjects`, `/notes`, `/review` (пән, конспект, қайталау: id сұраныс жолында — `/notes?id=…`, сондықтан бір сақталған бет
+  кез келген конспектіні интернетсіз ашады; деректер IndexedDB `studenthub-study`-де, `lib/studydb.ts`) — worker орнатылғанда бірден сақталады. Басқа кез келген бет бір рет
   ашылса сақталады (мысалы `/job/j2`).
 - **Сабақ кестесі** — басты бетте (`/`), деректері кодта.
 - **Кампус картасы** — `/map` және `public/campus-map.jpg`.
