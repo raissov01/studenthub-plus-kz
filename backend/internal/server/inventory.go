@@ -75,7 +75,7 @@ when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
 
 The only write-guard exception is POST /api/telegram: Telegram's constant-time webhook
-secret check replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+secret check replaces browser origin/rate checks. All seven GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -106,6 +106,12 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
+University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
+answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
+keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
+under 5 hidden (complementary suppression in breakdowns). Anonymous feedback tickets have no author
+(CHECK); the sender keeps a 256-bit device token whose SHA-256 is stored, so the token-holding
+routes are callable without a session. Flagged (threat/profanity) tickets are held for admins.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |

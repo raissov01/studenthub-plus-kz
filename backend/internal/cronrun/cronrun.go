@@ -10,7 +10,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/notify"
 )
 
-var Endpoints = []string{"/api/cron", "/api/cron/events", "/api/cron/ambassador", "/api/cron/mentors", "/api/cron/market", "/api/cron/b2b"}
+var Endpoints = []string{"/api/cron", "/api/cron/events", "/api/cron/ambassador", "/api/cron/mentors", "/api/cron/market", "/api/cron/b2b", "/api/cron/feedback"}
 
 // Success also performs the daily retention in the main bot cron: client errors after 30
 // days, read inbox notifications after 90 (notify.InboxRetention).

@@ -177,6 +177,15 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
     values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
 		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
 		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
+		// university voice: surveys, feedback tickets, wellbeing contacts
+		survey := id(`insert into surveys(university,title,questions,marker_salt,created_by,anonymous) values ('LAUNCH','Fixture survey','[]',decode(repeat('ab',32),'hex'),$1,false) returning id`, uid)
+		exec(`with r as (insert into survey_responses(survey_id,answers) values ($1,'{}') returning id) insert into survey_response_owners(response_id,user_id) select id,$2 from r`, survey, uid)
+		rec := id(`insert into feedback_recipients(university,key,name_kk,name_ru) values ('LAUNCH','dean','Деканат','Деканат') returning id`)
+		exec(`insert into feedback_recipient_staff(recipient_id,user_id) values ($1,$2)`, rec, uid)
+		exec(`insert into feedback_tickets(recipient_id,category,body,anonymous,author_id,sla_due_at,created_at,updated_at) values ($1,'question','Fixture signed ticket',false,$2,now(),now(),now())`, rec, uid)
+		anon := id(`insert into feedback_tickets(recipient_id,category,body,anonymous,token_hash,sla_due_at,created_at,updated_at) values ($1,'question','Fixture anonymous ticket',true,decode(repeat('cd',32),'hex'),now(),now(),now()) returning id`, rec)
+		exec(`insert into feedback_messages(ticket_id,from_staff,staff_id,body,created_at) values ($1,true,$2,'Fixture reply',now())`, anon, uid)
+		exec(`insert into wellbeing_contacts(university,name,place,updated_by) values ('LAUNCH','Fixture psychologist','Room 1',$1)`, uid)
 		return nil
 	})
 	if err != nil {
