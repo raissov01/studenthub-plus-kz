@@ -34,7 +34,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#F5F8FE',
+  themeColor: '#F7F5FC',
 };
 
 /* Runs before first paint: theme and language from the saved state (incl. the old studygo.v1 key), so a dark-theme
