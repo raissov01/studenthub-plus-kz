@@ -14,7 +14,10 @@
 #   API_TAG, WEB_TAG          image tags currently deployed (git sha)
 #   POSTGRES_PASSWORD         taken from DATABASE_URL in /opt/studenthub/.env
 #   STUDENTHUB_UID/GID        owner of /opt/studenthub/uploads (the old systemd user), so uploads stay writable
-# The application settings stay in /opt/studenthub/.env (the same file the systemd units used).
+#   KASPI_TAG                 kaspi-pos image tag (café Kaspi Pay sidecar), only with COMPOSE_PROFILES=cafe-kaspi
+#   COMPOSE_PROFILES          cafe-kaspi starts the kaspi-pos sidecar (docs/cafe.md); unset = it never starts
+# The application settings stay in /opt/studenthub/.env (the same file the systemd units used); the sidecar's
+# own secrets live in /opt/studenthub/kaspi-pos.env (docker/.env.example).
 
 name: studenthub
 
@@ -100,7 +103,37 @@ services:
       start_period: 20s
       retries: 3
 
+  kaspi-pos:
+    # Café Kaspi Pay sidecar (services/kaspi-pos, docs/cafe.md): issues QR in the café's OWN name with the
+    # cashier session the café granted us; Student Hub never holds money. Starts only with the profile
+    # (COMPOSE_PROFILES=cafe-kaspi in ./.env). No published port: only the api reaches it, as
+    # http://kaspi-pos:3000 on this project's network; it needs outbound https to Kaspi.
+    profiles: ["cafe-kaspi"]
+    image: studenthub-kaspi-pos:${KASPI_TAG:-latest}
+    container_name: studenthub-kaspi-pos
+    env_file:
+      # INTERNAL_API_KEY (= CAFE_KASPI_API_KEY of the api), TOKEN_SECRET_KEY, WEBHOOK_SECRET (= CAFE_KASPI_WEBHOOK_SECRET)
+      - ${KASPI_POS_ENV_FILE:-/opt/studenthub/kaspi-pos.env}
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DATA_DIR: /data
+      ENABLE_DEMO_UI: "false"
+      WEBHOOK_URL: http://api:8110/api/cafe/kaspi/webhook
+      WEBHOOK_ALLOWED_HTTP_HOSTS: api
+      NODE_OPTIONS: --max-old-space-size=96
+      TZ: Asia/Almaty
+    expose:
+      - "3000"
+    volumes:
+      # device identity, keypair, tracked payments (0700); losing it means the cashier logs in again
+      - kaspi-pos-data:/data
+    restart: unless-stopped
+    mem_limit: 150m
+
 volumes:
+  kaspi-pos-data:
+    name: studenthub-kaspi-pos-data
   studenthub-pg:
     # created by the old `docker run ... -v studenthub-pg:...`; compose must never create or remove it
     external: true
