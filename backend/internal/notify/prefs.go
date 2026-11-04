@@ -24,12 +24,18 @@ const (
 	CatJobs       Category = "jobs"       // b2b job offers
 	CatCommunity  Category = "community"  // community updates and bot replies
 	CatModeration Category = "moderation" // decisions about submissions and reports
+	// CatCafe: café pre-order updates (internal/cafe). Transactional and never switchable: only Order sends it,
+	// for an order the student placed (accepted, ready) or to the café's own staff (a new order).
+	CatCafe Category = "cafe"
 )
 
 // Categories lists every switchable category in display order.
 var Categories = []Category{CatDeadlines, CatDigest, CatEvents, CatMentors, CatMarket, CatJobs, CatCommunity, CatModeration}
 
 func (c Category) valid() bool {
+	if c == CatCafe {
+		return true
+	}
 	for _, k := range Categories {
 		if k == c {
 			return true
