@@ -1606,3 +1606,30 @@ textarea.input.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; 
 .ev-sw input:checked + .ev-sw-dot svg { visibility: visible; }
 .ev-sw input:checked ~ .ev-sw-name { color: var(--text); font-weight: 700; }
 .ev-sw input:focus-visible + .ev-sw-dot { outline: 2px solid var(--primary); outline-offset: 4px; }
+
+/* home «Жаңалықтар» carousel (components/views/news-carousel.tsx): solid pastel cards, the next one peeks in */
+.news-carousel { display: flex; flex-direction: column; gap: 10px; }
+.news-track {
+  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  margin: 0 -16px; padding: 0 16px; scroll-padding-inline: 16px;
+}
+.news-track::-webkit-scrollbar { display: none; }
+.news-card {
+  flex: 0 0 84%; scroll-snap-align: start; min-height: 132px; display: flex; align-items: stretch; gap: 10px;
+  border: 1px solid var(--line); border-radius: 18px; padding: 16px; text-align: left; font: inherit; color: var(--text); cursor: pointer;
+}
+@media (min-width: 640px) { .news-card { flex-basis: 46%; } }
+.news-card-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.news-kind { font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.news-title { font-weight: 700; font-size: 1.02rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.news-sub { margin-top: auto; font-size: .82rem; color: var(--muted); }
+.news-ico { flex: none; align-self: flex-end; width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); }
+.tone-violet { background: var(--p-violet); } .tone-violet .news-kind, .tone-violet .news-ico { color: var(--p-violet-ink); }
+.tone-mint { background: var(--p-mint); } .tone-mint .news-kind, .tone-mint .news-ico { color: var(--p-mint-ink); }
+.tone-peach { background: var(--p-peach); } .tone-peach .news-kind, .tone-peach .news-ico { color: var(--p-peach-ink); }
+.tone-sky { background: var(--p-sky); } .tone-sky .news-kind, .tone-sky .news-ico { color: var(--p-sky-ink); }
+.tone-rose { background: var(--p-rose); } .tone-rose .news-kind, .tone-rose .news-ico { color: var(--p-rose-ink); }
+.news-dots { display: flex; justify-content: center; gap: 4px; }
+.news-dot { width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.news-dot::before { content: ''; width: 7px; height: 7px; border-radius: 999px; background: var(--line); transition: width .2s; }
+.news-dot[aria-current="true"]::before { width: 20px; background: var(--primary); }

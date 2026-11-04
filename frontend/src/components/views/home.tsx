@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
 import { Hero3D } from '@/components/views/hero3d';
+import { NewsCarousel } from '@/components/views/news-carousel';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
@@ -84,11 +85,11 @@ export function Home() {
   const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const news = [
-    ...(content.events ?? []).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
-    ...content.opportunities.slice(0, 2).map(o => {
+    ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, kind: tt('Іс-шара', 'Мероприятие'), title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
+    ...content.opportunities.slice(0, 3).map(o => {
       const left = oppLeft(o);
       const sub = Number.isFinite(left) ? tt(`Өтінім мерзімі: ${I.fDate(dOff(left))}`, `Приём заявок до ${I.fDate(dOff(left))}`) : tt('Мерзімі шектелмеген', 'Без срока');
-      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, demo: !!o.is_demo, title: L(o.title), sub };
+      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, demo: !!o.is_demo, kind: tt('Мүмкіндік', 'Возможность'), title: L(o.title), sub };
     }),
   ];
   const focused = useRef(false);
@@ -117,14 +118,7 @@ export function Home() {
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
-        <div className="group">
-          {news.map(n => (
-            <button key={n.go} className="row news" type="button" onClick={() => go(n.go)}>
-              <span className={`thumb thumb-${hue(n.id)}`}><Icon n={n.icon} s={24} /></span>
-              <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.sub} <DemoBadge show={n.demo} /></span></span>
-            </button>
-          ))}
-        </div>
+        <NewsCarousel items={news} />
       </section>
 
       <UpcomingDeadlines />
