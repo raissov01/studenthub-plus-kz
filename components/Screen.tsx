@@ -23,6 +23,7 @@ import { UniversityCabinet } from '@/components/views/university';
 import { AdminContent } from '@/components/views/admin-content';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
+import { AdminPoints, Points } from '@/components/views/points';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -72,6 +73,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'market') return <AdminMarket />;
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
+      if (prm === 'points') return <AdminPoints />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
@@ -86,6 +88,7 @@ export function Screen({ v }: { v: string }) {
     case 'suggest': return <SuggestPage />;
     case 'suggestions': return <MySuggestionsPage />;
     case 'calendar': return <CalendarView />;
+    case 'points': return <Points />;
     default: return <Home />;
   }
 }

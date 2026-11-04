@@ -11,7 +11,7 @@ export const PLAIN = [
   'quiz', 'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
-  'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar',
+  'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
@@ -19,7 +19,7 @@ export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'm
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff', 'admin:content',
+  'admin:employers', 'admin:staff', 'admin:content', 'admin:points',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)

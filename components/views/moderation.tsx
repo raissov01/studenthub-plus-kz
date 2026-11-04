@@ -328,7 +328,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
-  const b2b = useFeature('b2b');
+  const b2b = useFeature('b2b'), points = useFeature('points');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
@@ -344,6 +344,7 @@ export function ModerationLinks() {
         {events ? <Row go="organize" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} /> : null}
         {b2b ? <Row go="admin:employers" icon="briefcase" title={tt('Жұмыс берушілер', 'Работодатели')} /> : null}
         {b2b ? <Row go="admin:staff" icon="cap" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
+        {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
       </div>
     </section>
   );

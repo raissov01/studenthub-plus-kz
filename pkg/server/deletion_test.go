@@ -171,6 +171,12 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into quiz_ai_usage(user_id,day,units) values ($1,current_date,1)`, uid)
 		live := id(`insert into quiz_live_sessions(code,quiz_id,host_id,status) values ('123456',$1,$2,'finished') returning id`, qz, uid)
 		exec(`insert into quiz_live_results(session_id,rank,nickname,user_id,score,correct) values ($1,1,'fixture',$2,10,1)`, live, uid)
+		exec(`insert into points_wallets(user_id,coins,xp) values ($1,5,10),($2,5,0)`, uid, other)
+		exec(`insert into xp_events(user_id,delta,reason,ref_type,ref_id,day) values ($1,10,'quiz','quiz','1',current_date)`, uid)
+		exec(`insert into coin_ledger(user_id,delta,reason,ref_type,ref_id,actor_id,note,day)
+    values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
+		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
+		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
 		return nil
 	})
 	if err != nil {

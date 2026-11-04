@@ -18,6 +18,7 @@ import { ProfileCommunity } from '@/components/views/entries';
 import { VerifiedAttendance } from '@/components/views/events';
 import { PublicPortfolioSection } from '@/components/views/portfolio';
 import type { Profile as ProfileT } from '@/lib/types';
+import { useFeature } from '@/components/views/common';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
 function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean }) {
@@ -118,6 +119,7 @@ export function Onboarding() {
 /* ---------- profile ---------- */
 export function Profile() {
   const { S, tt, L, I, toast, go } = useApp();
+  const points = useFeature('points');
   const p = S.profile, fill = profileFill(S, I);
   const onPhoto = (f: File | undefined) => {
     if (!f) return;
@@ -161,6 +163,7 @@ export function Profile() {
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
         <Row go="gpa" icon="cap" title={tt('Білім туралы', 'Об учёбе')} />
         <Row go="portfolio" icon="award" title={tt('Жетістіктер', 'Достижения')} />
+        {points ? <Row go="points" icon="trophy" title={tt('Ұпайлар', 'Баллы')} sub={tt('Деңгей, серия, монеталар және сыйлықтар', 'Уровень, серия, монеты и награды')} /> : null}
         <Row go="mine" icon="clock" title={tt('Іс-әрекет тарихы', 'История действий')} />
         <Row go="saved" icon="bookmark" title={tt('Сақталғандар', 'Сохранённое')} />
         <Row go="settings" icon="gear" title={tt('Параметрлер', 'Параметры')} />

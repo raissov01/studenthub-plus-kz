@@ -19,6 +19,8 @@ export interface Config {
     portfolio: boolean;
     b2b: boolean;
     quiz: boolean;
+    /** «Ұпайлар / Баллы»: XP, streak, coins and the rewards shop (FEATURE_POINTS) */
+    points: boolean;
   };
 }
 
@@ -27,7 +29,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false },
 };
 
 export type FeatureName = keyof Config['features'];

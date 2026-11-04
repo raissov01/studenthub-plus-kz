@@ -55,6 +55,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
+      ...(cfg.features.points ? [['points', 'trophy', tt('Ұпайлар', 'Баллы')] as Item] : []),
       ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
     ]],

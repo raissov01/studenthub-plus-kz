@@ -3,12 +3,15 @@ package server
 import (
 	"context"
 	"log"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/pkg/auth"
 	"github.com/raissov01/studenthub-plus-kz/pkg/db"
 	"github.com/raissov01/studenthub-plus-kz/pkg/events"
 	"github.com/raissov01/studenthub-plus-kz/pkg/mentors"
+	"github.com/raissov01/studenthub-plus-kz/pkg/points"
+	"github.com/raissov01/studenthub-plus-kz/pkg/quiz"
 )
 
 // Cross-feature wiring that neither package can do without importing the other.
@@ -62,4 +65,46 @@ func init() {
 		})
 		return ok, err
 	}
+}
+
+// Gamification (pkg/points): quiz attempts and event check-ins pay XP and coins inside the
+// action's own transaction; a revoked check-in takes its award back.
+func init() {
+	quiz.OnAttempt = func(ctx context.Context, tx pgx.Tx, a quiz.AttemptInfo) any {
+		// own quizzes, retries of wrong answers and tiny quizzes do not pay (self-made farming)
+		if a.UserID == 0 || a.UserID == a.OwnerID || a.Mode != "practice" || a.Total < 3 {
+			return nil
+		}
+		e := points.Earn{UserID: a.UserID, Reason: points.ReasonQuiz, RefType: "quiz", RefID: strconv.FormatInt(a.QuizID, 10), Coins: -1}
+		rule := points.Rules[points.ReasonQuiz]
+		e.XP = rule.XP
+		if a.Percentage >= 80 {
+			e.XP += points.QuizBonusXP
+		}
+		if a.Percentage >= 50 {
+			e.Coins = rule.Coins
+		}
+		return grant(ctx, tx, e)
+	}
+	events.OnCheckin = func(ctx context.Context, tx pgx.Tx, eventID, userID int64) any {
+		return grant(ctx, tx, points.Earn{UserID: userID, Reason: points.ReasonEventCheckin, RefType: "event", RefID: strconv.FormatInt(eventID, 10)})
+	}
+	events.OnRevoke = func(ctx context.Context, tx pgx.Tx, eventID, userID int64) {
+		if err := points.Reverse(ctx, tx, userID, points.ReasonEventCheckin, "event", strconv.FormatInt(eventID, 10)); err != nil {
+			log.Printf("glue: points reverse event %d user %d: %v", eventID, userID, err)
+		}
+	}
+}
+
+// grant never fails the caller's action: a points error is logged and the award is skipped.
+func grant(ctx context.Context, tx pgx.Tx, e points.Earn) any {
+	a, err := points.Grant(ctx, tx, e)
+	if err != nil {
+		log.Printf("glue: points %s %s: %v", e.Reason, e.RefID, err)
+		return nil
+	}
+	if a == nil {
+		return nil
+	}
+	return a
 }

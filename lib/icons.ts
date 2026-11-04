@@ -44,7 +44,10 @@ export const IC = {
   award: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>',
   folder: '<path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v11H3z"/>',
   mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>',
-  doc: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>'
+  doc: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  coin: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H4v1a3 3 0 003 3M16 6h4v1a3 3 0 01-3 3"/><path d="M12 13v4M8 21h8M9 17h6v4H9z"/>',
+  streak: '<path d="M4 18l5-5 4 3 7-8"/><path d="M15 8h5v5"/>'
 } as const;
 
 export type IconName = keyof typeof IC;

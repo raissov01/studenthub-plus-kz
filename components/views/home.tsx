@@ -7,6 +7,7 @@ import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/compone
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
+import { PointsChip } from '@/components/views/points';
 import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
@@ -107,6 +108,7 @@ export function Home() {
       </form>
 
       <Hero3D who={who} />
+      <PointsChip />
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />

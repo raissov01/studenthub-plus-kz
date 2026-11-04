@@ -14,6 +14,7 @@ import { keepPagesOffline, useOnline } from '@/lib/pwa';
 import { rememberEvent, rememberMine, savedTicket, savedTickets, withMy } from '@/lib/tickets';
 import { BUILDINGS } from '@/lib/data/campus';
 import { CalendarActions, eventPinTarget } from '@/components/views/calendar';
+import { awardText, pointsChanged } from '@/lib/points';
 import {
   ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
   type Attendance, type CheckinResult, type DbEvent, type FeedbackSummary, type LiveView, type RegRow, type RegsResp,
@@ -209,7 +210,7 @@ export function Checkin() {
 
 type CiState = { st: 'idle' | 'busy' | 'done' | 'login' | 'error'; res?: CheckinResult; err?: string };
 function Checkin_() {
-  const { tt, lang, go } = useApp();
+  const { tt, lang, go, toast } = useApp();
   const acc = useAccount();
   const [state, setState] = useState<CiState>({ st: 'idle' });
   const sent = useRef('');
@@ -240,12 +241,14 @@ function Checkin_() {
       }
       writeStored(CLAIM_KEY, null, 'local');
       setState({ st: 'done', res: r });
+      const earned = awardText(r.points, tt);
+      if (earned) { toast(earned); pointsChanged(); }
     }, e => {
       writeStored(CHECKIN_KEY, null, 'session');
       if (errCode(e) === 'claim_expired') writeStored(CLAIM_KEY, null, 'local');
       setState({ st: 'error', err: errText(e) });
     });
-  }, [acc, lang]);
+  }, [acc, lang, tt, toast]);
   if (!acc.loaded || state.st === 'busy') return <Loading />;
   if (state.st === 'done' && state.res) {
     return (

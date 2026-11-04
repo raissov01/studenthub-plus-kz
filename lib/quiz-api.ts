@@ -1,6 +1,7 @@
 /* Quiz HTTP contract. Keep wire types, paths and adaptation here. Source: pkg/quiz in the
    backend worktree (read-only). source_quote from the model is exposed as sourceQuote. */
 import { api, apiUpload, apiBlob } from './account';
+import type { PointsAward } from '@/lib/points';
 export type QuizLang = 'kk' | 'ru';
 export type QuestionType =
   | 'mcq'
@@ -154,6 +155,8 @@ export interface QuizResult {
   timeSpent: number;
   createdAt: string;
   answers: ReviewedAnswer[];
+  /** what the attempt earned (FEATURE_POINTS, signed in, someone else's quiz); absent otherwise */
+  points?: PointsAward;
 }
 export interface AttemptSummary {
   id: number;

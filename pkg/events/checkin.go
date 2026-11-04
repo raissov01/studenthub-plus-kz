@@ -147,7 +147,16 @@ type CheckinResult struct {
 	TeamNo  *int16 `json:"team_no"`
 	Method  string `json:"method"`
 	Message string `json:"message"`
+	// Points is what the check-in earned the student (pkg/points via OnCheckin).
+	Points any `json:"points,omitempty"`
 }
+
+// OnCheckin / OnRevoke are wired in pkg/server (glue.go) to award points for a check-in and to
+// take them back when an organizer revokes it. Both run inside the check-in's transaction.
+var (
+	OnCheckin func(ctx context.Context, tx pgx.Tx, eventID, userID int64) any
+	OnRevoke  func(ctx context.Context, tx pgx.Tx, eventID, userID int64)
+)
 
 // checkIn marks userID present. The event row must already be locked (load(..., true)).
 // method: qr (self, via token), manual (organizer), walk_in is derived.
@@ -204,6 +213,9 @@ func checkIn(ctx context.Context, tx pgx.Tx, ev *Event, userID int64, method str
 		team = &n
 	}
 	res.Status, res.TeamNo, res.Method = "checked_in", team, method
+	if OnCheckin != nil {
+		res.Points = OnCheckin(ctx, tx, ev.ID, userID)
+	}
 	return res, nil
 }
 
@@ -434,6 +446,9 @@ func revoke(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			checkin_revoked_at = now() where event_id = $1 and user_id = $2 and checked_in_at is not null`, ev.ID, body.UserID)
 		if err == nil && tag.RowsAffected() == 0 {
 			return refuse(http.StatusNotFound, "not_checked_in", MsgNotReg)
+		}
+		if err == nil && OnRevoke != nil {
+			OnRevoke(r.Context(), tx, ev.ID, body.UserID)
 		}
 		return err
 	})
