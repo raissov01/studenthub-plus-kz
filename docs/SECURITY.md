@@ -71,6 +71,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| DELETE | `/api/qa/answers/{id}` | signed-in | yes | yes | courseqa |
+| DELETE | `/api/qa/questions/{id}` | signed-in | yes | yes | courseqa |
 | DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
 | DELETE | `/api/staff/surveys/{id}` | university_staff (bound university), admin; draft or closed | yes | yes | surveys |
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
@@ -143,6 +145,10 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/health` | anonymous | no | no (no input) | — |
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
+| GET | `/api/lostfound/mine` | signed-in | no | no (no input) | lostfound |
+| GET | `/api/lostfound/photos/{name}` | anonymous (active post); uploader or admin otherwise | no | yes | lostfound |
+| GET | `/api/lostfound/posts` | anonymous (no author identity in any answer) | no | yes | lostfound |
+| GET | `/api/lostfound/posts/{id}` | anonymous (claims: the two parties; contacts only after confirmation) | no | yes | lostfound |
 | GET | `/api/market/items` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/items/{id}` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/me` | signed-in | no | no (no input) | market |
@@ -161,6 +167,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/points/redemptions` | signed-in (own requests) | no | no (no input) | points |
 | GET | `/api/points/rewards` | signed-in | no | no (no input) | points |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
+| GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
 | GET | `/api/quiz/attempts/{id}` | signed-in (own attempt, RLS) | no | yes | quiz |
 | GET | `/api/quiz/attempts/{id}/retry` | signed-in (own attempt, RLS) | no | yes | quiz |
@@ -177,6 +185,10 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/quiz/quizzes/{id}/stats` | signed-in (owner only; aggregates, no player identities) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}` | anonymous (share link: published public/unlisted quizzes by 10-char code, no answer keys) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}/meta` | anonymous (share preview for generateMetadata: title, description, counts, cover; no author, no questions) | no | yes | quiz |
+| GET | `/api/roommates/listings` | signed-in (strict gender rule applied) | no | yes | roommates |
+| GET | `/api/roommates/listings/{id}` | signed-in (strict gender rule applied) | no | yes | roommates |
+| GET | `/api/roommates/me` | signed-in | no | no (no input) | roommates |
+| GET | `/api/roommates/requests` | signed-in | no | no (no input) | roommates |
 | GET | `/api/staff/feedback` | university_staff (assigned recipients), admin; never an anonymous sender | no | yes | feedback |
 | GET | `/api/staff/feedback/{id}` | university_staff (assigned recipient), admin | no | yes | feedback |
 | GET | `/api/staff/surveys` | university_staff (bound university), admin | no | no (no input) | surveys |
@@ -219,6 +231,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
 | POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
+| POST | `/api/admin/lostfound/moderate` | admin | yes | yes | lostfound |
 | POST | `/api/admin/market/bans` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/hide` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/restore` | admin | yes | yes | market |
@@ -229,12 +242,15 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/points/redemptions/{id}/reject` | admin | yes | yes | points |
 | POST | `/api/admin/points/rewards` | admin | yes | yes | points |
 | POST | `/api/admin/points/users/{userId}/adjust` | admin | yes | yes | points |
+| POST | `/api/admin/qa/moderate` | admin | yes | yes | courseqa |
+| POST | `/api/admin/qa/questions/{id}/lock` | admin | yes | yes | courseqa |
 | POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
 | POST | `/api/admin/queue/{id}/reject` | admin | yes | yes | — |
 | POST | `/api/admin/quiz/quizzes/{id}/hide` | admin | yes | yes | quiz |
 | POST | `/api/admin/quiz/quizzes/{id}/restore` | admin | yes | yes | quiz |
 | POST | `/api/admin/reports/dismiss` | admin | yes | yes | — |
 | POST | `/api/admin/role` | admin | yes | yes | — |
+| POST | `/api/admin/roommates/moderate` | admin | yes | yes | roommates |
 | POST | `/api/admin/university-staff` | admin | yes | yes | b2b |
 | POST | `/api/ambassador/apply` | signed-in | yes | yes | ambassador |
 | POST | `/api/ambassador/mentors/match` | ambassador (active team lead, own university) | yes | yes | mentors |
@@ -294,6 +310,12 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/feedback/tickets/{id}/read` | anonymous (ticket token) or signed author | yes | yes | feedback |
 | POST | `/api/jobs/{id}/apply` | signed-in | yes | yes | b2b |
 | POST | `/api/jobs/{id}/report` | signed-in | yes | yes | b2b |
+| POST | `/api/lostfound/claims/{id}/decide` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/claims/{id}/returned` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/photos` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts/{id}/claims` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts/{id}/close` | signed-in | yes | yes | lostfound |
 | POST | `/api/market/items` | signed-in | yes | yes | market |
 | POST | `/api/market/items/{id}/extend` | signed-in | yes | yes | market |
 | POST | `/api/market/items/{id}/given` | signed-in | yes | yes | market |
@@ -317,6 +339,10 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/points/freeze` | signed-in (consented; at most 1 freeze held) | yes | yes | points |
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
+| POST | `/api/qa/questions` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/questions/{id}/accept` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/questions/{id}/answers` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/vote` | signed-in | yes | yes | courseqa |
 | POST | `/api/quiz/generate/cards-from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
 | POST | `/api/quiz/generate/from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
 | POST | `/api/quiz/generate/from-text` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
@@ -331,6 +357,11 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/quiz/quizzes/{id}/share/reset` | signed-in (owner only) | yes | yes | quiz |
 | POST | `/api/quiz/s/{code}/clone` | signed-in (consented; share code grants read) | yes | yes | quiz |
 | POST | `/api/reports` | signed-in | yes | yes | — |
+| POST | `/api/roommates/gender` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings/{id}/close` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings/{id}/requests` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/requests/{id}/decide` | signed-in | yes | yes | roommates |
 | POST | `/api/staff/feedback/{id}/reply` | university_staff (assigned recipient), admin | yes | yes | feedback |
 | POST | `/api/staff/feedback/{id}/status` | university_staff (assigned recipient), admin | yes | yes | feedback |
 | POST | `/api/staff/surveys` | university_staff (bound university), admin | yes | yes | surveys |

@@ -31,6 +31,9 @@ import { TimetableScreen } from '@/components/views/timetable';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
 import { FeedbackScreen, SurveysScreen, VoiceStaff, WellbeingScreen } from '@/components/views/voice';
+import { LostFoundScreen } from '@/components/views/lostfound';
+import { QAScreen } from '@/components/views/qa';
+import { RoommatesScreen } from '@/components/views/roommates';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -106,6 +109,9 @@ export function Screen({ v }: { v: string }) {
     case 'feedback': return <FeedbackScreen />;
     case 'wellbeing': return <WellbeingScreen />;
     case 'voice': return <VoiceStaff />;
+    case 'lostfound': return <LostFoundScreen />;
+    case 'qa': return <QAScreen />;
+    case 'roommates': return <RoommatesScreen />;
     default: return <Home />;
   }
 }

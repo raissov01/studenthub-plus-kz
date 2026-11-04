@@ -51,6 +51,8 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
       ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
+      ['subjects', 'folder', tt('Пәндер', 'Предметы')],
+      ...(cfg.features.courseqa ? [['qa', 'chat', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
     ]],
     [tt('Университет', 'Университет'), [
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
@@ -59,6 +61,8 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
       ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
       ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
+      ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
+      ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],

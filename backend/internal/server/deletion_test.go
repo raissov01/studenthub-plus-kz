@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/community"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/market"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/me"
@@ -88,6 +89,13 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		if err := os.WriteFile(filepath.Join(market.UploadDir(), n), []byte("fixture"), 0600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	lfFile := filepath.Join(community.PhotoDir(), strings.Repeat("e", 32)+".jpg")
+	if err := os.MkdirAll(community.PhotoDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lfFile, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
 	}
 	quizFile := strings.Repeat("f", 32) + ".jpg"
 	if err := os.MkdirAll(quiz.UploadDir(), 0700); err != nil {
@@ -192,6 +200,19 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		anon := id(`insert into feedback_tickets(recipient_id,category,body,anonymous,token_hash,sla_due_at,created_at,updated_at) values ($1,'question','Fixture anonymous ticket',true,decode(repeat('cd',32),'hex'),now(),now(),now()) returning id`, rec)
 		exec(`insert into feedback_messages(ticket_id,from_staff,staff_id,body,created_at) values ($1,true,$2,'Fixture reply',now())`, anon, uid)
 		exec(`insert into wellbeing_contacts(university,name,place,updated_by) values ('LAUNCH','Fixture psychologist','Room 1',$1)`, uid)
+		// community: lost & found, course Q&A, roommates
+		lf := id(`insert into lostfound_posts(user_id,kind,category,title,happened_on,university) values ($1,'found','keys','Fixture keys',current_date,'LAUNCH') returning id`, other)
+		exec(`insert into lostfound_posts(user_id,kind,category,title,happened_on,university) values ($1,'lost','bag','Fixture bag',current_date,'LAUNCH')`, uid)
+		exec(`insert into lostfound_claims(post_id,claimant_id,message) values ($1,$2,'Fixture claim message')`, lf, uid)
+		exec(`insert into lostfound_photos(name,user_id,bytes) values ($1,$2,7)`, strings.Repeat("e", 32)+".jpg", uid)
+		q := id(`insert into qa_questions(user_id,university,subject_key,subject_name,title) values ($1,'LAUNCH','fixture','Fixture','Fixture question?') returning id`, other)
+		exec(`insert into qa_answers(question_id,user_id,body) values ($1,$2,'Fixture answer')`, q, uid)
+		exec(`insert into qa_questions(user_id,university,subject_key,subject_name,title,anonymous) values ($1,'LAUNCH','fixture','Fixture','My fixture question?',true)`, uid)
+		exec(`insert into qa_votes(user_id,target_kind,target_id) values ($1,'question',$2)`, uid, q)
+		exec(`insert into roommate_genders(user_id,gender) values ($1,'f')`, uid)
+		rl := id(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'have_room','flat','Fixture',0,50000,current_date,'LAUNCH') returning id`, other)
+		exec(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'looking','flat','Fixture',0,50000,current_date,'LAUNCH')`, uid)
+		exec(`insert into roommate_requests(listing_id,from_user) values ($1,$2)`, rl, uid)
 		return nil
 	})
 	if err != nil {
@@ -247,6 +268,9 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		if _, err := os.Stat(filepath.Join(market.UploadDir(), name)); !os.IsNotExist(err) {
 			t.Errorf("deleted user's file survived: %s %v", name, err)
 		}
+	}
+	if _, err := os.Stat(lfFile); !os.IsNotExist(err) {
+		t.Errorf("deleted user's lost & found photo survived: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(quiz.UploadDir(), quizFile)); !os.IsNotExist(err) {
 		t.Errorf("deleted user's quiz media survived: %v", err)

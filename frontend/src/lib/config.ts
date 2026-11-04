@@ -29,6 +29,12 @@ export interface Config {
     feedback: boolean;
     /** «Әл-ауқат / Благополучие» (FEATURE_WELLBEING) */
     wellbeing: boolean;
+    /** «Табылған заттар» (FEATURE_LOSTFOUND) */
+    lostfound: boolean;
+    /** «Пән бойынша сұрақ-жауап» (FEATURE_COURSEQA) */
+    courseqa: boolean;
+    /** «Пәтерлес» (FEATURE_ROOMMATES) */
+    roommates: boolean;
   };
 }
 
@@ -37,7 +43,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false },
 };
 
 export type FeatureName = keyof Config['features'];

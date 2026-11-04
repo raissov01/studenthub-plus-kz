@@ -13,6 +13,8 @@ import { almatyYmd } from '@/lib/calendar';
 import { noteTitle, TEMPLATE_LABEL } from '@/lib/notes';
 import { dueQueue } from '@/lib/srs';
 import { saveSubject, useStudy, type StudySnap } from '@/lib/studydb';
+import { useFeature } from '@/components/views/common';
+import { qaBoard } from '@/lib/community';
 import { belongs, mentions, nextSlot, subjectsFrom, type Subject } from '@/lib/subjects';
 import type { AppState, Deck } from '@/lib/types';
 
@@ -100,6 +102,7 @@ function SubjectPage({ id }: { id: string }) {
   const app = useApp();
   const { S, I, tt, L, go, setUi, update, openSheet, toast } = app;
   const { list, study } = useSubjects();
+  const qaOn = useFeature('courseqa');
   const s = list.find(x => x.id === id);
   if (!study.ready) return <p className="small muted" role="status">{tt('Жүктелуде…', 'Загрузка…')}</p>;
   if (!s) {
@@ -193,6 +196,14 @@ function SubjectPage({ id }: { id: string }) {
         ) : <p className="small muted">{tt('Конспектіден «Қорытып, карточка жаса» батырмасымен жасаңыз.', 'Создайте из конспекта кнопкой «Итог и карточки».')}</p>}
         {total > 0 && due === 0 ? <p className="tiny muted">{tt('Бүгінге қайталайтын карточка жоқ.', 'На сегодня повторять нечего.')}</p> : null}
       </section>
+
+      {qaOn ? (
+        <section className="section" aria-labelledby="subjQa">
+          <SectionHead title={<span id="subjQa">{tt('Сұрақ-жауап', 'Вопросы и ответы')}</span>} />
+          <Row go={qaBoard(s.name)} icon="chat" title={tt('Курстастардан сұрау', 'Спросить однокурсников')}
+            sub={tt('Осы пән бойынша сұрақтар мен жауаптар', 'Вопросы и ответы по этому предмету')} />
+        </section>
+      ) : null}
 
       <section className="section" aria-labelledby="subjExam">
         <SectionHead title={<span id="subjExam">{tt('Емтихан', 'Экзамен')}</span>} />
