@@ -1,11 +1,12 @@
 import { test, expect, onboard, label } from './fixtures';
+import { config } from './content';
 
 // the email code: typing goes box to box by itself, backspace walks back, a pasted code fills all six
 test('email code boxes move on their own', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await page.route('**/api/config', async route => {
-    const res = await route.fetch();
-    await route.fulfill({ response: res, json: { ...(await res.json()), emailAuth: true } });
+    // the Node fixture server has no /api/config (404): answer the suite's fixture config with email sign-in on
+    await route.fulfill({ json: { ...config, emailAuth: true } });
   });
   await page.route('**/api/auth/email/register', route => route.fulfill({ json: { ok: true, resendAfter: 60 } }));
   const sent: string[] = [];
