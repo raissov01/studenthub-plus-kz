@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
 import { openMenu } from '@/components/NavDrawer';
+import { Hero3D } from '@/components/views/hero3d';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
@@ -102,10 +103,7 @@ export function Home() {
   const focused = useRef(false);
   return (
     <>
-      <section className="greet">
-        <h1>{tt(`Сәлем, ${who}!`, `Привет, ${who}!`)} <span className="wave" aria-hidden="true">👋</span></h1>
-        <p className="muted">{tt('Бүгінгі күнің сәтті болсын!', 'Пусть день будет удачным!')}</p>
-      </section>
+      <Hero3D who={who} />
 
       <form className="search" id="homeSearch" role="search" onSubmit={e => {
         e.preventDefault();
