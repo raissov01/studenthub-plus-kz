@@ -170,7 +170,9 @@ func TestAnonymousResponsesHaveNoUserLink(t *testing.T) {
 	}
 	// the marker depends on the server key: a different SESSION_SECRET gives a different marker
 	var salt []byte
-	_ = db.Tx(bg, func(tx pgx.Tx) error { return tx.QueryRow(bg, `select marker_salt from surveys where id = $1`, id).Scan(&salt) })
+	_ = db.Tx(bg, func(tx pgx.Tx) error {
+		return tx.QueryRow(bg, `select marker_salt from surveys where id = $1`, id).Scan(&salt)
+	})
 	m1, _ := surveys.Marker(id, salt, stud)
 	t.Setenv("SESSION_SECRET", strings.Repeat("another-secret-xx", 3))
 	m2, _ := surveys.Marker(id, salt, stud)
