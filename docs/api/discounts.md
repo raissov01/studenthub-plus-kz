@@ -1,6 +1,6 @@
 # Discount checks API (F7: «промокод/жеңілдік жұмыс істемейді»)
 
-Сервер: `pkg/discounts`, миграция `supabase/migrations/20261028000014_discount_checks.sql` (`discount_checks`).
+Сервер: `backend/internal/discounts`, миграция `backend/migrations/20261028000014_discount_checks.sql` (`discount_checks`).
 Жеңілдік id — `/api/content` жауабындағы `discounts[].id` жолы (мысалы `d1`); сервер оны жүктелген
 контентпен тексереді (`content.Default`, id жиыны 5 минут кэште).
 

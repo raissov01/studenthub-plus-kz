@@ -18,7 +18,7 @@ between пр. Жеңіс, ул. Ы. Алтынсарина, ул. Бейбітш
 The app already has all of these as b1–b15.
 Source: https://kazatu.edu.kz/ru/pages/kontakty/kak-nas-najti (Yandex map `constructor:PM96aIexFoICHLaZa7Q20ONLCISiFunI`).
 
-## Added to the app (`CITY_SITES` in `lib/data/campus.ts`)
+## Added to the app (`CITY_SITES` in `frontend/src/lib/data/campus.ts`)
 
 | id | Name (kk / ru) | Address | What is there | Lat, lon | Coordinate source | Address source |
 |---|---|---|---|---|---|---|

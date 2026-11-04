@@ -7,23 +7,23 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 
 | Файл | Не істейді |
 |---|---|
-| `public/sw.js` | Service worker. Қолмен жазылған, кітапханасыз, build қадамы жоқ — басынан аяғына оқуға болады |
-| `public/offline.html` | Ешқашан ашылмаған бет интернетсіз сұралса көрсетілетін бет (kk/ru, тақырып пен тіл localStorage-тан) |
-| `lib/pwa.ts` | `useOnline()`, worker-ді тіркеу, «жаңа нұсқа» күйі, `keepPagesOffline()` |
-| `components/Pwa.tsx` | Тіркеу (`PwaRegister`), «Интернет жоқ» жолағы (`OfflineBanner`), «Жаңа нұсқа дайын — Жаңарту» (`UpdateBar`) |
-| `lib/tickets.ts` | Іс-шара билеттерінің құрылғыдағы көшірмесі (localStorage `studenthub.tickets`) |
-| `lib/config.ts` | `/api/config` соңғы жауабы localStorage `studenthub.config`-та сақталады |
-| `next.config.ts` | `/sw.js` тақырыптары (`no-store`), `NEXT_PUBLIC_BUILD_ID` |
+| `frontend/public/sw.js` | Service worker. Қолмен жазылған, кітапханасыз, build қадамы жоқ — басынан аяғына оқуға болады |
+| `frontend/public/offline.html` | Ешқашан ашылмаған бет интернетсіз сұралса көрсетілетін бет (kk/ru, тақырып пен тіл localStorage-тан) |
+| `frontend/src/lib/pwa.ts` | `useOnline()`, worker-ді тіркеу, «жаңа нұсқа» күйі, `keepPagesOffline()` |
+| `frontend/src/components/Pwa.tsx` | Тіркеу (`PwaRegister`), «Интернет жоқ» жолағы (`OfflineBanner`), «Жаңа нұсқа дайын — Жаңарту» (`UpdateBar`) |
+| `frontend/src/lib/tickets.ts` | Іс-шара билеттерінің құрылғыдағы көшірмесі (localStorage `studenthub.tickets`) |
+| `frontend/src/lib/config.ts` | `/api/config` соңғы жауабы localStorage `studenthub.config`-та сақталады |
+| `frontend/next.config.ts` | `/sw.js` тақырыптары (`no-store`), `NEXT_PUBLIC_BUILD_ID` |
 
 ## Интернетсіз не ашылады
 
 - **Қолданба қабығы**: `/`, `/map`, `/settings`, `/roadmap`, `/profile`, `/mine`, `/events`, `/search`,
   `/notifications`, `/saved`, `/services`, `/discounts` (студенттік QR профильден, localStorage-тан салынады), `/calendar`,
   `/subjects`, `/notes`, `/review` (пән, конспект, қайталау: id сұраныс жолында — `/notes?id=…`, сондықтан бір сақталған бет
-  кез келген конспектіні интернетсіз ашады; деректер IndexedDB `studenthub-study`-де, `lib/studydb.ts`) — worker орнатылғанда бірден сақталады. Басқа кез келген бет бір рет
+  кез келген конспектіні интернетсіз ашады; деректер IndexedDB `studenthub-study`-де, `frontend/src/lib/studydb.ts`) — worker орнатылғанда бірден сақталады. Басқа кез келген бет бір рет
   ашылса сақталады (мысалы `/job/j2`).
 - **Сабақ кестесі** — басты бетте (`/`), деректері кодта.
-- **Кампус картасы** — `/map` және `public/campus-map.jpg`.
+- **Кампус картасы** — `/map` және `frontend/public/campus-map.jpg`.
 - **Студенттік QR** (Профиль → цифрлық студенттік) — құрылғыдағы профильден жасалады.
 - **Үлгі іс-шаралардың билеті** — localStorage-та (`studenthub.v1`).
 - **Дерекқордағы іс-шара билеті және QR**: студент `/event/<id>` бетін не «Менің тізімім»-ді интернетпен ашқанда
@@ -43,7 +43,7 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 - ешқашан ашылмаған бет (мысалы `/job/j1`) не `/p/<slug>` → `offline.html` («Интернет жоқ», «Қайталау», сақталған
   бөлімдерге сілтемелер; интернет қайтса өзі қайта жүктеледі). Браузердің «динозавр» беті шықпайды.
 
-## Кэш ережелері (`public/sw.js`)
+## Кэш ережелері (`frontend/public/sw.js`)
 
 | Сұраныс | Стратегия |
 |---|---|
@@ -69,9 +69,9 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 
 Кэш аттары: `studenthub-pages-<VERSION>-<BUILD>` және `studenthub-static-<VERSION>-<BUILD>`.
 
-- `BUILD` — әр build-тің өз id-і (`next.config.ts`: `VERCEL_GIT_COMMIT_SHA`-ның 12 таңбасы, болмаса уақыт).
+- `BUILD` — әр build-тің өз id-і (`frontend/next.config.ts`: `BUILD_ID` (docker build arg, git sha) 12 таңбасы, болмаса уақыт).
   Бет worker-ді `/sw.js?v=<BUILD>` деп тіркейді, сондықтан **әр деплой автоматты түрде жаңа worker орнатады**.
-- `VERSION` — `public/sw.js` басындағы `const VERSION = 'v1';`. Worker-дің логикасын (ережелерді) өзгерткенде
+- `VERSION` — `frontend/public/sw.js` басындағы `const VERSION = 'v1';`. Worker-дің логикасын (ережелерді) өзгерткенде
   көтер: `'v1'` → `'v2'`. Build id өзгермей тұрса да (бір коммиттен қайта деплой) жаңарту шығады.
 - Жаңа worker орнатылады, бірақ **күтеді**: экранда «Жаңа нұсқа дайын — Жаңарту». Студент басқанда ғана
   `SKIP_WAITING` жіберіледі, worker басқаруды алады, бет бір рет қайта жүктеледі. Бет өздігінен ешқашан қайта
@@ -79,13 +79,13 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 - Жаңа worker белсенді болғанда `studenthub-` префиксті, бірақ ағымдағы емес кэштердің бәрі өшеді.
 - Worker тек production build-те тіркеледі (`next dev`-те жоқ) және тек `https:` немесе `localhost`-та.
 
-Worker-ді толық өшіру керек болса: `components/AppRoot.tsx`-тен `<PwaRegister />` алып таста және `public/sw.js`-ті
+Worker-ді толық өшіру керек болса: `frontend/src/components/AppRoot.tsx`-тен `<PwaRegister />` алып таста және `frontend/public/sw.js`-ті
 өзін-өзі өшіретін нұсқамен ауыстыр (`self.registration.unregister()` + кэштерді өшіру) — файлды жай өшірсең,
 орнатылған worker-лер ескі кэшпен жұмыс істей береді.
 
 ## Орнатылуы (installable)
 
-`app/layout.tsx` → `metadata.manifest: '/manifest.webmanifest'`. Манифестте `name`, `short_name`, `start_url: /`,
+`frontend/src/app/layout.tsx` → `metadata.manifest: '/manifest.webmanifest'`. Манифестте `name`, `short_name`, `start_url: /`,
 `display: standalone`, иконкалар 192 және 512 (`any`) және толық фонды `icon-maskable-512.png` (`maskable`).
 Chrome `Page.getInstallabilityErrors` — бос (Playwright тексеруі).
 

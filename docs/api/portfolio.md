@@ -1,6 +1,6 @@
 # Portfolio API — public portfolio page (prompt 09)
 
-Server: `pkg/portfolio`, wired in `pkg/server/routes_portfolio.go`. Schema: `supabase/migrations/20261028000010_portfolio.sql`.
+Server: `backend/internal/portfolio`, wired in `backend/internal/server/routes_portfolio.go`. Schema: `backend/migrations/20261028000010_portfolio.sql`.
 Spec: `docs/prompts/09-portfolio.md`.
 
 ## Conventions

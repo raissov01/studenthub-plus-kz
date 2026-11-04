@@ -1,7 +1,7 @@
 # Admin content API — мүмкіндіктер, жұмыстар, жеңілдіктер `/admin/content` редакторынан
 
-Сервер: `pkg/admincontent` (`pkg/server/routes_admincontent.go`), тексеру `pkg/content/validate.go`
-(`ValidateRecord` — Sheets жолымен **бір код**), миграция `supabase/migrations/20261028000017_admin_content.sql`
+Сервер: `backend/internal/admincontent` (`backend/internal/server/routes_admincontent.go`), тексеру `backend/internal/content/validate.go`
+(`ValidateRecord` — Sheets жолымен **бір код**), миграция `backend/migrations/20261028000017_admin_content.sql`
 (кесте `admin_content`). Нұсқаулық: `docs/CONTENT.md`. Студент ұсыныстары: `docs/SUGGEST.md`.
 
 Жалпы ережелер (басқа API-лармен бірдей): cookie / Bearer сессия; жазу эндпоинттері `auth.Write` (рұқсат етілген
@@ -37,14 +37,14 @@
   "kind": "opportunities",
   "status": "published",
   "no_deadline": false,
-  "record": { "…": "data/opportunities.json пішіні" }
+  "record": { "…": "backend/data/opportunities.json пішіні" }
 }
 ```
 
 - `status`: `published` (create әдепкісі) | `hidden`. PUT-та берілмесе — бұрынғысы қалады. Басқа мән → `400 invalid_status`.
 - `no_deadline`: «Мерзімсіз» белгісі. `record.deadline` пен `no_deadline`-ның **дәл біреуі** керек (Sheets-тегі `deadline` / `no_deadline` ережесі).
-- `record` — `data/*.json` жазбасының пішіні. `record.id` пен `record.is_demo` еленбейді: id-ді сервер береді
-  (`adm-<n>`, Sheets / `data/*.json` id-лерімен қақтығыспайды — Sheets-те `adm-` префиксі тыйым салынған, ал
+- `record` — `backend/data/*.json` жазбасының пішіні. `record.id` пен `record.is_demo` еленбейді: id-ді сервер береді
+  (`adm-<n>`, Sheets / `backend/data/*.json` id-лерімен қақтығыспайды — Sheets-те `adm-` префиксі тыйым салынған, ал
   `/api/content` бірдей id-ді екі рет бермейді), `is_demo` әрқашан `false`.
 - `record.posted_at` бос болса — бүгінгі күн (Астана).
 - Дене ≤ 64 КБ; `record` жоқ не JSON қате → `400 bad_request`.
@@ -69,7 +69,7 @@
 
 ### `/api/content`-тегі пішін
 
-`published` жазбалар тиісті тізімнің соңына қосылады, `data/*.json` пішінінде + `"source": "admin"`:
+`published` жазбалар тиісті тізімнің соңына қосылады, `backend/data/*.json` пішінінде + `"source": "admin"`:
 
 ```json
 {"id":"adm-12","type":"intl","funded":true,"title":{"kk":"Жазғы мектеп","ru":"Летняя школа"},

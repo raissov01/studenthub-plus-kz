@@ -1,7 +1,7 @@
 # Ambassador API (06-промпт: амбассадор кабинеті және ортақ модерация кезегі)
 
-Сервер: `pkg/ambassador` (+ ортақ кезек пен шағымдар `pkg/moderation/http.go`), миграция
-`supabase/migrations/20261028000007_ambassador.sql` (`submissions`, `reports` — 000005-те).
+Сервер: `backend/internal/ambassador` (+ ортақ кезек пен шағымдар `backend/internal/moderation/http.go`), миграция
+`backend/migrations/20261028000007_ambassador.sql` (`submissions`, `reports` — 000005-те).
 Барлығы `FEATURE_AMBASSADOR=true` кезінде; өшік болса кез келген жол `404 not_found` — **admin кезегі мен
 шағымдар да** осы ажыратқышпен (07/08/10 оны қолданғанда бұл туралы шешім керек, төмендегі сұрақтарды қара).
 
@@ -82,7 +82,7 @@
 - Амбассадордың ұсынысы әрқашан өз университетіне; басқа `university` → `403 foreign_university`.
   Студентте `university` — жіберілгені не профильдегісі.
 - **Ажыратқышқа тәуелсіз**: `/api/submissions` және `/api/submissions/my` `FEATURE_AMBASSADOR` өшік болса да жұмыс
-  істейді (`pkg/server/routes_moderation.go`, ортақ кезекпен бірге). Ажыратқыш өшік кезде амбассадор мерзімі
+  істейді (`backend/internal/server/routes_moderation.go`, ортақ кезекпен бірге). Ажыратқыш өшік кезде амбассадор мерзімі
   тексерілмейді — бәрі студент ретінде (`author_role = student`) ұсынады.
 - Автоматты жариялау жоқ: тек admin бекіткеннен кейін `/api/content`-те шығады.
 - Валидация қатесі: `400 invalid_<өріс>` (мысалы `invalid_source_url`, `invalid_deadline`).
@@ -167,7 +167,7 @@
 1. мерзімге ≤14 күн қалғандарға бір рет «жалғастырасың ба?» `direct` хабарламасы;
 2. `ambassador.ExpireTerms(ctx, now)`: `term_end < бүгін` → `status = ended`, басқа белсенді мерзімі жоқ болса
    `role = student` + `audit_log role_revoke`. Жасаған контенті (`community_content`, іс-шаралар) орнында қалады.
-Жауап: `{"renew_asks","ended"}`. `pkg/bot` өзгертілмеді — cron жоспарына осы жолды қосу керек.
+Жауап: `{"renew_asks","ended"}`. `backend/internal/bot` өзгертілмеді — cron жоспарына осы жолды қосу керек.
 
 ## Деректер және өшіру
 

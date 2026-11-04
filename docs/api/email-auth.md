@@ -1,7 +1,7 @@
 # Email + password sign-in API
 
-Second way in, next to Telegram. Code: `pkg/auth/email.go`, `pkg/auth/password.go`,
-`pkg/auth/codes.go`, `pkg/mail`. Schema: `supabase/migrations/20261028000018_email_auth.sql`.
+Second way in, next to Telegram. Code: `backend/internal/auth/email.go`, `backend/internal/auth/password.go`,
+`backend/internal/auth/codes.go`, `backend/internal/mail`. Schema: `backend/migrations/20261028000018_email_auth.sql`.
 Background and Resend setup (Kazakh): [docs/ACCOUNTS.md](../ACCOUNTS.md).
 
 All endpoints are `POST` with a JSON body, go through `auth.Write` (Origin/Referer must be in
@@ -85,8 +85,8 @@ Codes are 6 digits, valid 15 minutes, 5 wrong tries, then dead (request a new on
 
 ## Frontend checklist
 
-Done in `components/views/account-email.tsx` (email tab, code screen, Settings sheets) and
-`components/views/account.tsx` (tabs, Settings rows, Telegram link); bot-dependent screens:
+Done in `frontend/src/components/views/account-email.tsx` (email tab, code screen, Settings sheets) and
+`frontend/src/components/views/account.tsx` (tabs, Settings rows, Telegram link); bot-dependent screens:
 the notifications section tells email-only users to link Telegram.
 
 - [x] Sign-in sheet with two tabs: **Telegram** (existing widget / Mini App) and **Email**

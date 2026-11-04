@@ -1,6 +1,6 @@
 # Market API — «Отдам даром» (prompt 08)
 
-Server: `pkg/market`, wired in `pkg/server/routes_market.go`. Schema: `supabase/migrations/20261028000009_market.sql`.
+Server: `backend/internal/market`, wired in `backend/internal/server/routes_market.go`. Schema: `backend/migrations/20261028000009_market.sql`.
 Spec: `docs/prompts/08-market.md`.
 
 ## Conventions

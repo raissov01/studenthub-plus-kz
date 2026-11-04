@@ -1,6 +1,6 @@
 # B2B API — employer and university cabinets (prompt 10)
 
-Server: `pkg/b2b`, wired in `pkg/server/routes_b2b.go`. Schema: `supabase/migrations/20261028000011_b2b.sql`.
+Server: `backend/internal/b2b`, wired in `backend/internal/server/routes_b2b.go`. Schema: `backend/migrations/20261028000011_b2b.sql`.
 Spec: `docs/prompts/10-b2b.md`.
 
 ## Conventions
@@ -8,10 +8,10 @@ Spec: `docs/prompts/10-b2b.md`.
 Switch `FEATURE_B2B` (off → every route below is `404 not_found`, and `/api/content` contains no database jobs or
 official opportunities). Session cookie or `Authorization: Bearer`; writes need an allowed `Origin` and are rate limited;
 errors are `{"error": {"code", "message"}}` (kk/ru) — branch on `code`. Keys are camelCase, except records merged into
-`/api/content`, which keep the `data/*.json` snake_case shape.
+`/api/content`, which keep the `backend/data/*.json` snake_case shape.
 
-Shared pieces: the admin queue (`GET /api/admin/queue`, `POST /api/admin/queue/{id}/approve|reject`, `pkg/moderation`)
-decides kinds `employer_verification`, `employer_job` and `job_report`. Messages go through `pkg/notify`
+Shared pieces: the admin queue (`GET /api/admin/queue`, `POST /api/admin/queue/{id}/approve|reject`, `backend/internal/moderation`)
+decides kinds `employer_verification`, `employer_job` and `job_report`. Messages go through `backend/internal/notify`
 (`Direct` for status changes / new applications / reminders, `Digest` — at most one bot message per student per day — for
 the 14-day «no answer» message). Everything is free for students; no payments.
 
@@ -60,7 +60,7 @@ the 14-day «no answer» message). Everything is free for students; no payments.
 | `POST /api/applications/{id}/withdraw` | the applicant | Withdraw (shared copy erased) |
 | `GET /api/announcements?university=` | anyone | «Университеттен ресми» announcements |
 
-**Public job** (`/api/jobs`, `/api/jobs/{id}` and `/api/content` → `jobs`): the exact `data/jobs.json` shape
+**Public job** (`/api/jobs`, `/api/jobs/{id}` and `/api/content` → `jobs`): the exact `backend/data/jobs.json` shape
 (`id` = `"job-<id>"`, `org` = company name, `contact` = empty, `is_demo` = false, `deadline` = expiry date,
 `verified_by` = "Student Hub") plus:
 
@@ -190,7 +190,7 @@ Any count 1–4 is the string `"< 5"`; `avgRating` is `null` with fewer than 5 r
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/admin/queue?kind=employer_verification\|employer_job\|job_report` | Shared queue (pkg/moderation) |
+| `GET /api/admin/queue?kind=employer_verification\|employer_job\|job_report` | Shared queue (backend/internal/moderation) |
 | `POST /api/admin/queue/{id}/approve` / `reject` (`{"reason"}`) | Decide |
 | `GET /api/admin/employers?status=` | Companies + `members`, `jobs`, `response`, `lowRate` |
 | `POST /api/admin/employers/{id}/suspend` / `restore` | `{"reason"}` 3–500, audited; suspended jobs vanish at once |
@@ -200,7 +200,7 @@ Any count 1–4 is the string `"< 5"`; `avgRating` is `null` with fewer than 5 r
 
 ### Daily job
 
-`GET /api/cron/b2b` with `Authorization: Bearer $CRON_SECRET` (in `deploy/studenthub-cron.service`) →
+`GET /api/cron/b2b` with `Authorization: Bearer $CRON_SECRET` (in `docker/systemd/studenthub-cron.service`) →
 `{"employerReminders", "noResponse", "studentsTold", "studentsDeferred", "jobsExpired", "lowRateWarnings"}`:
 1. applications still `sent` after 5 days → one reminder per company to every member (direct);
 2. `sent` / `viewed` after 14 days → `no_response`; the student gets «Компания 14 күнде жауап бермеді. Басқа вакансияларды қара»

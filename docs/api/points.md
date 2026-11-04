@@ -1,7 +1,7 @@
 # Ұпайлар / Баллы API (XP, серия, монета, сыйлықтар)
 
-Сервер: `pkg/points` (+ `pkg/server/glue.go` ішіндегі квиз және іс-шара хуктары), миграция
-`supabase/migrations/20261104000030_gamification.sql`. Фронт: `components/views/points.tsx`, `lib/points.ts`.
+Сервер: `backend/internal/points` (+ `backend/internal/server/glue.go` ішіндегі квиз және іс-шара хуктары), миграция
+`backend/migrations/20261104000030_gamification.sql`. Фронт: `frontend/src/components/views/points.tsx`, `frontend/src/lib/points.ts`.
 Қосқыш: `FEATURE_POINTS=true` — өшірулі кезде ештеңе берілмейді, барлық маршрут `404` (белгісіз бет сияқты).
 
 Жалпы ережелер `docs/api/events.md`-дағыдай: cookie / Bearer, жазу маршруттары `auth.Write` (Origin + ортақ rate limit),
@@ -38,15 +38,15 @@ TODO (жасалмаған, әдейі): монетаны ақшаға айна�
 - Аккаунт өшсе — әмиян, журналдар, өтінімдер cascade өшеді; басқа студенттің жолындағы admin `actor_id`/`decided_by`
   null болады. Экспорт бөлімдері: `points`, `xpEvents`, `coinLedger`, `rewardRedemptions`.
 
-## Ұпай ережелері (`pkg/points.Rules`)
+## Ұпай ережелері (`backend/internal/points.Rules`)
 
 Күн — Asia/Almaty күнтізбелік күні. Апта — дүйсенбі 00:00 Almaty.
 
 | reason | қайдан | XP | монета | шек |
 |---|---|---|---|---|
 | `daily_open` | `POST /api/points/daily` (күннің бірінші ашылуы) | 5 | 1 | 1/күн |
-| `quiz` | квиз нәтижесі серверде бағаланады (`pkg/quiz`, `OnAttempt`) | 10, 80 %+ болса +5 | 2 (50 %+ болса ғана) | 5/күн, бір квиз — бір рет |
-| `event_checkin` | іс-шараға келу (QR, walk-in, ұйымдастырушы қолмен; `pkg/events`, `OnCheckin`) | 30 | 15 | 3/күн, бір іс-шара — бір рет |
+| `quiz` | квиз нәтижесі серверде бағаланады (`backend/internal/quiz`, `OnAttempt`) | 10, 80 %+ болса +5 | 2 (50 %+ болса ғана) | 5/күн, бір квиз — бір рет |
+| `event_checkin` | іс-шараға келу (QR, walk-in, ұйымдастырушы қолмен; `backend/internal/events`, `OnCheckin`) | 30 | 15 | 3/күн, бір іс-шара — бір рет |
 | `roadmap_step` | даму жоспарының қадамы (құрылғыда ғана сақталады) | 5 | **0** | 1/күн, 3/апта |
 
 Жалпы күндік шек: **150 XP** және **30 монета** (барлық reason бірге). Шектен асса — `capped: true`, артығы берілмейді;

@@ -1,6 +1,6 @@
 # Notifications API and shared dispatcher
 
-`pkg/notify` owns every active Go `sendMessage` call. The inbox contract is in
+`backend/internal/notify` owns every active Go `sendMessage` call. The inbox contract is in
 [inbox.md](inbox.md). Schema: migrations `13`, `20`, `21`, and
 `20261029000024_notification_dispatch.sql`.
 
@@ -135,7 +135,7 @@ wire compatibility. Both website settings and bot `/settings` expose every categ
 such as `check3Sent`/`reminded` retain their historical names but now count items handed to
 the dispatcher, not confirmed Telegram delivery.
 
-Run all producers first, then `/api/cron/notify`. `deploy/studenthub-cron.service` does this;
+Run all producers first, then `/api/cron/notify`. `docker/systemd/studenthub-cron.service` does this;
 `studenthub-notify.timer` also flushes hourly at :05 for quiet-hour/cap deferrals. No service
 was deployed or restarted as part of this change.
 
@@ -157,12 +157,12 @@ was deployed or restarted as part of this change.
 | Bot: deadlines/weekly opportunities | `Dispatcher.Digest` | digest |
 | Quiz | HTTP/WebSocket game responses only; no Telegram sender | none |
 
-`legacy/js/lib/bot/telegram.js` is archived pre-Go code, outside the Next/Go build and route
-registration. Its old transport is not an active sender. `pkg/notify/modules_test.go` guards
+`archive/legacy/js/lib/bot/telegram.js` is archived pre-Go code, outside the Next/Go build and route
+registration. Its old transport is not an active sender. `backend/internal/notify/modules_test.go` guards
 against new Go `sendMessage` bypasses and exercises the real producers together.
 
 RLS remains self-only for preferences, inbox, and exported outbox rows. New columns and
-receipts cascade with account deletion. Tests: `pkg/notify/integrity_test.go` (table-driven
+receipts cascade with account deletion. Tests: `backend/internal/notify/integrity_test.go` (table-driven
 budgets, quiet/off categories, concurrent calls, UTC/Almaty boundary, inbox failure,
 retry/ambiguous outcomes, keyboard/length), `modules_test.go` (real producers), and existing
 bot/event/mentor/market integration tests.

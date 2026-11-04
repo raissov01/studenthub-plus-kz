@@ -1,6 +1,6 @@
 # Events API (05-промпт: іс-шаралар және QR арқылы қатысу)
 
-Сервер: `pkg/events`, миграция `supabase/migrations/20261028000006_events.sql`.
+Сервер: `backend/internal/events`, миграция `backend/migrations/20261028000006_events.sql`.
 Барлық эндпоинт `FEATURE_EVENTS=true` кезінде ғана жұмыс істейді; ажыратқыш өшік болса —
 кез келген жол `404 {"error":{"code":"not_found"}}` (жоқ бет сияқты).
 
@@ -13,7 +13,7 @@
 - Барлық кілттер `snake_case`, уақыт — RFC 3339 (UTC), күн — `YYYY-MM-DD`.
 - Жалпы қателер: `401 unauthorized` (кіру керек), `403 consent_required` (келісім экраны өтпеген),
   `403 forbidden`, `404 not_found`, `400 bad_request`, `500 internal`.
-- `POST /api/events` — бұл **аналитика трекері** (`pkg/analytics`), сондықтан іс-шара құру `POST /api/events/create`.
+- `POST /api/events` — бұл **аналитика трекері** (`backend/internal/analytics`), сондықтан іс-шара құру `POST /api/events/create`.
 
 ### Рөлдер
 
@@ -161,7 +161,7 @@ checkin_revoked, ratings, avg_rating, `checked_in_faculty:<факультет>`;
 - Ботпен ортақ «күніне 1 хабарлама» ережесі: `bot_daily_sends` жолын алу арқылы; алынбаса — бүгін жіберілмейді.
 - Ескі `event_checkin_claims` тазаланады.
 Жауап: `{"reminders","reminder_skips","feedback_asks","claims_pruned"}`.
-`pkg/bot` өзгертілмеді — бот cron-ы оны шақыруы не Vercel/systemd cron-ға жеке жол қосу керек.
+`backend/internal/bot` өзгертілмеді — бот cron-ы оны шақыруы не Vercel/systemd cron-ға жеке жол қосу керек.
 
 ## Деректер және өшіру
 

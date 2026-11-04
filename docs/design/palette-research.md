@@ -46,7 +46,7 @@ median-cut квантизация, 10 түс; пайыз — кадрдағы ү
 ## 2. Палитра
 
 Негізгі түс (`--primary`) көктен **қою күлгінге** (`#5B45C9`) ауысты: сұраныстағы «фиолетовый» бренд
-болды, ақ логотип онда 6.8:1. Логотип иконкалары (`public/icons/*`, `icon.svg`, `favicon.ico`) жаңа түспен
+болды, ақ логотип онда 6.8:1. Логотип иконкалары (`frontend/public/icons/*`, `icon.svg`, `favicon.ico`) жаңа түспен
 қайта салынды; `manifest.webmanifest`, `layout.tsx`, `offline.html` theme-color → `#F7F5FC`.
 
 Токен атаулары өзгерген жоқ (компоненттер соларға сүйенеді). Жаңа: `--p-violet|rose|mint|peach|sky` және
@@ -82,18 +82,18 @@ median-cut квантизация, 10 түс; пайыз — кадрдағы ү
 Күнтізбе түрлері (`--cal-*`, календарь агентінің токендері, отбасы сияларына бағытталған): сабақ — `--muted`,
 мүмкіндік — аспан, вакансия — изумруд, іс-шара — күлгін, емтихан — раушан, өз дедлайным — шабдалы
 (жарықта `#225E9B #0E6B4D #5A3FC0 #A3285A #964212`, қараңғыда `#A8CDF2 #97DDBF #CDBFFF #F6B7CF #F4C19E`).
-`e2e/calendar.spec.ts` іс-шара түсін тексереді — мәні `rgb(90, 63, 192)` болып жаңартылды.
+`frontend/e2e/calendar.spec.ts` іс-шара түсін тексереді — мәні `rgb(90, 63, 192)` болып жаңартылды.
 Hero WebGL пішіндері `--c0…--c4` оқиды.
 
-Компонент деңгейіндегі өзгерістер тек `app/globals.css` соңындағы «pastel palette» бөлімінде (тек түс,
+Компонент деңгейіндегі өзгерістер тек `frontend/src/app/globals.css` соңындағы «pastel palette» бөлімінде (тек түс,
 layout жоқ): hero мен баннер — қанық көк блок орнына лаванда карточка + 1px жиек; тізім белгілері
 (`.mk`, `.nico`, `.thumb`) — пастель фон + қою әріп; тегтер; карта түйреуіштері; санауыштар.
-Telegram Mini App: `features/telegram/webapp.ts` бұрынғыдай Telegram-ның өз фон/мәтін/батырма
+Telegram Mini App: `frontend/src/features/telegram/webapp.ts` бұрынғыдай Telegram-ның өз фон/мәтін/батырма
 түстерін қояды (нативті сезім); пастель отбасылары `data-theme` бойынша сақталады.
 
 ## 3. Контраст тексерісі
 
-`node tools/contrast.mjs` (`--md` — кесте) `globals.css` токен блоктарын оқып, `var()` тізбегін шешеді
+`node frontend/tools/contrast.mjs` (`--md` — кесте) `globals.css` токен блоктарын оқып, `var()` тізбегін шешеді
 де, қолданыстағы әр жұпты тексереді; AA-дан төмен болса exit 1.
 
 ### light
@@ -254,4 +254,4 @@ Playwright жиынтығындағы axe тексерістері де өтті
 
 `docs/design/screens/` — `before-*` (бұрынғы көк палитра) және `after-*` (пастель):
 `{light,dark}-{home,search,calendar,map,profile,sheet}.png`. Қайта түсіру:
-`npm run -s build && SHOT_TAG=after npx playwright test -c tools/screens`.
+`npm run -s build && SHOT_TAG=after npx playwright test -c frontend/tools/screens`.

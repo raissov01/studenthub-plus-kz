@@ -1,7 +1,7 @@
 # Frontend жауап тақырыптары (CSP)
 
-Маршрут аудиті: [SECURITY.md](SECURITY.md) (go run ./cmd/routes автоматты жазады — оны қолмен өзгертпеңіз).
-`next.config.ts → headers()` HTML және статикалық файлдар үшін ортақ саясат береді (proxy API жауап тақырыптарын Go сервері басқарады):
+Маршрут аудиті: [SECURITY.md](SECURITY.md) (cd backend && go run ./cmd/routes автоматты жазады — оны қолмен өзгертпеңіз).
+`frontend/next.config.ts → headers()` HTML және статикалық файлдар үшін ортақ саясат береді (proxy API жауап тақырыптарын Go сервері басқарады):
 
 - `Content-Security-Policy`: өз origin-іміз, нақты API origin (`API_ORIGIN`), quiz үшін
   `wss://studenthub.85-137-91-47.sslip.io`, Telegram скрипттері/iframe-дары, қолданылып жатқан Google Fonts.

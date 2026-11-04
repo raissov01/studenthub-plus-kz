@@ -156,14 +156,14 @@ existing result fields still report deferred or failed individual notifications 
 
 ## Verification and operational limits
 
-Run from the repository root with PostgreSQL available to `pkg/testdb` (default
+Run from the repository root with PostgreSQL available to `backend/internal/testdb` (default
 `postgres://postgres:dev@localhost:54329/studenthub`; override with TEST_DATABASE_URL):
 
 ```sh
-go run ./cmd/routes > docs/SECURITY.md
+cd backend && go run ./cmd/routes > ../docs/SECURITY.md
 go vet ./...
 go test ./...
-go test -race ./pkg/server ./pkg/launch ./pkg/content
+cd backend && go test -race ./internal/server ./internal/launch ./internal/content
 ```
 
 Tests use fresh disposable databases and all migrations. A missing database causes the

@@ -1,6 +1,6 @@
 # Inbox API — сайттағы хабарламалар (04-012, 04-033, F8)
 
-Сервер: `pkg/notify` (`inbox.go`), миграция `supabase/migrations/20261029000021_parity_inbox.sql`
+Сервер: `backend/internal/notify` (`inbox.go`), миграция `backend/migrations/20261029000021_parity_inbox.sql`
 (`notifications`). Жалпы ережелер `docs/api/events.md`-дағыдай: cookie / Bearer, `auth.Write`
 (Origin + rate limit), қате пішіні `{"error":{"code","message"}}`, `401 unauthorized`, `500 internal`.
 
@@ -29,7 +29,7 @@ Go: `notify.Send`, `notify.Direct` / `DirectAs` / `DirectFor`, `notify.Digest` /
   `notify.Opts{Link}` / `notify.WithLink(ctx, path)` арқылы беріледі, не мәтіндегі бірінші
   `SITE_URL/...` сілтемесінен алынады. Тек `/`-пен басталатын жол (`//host`, `https://…` емес) сақталады.
 - Сақтау мерзімі: **оқылған** жазба 90 күннен соң күнделікті `GET /api/cron` кезінде өшеді
-  (`pkg/cronrun`). Оқылмағаны өшпейді. Аккаунт өшсе — бәрі cascade өшеді; экспортта `notifications` бөлімі.
+  (`backend/internal/cronrun`). Оқылмағаны өшпейді. Аккаунт өшсе — бәрі cascade өшеді; экспортта `notifications` бөлімі.
 
 ## `GET /api/me` — `inboxUnread`
 

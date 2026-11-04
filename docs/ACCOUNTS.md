@@ -2,10 +2,10 @@
 
 Аккаунт міндетті емес: сайт кірмей-ақ толық жұмыс істейді. Аккаунт тек ортақ дерекқор керек
 әрекеттерге (тіркелу, жариялау, өтінім т.б.) қажет. Кірудің **екі жолы** бар: Telegram
-(Mini App initData не Login Widget) және **email + құпиясөз** (`pkg/auth/email.go`, хаттар —
-`pkg/mail`, Resend). Екеуі де бір `users` жолына, бір `sh_session` cookie-ге апарады.
-Толық API: [docs/api/email-auth.md](api/email-auth.md). Код: `pkg/auth`, `pkg/me`, `pkg/admin`,
-`pkg/features`; маршруттар `pkg/server/routes_auth.go`-та қосылады.
+(Mini App initData не Login Widget) және **email + құпиясөз** (`backend/internal/auth/email.go`, хаттар —
+`backend/internal/mail`, Resend). Екеуі де бір `users` жолына, бір `sh_session` cookie-ге апарады.
+Толық API: [docs/api/email-auth.md](api/email-auth.md). Код: `backend/internal/auth`, `backend/internal/me`, `backend/internal/admin`,
+`backend/internal/features`; маршруттар `backend/internal/server/routes_auth.go`-та қосылады.
 
 ## Эндпоинттер
 
@@ -71,7 +71,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 
 ### Сессия мерзімі (04-014…017)
 
-Тұрақтылар `pkg/auth/session.go`-да:
+Тұрақтылар `backend/internal/auth/session.go`-да:
 
 | Рөл | Мерзім | Ұзара ма |
 |---|---|---|
@@ -110,7 +110,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 4. Экспортқа қосу: `me.RegisterExport("events", func(ctx, tx, uid) (any, error) { return me.Rows(ctx, tx, "select * from event_regs where user_id = app_user_id()") })`.
 5. Postgres-тен тыс дерек (Storage фотолары, PostHog person): `me.RegisterDeleteHook(...)`.
 
-`pkg/me` тесті (`TestEveryUserReferenceHasDeleteRule`) `users(id)`-ке сілтейтін әр бағанда
+`backend/internal/me` тесті (`TestEveryUserReferenceHasDeleteRule`) `users(id)`-ке сілтейтін әр бағанда
 `cascade` немесе `set null` бар екенін тексереді, ал `TestDeleteAccount` өшіруден кейін сол
 бағандардың бәрінде өшірілген id қалмағанын тексереді — жаңа кестелер автоматты түрде қамтылады.
 
@@ -140,7 +140,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `BOT_USERNAME` | `/api/config` арқылы фронтқа (Login Widget `data-telegram-login`) |
 | `ADMIN_TELEGRAM_IDS` | үтірмен бөлінген Telegram id, мысалы `123456789,987654321` |
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ` | `true` — функция қосулы |
-| `ALLOWED_HOSTS` | Origin тексеру тізімі; әдепкі `studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1` |
+| `ALLOWED_HOSTS` | Origin тексеру тізімі; әдепкі `studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1` |
 | `RATE_WRITE_PER_MIN` | жазу сұраныстарының шегі, әдепкі 30 (IP бойынша да, қолданушы бойынша да) |
 | `REPORT_URL`, `SUGGEST_FORM_URL` | `/api/config` арқылы фронтқа |
 | `RESEND_API_KEY` | Resend API кілті (`re_...`); жоқ болса email арқылы кіру өшік (`emailAuth:false`) |
@@ -164,14 +164,14 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 2. Жоба бетінде жоғарыдағы **Connect** → **Transaction pooler** → URL-ді көшір:
    `postgresql://postgres.<PROJECT-REF>:<PASSWORD>@<POOLER-HOST>:6543/postgres`.
    Құпия сөздегі арнайы таңбаларды percent-encode жаса. Transaction pooler prepared
-   statement-терді қолдамайды — `pkg/db` оны ескереді (simple protocol).
+   statement-терді қолдамайды — `backend/internal/db` оны ескереді (simple protocol).
 3. Vercel → Project → Settings → Environment Variables: `DATABASE_URL` = сол URL. Қалған
    айнымалыларды (жоғарыдағы кесте) қос.
 4. Миграцияларды іске қос (репозиторий түбінен):
 
    ```bash
    DATABASE_URL='postgresql://postgres.<REF>:<PASSWORD>@<POOLER-HOST>:6543/postgres?default_query_exec_mode=simple_protocol' \
-     go run ./cmd/migrate
+     cd backend && go run ./cmd/migrate
    ```
 
    `default_query_exec_mode=simple_protocol` — pooler арқылы prepared statement-сіз жұмыс істеу
@@ -180,7 +180,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
    қосулы және `anon`/`authenticated` рөлдеріне саясат жоқ, яғни бәрі жабық.
 
 Локалды тест: `postgres://postgres:dev@localhost:54329/studenthub` (басқа болса
-`TEST_DATABASE_URL`). `go test ./pkg/...` әр пакетке жаңа дерекқор (`studenthub_<пакет>_test_<pid>`)
+`TEST_DATABASE_URL`). `cd backend && go test ./internal/...` әр пакетке жаңа дерекқор (`studenthub_<пакет>_test_<pid>`)
 ашып, барлық миграцияны қолданып, соңында өшіреді; Postgres жоқ болса дерекқор тесттері skip болады.
 
 ## Telegram Login Widget: домен баптау
@@ -188,7 +188,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 Widget тек BotFather-де тіркелген доменде жұмыс істейді:
 
 1. Telegram-да @BotFather → `/setdomain` → ботты таңда.
-2. Доменді жібер: `studenthub-plus-kz.vercel.app` (схемасыз, жолсыз). Бір ботқа бір домен ғана —
+2. Доменді жібер: `studenthub.studywithraissov.com` (схемасыз, жолсыз). Бір ботқа бір домен ғана —
    preview deploy-лерде widget жұмыс істемейді, онда Mini App арқылы кір.
 3. Фронтта widget скрипті: `data-telegram-login="<BOT_USERNAME>"`, `data-request-access="write"`
    (онсыз бот студентке бірінші жаза алмайды), `data-onauth` callback-те алынған объектіні
@@ -248,7 +248,7 @@ Widget тек BotFather-де тіркелген доменде жұмыс іст
   құпиясөз іріктеуден қорғаудың бағасы; Telegram арқылы кіру сонда да жұмыс істейді.
 - Аяқталмаған тіркелу (код енгізілмеген, Telegram жоқ, келісім жоқ) ешқашан сессия алмайды.
   Сол адресті нақты иесі өз аккаунтына қосса, ондай жол өшіріледі.
-- `pkg/notify`: Telegram-сыз аккаунтқа ештеңе жіберілмейді (`Direct` үнсіз өткізеді, `Send`
+- `backend/internal/notify`: Telegram-сыз аккаунтқа ештеңе жіберілмейді (`Direct` үнсіз өткізеді, `Send`
   `off` қайтарады, outbox толмайды); бот cron-ы оларды көрмейді; `/stop` email-і бар аккаунтты
   өшірмейді.
 - Аккаунтты өшіру: `users` жолымен бірге `user_passwords`, `auth_codes` cascade арқылы өшеді.

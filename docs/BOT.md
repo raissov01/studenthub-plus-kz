@@ -4,23 +4,23 @@
 Сайт `https://t.me/<BOT_USERNAME>?start=remind_<id>` сілтемесін береді, бот мерзімге 7, 3 және 1 күн
 қалғанда (Алматы уақыты) еске салады. Бір студентке күніне ең көбі **бір** хабарлама жіберіледі.
 
-Бот Go-да жазылған (`pkg/bot`), деректер Postgres-те (Supabase) сақталады. Ескі Node.js + Upstash Redis
-нұсқасы `legacy/` ішінде тек анықтама ретінде қалды — ол енді деплой болмайды, Upstash керек емес.
+Бот Go-да жазылған (`backend/internal/bot`), деректер Postgres-те (Supabase) сақталады. Ескі Node.js + Upstash Redis
+нұсқасы `archive/legacy/` ішінде тек анықтама ретінде қалды — ол енді деплой болмайды, Upstash керек емес.
 
 ## Файлдар
 
 | Файл | Не істейді |
 | --- | --- |
-| `pkg/bot/bot.go` | `POST /api/telegram` (webhook, `X-Telegram-Bot-Api-Secret-Token` тексереді, қате болса 401) және `GET /api/cron` (`Authorization: Bearer <CRON_SECRET>`, қате болса 401) |
-| `pkg/bot/handlers.go` | `/start remind_<id>`, `/my`, `/pause`, `/resume`, `/settings` (хабарлама баптаулары, `docs/api/notifications.md`), `/stop`, `/help`, `/stats`, батырмалар |
-| `pkg/bot/cron.go` | 7/3/1 күндік еске салу, апталық дайджест |
-| `pkg/bot/texts.go` | Боттың барлық мәтіні, қазақша және орысша |
-| `pkg/bot/content.go` | Мүмкіндіктерді `SITE_URL/api/content` арқылы алады, болмаса `SITE_URL/data/opportunities.json` (бір шақыруға бір рет) |
-| `pkg/bot/telegram.go` | Telegram Bot API клиенті (тек stdlib `net/http`) |
-| `pkg/db/queries/bot.sql` | Барлық SQL сұраныстары; Go коды `sqlc generate` арқылы `pkg/db/q/` ішіне жасалады |
-| `pkg/server/routes_bot.go` | Ботты ортақ `/api/*` роутерге қосады |
-| `supabase/migrations/20261028000003_bot.sql` | Бот үшін қосымша бағандар (`reminders.title_ru`, дайджест күйі) |
-| `pkg/bot/bot_test.go` | Тесттер: `go test ./pkg/bot/...` |
+| `backend/internal/bot/bot.go` | `POST /api/telegram` (webhook, `X-Telegram-Bot-Api-Secret-Token` тексереді, қате болса 401) және `GET /api/cron` (`Authorization: Bearer <CRON_SECRET>`, қате болса 401) |
+| `backend/internal/bot/handlers.go` | `/start remind_<id>`, `/my`, `/pause`, `/resume`, `/settings` (хабарлама баптаулары, `docs/api/notifications.md`), `/stop`, `/help`, `/stats`, батырмалар |
+| `backend/internal/bot/cron.go` | 7/3/1 күндік еске салу, апталық дайджест |
+| `backend/internal/bot/texts.go` | Боттың барлық мәтіні, қазақша және орысша |
+| `backend/internal/bot/content.go` | Мүмкіндіктерді `SITE_URL/api/content` арқылы алады, болмаса `SITE_URL/data/opportunities.json` (бір шақыруға бір рет) |
+| `backend/internal/bot/telegram.go` | Telegram Bot API клиенті (тек stdlib `net/http`) |
+| `backend/internal/db/queries/bot.sql` | Барлық SQL сұраныстары; Go коды `sqlc generate` арқылы `backend/internal/db/q/` ішіне жасалады |
+| `backend/internal/server/routes_bot.go` | Ботты ортақ `/api/*` роутерге қосады |
+| `backend/migrations/20261028000003_bot.sql` | Бот үшін қосымша бағандар (`reminders.title_ru`, дайджест күйі) |
+| `backend/internal/bot/bot_test.go` | Тесттер: `cd backend && go test ./internal/bot/...` |
 
 Барлық `/api/*` бір ғана Vercel Go функциясы арқылы жүреді (`api/index.go`), бот бөлек функция қоспайды.
 
@@ -43,7 +43,7 @@ Vercel → Project → Settings → Environment Variables → **Production** (қ
 | `BOT_TOKEN` | BotFather берген токен |
 | `WEBHOOK_SECRET` | кездейсоқ жол, тек `A-Z a-z 0-9 _ -`, 1–256 таңба. Жасау: `openssl rand -hex 32` |
 | `CRON_SECRET` | кездейсоқ жол, кемінде 16 таңба: `openssl rand -hex 32`. Vercel Cron оны өзі `Authorization: Bearer ...` тақырыбында жібереді |
-| `SITE_URL` | `https://studenthub-plus-kz.vercel.app` (соңында `/` жоқ) |
+| `SITE_URL` | `https://studenthub.studywithraissov.com` (соңында `/` жоқ) |
 | `ADMIN_IDS` | `/stats` көре алатын Telegram user id-лер, үтір арқылы: `123456789,987654321`. Өз id-ңді [@userinfobot](https://t.me/userinfobot) арқылы біл |
 | `DIGEST_ENABLED` | `false` (әдепкі). Апталық дайджестті қосу үшін `true` |
 | `TELEGRAM_API_BASE` | қоймау керек (әдепкі `https://api.telegram.org`); тек тесттерге арналған |
@@ -57,10 +57,10 @@ Vercel → Project → Settings → Environment Variables → **Production** (қ
 1. Supabase жобасында: Project Settings → Database → **Connection string** → **Transaction pooler** (порт `6543`).
    Құпия сөзді қойып, `DATABASE_URL` ретінде Vercel-ге сал. Go API prepared statement қолданбайды, сондықтан
    transaction pooler-мен жұмыс істейді.
-2. Миграцияларды қолдан (`supabase/migrations/*.sql` ретімен, әрқайсысы бір рет):
+2. Миграцияларды қолдан (`backend/migrations/*.sql` ретімен, әрқайсысы бір рет):
 
    ```bash
-   DATABASE_URL='postgresql://...' go run ./cmd/migrate
+   DATABASE_URL='postgresql://...' cd backend && go run ./cmd/migrate
    ```
 
 Бот қолданатын кестелер:
@@ -87,7 +87,7 @@ WEBHOOK_SECRET='...'   # Vercel-дегімен бірдей
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
   -H 'Content-Type: application/json' \
   -d '{
-    "url": "https://studenthub-plus-kz.vercel.app/api/telegram",
+    "url": "https://studenthub.studywithraissov.com/api/telegram",
     "secret_token": "'"${WEBHOOK_SECRET}"'",
     "allowed_updates": ["message", "callback_query", "my_chat_member"],
     "drop_pending_updates": true
@@ -127,7 +127,7 @@ curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" -H 'Content-Ty
 
 ## 5. Cron
 
-`vercel.json` ішінде: `"crons": [{ "path": "/api/cron", "schedule": "0 5 * * *" }]` — күн сайын 05:00 UTC =
+`frontend/next.config.ts` ішінде: `"crons": [{ "path": "/api/cron", "schedule": "0 5 * * *" }]` — күн сайын 05:00 UTC =
 10:00 Алматы (UTC+5). **Hobby жоспарында cron сағат ішінде кез келген уақытта іске қосылуы мүмкін**, яғни
 10:00–10:59 аралығында. Cron тек **production** деплойында жұмыс істейді.
 
@@ -138,7 +138,7 @@ curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" -H 'Content-Ty
 
 ```bash
 CRON_SECRET='...'   # Vercel-дегімен бірдей
-curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub-plus-kz.vercel.app/api/cron
+curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub.studywithraissov.com/api/cron
 # {"ok":true,"date":"2026-11-07","reminders":1,"digests":0,"alreadySent":0,"blocked":0,"failed":0,"cleaned":0}
 ```
 
@@ -167,14 +167,14 @@ curl -sS -H "Authorization: Bearer ${CRON_SECRET}" https://studenthub-plus-kz.ve
 Жергілікті тесттер (Telegram мен сайт `httptest` арқылы имитацияланады, нақты API шақырылмайды):
 
 ```bash
-go test ./pkg/bot/...
+cd backend && go test ./internal/bot/...
 ```
 
 Тесттер `postgres://postgres:dev@localhost:54329/studenthub` серверінде (басқасы керек болса — `TEST_DATABASE_URL`)
 уақытша `studenthub_bot_test_<pid>` дерекқорын жасап, барлық миграцияны қолданады, соңында өшіреді.
 Postgres қолжетімсіз болса, DB тесттері `SKIP` болады.
 
-SQL сұранысын өзгертсең: `pkg/db/queries/bot.sql` → `sqlc generate` (`~/go/bin/sqlc`).
+SQL сұранысын өзгертсең: `backend/internal/db/queries/bot.sql` → `sqlc generate` (`~/go/bin/sqlc`).
 
 ## 7. Мінез-құлық ережелері
 

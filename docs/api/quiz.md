@@ -1,6 +1,6 @@
 # Quiz API — Quizizz-style quizzes, AI from notes, live games
 
-Server: `pkg/quiz`, wired in `pkg/server/routes_quiz.go`. Schema: `supabase/migrations/20261028000019_quiz.sql`.
+Server: `backend/internal/quiz`, wired in `backend/internal/server/routes_quiz.go`. Schema: `backend/migrations/20261028000019_quiz.sql`.
 Ported from the owner's quiz module in `my-new_project` (handlers/services/repository/hub), rewritten for
 this repo (stdlib ServeMux, pgx, plain SQL, RLS via `db.WithUser`). The teacher "classroom / assign quiz"
 part is **not** ported. Not ported question types: `drawing`, `voice_response`, `video` (they store
@@ -73,7 +73,7 @@ when `quiz.shuffle` is true and map back to the original index.
  "createdAt": "…", "updatedAt": "…", "isMine": true, "hidden": false}
 ```
 
-`shareCode` is present for the owner and for public/unlisted quizzes. Drafts (`isDraft`) and private
+`shareCode` is present for the owner and for frontend/public/unlisted quizzes. Drafts (`isDraft`) and private
 quizzes are visible to the owner only.
 
 ## Endpoints
@@ -91,8 +91,8 @@ quizzes are visible to the owner only.
 | `GET /api/quiz/quizzes/{id}/stats` | owner | Per-question stats |
 | `POST /api/quiz/quizzes/{id}/clone` | consented, quiz playable | Private copy (media copied) |
 | `POST /api/quiz/quizzes/{id}/share/reset` | owner | New share code, old link dies |
-| `GET /api/quiz/s/{code}` | anyone (public/unlisted, published) | Play view by share link |
-| `GET /api/quiz/s/{code}/meta` | anyone (public/unlisted, published) | Preview data for `generateMetadata` |
+| `GET /api/quiz/s/{code}` | anyone (frontend/public/unlisted, published) | Play view by share link |
+| `GET /api/quiz/s/{code}/meta` | anyone (frontend/public/unlisted, published) | Preview data for `generateMetadata` |
 | `POST /api/quiz/s/{code}/clone` | consented | Clone via share link |
 | `GET /api/quiz/attempts?quizId=` | signed in | My history (newest first, ≤200) |
 | `GET /api/quiz/attempts/{id}` | own attempt | Stored result |
@@ -167,7 +167,7 @@ Only first-try practice attempts count in `attempts`/`avgPercentage`; answers in
 removed, frames checked. `201 {name, url, kind, width?, height?, bytes}`; put `name` into the question.
 Errors: `413 media_too_large`, `415 media_type`, `400 media_dimensions|media_invalid`, 60 uploads/hour.
 Unattached uploads are deleted after 24 h (background sweep, no cron). Serving: public for published
-public/unlisted quizzes and quizzes in an open live game, otherwise uploader/admin only.
+frontend/public/unlisted quizzes and quizzes in an open live game, otherwise uploader/admin only.
 
 ### Excel import
 
@@ -225,7 +225,7 @@ keeps decks in the browser (`Deck.cards` are `{q, a}`), so append these to a new
 
 ### Integration with the «Карточкалар және тест» tool
 
-The AI tool (`components/views/ai.tsx`, `cards`) can turn the same text into a quiz with
+The AI tool (`frontend/src/components/views/ai.tsx`, `cards`) can turn the same text into a quiz with
 `POST /api/quiz/generate/from-text` (it creates a private draft owned by the student and returns its id —
 open `/quiz/edit/{id}` for review or `/quiz/play/{id}` directly; the owner can play drafts). A local deck
 can also become a quiz without AI: `POST /api/quiz/quizzes?source=cards` with one `fill_blank` question per
@@ -301,9 +301,9 @@ in the API process memory: a server restart ends them (the rows become `abandone
 `GET /api/quiz/live/history` → `{sessions: [{id, quizId, quizTitle, status, players, questionStats:
 [{position, answered, correct}], createdAt, finishedAt, results: [{rank, nickname, score, correct}]}]}`.
 
-Deploy: `deploy/studenthub.nginx.conf` has the ws location (HTTP/1.1, `Upgrade`/`Connection`, 1 h
+Deploy: `archive/deploy-systemd/studenthub.nginx.conf` has the ws location (HTTP/1.1, `Upgrade`/`Connection`, 1 h
 timeouts) and a 52 MB body limit for `/api/quiz/generate/`. Because the server's nginx file is only
-written when absent, `deploy/deploy-vps.sh` runs `deploy/nginx-quiz-patch.sh`, which inserts both blocks
+written when absent, `archive/deploy-systemd/deploy-vps.sh` runs `archive/deploy-systemd/nginx-quiz-patch.sh`, which inserts both blocks
 if missing (idempotent, `nginx -t` or rollback). Uploads >4.5 MB may hit Vercel's proxy body limit:
 downscale photos in the browser (canvas → JPEG ≤1600 px) before sending.
 
