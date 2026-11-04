@@ -177,6 +177,10 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
     values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
 		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
 		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
+		club := id(`insert into clubs(name_kk,university,created_by) values ('Fixture club','LAUNCH',$1) returning id`, uid)
+		exec(`insert into club_admins(club_id,user_id,granted_by) values ($1,$2,$2),($1,$3,$2)`, club, uid, other)
+		exec(`insert into club_members(club_id,user_id,status,decided_by) values ($1,$2,'member',$2),($1,$3,'member',$2)`, club, uid, other)
+		exec(`insert into club_posts(club_id,author_id,body_kk,status) values ($1,$2,'fixture','published')`, club, uid)
 		return nil
 	})
 	if err != nil {

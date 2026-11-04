@@ -48,10 +48,13 @@ the API takes only an action id, a reward id and an idempotency key.
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
 | ANY | `/api/` | anonymous (404 only) | no | no (fallback) | — |
+| DELETE | `/api/admin/clubs/{id}/admins/{userId}` | admin | yes | yes | clubs |
 | DELETE | `/api/admin/content/{id}` | admin | yes | yes | — |
 | DELETE | `/api/admin/market/bans/{userId}` | admin | yes | yes | market |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
 | DELETE | `/api/ambassador/pause` | ambassador, admin (active term) | yes | no (no input) | ambassador |
+| DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
+| DELETE | `/api/clubs/{id}/members/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
 | DELETE | `/api/employer/members/{userId}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
@@ -61,6 +64,7 @@ the API takes only an action id, a reward id and an idempotency key.
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
+| GET | `/api/admin/clubs` | admin | no | no (no input) | clubs |
 | GET | `/api/admin/content` | admin | no | yes | — |
 | GET | `/api/admin/content/{id}` | admin | no | yes | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
@@ -87,6 +91,10 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/announcements` | anonymous | no | yes | b2b |
 | GET | `/api/applications/my` | signed-in | no | no (no input) | b2b |
 | GET | `/api/certificates/{code}` | anonymous | no | yes | ambassador |
+| GET | `/api/clubs` | anonymous (own membership/admin flags when signed in) | no | yes | clubs |
+| GET | `/api/clubs/my` | signed-in (own rows, RLS) | no | no (no input) | clubs |
+| GET | `/api/clubs/{id}` | anonymous (active clubs; archived and pending posts for club admins, admin) | no | yes | clubs |
+| GET | `/api/clubs/{id}/members` | club admin of this club (RLS), admin | no | yes | clubs |
 | GET | `/api/config` | anonymous | no | no (no input) | — |
 | GET | `/api/content` | anonymous | no | no (no input) | — |
 | GET | `/api/cron` | cron (CRON_SECRET) | no | yes | — |
@@ -155,7 +163,9 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/university/stats` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
 | GET | `/api/university/stats.csv` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
 | PATCH | `/api/admin/ambassadors/{id}` | admin | yes | yes | ambassador |
+| PATCH | `/api/admin/clubs/{id}` | admin | yes | yes | clubs |
 | PATCH | `/api/admin/queue/{id}` | admin | yes | yes | — |
+| PATCH | `/api/clubs/{id}` | club admin of this club (RLS, page fields only), admin | yes | yes | clubs |
 | PATCH | `/api/employer/jobs/{id}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | PATCH | `/api/employer/me` | signed-in | yes | yes | b2b |
 | PATCH | `/api/events/{id}` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
@@ -168,6 +178,8 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/admin/ambassadors/expire` | admin | yes | no (no input) | ambassador |
 | POST | `/api/admin/ambassadors/{id}/certificate` | admin | yes | yes | ambassador |
 | POST | `/api/admin/ambassadors/{id}/end` | admin | yes | yes | ambassador |
+| POST | `/api/admin/clubs` | admin | yes | yes | clubs |
+| POST | `/api/admin/clubs/{id}/admins` | admin | yes | yes | clubs |
 | POST | `/api/admin/content` | admin | yes | yes | — |
 | POST | `/api/admin/content/validate` | admin | yes | yes | — |
 | POST | `/api/admin/content/{id}/hide` | admin | yes | yes | — |
@@ -207,6 +219,10 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/auth/telegram/widget` | anonymous | yes | yes | — |
 | POST | `/api/chat` | anonymous | yes | yes | — |
 | POST | `/api/client-errors` | anonymous | yes | yes | — |
+| POST | `/api/clubs/leader-applications` | signed-in (consented; goes to the moderation queue) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/join` | signed-in (consented; RLS: own pending row, request-mode clubs only) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/posts` | club admin of this club (RLS; moderated) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/requests/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
 | POST | `/api/discounts/{id}/check` | signed-in (consented) | yes | yes | — |
 | POST | `/api/employer/applications/{id}/status` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | POST | `/api/employer/apply` | signed-in | yes | yes | b2b |
