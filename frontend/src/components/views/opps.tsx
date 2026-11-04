@@ -94,7 +94,7 @@ export function OppCard({ o }: { o: Opportunity }) {
 }
 
 export function Mine() {
-  const { S, tt, I, content } = useApp();
+  const { S, tt, I, content, go } = useApp();
   const jobs = content.jobs.filter(j => S.applied[j.id]);
   const opps = content.opportunities.filter(o => S.saved[o.id]).sort((a, b) => oppLeft(a) - oppLeft(b));
   const evs = EVENTS.filter(e => !e.past && S.events[e.id]).sort((a, b) => a.day - b.day);
@@ -103,7 +103,7 @@ export function Mine() {
   return (
     <>
       <MyApplications />
-      <section className="section"><SectionHead title={tt('Өтінімдер', 'Отклики')} more={<span className="tiny muted num">{jobs.length}</span>} />
+      <section className="section"><SectionHead title={tt('Өтінімдер', 'Отклики')} more={<button className="link-btn" type="button" onClick={() => go('applications')}>{tt('Барлығы', 'Все')}</button>} />
         {jobs.length ? <div className="group">{jobs.map(j => <JobRow key={j.id} j={j} />)}</div> : empty(tt('Әзірге өтінім жоқ.', 'Откликов пока нет.'), 'opps:jobs', tt('Жұмыс іздеу', 'Найти работу'))}</section>
       <section className="section"><SectionHead title={tt('Сақталған бағдарламалар', 'Сохранённые программы')} more={<span className="tiny muted num">{opps.length}</span>} />
         {opps.length

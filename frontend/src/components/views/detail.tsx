@@ -19,6 +19,7 @@ import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
 import type { Job, Opportunity, Provenance } from '@/lib/types';
 import { ScreenLoading } from '@/components/ScreenLoading';
+import { MarkAppliedSheet } from '@/components/views/applications';
 
 /** one view event per screen opening (effects may run twice for the same mount in development) */
 let lastView = { key: '', at: 0 };
@@ -86,7 +87,7 @@ export function JobView({ id }: { id: string }) {
 
 /** a vacancy page body; also the admin editor's preview */
 export function JobBody({ j }: { j: Job }) {
-  const { S, tt, tp, L, I, go, update, toast } = useApp();
+  const { S, tt, tp, L, I, go, openSheet } = useApp();
   const real = isEmployerJob(j);
   const perHour = hourly(j);
   const pt = payText(j, I), applied = !!S.applied[j.id];
@@ -122,8 +123,8 @@ export function JobBody({ j }: { j: Job }) {
         </EmployerApplyCta>
       ) : <div className="sticky-cta">
         {applied
-          ? <button className="btn secondary" type="button" onClick={() => { update(s => { delete s.applied[j.id]; }); toast(tt('Өтінім кері қайтарылды', 'Отклик отозван')); }}><Icon n="check" s={18} /> {tt('Өтінім жіберілді', 'Отклик отправлен')}</button>
-          : <button className="btn" type="button" onClick={() => { update(s => { s.applied[j.id] = Date.now(); }); toast(tt('Өтінім жіберілді', 'Отклик отправлен')); }}><Icon n="send" s={18} /> {tt('Өтінім жіберу', 'Откликнуться')}</button>}
+          ? <button className="btn secondary" type="button" onClick={() => go('applications')}><Icon n="check" s={18} /> {tt('Өтінім берілді', 'Отклик отмечен')}</button>
+          : <button className="btn" type="button" onClick={() => openSheet(<MarkAppliedSheet j={j} />)}><Icon n="send" s={18} /> {tt('Өтінім бердім', 'Я откликнулся')}</button>}
         <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
       </div>}
     </>

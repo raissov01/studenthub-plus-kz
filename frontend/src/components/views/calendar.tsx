@@ -135,6 +135,14 @@ export function calItems(S: AppState, I: I18n, C: Content): CalItem[] {
     });
   }
   for (const d of S.deadlines ?? []) if (d.date) out.push(ownItem(d, I));
+  // spec 06: the follow-up date of an application (lib/applications.ts)
+  for (const a of S.applications ?? []) {
+    if (!a.followUp || a.stage === 'rejected' || a.stage === 'withdrawn') continue;
+    out.push({
+      key: 'follow:' + a.ref, kind: 'job', date: a.followUp, time: '', title: L(a.title) || a.ref.slice(a.ref.indexOf(':') + 1),
+      sub: tt('Өтінім · хабарласу', 'Отклик · связаться'), go: 'applications', saved: true, demo: false, done: 0,
+    });
+  }
   return out;
 }
 
