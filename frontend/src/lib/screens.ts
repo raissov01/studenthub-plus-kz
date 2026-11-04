@@ -104,6 +104,10 @@ const META: Record<string, Meta> = {
   subjects: { title: (_, x) => t('Пәндер', 'Предметы')(x), tab: 'home' },
   notes: { title: (_, x) => t('Конспектілер', 'Конспекты')(x), tab: 'home' },
   review: { title: (_, x) => t('Қайталау', 'Повторение')(x), tab: 'home' },
+  surveys: { title: (_, x) => t('Сауалнамалар', 'Опросы')(x), tab: 'home' },
+  feedback: { title: (_, x) => t('Ұсыныс және шағым', 'Предложения и жалобы')(x), tab: 'home' },
+  wellbeing: { title: (_, x) => t('Әл-ауқат', 'Благополучие')(x), tab: 'home' },
+  voice: { title: (_, x) => t('Студент дауысы', 'Голос студентов')(x), tab: 'profile' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

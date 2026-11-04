@@ -33,7 +33,7 @@ export function reasonLabel(reason: string, tt: TT): string {
   const base = reason.replace(/_revoked$/, '');
   const map: Record<string, string> = {
     daily_open: tt('Күнделікті кіру', 'Ежедневный вход'), quiz: tt('Квиз', 'Квиз'), event_checkin: tt('Іс-шара', 'Мероприятие'),
-    roadmap_step: tt('Даму жоспары', 'План развития'), freeze_purchase: tt('Серия қорғанысы', 'Защита серии'),
+    roadmap_step: tt('Даму жоспары', 'План развития'), survey: tt('Сауалнама', 'Опрос'), freeze_purchase: tt('Серия қорғанысы', 'Защита серии'),
     redeem: tt('Сыйлыққа өтінім', 'Заявка на награду'), redeem_refund: tt('Өтінім қабылданбады — қайтарылды', 'Заявка отклонена — возврат'),
     admin_adjust: tt('Әкімші түзетуі', 'Корректировка администратора'),
   };
