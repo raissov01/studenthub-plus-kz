@@ -118,6 +118,9 @@ answer exactly `404 {"error":{"code":"not_found","message":"Мұндай бет 
   },
   "selfReported": {
     "certificates": [{"title": "Coursera: Go", "org": "Coursera", "period": "2025", "desc": "", "url": "https://…", "verified": false}],
+    "files": [{"title": "IELTS Academic 7.5", "issuer": "British Council", "issuedOn": "2026-05-12", "category": "language",
+               "credentialUrl": "https://…", "kind": "pdf", "bytes": 182344, "width": null, "height": null,
+               "url": "/api/portfolio/files/3f…a1.pdf", "verified": false}],
     "experience": [], "skills": [],
     "badges": [{"badge": "generous", "awardedAt": "…", "verified": false}]
   },
@@ -131,10 +134,46 @@ answer exactly `404 {"error":{"code":"not_found","message":"Мұндай бет 
 - All text is the student's raw input — **render it as text** (React escapes it; never `dangerouslySetInnerHTML`). The JSON
   encoder already escapes `<`, `>`, `&`.
 
+## Certificate files
+
+The student attaches a certificate as a **PDF (≤ 10 MB)** or a **photo (JPG / PNG / WebP ≤ 8 MB)**. Code:
+`backend/internal/portfolio/certfiles.go`, table `portfolio_certificates` (migration `20261105000050`, RLS: owner only).
+
+- **Validation by bytes, never by name or Content-Type**: `%PDF-1.`/`%PDF-2.` at byte 0 and `%%EOF` in the last 2 KB, or a
+  JPEG / PNG / WebP signature. An `.exe`, `.html` or `.svg` renamed to `.pdf` is `415 cert_file_type`; a truncated PDF is
+  `400 cert_invalid`; too big is `413 cert_too_large`.
+- **Images are re-encoded** on the server to JPEG, longest side ≤ 1600 px: EXIF (GPS), XMP, ICC and comments are dropped.
+  The browser already shrinks photos to a ≤ 1600 px WebP before upload. PDFs are stored as uploaded (never parsed).
+- Files live in `$UPLOAD_DIR/certs/<32 hex>.pdf|.jpg` (random names). Delete removes the file; account deletion removes all.
+- **Quota**: 30 files and 100 MB per student (`409 cert_quota_files` / `cert_quota_bytes`), enforced by a database trigger
+  under a per-user advisory lock. Uploads: 30 per hour per student (`PORTFOLIO_CERTS_PER_HOUR`).
+- **Visibility**: every file is private (`public: false`) until the student turns its flag on. A public file is served to
+  others only while the public page is enabled with the certificates block (`showCerts`) on; otherwise only the owner gets it.
+
+| Method | Path | Body / answer |
+|---|---|---|
+| `GET` | `/api/portfolio/certificates` | `{certificates: Cert[], usage: {files, bytes, maxFiles, maxBytes}, pageVisible}` |
+| `POST` | `/api/portfolio/certificates` | multipart: `file` + `title` (1–120), `issuer` (≤120), `issuedOn` (YYYY-MM-DD), `credentialId` (≤100), `credentialUrl` (https, ≤500), `category` → `201 {certificate, usage}` |
+| `PATCH` | `/api/portfolio/certificates/{id}` | JSON, any subset of the fields above and `public` (bool) → `{certificate}`; someone else's id is 404 |
+| `DELETE` | `/api/portfolio/certificates/{id}` | `{deleted: true, usage}` — the file is removed |
+| `GET` | `/api/portfolio/files/{name}` | the file: owner always; others only when public on an enabled page, else `403 forbidden`; unknown name 404 |
+
+`category` ∈ `course`, `olympiad`, `competition`, `volunteering`, `language` (IELTS, TOEFL, Kaztest…), `other`.
+`Cert` = `{id, title, issuer, issuedOn, credentialId, credentialUrl, category, kind: "pdf"|"image", mime, bytes, width, height, public, url, createdAt}`.
+
+The file response: `Content-Type: application/pdf` or `image/jpeg`, `X-Content-Type-Options: nosniff`,
+`Content-Disposition: inline; filename="<title>.pdf"` (RFC 2231 for non-ASCII titles),
+`Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'; sandbox`,
+`Cross-Origin-Resource-Policy: same-origin`, `X-Robots-Tag: noindex`; `Cache-Control: private, no-store` (owner) or `no-cache` (public).
+nginx allows an 11 MB body on `= /api/portfolio/certificates` only (`docker/nginx*.conf`).
+
+Signed out, the app keeps the file on the device (IndexedDB `studenthub-certs`); signing in lets the student upload it.
+
 ## Account deletion and export
 
 `portfolio_settings` and `portfolio_items` cascade with the account — the page is 404 the moment the account is deleted.
-`GET /api/me/export` gains `portfolioSettings` and `portfolioItems`.
+`GET /api/me/export` gains `portfolioSettings`, `portfolioItems` and `portfolioCertificates` (metadata; files are deleted
+with the account by a delete hook).
 
 ## Frontend checklist (spec 09)
 

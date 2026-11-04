@@ -62,7 +62,7 @@ API_TAG="$(get_kv API_TAG)"; WEB_TAG="$(get_kv WEB_TAG)"
 [[ -n "$API_TAG" && -n "$WEB_TAG" ]] || die "API_TAG / WEB_TAG unknown: run a full deploy first (bash docker/deploy.sh)"
 docker image inspect "studenthub-api:$API_TAG" >/dev/null 2>&1 || die "image studenthub-api:$API_TAG not loaded"
 docker image inspect "studenthub-web:$WEB_TAG" >/dev/null 2>&1 || die "image studenthub-web:$WEB_TAG not loaded"
-mkdir -p "$APP_ROOT/uploads/market" "$APP_ROOT/uploads/quiz"
+mkdir -p "$APP_ROOT/uploads/market" "$APP_ROOT/uploads/quiz" "$APP_ROOT/uploads/certs"
 
 echo "mode=$MODE api=studenthub-api:$API_TAG web=studenthub-web:$WEB_TAG"
 echo "deploy_frontend=$DEPLOY_FRONTEND deploy_backend=$DEPLOY_BACKEND run_migrations=$RUN_MIGRATIONS apply_stack=$APPLY_STACK nginx=$DEPLOY_NGINX timers=$DEPLOY_TIMERS"

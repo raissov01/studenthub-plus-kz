@@ -13,6 +13,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/market"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/me"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/portfolio"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/quiz"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
@@ -96,6 +97,13 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 	if err := os.WriteFile(filepath.Join(quiz.UploadDir(), quizFile), []byte("fixture"), 0600); err != nil {
 		t.Fatal(err)
 	}
+	certFile := strings.Repeat("e", 32) + ".pdf"
+	if err := os.MkdirAll(portfolio.CertDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(portfolio.CertDir(), certFile), []byte("%PDF-1.4 fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.Background()
 	var company int64
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
@@ -145,6 +153,7 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into market_season_sends(user_id,season) values ($1,'launch')`, uid)
 		exec(`insert into portfolio_settings(user_id,slug) values ($1,'launchuser')`, uid)
 		exec(`insert into portfolio_items(user_id,kind,title) values ($1,'skill','fixture')`, uid)
+		exec(`insert into portfolio_certificates(user_id,title,file_name,mime,bytes) values ($1,'fixture',$2,'application/pdf',16)`, uid, certFile)
 		company = id(`insert into employers(owner_user_id,name,bin,website,contact_name,verified_by,status)
     values ($1,'Launch company','123456789012','https://example.org','Company contact',$1,'verified') returning id`, uid)
 		exec(`insert into employer_members(employer_id,user_id,role,added_by) values ($1,$2,'owner',$2),($1,$3,'member',$2)`, company, uid, other)
@@ -232,6 +241,9 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		if _, err := os.Stat(filepath.Join(market.UploadDir(), name)); !os.IsNotExist(err) {
 			t.Errorf("deleted user's file survived: %s %v", name, err)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(portfolio.CertDir(), certFile)); !os.IsNotExist(err) {
+		t.Errorf("deleted user's certificate file survived: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(quiz.UploadDir(), quizFile)); !os.IsNotExist(err) {
 		t.Errorf("deleted user's quiz media survived: %v", err)
