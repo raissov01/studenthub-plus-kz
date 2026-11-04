@@ -27,9 +27,8 @@ test('study core: subject page from the menu, Cornell note survives reload, expo
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
 
-  await test.step('subject page from the hamburger menu', async () => {
-    await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-    await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Пәндер', 'Предметы'), exact: true }).click();
+  await test.step('subject page (no menu entry: the section is reachable by its address only)', async () => {
+    await page.goto('/subjects');
     await expect(page).toHaveURL(/\/subjects$/);
     await expect(page.locator('#subjectList .row')).toHaveCount(3);
     await fits(page);
@@ -123,13 +122,12 @@ test('study core: subject page from the menu, Cornell note survives reload, expo
     await expect(page.locator('#reviewLeft')).toContainText('1');
     await expect.poll(async () => (await idbAll(page, 'srs')).map(x => x.due)).toEqual([plusDays(almatyToday(), 2)]);
 
-    // the home «next class» card links to its subject page (morning, so a class is still ahead)
+    // the subjects section has no entry points any more: the home «next class» card shows no subject link
     const morning = new Date(); morning.setHours(8, 0, 0, 0);
     await page.clock.setFixedTime(morning);
     await page.goto('/');
     await expect(page.locator('#homeReview')).toHaveText(t('Бүгін қайталау: 1 карточка', 'Повторить сегодня: 1 карточка'));
-    await page.getByRole('button', { name: t('Пән беті: конспект, карточка, емтихан', 'Страница предмета: конспекты, карточки, экзамен') }).click();
-    await expect(page).toHaveURL(/\/subjects\?id=/);
+    await expect(page.locator('#ncSubject')).toHaveCount(0);
   });
 });
 
