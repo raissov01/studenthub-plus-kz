@@ -88,8 +88,6 @@ export function Home() {
   const focused = useRef(false);
   return (
     <>
-      <Hero3D who={who} />
-
       <form className="search" id="homeSearch" role="search" onSubmit={e => {
         e.preventDefault();
         const inp = e.currentTarget.querySelector('input');
@@ -107,6 +105,8 @@ export function Home() {
           }}
           onChange={e => setUi({ sq: e.target.value })} />
       </form>
+
+      <Hero3D who={who} />
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
