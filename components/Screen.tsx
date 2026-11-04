@@ -24,6 +24,9 @@ import { AdminContent } from '@/components/views/admin-content';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
 import { AdminPoints, Points } from '@/components/views/points';
+import { SubjectsScreen } from '@/components/views/subjects';
+import { NotesScreen } from '@/components/views/notes';
+import { ReviewScreen } from '@/components/views/review';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -89,6 +92,9 @@ export function Screen({ v }: { v: string }) {
     case 'suggestions': return <MySuggestionsPage />;
     case 'calendar': return <CalendarView />;
     case 'points': return <Points />;
+    case 'subjects': return <SubjectsScreen />;
+    case 'notes': return <NotesScreen />;
+    case 'review': return <ReviewScreen />;
     default: return <Home />;
   }
 }
