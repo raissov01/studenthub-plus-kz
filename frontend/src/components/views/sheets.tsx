@@ -1,5 +1,5 @@
 'use client';
-/* Bottom-sheet contents: deal QR (+ «Жұмыс істеді ме?»), course, digital student card, add certificate, «Тексерілген» explanation. */
+/* Bottom-sheet contents: deal QR (+ «Жұмыс істеді ме?»), course, digital student card, «Тексерілген» explanation. */
 import { useEffect, useState } from 'react';
 import { useApp } from '@/components/app';
 import { agoDays, errCode, errText, useNeedAccount } from '@/components/views/common';
@@ -9,7 +9,7 @@ import { Icon, Qr, Row } from '@/components/ui';
 import { reportHref } from '@/lib/config';
 import { COURSES, DEAL_CATS, SKILLS, SPECS } from '@/lib/data/static';
 import { studentCode } from '@/lib/domain';
-import { isoLocal, parseYmd, plural, T0 } from '@/lib/format';
+import { parseYmd, plural } from '@/lib/format';
 import type { Discount, Provenance } from '@/lib/types';
 
 export function DealSheet({ id }: { id: string }) {
@@ -82,28 +82,6 @@ export function StudentQrSheet() {
       <Qr text={`STUDENTHUB-STUDENT|${studentCode(p)}|${p.name}|${p.spec}|${p.course}`} />
       <p style={{ textAlign: 'center' }}><span className="code">{studentCode(p)}</span></p>
       <p className="tiny muted">{tt('Прототипте QR-код студент мәртебесін көрсету үшін ғана. Ресми растау университет жүйесі қосылғанда іске қосылады.', 'В прототипе QR-код только демонстрирует статус студента. Официальная проверка появится после подключения системы университета.')}</p>
-    </>
-  );
-}
-
-export function AddCertSheet() {
-  const { tt, update, toast, closeSheet } = useApp();
-  return (
-    <>
-      <h2>{tt('Сертификат қосу', 'Добавить сертификат')}</h2>
-      <form className="form" id="certForm" onSubmit={e => {
-        e.preventDefault();
-        const f = e.currentTarget;
-        const val = (id: string) => (f.querySelector<HTMLInputElement>('#' + id)?.value || '').trim();
-        update(s => { s.certs.push({ title: val('ctT'), org: val('ctO'), date: (val('ctD') || isoLocal(T0())) + 'T00:00:00' }); });
-        toast(tt('Қосылды', 'Добавлено'));
-        closeSheet();
-      }}>
-        <div className="field"><label htmlFor="ctT">{tt('Атауы', 'Название')}</label><input className="input" id="ctT" required /></div>
-        <div className="field"><label htmlFor="ctO">{tt('Ұйым', 'Организация')}</label><input className="input" id="ctO" required /></div>
-        <div className="field"><label htmlFor="ctD">{tt('Күні', 'Дата')}</label><input className="input" id="ctD" type="date" defaultValue={isoLocal(T0())} /></div>
-        <button className="btn" type="submit">{tt('Қосу', 'Добавить')}</button>
-      </form>
     </>
   );
 }

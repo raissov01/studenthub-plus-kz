@@ -76,6 +76,7 @@ if get_kv COMPOSE_PROFILES | grep -q 'cafe-kaspi'; then
   docker image inspect "studenthub-kaspi-pos:$KASPI_TAG" >/dev/null 2>&1 || die "image studenthub-kaspi-pos:$KASPI_TAG not loaded"
   [[ -f "$APP_ROOT/kaspi-pos.env" || -n "$(get_kv KASPI_POS_ENV_FILE)" ]] || die "$APP_ROOT/kaspi-pos.env missing (docker/.env.example)"
 fi
+mkdir -p "$APP_ROOT/uploads/market" "$APP_ROOT/uploads/quiz" "$APP_ROOT/uploads/certs"
 
 echo "mode=$MODE api=studenthub-api:$API_TAG web=studenthub-web:$WEB_TAG"
 echo "deploy_frontend=$DEPLOY_FRONTEND deploy_backend=$DEPLOY_BACKEND run_migrations=$RUN_MIGRATIONS apply_stack=$APPLY_STACK nginx=$DEPLOY_NGINX timers=$DEPLOY_TIMERS"

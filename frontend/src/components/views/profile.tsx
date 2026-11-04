@@ -6,6 +6,13 @@ import { ConfirmSheet, Empty, Icon, Row, SectionHead, Seg } from '@/components/u
 import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
 import { ADMISSION, CITIES, DOCS, GRADES, HOME_CITIES, LEVELS, SKILLS, SPECS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
+import { ConfirmSheet, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
+import { StudentQrSheet } from '@/components/views/sheets';
+import { CertificatesSection } from '@/components/views/cert-files';
+import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
+import { profileFill, studentCode } from '@/lib/domain';
+import { dOff, money } from '@/lib/format';
+import { demoProfile } from '@/lib/defaults';
 import { getState, resetState, update } from '@/lib/store';
 import { DeadlineSheet } from '@/components/views/calendar';
 import { track } from '@/features/analytics/track';
@@ -336,16 +343,14 @@ export function Pay() {
 export function Portfolio() {
   const { S, I, tt, L, go, openSheet } = useApp();
   const certs = certificates(S, I);
+  const { S, I, tt, L, go } = useApp();
+  const attended = EVENTS.filter(e => e.past && S.events[e.id]);
   const p = S.profile;
   const exp = (p.exp || '').split('\n').filter(s => s.trim());
   return (
     <>
       <PublicPortfolioSection />
-      <section className="section"><SectionHead title={tt('Сертификаттар', 'Сертификаты')} more={<button className="link-btn" type="button" onClick={() => openSheet(<AddCertSheet />)}>+ {tt('Қосу', 'Добавить')}</button>} />
-        <div className="group">{certs.length ? certs.map((c, k) => (
-          <Row key={k} icon="award" tone="sun" title={c.title} sub={`${c.org} · ${I.fDateY(c.date)}`} chev={false}
-            end={c.src === 'manual' ? <button className="icon-btn" type="button" style={{ color: 'var(--muted)' }} aria-label={tt('Жою', 'Удалить')} onClick={() => update(s => { s.certs.splice(c.i ?? -1, 1); })}><Icon n="trash" s={18} /></button> : null} />
-        )) : <div className="empty">{tt('Курсты аяқтаңыз немесе сертификат қосыңыз', 'Пройдите курс или добавьте сертификат')}</div>}</div></section>
+      <CertificatesSection />
       <section className="section"><h2>{tt('Қатысқан іс-шаралар', 'Мероприятия')}</h2>
         <VerifiedAttendance empty={<div className="group"><div className="empty">{tt('Әзірге жоқ. Іс-шараға QR арқылы белгіленсеңіз, мұнда расталған қатысу шығады.', 'Пока нет. Отметьтесь на мероприятии по QR — здесь появится подтверждённое участие.')}</div></div>} /></section>
       <section className="section"><h2>{tt('Тәжірибе', 'Опыт')}</h2>

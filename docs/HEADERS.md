@@ -16,7 +16,10 @@
 Wildcard `*.telegram.org` берілмейді. Telegram-ның [ресми bridge коды](https://telegram.org/js/telegram-web-app.js)
 `postMessage` үшін дәл осы origin-ге сенеді; [Mini App құжаты](https://core.telegram.org/bots/webapps)
 ресми скриптті қосуды сипаттайды. `frame-src` — біздің бет аша алатын ішкі iframe-дар:
-`https://telegram.org` және login виджетіндегі `https://oauth.telegram.org`.
+`https://telegram.org`, login виджетіндегі `https://oauth.telegram.org` және портфолиодағы сертификат көрсеткіші
+үшін `blob:` (студент таңдаған не сессиямен жүктелген PDF, түрі `application/pdf` деп қайта берілген blob).
+API сертификат файлының өзін `Content-Security-Policy: default-src 'none'; …; sandbox`, `nosniff` және бекітілген
+`Content-Type`-пен береді ([api/portfolio.md](api/portfolio.md)).
 
 `/admin`, `/p/*` Telegram-ға ендіруді қажет етпейді: `frame-ancestors 'none'`
 және `X-Frame-Options: DENY`. Студенттік маршруттарға `X-Frame-Options` қойылмайды:

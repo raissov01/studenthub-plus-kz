@@ -73,6 +73,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
+| DELETE | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | DELETE | `/api/qa/answers/{id}` | signed-in | yes | yes | courseqa |
 | DELETE | `/api/qa/questions/{id}` | signed-in | yes | yes | courseqa |
@@ -174,6 +175,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/points/me` | signed-in (own wallet, RLS) | no | no (no input) | points |
 | GET | `/api/points/redemptions` | signed-in (own requests) | no | no (no input) | points |
 | GET | `/api/points/rewards` | signed-in | no | no (no input) | points |
+| GET | `/api/portfolio/certificates` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/portfolio/files/{name}` | anonymous (public file on an enabled portfolio page; 128-bit random names); owner otherwise (403) | no | yes | portfolio |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
 | GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
@@ -224,6 +227,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | PATCH | `/api/me` | signed-in | yes | yes | — |
 | PATCH | `/api/mentors/me` | signed-in | yes | yes | mentors |
 | PATCH | `/api/points/settings` | signed-in (consented) | yes | yes | points |
+| PATCH | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | PATCH | `/api/portfolio/settings` | signed-in | yes | yes | portfolio |
 | PATCH | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | POST | `/api/admin/ambassadors/expire` | admin | yes | no (no input) | ambassador |
@@ -354,6 +358,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/points/daily` | signed-in (consented; once per Almaty day) | yes | no (no input) | points |
 | POST | `/api/points/freeze` | signed-in (consented; at most 1 freeze held) | yes | yes | points |
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
+| POST | `/api/portfolio/certificates` | signed-in (consented) | yes | yes | portfolio |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
 | POST | `/api/qa/questions` | signed-in | yes | yes | courseqa |
 | POST | `/api/qa/questions/{id}/accept` | signed-in | yes | yes | courseqa |

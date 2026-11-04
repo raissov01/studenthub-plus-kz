@@ -18,7 +18,7 @@ FROM alpine:3.20
 # busybox wget (already in alpine) serves the healthcheck
 RUN apk add --no-cache ca-certificates tzdata && \
     addgroup -S -g 10001 studenthub && adduser -S -D -H -u 10001 -G studenthub studenthub && \
-    mkdir -p /app/uploads/market /app/uploads/quiz && chown -R studenthub:studenthub /app/uploads
+    mkdir -p /app/uploads/market /app/uploads/quiz /app/uploads/certs && chown -R studenthub:studenthub /app/uploads
 WORKDIR /app
 COPY --from=builder /out/server /out/migrate ./
 COPY migrations ./migrations

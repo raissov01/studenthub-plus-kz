@@ -57,7 +57,13 @@ func init() {
 		return me.Rows(ctx, tx, `select kind, title, org, period, descr, url, position, created_at
 			from portfolio_items where user_id = app_user_id() order by kind, position, id`)
 	})
-	// portfolio_settings / portfolio_items cascade with the account: the page is gone at once.
+	me.RegisterExport("portfolioCertificates", func(ctx context.Context, tx pgx.Tx, _ int64) (any, error) {
+		return me.Rows(ctx, tx, `select title, issuer, issued_on, credential_id, credential_url, category, mime, bytes, is_public, created_at
+			from portfolio_certificates where user_id = app_user_id() order by created_at`)
+	})
+	// portfolio_settings / portfolio_items / portfolio_certificates cascade with the account: the page is gone at
+	// once; the certificate files on disk are removed by the hook.
+	me.RegisterDeleteHook(deleteUserCertFiles)
 }
 
 // Routes wires /api/portfolio/* and the public /api/p/{slug}, all behind the switch.
@@ -69,6 +75,7 @@ func Routes(mux httpx.Router) {
 	h("PUT /api/portfolio/items", auth.Write(auth.Need(putItems)))
 	h("DELETE /api/portfolio/items", auth.Write(auth.Need(deleteItems)))
 	h("GET /api/p/{slug}", public)
+	certRoutes(h)
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
