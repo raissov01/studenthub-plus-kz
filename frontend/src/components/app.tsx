@@ -1,5 +1,5 @@
 'use client';
-/* App-wide client context: content from the server, device state, navigation (legacy go/back semantics on top of
+/* App-wide client context: the feed (loaded in the browser, lib/content-client.ts), device state, navigation (legacy go/back semantics on top of
    the Next router), bottom sheets with history integration, and toasts. */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -9,6 +9,7 @@ import { useAccount } from '@/lib/account';
 import { jobsForViewer } from '@/lib/b2b';
 import { parseView, pathOf, ROOTS } from '@/lib/routes';
 import { setUi, update, useAppState, useUi, type UiState } from '@/lib/store';
+import { contentIsStale, refreshContent as fetchContent, refreshQuietly, useContentFeed } from '@/lib/content-client';
 import type { AppState, Content } from '@/lib/types';
 
 interface GoOpts { replace?: boolean }
@@ -41,22 +42,22 @@ function writeFrom(m: Record<string, string>) {
   try { window.sessionStorage.setItem(FROM_KEY, JSON.stringify(m)); } catch { /* ignore */ }
 }
 
-export function AppProvider({ content: raw, children }: { content: Content; children: ReactNode }) {
+export function AppProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const pathRef = useRef(pathname);
   useEffect(() => { pathRef.current = pathname; }, [pathname]);
 
-  const [fresh, setFresh] = useState<{ base: Content; data: Content } | null>(null);
-  const feed = fresh?.base === raw ? fresh.data : raw;
-  const refreshContent = useCallback(async () => {
-    const r = await fetch('/api/content', { cache: 'no-store', signal: AbortSignal.timeout(12_000) });
-    if (!r.ok) throw new Error('Content unavailable');
-    const data = await r.json() as Content;
-    if (!Array.isArray(data.jobs) || !Array.isArray(data.opportunities) || !Array.isArray(data.discounts)) throw new Error('Content unavailable');
-    setFresh({ base: raw, data });
-    return data;
-  }, [raw]);
+  // the saved feed renders at once; a fresh copy comes in the background (on start, back online, a stale tab refocused)
+  const feed = useContentFeed();
+  const refreshContent = useCallback(() => fetchContent(), []);
+  useEffect(() => {
+    refreshQuietly();
+    const onVisible = () => { if (document.visibilityState === 'visible' && contentIsStale()) refreshQuietly(); };
+    window.addEventListener('online', refreshQuietly);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('online', refreshQuietly); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
 
   // past deadlines never show, whatever the source said; adult-only employer jobs never reach a signed-in minor
   const acc = useAccount();

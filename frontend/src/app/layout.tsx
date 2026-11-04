@@ -1,13 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { connection } from 'next/server';
 import { AppRoot } from '@/components/AppRoot';
-import { getContent } from '@/lib/content';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_NAME, SITE_URL } from '@/lib/seo';
 import './globals.css';
 
-// Content IDs can appear after build time. Keep their fallback renders dynamic too,
-// rather than entering on-demand static generation and failing at connection().
-export const dynamic = 'force-dynamic';
+// The root layout is static: prerendered once at build time with every tab (app/[[...slug]]). The feed is loaded
+// in the browser (lib/content-client.ts), so a tap never waits for a server render. Only the pages that need
+// per-item metadata (job, opportunity, event, /p/<slug>) render on the server, on their own.
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -41,10 +39,7 @@ export const viewport: Viewport = {
    or Russian user does not see a flash of the defaults. */
 const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru')d.lang='ru';}else{d.setAttribute('data-theme','light');}}catch(e){}`;
 
-export default async function RootLayout({ children }: LayoutProps<'/'>) {
-  // The feed is request-time data even when the API was unavailable (and returned no IDs) at build time.
-  await connection();
-  const content = await getContent();
+export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="kk" data-theme="light" suppressHydrationWarning>
       <head>
@@ -55,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@500;600;700&display=swap" />
       </head>
       <body>
-        <AppRoot content={content}>{children}</AppRoot>
+        <AppRoot>{children}</AppRoot>
       </body>
     </html>
   );

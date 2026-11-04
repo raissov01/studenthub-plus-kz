@@ -1,7 +1,7 @@
 /* Shared metadata: site URL, the default card and per-page Open Graph / Twitter tags. */
 import type { Metadata } from 'next';
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://studenthub-plus-kz.vercel.app').replace(/\/+$/, '');
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://studenthub.studywithraissov.com').replace(/\/+$/, '');
 export const SITE_NAME = 'Student Hub';
 export const DEFAULT_TITLE = 'Student Hub — студентке бәрі бір жерде';
 export const DEFAULT_DESCRIPTION = 'Жұмыс, тағылымдама, гранттар, жеңілдіктер және AI-көмекші — Сейфуллин университетінің студенттеріне бір жерде.';

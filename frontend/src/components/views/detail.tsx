@@ -18,6 +18,7 @@ import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
 import type { Job, Opportunity, Provenance } from '@/lib/types';
+import { ScreenLoading } from '@/components/ScreenLoading';
 
 /** one view event per screen opening (effects may run twice for the same mount in development) */
 let lastView = { key: '', at: 0 };
@@ -78,6 +79,7 @@ export function JobView({ id }: { id: string }) {
   const found = !!j || !!jobDbId(id);
   useEffect(() => { if (found) trackView('job_view', id); }, [found, id]);
   // an employer job that is not in the cached content yet (or hidden for this viewer's age) comes from the API
+  if (!j && content.source === 'loading') return <ScreenLoading />;
   if (!j) return jobDbId(id) ? <LiveEmployerJob id={id} render={x => <JobBody j={x} />} /> : null;
   return <JobBody j={j} />;
 }
@@ -133,7 +135,7 @@ export function OppView({ id }: { id: string }) {
   const o = content.opportunities.find(x => x.id === id);
   const found = !!o;
   useEffect(() => { if (found) trackView('opportunity_view', id); }, [found, id]);
-  if (!o) return null;
+  if (!o) return content.source === 'loading' ? <ScreenLoading /> : null;
   return <OppBody o={o} />;
 }
 

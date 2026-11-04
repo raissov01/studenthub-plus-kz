@@ -1,16 +1,16 @@
-/* Content loading for server components: GET /api/content from the Go API (uncached so demo settings apply immediately),
-   falling back to the bundled data/*.json when the API is unreachable (build time, local dev without Go). */
+/* Content loading for SERVER components only (the job / opportunity detail pages need it for their metadata and
+   their existence check): GET /api/content from the Go API, uncached so demo settings apply at once. The app shell
+   and every tab are static and load the same feed in the browser instead (lib/content-client.ts).
+   When the API is unreachable the lists are empty: the Go API itself already falls back to backend/data/*.json. */
 import { cache } from 'react';
-import type { Content, Discount, Job, Opportunity } from '@/lib/types';
-import opportunitiesJson from '@/data/opportunities.json';
-import jobsJson from '@/data/jobs.json';
-import discountsJson from '@/data/discounts.json';
+import type { Content } from '@/lib/types';
 
 const TIMEOUT_MS = 4000;
 
-/** Same origin as the /api rewrite in next.config.ts: API_ORIGIN, else the Go dev server locally, else our API host. */
+/** Where server-side code reaches the Go API: API_ORIGIN (http://api:8110 inside docker compose), else the Go dev
+    server locally, else the public site (nginx sends /api/* straight to the API). */
 export function apiOrigin(): string {
-  const o = process.env.API_ORIGIN ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://studenthub.85-137-91-47.sslip.io');
+  const o = process.env.API_ORIGIN ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://studenthub.studywithraissov.com');
   return o.replace(/\/+$/, '');
 }
 
@@ -22,17 +22,10 @@ export function astanaToday(now = Date.now()): string {
 /** an opportunity whose deadline has passed never reaches a list (the API filters too; this is the guard) */
 export const isOpen = (o: { deadline: string | null }, today = astanaToday()) => !o.deadline || o.deadline >= today;
 
-function fallback(): Content {
-  return {
-    opportunities: (opportunitiesJson as Opportunity[]).filter(o => !o.is_demo),
-    jobs: (jobsJson as Job[]).filter(j => !j.is_demo),
-    discounts: (discountsJson as Discount[]).filter(d => !d.is_demo),
-    source: 'bundled',
-    updated_at: '',
-  };
-}
+export const EMPTY_CONTENT: Content = { opportunities: [], jobs: [], discounts: [], source: 'loading', updated_at: '' };
 
-function valid(x: unknown): x is Content {
+/** the shape every reader relies on; anything else is treated as «no content» */
+export function validContent(x: unknown): x is Content {
   if (!x || typeof x !== 'object') return false;
   const c = x as Record<string, unknown>;
   return Array.isArray(c.opportunities) && Array.isArray(c.jobs) && Array.isArray(c.discounts);
@@ -48,16 +41,16 @@ async function load(): Promise<Content> {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json: unknown = await res.json();
-    if (!valid(json)) throw new Error('unexpected shape');
+    if (!validContent(json)) throw new Error('unexpected shape');
     data = { ...json, source: json.source || 'api', updated_at: json.updated_at || '' };
   } catch {
-    data = fallback();
+    data = { ...EMPTY_CONTENT, source: 'unavailable' };
   }
   const today = astanaToday();
   return { ...data, opportunities: data.opportunities.filter(o => isOpen(o, today)) };
 }
 
-/** deduplicated per request; no persistent cache; failures never restore hidden demos */
+/** deduplicated per request; no persistent cache */
 export const getContent = cache(load);
 
 export async function getJob(id: string) {

@@ -2,6 +2,7 @@
    backend worktree (read-only). source_quote from the model is exposed as sourceQuote. */
 import { api, apiUpload, apiBlob } from './account';
 import type { PointsAward } from '@/lib/points';
+import { apiOrigin } from './content';
 export type QuizLang = 'kk' | 'ru';
 export type QuestionType =
   | 'mcq'
@@ -387,11 +388,7 @@ export async function quizServerInfo(
   id?: string,
   share = '',
 ): Promise<{ enabled: boolean; quiz?: Pick<QuizMeta, 'title' | 'description'> }> {
-  const origin =
-    process.env.API_ORIGIN ||
-    (process.env.NODE_ENV === 'development'
-      ? 'http://localhost:8080'
-      : 'https://studenthub.85-137-91-47.sslip.io');
+  const origin = apiOrigin();
   try {
     const config = await fetch(`${origin}/api/config`, {
       cache: 'no-store',

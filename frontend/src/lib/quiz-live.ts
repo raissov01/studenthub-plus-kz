@@ -1,13 +1,15 @@
 import { ApiError } from './account';
 import type { LiveCommand, LiveMessage } from './quiz-api';
 export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'ended';
-/** No Vercel rewrite: use the API's direct origin. Refresh the short-lived ticket on EVERY reconnect. */
+/** Same origin: nginx proxies wss://<site>/api/quiz/live/ws straight to the Go API (the server's ticket usually
+    names it already). NEXT_PUBLIC_API_WS_ORIGIN overrides; `next dev` talks to the Go dev server on :8080 directly
+    because the dev rewrite does not carry WebSockets. Refresh the short-lived ticket on EVERY reconnect. */
 export function quizSocketURL(token: string, wsUrl?: string): string {
   const origin =
     process.env.NEXT_PUBLIC_API_WS_ORIGIN ||
     (process.env.NODE_ENV === 'development'
       ? 'ws://localhost:8080'
-      : 'wss://studenthub.85-137-91-47.sslip.io');
+      : typeof window !== 'undefined' ? window.location.origin : 'https://studenthub.studywithraissov.com');
   const u = wsUrl ? new URL(wsUrl) : new URL('/api/quiz/live/ws', origin);
   u.protocol = u.protocol === 'http:' || u.protocol === 'ws:' ? 'ws:' : 'wss:';
   u.searchParams.set('token', token);

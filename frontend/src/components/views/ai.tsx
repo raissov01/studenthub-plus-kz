@@ -15,6 +15,7 @@ import { getState, getUi, setUi, update } from '@/lib/store';
 import { withPortfolioLink } from '@/lib/portfolio';
 import { ResumePortfolioCheck, usePortfolioLink } from '@/components/views/portfolio';
 import type { IconName } from '@/lib/types';
+import { ScreenLoading } from '@/components/ScreenLoading';
 
 /* ---------- chat ---------- */
 /** send a message to /api/chat with the last 16 messages and a few profile fields; errors show the server's text */
@@ -422,7 +423,7 @@ export function Match({ id }: { id?: string }) {
   const { S, ui, tt, L, go, openSheet, content } = useApp();
   const jid = id || ui.matchId;
   const j = content.jobs.find(x => x.id === jid) || content.jobs[0];
-  if (!j) return null;
+  if (!j) return content.source === 'loading' ? <ScreenLoading /> : null;
   const m = matchJob(j, S.profile);
   const tips = m.miss.map(k => ({ k, c: COURSES.find(c => c.skills.includes(k)) }));
   return (

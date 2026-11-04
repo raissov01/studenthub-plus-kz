@@ -30,11 +30,12 @@ test('security headers allow campus map, fonts, camera, worker and quiz WS', asy
     stream.getTracks().forEach(t => t.stop());
     return live;
   })).toBe('live');
-  await page.routeWebSocket('wss://studenthub.85-137-91-47.sslip.io/**', ws => {
+  // the quiz socket is same-origin (nginx proxies /api/quiz/live/ws to the Go API); CSP must let it through
+  await page.routeWebSocket('**/api/quiz/e2e', ws => {
     ws.onMessage(message => ws.send(message));
   });
   expect(await page.evaluate(() => new Promise<string>((resolve, reject) => {
-    const ws = new WebSocket('wss://studenthub.85-137-91-47.sslip.io/api/quiz/e2e');
+    const ws = new WebSocket(location.origin.replace(/^http/, 'ws') + '/api/quiz/e2e');
     ws.onopen = () => ws.send('quiz-ready');
     ws.onmessage = event => { resolve(event.data); ws.close(); };
     ws.onerror = () => reject(new Error('WebSocket blocked'));
