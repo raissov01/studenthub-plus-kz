@@ -29,6 +29,7 @@ import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
 import { GradesScreen } from '@/components/views/grades';
 import { ApplicationsScreen } from '@/components/views/applications';
+import { BoothScreen } from '@/components/views/fairs';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -99,6 +100,7 @@ export function Screen({ v }: { v: string }) {
     case 'review': return <ReviewScreen />;
     case 'grades': return <GradesScreen />;
     case 'applications': return <ApplicationsScreen />;
+    case 'booth': return <BoothScreen />;
     default: return <Home />;
   }
 }

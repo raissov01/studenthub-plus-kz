@@ -236,4 +236,12 @@ var routePolicies = map[string]RoutePolicy{
 	"POST /api/points/pause":                               {"signed-in (consented; once per semester, 1–14 days)", "yes", "yes", "streak"},
 	"PATCH /api/points/streak":                             {"signed-in (consented; reminder on/off, 19:00–21:00)", "yes", "yes", "streak"},
 	"GET /api/cron/streak":                                 {"cron (CRON_SECRET)", "no", "yes", "streak"},
+	"GET /api/events/{id}/exhibitors":                      {"anonymous (visible event; booth QR links and scan counts for organizers)", "no", "yes", "fairs"},
+	"POST /api/events/{id}/exhibitors":                     {"ambassador, university_staff (own university), admin (career events only; verified company by BIN)", "yes", "yes", "fairs"},
+	"DELETE /api/events/{id}/exhibitors/{employerId}":      {"ambassador, university_staff (own university), admin", "yes", "yes", "fairs"},
+	"POST /api/events/booth-checkin":                       {"signed-in (consented; signed static booth token, start−30 min … end+1 h)", "yes", "yes", "fairs"},
+	"GET /api/events/{id}/my-booths":                       {"signed-in (own scans)", "no", "yes", "fairs"},
+	"GET /api/employer/fairs":                              {"employer (verified company; own booths)", "no", "no (no input)", "fairs"},
+	"GET /api/employer/fairs/{id}/checkins":                {"employer (verified company; only fields each student shared, the rest as a count)", "no", "yes", "fairs"},
+	"GET /api/cron/fairs":                                  {"cron (CRON_SECRET)", "no", "yes", "fairs"},
 }

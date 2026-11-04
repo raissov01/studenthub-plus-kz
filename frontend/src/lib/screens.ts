@@ -106,6 +106,7 @@ const META: Record<string, Meta> = {
   review: { title: (_, x) => t('Қайталау', 'Повторение')(x), tab: 'home' },
   grades: { title: (_, x) => t('Бағалар', 'Оценки')(x), tab: 'profile' },
   applications: { title: (_, x) => t('Менің өтінімдерім', 'Мои отклики')(x), tab: 'profile' },
+  booth: { title: (_, x) => t('Жәрмеңке стенді', 'Стенд ярмарки')(x), tab: 'home' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

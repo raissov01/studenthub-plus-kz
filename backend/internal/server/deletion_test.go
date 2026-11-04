@@ -175,6 +175,8 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into xp_events(user_id,delta,reason,ref_type,ref_id,day) values ($1,10,'quiz','quiz','1',current_date)`, uid)
 		exec(`insert into coin_ledger(user_id,delta,reason,ref_type,ref_id,actor_id,note,day)
     values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
+		exec(`insert into event_exhibitors(event_id,employer_id,booth,qr_secret,added_by) values ($1,$2,'A1',decode('00112233445566778899aabbccddeeff','hex'),$3)`, event, company, uid)
+		exec(`insert into booth_checkins(event_id,employer_id,user_id) values ($1,$2,$3)`, event, company, uid)
 		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
 		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
 		return nil
