@@ -34,7 +34,7 @@ test('eight core paths: onboarding → search → opportunity → roadmap → AI
   });
   await test.step('3. Opportunity detail, unknown GPA, share and save', async () => {
     await page.getByRole('group', { name: t('Санат', 'Категория'), exact: true }).getByRole('button', { name: t('Тағылымдама', 'Стажировки'), exact: true }).click();
-    await page.getByRole('button', { name: new RegExp(opportunity.title[lang]) }).click();
+    await page.locator('.fav-card > .card', { hasText: opportunity.title[lang] }).click(); // the row also has «Күнтізбеге қосу: <title>»
     await expect(page.getByRole('heading', { name: opportunity.title[lang], exact: true })).toBeVisible();
     await page.getByRole('button', { name: t('Тексеру', 'Проверить'), exact: true }).click();
     await expect(page.getByText(t('GPA көрсетілмеген (міндетті емес)', 'GPA не указан (необязательно)'))).toBeVisible();
