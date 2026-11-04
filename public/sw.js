@@ -22,7 +22,7 @@ const CURRENT = [PAGES, STATIC];
 const OFFLINE_URL = '/offline.html';
 /** saved on install: the screens that must open without internet (schedule is on «/», the map on «/map», the student
     QR card on «/discounts» — it is drawn from the profile in localStorage, the HTML holds no personal data) */
-const SHELL_PAGES = ['/', '/map', '/settings', '/roadmap', '/profile', '/mine', '/events', '/search', '/notifications', '/saved', '/services', '/discounts'];
+const SHELL_PAGES = ['/', '/map', '/settings', '/roadmap', '/profile', '/mine', '/events', '/search', '/notifications', '/saved', '/services', '/discounts', '/calendar'];
 /** saved on install (all must exist: a missing one fails the install, and the old worker stays) */
 const STATIC_FILES = [
   OFFLINE_URL, '/manifest.webmanifest', '/campus-map.jpg', '/favicon.ico',

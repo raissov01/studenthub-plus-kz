@@ -15,7 +15,7 @@ import { useAccount } from '@/lib/account';
 import { badgeText } from '@/lib/inbox';
 import { OfflineBanner, UpdateBar } from '@/components/Pwa';
 import { unreadCount } from '@/lib/domain';
-import { IC } from '@/lib/icons';
+import { IC, type IconName } from '@/lib/icons';
 import { CHECKIN_KEY } from '@/lib/events';
 import { ROOTS, viewOfLegacyHash, viewOfPath } from '@/lib/routes';
 import { screenMeta } from '@/lib/screens';
@@ -112,9 +112,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const unread = hydrated ? unreadCount(S, I, content) + (hasAccount(acc) ? acc.inboxUnread : 0) : 0;
   const badge = badgeText(unread);
   const onProfile = name === 'profile';
-  const tabs: [string, 'home' | 'search' | 'bell' | 'user', string][] = [
+  // notifications moved to the header bell; the third tab is the deadline calendar
+  const tabs: [string, IconName, string][] = [
     ['home', 'home', tt('Басты бет', 'Главная')], ['search', 'search', tt('Іздеу', 'Поиск')],
-    ['notif', 'bell', tt('Хабарлар', 'Уведомления')], ['profile', 'user', tt('Профиль', 'Профиль')],
+    ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')], ['profile', 'user', tt('Профиль', 'Профиль')],
   ];
 
   return (
@@ -138,12 +139,12 @@ export function Shell({ children }: { children: ReactNode }) {
               {tt('Тіркелу', 'Вход')}
             </button>
           ) : null}
-          <button className="icon-btn" id="mine-btn" type="button" hidden={!(name === 'home' || onProfile)}
+          <button className="icon-btn" id="mine-btn" type="button" hidden={!root}
             onClick={() => go(onProfile ? 'settings' : 'notif')}
-            aria-label={onProfile ? tt('Параметрлер', 'Параметры') : tt('Хабарламалар', 'Уведомления')}>
+            aria-label={onProfile ? tt('Параметрлер', 'Параметры') : badge ? tt(`Хабарламалар, ${unread} оқылмаған`, `Уведомления, ${unread} непрочитанных`) : tt('Хабарламалар', 'Уведомления')}>
             <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
               dangerouslySetInnerHTML={{ __html: onProfile ? IC.gear : IC.bell }} />
-            <span className="count" id="mine-count" hidden={onProfile || !badge}>{badge}</span>
+            <span className="count" id="mine-count" aria-hidden="true" hidden={onProfile || !badge}>{badge}</span>
           </button>
         </div>
       </header>
@@ -153,8 +154,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="tabbar-in">
           {tabs.map(([k, i, l]) => (
             <button key={k} className="tab" type="button" aria-current={k === tabRoot ? 'page' : undefined} onClick={() => go(k)}>
-              <span className="pill"><Icon n={i} s={22} />{k === 'notif' && badge
-                ? <span className="count tab-count" aria-label={tt(`${unread} оқылмаған`, `${unread} непрочитанных`)}>{badge}</span> : null}</span><span>{l}</span>
+              <span className="pill"><Icon n={i} s={22} /></span><span>{l}</span>
             </button>
           ))}
         </div>

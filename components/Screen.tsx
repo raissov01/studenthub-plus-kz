@@ -22,6 +22,7 @@ import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/
 import { UniversityCabinet } from '@/components/views/university';
 import { AdminContent } from '@/components/views/admin-content';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
+import { CalendarView } from '@/components/views/calendar';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -84,6 +85,7 @@ export function Screen({ v }: { v: string }) {
     case 'announcements': return <Announcements />;
     case 'suggest': return <SuggestPage />;
     case 'suggestions': return <MySuggestionsPage />;
+    case 'calendar': return <CalendarView />;
     default: return <Home />;
   }
 }

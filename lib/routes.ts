@@ -11,7 +11,7 @@ export const PLAIN = [
   'quiz', 'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
-  'employer', 'university', 'announcements', 'suggest', 'suggestions',
+  'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
@@ -25,7 +25,8 @@ export const SUB_SCREENS = [
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
     and the quiz routes */
 export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
-export const ROOTS = ['home', 'search', 'notif', 'profile'];
+/** the four tabs: no back button, the hamburger menu instead. Notifications open from the header bell (with a back button). */
+export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 
 const FIXED: Record<string, string> = {
   home: '/',

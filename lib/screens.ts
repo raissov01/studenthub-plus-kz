@@ -16,7 +16,7 @@ const META: Record<string, Meta> = {
   quiz: { title: (_, x) => t('Квиздер', 'Квизы')(x), tab: 'home' },
   home: { title: () => 'Student Hub' },
   search: { title: (_, x) => t('Іздеу', 'Поиск')(x) },
-  notif: { title: (_, x) => t('Хабарламалар', 'Уведомления')(x) },
+  notif: { title: (_, x) => t('Хабарламалар', 'Уведомления')(x), tab: 'home' },
   services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
   materials: { title: (_, x) => t('Оқу материалдары', 'Учебные материалы')(x), tab: 'home' },
   saved: { title: (_, x) => t('Сақталғандар', 'Сохранённое')(x), tab: 'profile' },
@@ -99,6 +99,7 @@ const META: Record<string, Meta> = {
   announcements: { title: (_, x) => t('Ресми хабарландырулар', 'Официальные объявления')(x), tab: 'home' },
   suggest: { title: (_, x) => t('Мүмкіндік ұсыну', 'Предложить возможность')(x) },
   suggestions: { title: (_, x) => t('Менің ұсыныстарым', 'Мои предложения')(x), tab: 'profile' },
+  calendar: { title: (_, x) => t('Күнтізбе', 'Календарь')(x) },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),
