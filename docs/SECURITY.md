@@ -39,6 +39,11 @@ token (HMAC with a key derived from SESSION_SECRET, separate from session cookie
 POST /api/quiz/live/join or /sessions over normal HTTPS, and an Origin in ALLOWED_HOSTS.
 Unlisted quizzes are readable by their 10-character share code (about 57 bits); answer keys
 are never part of a play view and live in a separate owner-only RLS table.
+Points (FEATURE_POINTS): coins are never cash and never move between students. Every balance
+change is a coin_ledger row written by the server in the same transaction as the cached
+balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
+once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
+the API takes only an action id, a reward id and an idempotency key.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
@@ -64,6 +69,9 @@ are never part of a play view and live in a separate owner-only RLS table.
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/pairs` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/requests/{id}/candidates` | admin | no | yes | mentors |
+| GET | `/api/admin/points/redemptions` | admin | no | yes | points |
+| GET | `/api/admin/points/rewards` | admin | no | no (no input) | points |
+| GET | `/api/admin/points/users/{userId}` | admin | no | yes | points |
 | GET | `/api/admin/queue` | admin | no | yes | — |
 | GET | `/api/admin/reports` | admin | no | yes | — |
 | GET | `/api/admin/settings` | admin | no | no (no input) | — |
@@ -120,6 +128,10 @@ are never part of a play view and live in a separate owner-only RLS table.
 | GET | `/api/mentors/pairs` | signed-in | no | no (no input) | mentors |
 | GET | `/api/mentors/summary` | anonymous | no | yes | mentors |
 | GET | `/api/p/{slug}` | anonymous | yes | yes | portfolio |
+| GET | `/api/points/leaderboard` | signed-in (own university/faculty/group only; scopes under 5 visible members hidden; opted-out students never listed) | no | yes | points |
+| GET | `/api/points/me` | signed-in (own wallet, RLS) | no | no (no input) | points |
+| GET | `/api/points/redemptions` | signed-in (own requests) | no | no (no input) | points |
+| GET | `/api/points/rewards` | signed-in | no | no (no input) | points |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
 | GET | `/api/quiz/attempts/{id}` | signed-in (own attempt, RLS) | no | yes | quiz |
@@ -150,6 +162,7 @@ are never part of a play view and live in a separate owner-only RLS table.
 | PATCH | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | PATCH | `/api/me` | signed-in | yes | yes | — |
 | PATCH | `/api/mentors/me` | signed-in | yes | yes | mentors |
+| PATCH | `/api/points/settings` | signed-in (consented) | yes | yes | points |
 | PATCH | `/api/portfolio/settings` | signed-in | yes | yes | portfolio |
 | PATCH | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | POST | `/api/admin/ambassadors/expire` | admin | yes | no (no input) | ambassador |
@@ -167,6 +180,10 @@ are never part of a play view and live in a separate owner-only RLS table.
 | POST | `/api/admin/mentors/match` | admin | yes | yes | mentors |
 | POST | `/api/admin/mentors/pairs/{id}/end` | admin | yes | yes | mentors |
 | POST | `/api/admin/mentors/{userId}/status` | admin | yes | yes | mentors |
+| POST | `/api/admin/points/redemptions/{id}/approve` | admin | yes | yes | points |
+| POST | `/api/admin/points/redemptions/{id}/reject` | admin | yes | yes | points |
+| POST | `/api/admin/points/rewards` | admin | yes | yes | points |
+| POST | `/api/admin/points/users/{userId}/adjust` | admin | yes | yes | points |
 | POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
 | POST | `/api/admin/queue/{id}/reject` | admin | yes | yes | — |
 | POST | `/api/admin/quiz/quizzes/{id}/hide` | admin | yes | yes | quiz |
@@ -233,6 +250,10 @@ are never part of a play view and live in a separate owner-only RLS table.
 | POST | `/api/mentors/pairs/{id}/score` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/requests` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/requests/close` | signed-in | yes | no (no input) | mentors |
+| POST | `/api/points/claim` | signed-in (consented; device-only actions: XP only, no coins, capped; 20/user/hour) | yes (+ per-user claim limit) | yes | points |
+| POST | `/api/points/daily` | signed-in (consented; once per Almaty day) | yes | no (no input) | points |
+| POST | `/api/points/freeze` | signed-in (consented; at most 1 freeze held) | yes | yes | points |
+| POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
 | POST | `/api/quiz/generate/cards-from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
 | POST | `/api/quiz/generate/from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
@@ -252,6 +273,7 @@ are never part of a play view and live in a separate owner-only RLS table.
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
+| PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
 | PUT | `/api/admin/settings` | admin | yes | yes | — |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |

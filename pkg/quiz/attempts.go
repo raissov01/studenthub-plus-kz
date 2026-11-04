@@ -64,7 +64,20 @@ type Result struct {
 	TimeSpent    int         `json:"timeSpent"`
 	CreatedAt    time.Time   `json:"createdAt"`
 	Answers      []AnswerOut `json:"answers"`
+	// Points is what the attempt earned (pkg/points via OnAttempt); absent for guests/off.
+	Points any `json:"points,omitempty"`
 }
+
+// AttemptInfo is a stored, server-graded attempt as OnAttempt sees it.
+type AttemptInfo struct {
+	UserID, AttemptID, QuizID, OwnerID int64
+	Mode                               string
+	Percentage, Total                  int
+}
+
+// OnAttempt is wired in pkg/server (glue.go) to award points. It runs inside the attempt's
+// transaction; its result is returned to the student as Result.Points.
+var OnAttempt func(ctx context.Context, tx pgx.Tx, a AttemptInfo) any
 
 // gradeAll scores the chosen questions. Pure function, the heart of anti-forgery: the result
 // depends only on the stored keys and the submitted selections.
@@ -228,6 +241,10 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		res.AttemptID = &aid
+		if OnAttempt != nil {
+			res.Points = OnAttempt(ctx, tx, AttemptInfo{UserID: uid, AttemptID: aid, QuizID: id, OwnerID: m.OwnerID,
+				Mode: res.Mode, Percentage: res.Percentage, Total: res.Total})
+		}
 		for i, a := range res.Answers {
 			q := qs[i]
 			if _, err := tx.Exec(ctx, `insert into quiz_attempt_answers (attempt_id, position, question_id, type, prompt,

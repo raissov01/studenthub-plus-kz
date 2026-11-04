@@ -101,6 +101,11 @@ token (HMAC with a key derived from SESSION_SECRET, separate from session cookie
 POST /api/quiz/live/join or /sessions over normal HTTPS, and an Origin in ALLOWED_HOSTS.
 Unlisted quizzes are readable by their 10-character share code (about 57 bits); answer keys
 are never part of a play view and live in a separate owner-only RLS table.
+Points (FEATURE_POINTS): coins are never cash and never move between students. Every balance
+change is a coin_ledger row written by the server in the same transaction as the cached
+balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
+once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
+the API takes only an action id, a reward id and an idempotency key.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
