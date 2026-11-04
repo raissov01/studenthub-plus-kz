@@ -140,6 +140,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `BOT_USERNAME` | `/api/config` арқылы фронтқа (Login Widget `data-telegram-login`) |
 | `ADMIN_TELEGRAM_IDS` | үтірмен бөлінген Telegram id, мысалы `123456789,987654321` |
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ` | `true` — функция қосулы |
+| `FEATURE_LOSTFOUND`, `FEATURE_COURSEQA`, `FEATURE_ROOMMATES` | қауымдастық функциялары, [api/community.md](api/community.md) |
 | `ALLOWED_HOSTS` | Origin тексеру тізімі; әдепкі `studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1` |
 | `RATE_WRITE_PER_MIN` | жазу сұраныстарының шегі, әдепкі 30 (IP бойынша да, қолданушы бойынша да) |
 | `REPORT_URL`, `SUGGEST_FORM_URL` | `/api/config` арқылы фронтқа |

@@ -21,6 +21,12 @@ export interface Config {
     quiz: boolean;
     /** «Ұпайлар / Баллы»: XP, streak, coins and the rewards shop (FEATURE_POINTS) */
     points: boolean;
+    /** «Табылған заттар» (FEATURE_LOSTFOUND) */
+    lostfound: boolean;
+    /** «Пән бойынша сұрақ-жауап» (FEATURE_COURSEQA) */
+    courseqa: boolean;
+    /** «Пәтерлес» (FEATURE_ROOMMATES) */
+    roommates: boolean;
   };
 }
 
@@ -29,7 +35,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, lostfound: false, courseqa: false, roommates: false },
 };
 
 export type FeatureName = keyof Config['features'];

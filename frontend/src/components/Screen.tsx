@@ -27,6 +27,9 @@ import { AdminPoints, Points } from '@/components/views/points';
 import { SubjectsScreen } from '@/components/views/subjects';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
+import { LostFoundScreen } from '@/components/views/lostfound';
+import { QAScreen } from '@/components/views/qa';
+import { RoommatesScreen } from '@/components/views/roommates';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -95,6 +98,9 @@ export function Screen({ v }: { v: string }) {
     case 'subjects': return <SubjectsScreen />;
     case 'notes': return <NotesScreen />;
     case 'review': return <ReviewScreen />;
+    case 'lostfound': return <LostFoundScreen />;
+    case 'qa': return <QAScreen />;
+    case 'roommates': return <RoommatesScreen />;
     default: return <Home />;
   }
 }

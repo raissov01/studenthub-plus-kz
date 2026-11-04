@@ -49,10 +49,13 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
       ['subjects', 'folder', tt('Пәндер', 'Предметы')],
+      ...(cfg.features.courseqa ? [['qa', 'chat', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
     ]],
     [tt('Университет', 'Университет'), [
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
+      ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
+      ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],

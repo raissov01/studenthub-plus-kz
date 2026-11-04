@@ -1633,3 +1633,20 @@ textarea.input.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; 
 .news-dot { width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; cursor: pointer; }
 .news-dot::before { content: ''; width: 7px; height: 7px; border-radius: 999px; background: var(--line); transition: width .2s; }
 .news-dot[aria-current="true"]::before { width: 20px; background: var(--primary); }
+
+/* ---------- community: lost & found, course Q&A, roommates (views/lostfound.tsx, qa.tsx, roommates.tsx) ---------- */
+.cm-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cm-fieldset legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
+.cm-report { align-self: flex-start; color: var(--muted); }
+.cm-contact { border-color: var(--primary); }
+.cm-claim p, .cm-body { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.cm-warn b { display: block; }
+.cm-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: var(--muted); font-size: .86rem; }
+.cm-vote { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.cm-vote[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.cm-vote:disabled { opacity: .55; cursor: default; }
+.cm-answer.accepted { border-color: var(--primary); }
+.cm-lock { border-color: var(--danger); background: var(--danger-soft); }
+.cm-rule { border-style: dashed; }
+.cm-listing .badges { gap: 4px; }
