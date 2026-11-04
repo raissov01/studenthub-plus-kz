@@ -76,41 +76,37 @@ export function PasswordRules({ pw, email }: { pw: string; email: string }) {
   );
 }
 
-/* ---------- 6-digit code: paste anywhere, autofill (one-time-code) fills all boxes ---------- */
+/* ---------- 6-digit code: one real input under six drawn boxes, so typing, backspace, paste and the one-time-code
+   autofill all move the caret by themselves (separate inputs jumped focus back on every digit) ---------- */
 export function CodeBoxes({ value, onChange, onComplete, disabled }: {
   value: string; onChange: (v: string) => void; onComplete?: (v: string) => void; disabled?: boolean;
 }) {
   const { tt } = useApp();
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
-  useEffect(() => { if (!value) refs.current[0]?.focus(); }, [value]);
-  const put = (at: number, raw: string) => {
-    const digits = raw.replace(/\D/g, '');
-    const cur = value.padEnd(6, ' ').split('');
-    if (!digits) { cur[at] = ' '; }
-    else if (digits.length >= 6) { digits.slice(0, 6).split('').forEach((d, i) => { cur[i] = d; }); }
-    else digits.split('').forEach((d, i) => { if (at + i < 6) cur[at + i] = d; });
-    // keep it contiguous: the code is what is typed from the first box on
-    const next = cur.join('').replace(/\s+$/, '').replace(/\s/g, '').slice(0, 6);
+  const input = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => { if (!value) input.current?.focus(); }, [value]);
+  const set = (raw: string) => {
+    const next = raw.replace(/\D/g, '').slice(0, 6);
     onChange(next);
-    const focusAt = digits.length >= 6 ? 5 : Math.min(5, digits ? at + digits.length : at);
-    refs.current[Math.min(focusAt, next.length)]?.focus();
-    if (next.length === 6) onComplete?.(next);
+    if (next.length === 6 && next !== value) onComplete?.(next);
   };
+  // the caret stays at the end: the code is always typed or erased from its last digit
+  const toEnd = () => { const el = input.current; if (el) requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length)); };
+  const active = Math.min(value.length, 5);
   return (
-    <div className="code-boxes" role="group" aria-label={tt('Хаттағы 6 таңбалы код', '6-значный код из письма')}>
+    <div className={`code-boxes${focused ? ' focused' : ''}${disabled ? ' disabled' : ''}`} onClick={() => input.current?.focus()}>
+      <input ref={input} className="code-input" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+        autoComplete="one-time-code" enterKeyHint="done" disabled={disabled} value={value}
+        aria-label={tt('Хаттағы 6 таңбалы код', '6-значный код из письма')}
+        onChange={e => set(e.target.value)}
+        onPaste={e => { e.preventDefault(); set(e.clipboardData.getData('text')); }}
+        onFocus={() => { setFocused(true); toEnd(); }} onBlur={() => setFocused(false)}
+        onSelect={toEnd} />
       {Array.from({ length: 6 }, (_, i) => (
-        <input key={i} ref={el => { refs.current[i] = el; }} className="input" inputMode="numeric" pattern="[0-9]*"
-          autoComplete={i === 0 ? 'one-time-code' : 'off'} enterKeyHint="done" disabled={disabled}
-          aria-label={tt(`${i + 1}-сан`, `Цифра ${i + 1}`)} value={value[i] || ''}
-          onFocus={e => { if (i > value.length) refs.current[value.length]?.focus(); else e.target.select(); }}
-          onChange={e => put(i, e.target.value)}
-          onPaste={e => { e.preventDefault(); put(0, e.clipboardData.getData('text')); }}
-          onKeyDown={e => {
-            if (e.key === 'Backspace' && !value[i] && i > 0) { e.preventDefault(); onChange(value.slice(0, i - 1)); refs.current[i - 1]?.focus(); }
-            else if (e.key === 'Backspace' && value[i]) { e.preventDefault(); onChange(value.slice(0, i)); }
-            else if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus();
-            else if (e.key === 'ArrowRight' && i < value.length) refs.current[i + 1]?.focus();
-          }} />
+        <span key={i} aria-hidden="true"
+          className={`code-cell${value[i] ? ' filled' : ''}${focused && i === active && !(value.length === 6 && i !== 5) ? ' active' : ''}`}>
+          {value[i] || ''}
+        </span>
       ))}
     </div>
   );
