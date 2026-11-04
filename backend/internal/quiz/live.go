@@ -61,7 +61,7 @@ const (
 	sendBuffer    = 64
 )
 
-const defaultHosts = "studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1"
+const defaultHosts = "studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1"
 
 // --- join tokens -----------------------------------------------------------------------
 

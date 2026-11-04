@@ -242,7 +242,7 @@ func OriginAllowed(r *http.Request) bool {
 		return false
 	}
 	host := strings.ToLower(u.Hostname())
-	hosts := config.List("ALLOWED_HOSTS", "studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1")
+	hosts := config.List("ALLOWED_HOSTS", "studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1")
 	for _, h := range hosts {
 		if strings.EqualFold(h, host) {
 			return true

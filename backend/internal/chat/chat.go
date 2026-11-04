@@ -24,7 +24,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/ratelimit"
 )
 
-const defaultHosts = "studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1"
+const defaultHosts = "studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1"
 
 var specs = map[string]string{
 	"econ": "Economics", "acc": "Accounting and Audit", "it": "Information Systems", "agro": "Agronomy",

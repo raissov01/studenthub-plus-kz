@@ -130,7 +130,7 @@ func TestInboxLinks(t *testing.T) {
 		})
 		return l
 	}
-	send(t, uid, CatEvents, "Орын босады: https://studenthub-plus-kz.vercel.app/event/42.", at(12, 0))
+	send(t, uid, CatEvents, "Орын босады: https://studenthub.studywithraissov.com/event/42.", at(12, 0))
 	if l := link(); l == nil || *l != "/event/42" {
 		t.Fatalf("auto link %v", l)
 	}
