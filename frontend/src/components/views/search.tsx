@@ -211,9 +211,11 @@ function EventsResults() {
   const { ui, tt, go, lang, I } = useApp();
   const acc = useAccount();
   const items = useEventItems(ui.evCat);
+  const clubsOn = useFeature('clubs');
   return (
     <>
       {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
+      {clubsOn ? <div className="group"><Row go="clubs" icon="user" title={tt('Университет клубтары', 'Клубы университета')} sub={tt('Үйірмелер, дебат, спорт, өнер, еріктілер', 'Кружки, дебаты, спорт, искусство, волонтёрство')} /></div> : null}
       <Count n={items.length} />
       {items.length
         ? <div className="group">{items.map(e => (

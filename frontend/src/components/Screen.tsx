@@ -27,6 +27,7 @@ import { AdminPoints, Points } from '@/components/views/points';
 import { SubjectsScreen } from '@/components/views/subjects';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
+import { AdminClubs, ClubScreen, ClubsScreen } from '@/components/views/clubs';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -77,6 +78,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
       if (prm === 'points') return <AdminPoints />;
+      if (prm === 'clubs') return <AdminClubs />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
@@ -95,6 +97,8 @@ export function Screen({ v }: { v: string }) {
     case 'subjects': return <SubjectsScreen />;
     case 'notes': return <NotesScreen />;
     case 'review': return <ReviewScreen />;
+    case 'clubs': return <ClubsScreen />;
+    case 'club': return <ClubScreen />;
     default: return <Home />;
   }
 }

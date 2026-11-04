@@ -53,6 +53,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     [tt('Университет', 'Университет'), [
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
+      ...(cfg.features.clubs ? [['clubs', 'user', tt('Клубтар', 'Клубы')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],

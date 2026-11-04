@@ -21,6 +21,8 @@ export interface Config {
     quiz: boolean;
     /** «Ұпайлар / Баллы»: XP, streak, coins and the rewards shop (FEATURE_POINTS) */
     points: boolean;
+    /** «Клубтар»: university clubs catalogue, club pages, join requests (FEATURE_CLUBS) */
+    clubs: boolean;
   };
 }
 
@@ -29,7 +31,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, clubs: false },
 };
 
 export type FeatureName = keyof Config['features'];

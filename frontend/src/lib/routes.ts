@@ -12,7 +12,7 @@ export const PLAIN = [
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
-  'subjects', 'notes', 'review',
+  'subjects', 'notes', 'review', 'clubs', 'club',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
@@ -20,7 +20,7 @@ export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'm
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff', 'admin:content', 'admin:points',
+  'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:clubs',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
@@ -30,7 +30,7 @@ export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
 export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 /** device-local study screens whose item id rides in the query ('notes:n1' <-> /notes?id=n1), so the one saved
     page (/notes, /subjects, /review) opens every note, subject and review session offline */
-export const QUERY_ID = ['subjects', 'notes', 'review'] as const;
+export const QUERY_ID = ['subjects', 'notes', 'review', 'club'] as const;
 
 const FIXED: Record<string, string> = {
   home: '/',

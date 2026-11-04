@@ -26,6 +26,7 @@ export function kindLabel(k: string, tt: (kk: string, ru: string) => string): st
     market_item: ['Тегін зат (жаңа аккаунт)', 'Вещь (новый аккаунт)'], market_report: ['Тегін затқа шағым', 'Жалоба на вещь'],
     employer_job: ['Жұмыс берушінің вакансиясы', 'Вакансия работодателя'],
     employer_verification: ['Жұмыс берушіні тексеру', 'Проверка работодателя'], job_report: ['Вакансияға шағым', 'Жалоба на вакансию'],
+    club_leader: ['Клуб жетекшісі', 'Руководитель клуба'], club_post: ['Клуб жаңалығы', 'Новость клуба'],
   };
   return m[k] ? tt(m[k][0], m[k][1]) : k;
 }
@@ -328,7 +329,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
-  const b2b = useFeature('b2b'), points = useFeature('points');
+  const b2b = useFeature('b2b'), points = useFeature('points'), clubs = useFeature('clubs');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
@@ -344,6 +345,7 @@ export function ModerationLinks() {
         {events ? <Row go="organize" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} /> : null}
         {b2b ? <Row go="admin:employers" icon="briefcase" title={tt('Жұмыс берушілер', 'Работодатели')} /> : null}
         {b2b ? <Row go="admin:staff" icon="cap" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
+        {clubs ? <Row go="admin:clubs" icon="user" title={tt('Клубтар', 'Клубы')} sub={tt('Клубтар, жетекшілер, архив', 'Клубы, руководители, архив')} /> : null}
         {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
       </div>
     </section>

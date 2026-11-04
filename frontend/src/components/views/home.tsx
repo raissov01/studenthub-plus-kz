@@ -6,7 +6,8 @@ import { Hero3D } from '@/components/views/hero3d';
 import { NewsCarousel } from '@/components/views/news-carousel';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
-import { hasAccount } from '@/components/views/common';
+import { hasAccount, useFeature, useLoad } from '@/components/views/common';
+import { clubName, recruitingPick, type Club } from '@/lib/clubs';
 import { InboxSection } from '@/components/views/inbox';
 import { PointsChip } from '@/components/views/points';
 import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
@@ -92,6 +93,11 @@ export function Home() {
       return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, demo: !!o.is_demo, kind: tt('Мүмкіндік', 'Возможность'), title: L(o.title), sub };
     }),
   ];
+  // one compact card at most: a club that is recruiting now (FEATURE_CLUBS)
+  const clubsOn = useFeature('clubs');
+  const clubs = useLoad<{ clubs: Club[] }>(clubsOn ? '/api/clubs' : null);
+  const rec = recruitingPick(clubs.data?.clubs ?? []);
+  if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'user' as IconName, id: 'club' + rec.id, demo: false, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang === 'ru' ? 'ru' : 'kk'), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
   const focused = useRef(false);
   return (
     <>

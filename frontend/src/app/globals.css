@@ -1633,3 +1633,13 @@ textarea.input.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; 
 .news-dot { width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; cursor: pointer; }
 .news-dot::before { content: ''; width: 7px; height: 7px; border-radius: 999px; background: var(--line); transition: width .2s; }
 .news-dot[aria-current="true"]::before { width: 20px; background: var(--primary); }
+
+/* clubs (FEATURE_CLUBS): direction badges in the pastel families, solid fill, no border except «other» */
+.dir-sky { background: var(--p-sky); color: var(--p-sky-ink); }
+.dir-violet { background: var(--p-violet); color: var(--p-violet-ink); }
+.dir-rose { background: var(--p-rose); color: var(--p-rose-ink); }
+.dir-mint { background: var(--p-mint); color: var(--p-mint-ink); }
+.dir-peach { background: var(--p-peach); color: var(--p-peach-ink); }
+.dir-line { border: 1px solid var(--line); color: var(--muted); }
+.club-card { display: flex; flex-direction: column; gap: 6px; text-align: left; min-width: 0; }
+.club-card .row-title, .club-card .small { overflow-wrap: anywhere; }
