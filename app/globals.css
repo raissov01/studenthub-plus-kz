@@ -1268,3 +1268,7 @@ main.quiz-host-main { max-width: 1200px; }
 .cal-note { white-space: pre-wrap; overflow-wrap: anywhere; }
 .cal-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; align-items: end; }
 #homeDeadlines .tag { max-width: 132px; }
+
+/* brand mark (components/Logo.tsx) */
+.brand { display: inline-flex; align-items: center; gap: 8px; }
+.brand .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--primary); color: var(--on-primary); flex: none; }

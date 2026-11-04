@@ -3,6 +3,7 @@
    Opens from the header on the root screens and from the home «Барлығы» tile (window event OPEN_MENU). */
 import { useEffect, useRef } from 'react';
 import { useApp } from '@/components/app';
+import { Logo } from '@/components/Logo';
 import { Icon } from '@/components/ui';
 import { useConfig } from '@/lib/config';
 import type { IconName } from '@/lib/types';
@@ -62,7 +63,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     <div className="drawer-back" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="drawer" ref={panel} role="dialog" aria-modal="true" aria-label={tt('Мәзір', 'Меню')} id="nav-drawer">
         <div className="drawer-head">
-          <span className="brand"><i className="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>
+          <span className="brand"><Logo />Student Hub</span>
           <button className="icon-btn" type="button" onClick={onClose} aria-label={tt('Жабу', 'Закрыть')}><Icon n="x" s={22} /></button>
         </div>
         <nav aria-label={tt('Бөлімдер', 'Разделы')}>

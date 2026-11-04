@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/components/app';
+import { Logo } from '@/components/Logo';
 import { Boot } from '@/components/Boot';
 import { NavDrawer, OPEN_MENU } from '@/components/NavDrawer';
 import { ConsentSheet, SignInSheet } from '@/components/views/account';
@@ -131,7 +132,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
           <div className="top-title" id="title">
             {name === 'home'
-              ? <span className="brand"><i className="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>
+              ? <span className="brand"><Logo />Student Hub</span>
               : searchScreen ? screenMeta('search', { I, S, ui }).title : meta.title}
           </div>
           {hydrated && acc.loaded && !hasAccount(acc) && root ? (
