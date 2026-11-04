@@ -7,8 +7,10 @@
 package events
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -42,6 +44,11 @@ var ManagerRoles = []string{"ambassador", "university_staff"}
 // It is consulted only by the Go checks; the 07 migration must widen app_can_manage_university
 // (or add a policy) for mentor-created rows as well.
 var ExtraManager func(ctx context.Context, u *auth.User, ev *Event) bool
+
+// ClubManager is the clubs extension point (set in internal/server): ok when userID administers
+// the club, plus the club's university (club events belong to it). Nil while clubs are not wired.
+// The clubs migration mirrors it in RLS (events_club_insert / events_club_update).
+var ClubManager func(ctx context.Context, userID, clubID int64) (university string, ok bool)
 
 // Notify is the sender (category "events": switchable, quiet hours, daily cap); tests replace it.
 var Notify = notify.For(notify.CatEvents)
@@ -122,6 +129,7 @@ type Event struct {
 	FinishedAt     *time.Time `json:"finished_at"`
 	CreatedAt      time.Time  `json:"created_at"`
 	IsDemo         bool       `json:"is_demo"` // a sample event: kept out of the public list and the content feed
+	ClubID         *int64     `json:"club_id"` // made by a club (FEATURE_CLUBS); its club admins manage it
 
 	Registered int    `json:"registered"`
 	Waitlist   int    `json:"waitlist"`
@@ -143,7 +151,7 @@ type MyReg struct {
 
 const eventCols = `e.id, e.title_kk, e.title_ru, e.desc_kk, e.desc_ru, e.cat, e.starts_at, e.ends_at, e.university,
 	e.building_id, e.place_text, e.capacity, e.walk_in_allowed, e.gives_cert, e.teams_enabled, e.status::text,
-	e.created_by, e.checkin_started_at, e.finished_at, e.created_at, e.checkin_key, e.is_demo,
+	e.created_by, e.checkin_started_at, e.finished_at, e.created_at, e.checkin_key, e.is_demo, e.club_id,
 	(select count(*) from event_regs r where r.event_id = e.id and r.status = 'registered'),
 	(select count(*) from event_regs r where r.event_id = e.id and r.status = 'waitlist'),
 	(select count(*) from event_regs r where r.event_id = e.id and r.checked_in_at is not null)`
@@ -152,7 +160,7 @@ func scanEvent(row pgx.Row) (*Event, error) {
 	var e Event
 	err := row.Scan(&e.ID, &e.TitleKK, &e.TitleRU, &e.DescKK, &e.DescRU, &e.Cat, &e.StartsAt, &e.EndsAt, &e.University,
 		&e.BuildingID, &e.PlaceText, &e.Capacity, &e.WalkIn, &e.GivesCert, &e.TeamsEnabled, &e.Status,
-		&e.CreatedBy, &e.CheckinStarted, &e.FinishedAt, &e.CreatedAt, &e.checkinKey, &e.IsDemo,
+		&e.CreatedBy, &e.CheckinStarted, &e.FinishedAt, &e.CreatedAt, &e.checkinKey, &e.IsDemo, &e.ClubID,
 		&e.Registered, &e.Waitlist, &e.CheckedIn)
 	if err != nil {
 		return nil, err
@@ -184,6 +192,11 @@ func CanManage(ctx context.Context, u *auth.User, ev *Event) bool {
 	}
 	if slices.Contains(ManagerRoles, u.Role) && u.University != nil && *u.University == ev.University {
 		return true
+	}
+	if ev.ClubID != nil && ClubManager != nil {
+		if _, ok := ClubManager(ctx, u.ID, *ev.ClubID); ok {
+			return true
+		}
 	}
 	return ExtraManager != nil && ExtraManager(ctx, u, ev)
 }
@@ -308,6 +321,13 @@ func list(w http.ResponseWriter, r *http.Request) {
 	if err != nil || limit < 1 || limit > 200 {
 		limit = 100
 	}
+	var club int64
+	if c := q.Get("club"); c != "" {
+		if club, err = strconv.ParseInt(c, 10, 64); err != nil || club < 1 {
+			httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+			return
+		}
+	}
 	var uid int64
 	if u != nil {
 		uid = u.ID
@@ -315,7 +335,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 	out := []*Event{}
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, "select "+eventCols+" from events e where "+where+
-			" and ($1 = '' or e.university = $1) order by "+order+" limit $2", univ, limit)
+			" and ($1 = '' or e.university = $1) and ($3 = 0 or e.club_id = $3) order by "+order+" limit $2", univ, limit, club)
 		if err != nil {
 			return err
 		}
@@ -516,22 +536,21 @@ func myAttendance(w http.ResponseWriter, r *http.Request, u *auth.User) {
 
 func manageList(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
-	if u.Role != "admin" && !slices.Contains(ManagerRoles, u.Role) && ExtraManager == nil {
+	if u.Role != "admin" && !slices.Contains(ManagerRoles, u.Role) && ExtraManager == nil && ClubManager == nil {
 		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
 		return
 	}
 	univ := ""
 	if u.Role != "admin" {
-		if u.University == nil {
-			httpx.JSON(w, http.StatusOK, map[string]any{"events": []*Event{}})
-			return
+		univ = "\x00" // no university: only club events (CanManage filters them below)
+		if u.University != nil {
+			univ = *u.University
 		}
-		univ = *u.University
 	}
 	out := []*Event{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, "select "+eventCols+` from events e where ($1 = '' or e.university = $1)
-			order by e.status = 'finished', e.starts_at desc limit 300`, univ)
+		rows, err := tx.Query(ctx, "select "+eventCols+` from events e where ($1 = '' or e.university = $1 or ($2 and e.club_id is not null))
+			order by e.status = 'finished', e.starts_at desc limit 300`, univ, ClubManager != nil)
 		if err != nil {
 			return err
 		}
@@ -572,6 +591,7 @@ type eventInput struct {
 	GivesCert    *bool      `json:"gives_cert"`
 	TeamsEnabled *bool      `json:"teams_enabled"`
 	Status       *string    `json:"status"`
+	ClubID       *int64     `json:"club_id"` // create only: the event belongs to this club
 }
 
 var reBuilding = regexp.MustCompile(`^[A-Za-z0-9_-]{1,32}$`)
@@ -641,6 +661,17 @@ func isRLS(err error) bool {
 
 func create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
+	if peek, err := readBody(r, 16<<10); err == nil {
+		var probe struct {
+			ClubID *int64 `json:"club_id"`
+		}
+		_ = jsonUnmarshal(peek, &probe)
+		r.Body = io.NopCloser(bytes.NewReader(peek))
+		if probe.ClubID != nil {
+			createForClub(w, r, u, peek)
+			return
+		}
+	}
 	// other roles get through only via ExtraManager (approved mentors, cat = mentoring); CanManage decides below
 	byRole := u.Role == "admin" || slices.Contains(ManagerRoles, u.Role)
 	if !byRole && ExtraManager == nil {
@@ -884,4 +915,65 @@ func update(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	ev.CanManage = true
 	httpx.JSON(w, http.StatusOK, map[string]any{"event": ev})
+}
+
+// createForClub: POST /api/events/create with club_id. A club admin (or the site admin) creates an
+// event of that club; it belongs to the club's university. Inserted as app_user, so the
+// events_club_insert policy checks the same rule.
+func createForClub(w http.ResponseWriter, r *http.Request, u *auth.User, body []byte) {
+	ctx := r.Context()
+	var in eventInput
+	if err := jsonUnmarshal(body, &in); err != nil || in.ClubID == nil || *in.ClubID < 1 || !in.validate(true) {
+		httpx.Error(w, r, http.StatusBadRequest, "invalid_event", MsgInvalid)
+		return
+	}
+	if (in.Status != nil && *in.Status == "cancelled") || in.StartsAt.Before(Now().Add(-24*time.Hour)) {
+		httpx.Error(w, r, http.StatusBadRequest, "invalid_event", MsgInvalid)
+		return
+	}
+	if ClubManager == nil {
+		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
+		return
+	}
+	univ, ok := ClubManager(ctx, u.ID, *in.ClubID)
+	if !ok && u.Role == "admin" && univ != "" {
+		ok = true
+	}
+	if !ok {
+		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
+		return
+	}
+	status := "draft"
+	if in.Status != nil {
+		status = *in.Status
+	}
+	var id int64
+	err := db.WithUser(ctx, u.ID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `insert into events (title_kk, title_ru, desc_kk, desc_ru, cat, starts_at, ends_at, university,
+				building_id, place_text, capacity, walk_in_allowed, gives_cert, teams_enabled, status, created_by, club_id)
+			values ($1, $2, $3, $4, $5, $6, $7, $8, nullif($9, ''), $10, $11, $12, $13, $14, $15::event_status, app_user_id(), $16)
+			returning id`,
+			in.TitleKK, in.TitleRU, in.DescKK, in.DescRU, in.Cat, in.StartsAt, in.EndsAt, univ,
+			deref(in.BuildingID), in.PlaceText, in.Capacity, boolOr(in.WalkIn), boolOr(in.GivesCert), boolOr(in.TeamsEnabled), status, *in.ClubID).Scan(&id)
+	})
+	if isRLS(err) {
+		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
+		return
+	}
+	if err != nil {
+		fail(w, r, "create club event", err)
+		return
+	}
+	var ev *Event
+	err = db.Tx(ctx, func(tx pgx.Tx) error {
+		var err error
+		ev, err = load(ctx, tx, id, false)
+		return err
+	})
+	if err != nil {
+		fail(w, r, "create club event load", err)
+		return
+	}
+	ev.CanManage = true
+	httpx.JSON(w, http.StatusCreated, map[string]any{"event": ev})
 }

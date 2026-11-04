@@ -13,7 +13,7 @@ export const PLAIN = [
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
   'subjects', 'notes', 'review', 'timetable', 'cafe', 'surveys', 'feedback', 'wellbeing',
-  'voice', 'lostfound', 'qa', 'roommates',
+  'voice', 'lostfound', 'qa', 'roommates', 'clubs', 'club',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer', 'cafe'] as const;
@@ -21,7 +21,7 @@ export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'm
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:cafe', 'cafe:staff', 'cafe:orders',
+  'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:cafe', 'cafe:staff', 'cafe:orders', 'admin:clubs',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
@@ -33,6 +33,7 @@ export const ROOTS = ['home', 'search', 'calendar', 'profile'];
     page (/notes, /subjects, /review) opens every note, subject and review session offline */
 export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys'] as const;
 export const QUERY_ID = ['subjects', 'notes', 'review', 'lostfound', 'qa', 'roommates'] as const;
+export const QUERY_ID = ['subjects', 'notes', 'review', 'club'] as const;
 
 const FIXED: Record<string, string> = {
   home: '/',

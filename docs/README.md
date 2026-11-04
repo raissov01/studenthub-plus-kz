@@ -79,6 +79,7 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 | API маршруттарының аудиті (генерацияланады) | [SECURITY.md](./SECURITY.md) |
 | Аналитика | [ANALYTICS.md](./ANALYTICS.md) |
 | Сауалнама, анонимді өтініш, әл-ауқат (анонимдік схемасы) | [UNIVOICE.md](./UNIVOICE.md) |
+| Клубтар (FEATURE_CLUBS), ресми сеид | [clubs.md](./clubs.md), [clubs-seed.md](./clubs-seed.md) |
 | Браузерлік тесттер | [E2E.md](./E2E.md) |
 | API модульдері | [api/](./api/) |
 | Промпттар / ТЗ, паритет | [prompts/](./prompts/), [PARITY.md](./PARITY.md) |

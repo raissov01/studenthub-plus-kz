@@ -213,6 +213,10 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		rl := id(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'have_room','flat','Fixture',0,50000,current_date,'LAUNCH') returning id`, other)
 		exec(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'looking','flat','Fixture',0,50000,current_date,'LAUNCH')`, uid)
 		exec(`insert into roommate_requests(listing_id,from_user) values ($1,$2)`, rl, uid)
+		club := id(`insert into clubs(name_kk,university,created_by) values ('Fixture club','LAUNCH',$1) returning id`, uid)
+		exec(`insert into club_admins(club_id,user_id,granted_by) values ($1,$2,$2),($1,$3,$2)`, club, uid, other)
+		exec(`insert into club_members(club_id,user_id,status,decided_by) values ($1,$2,'member',$2),($1,$3,'member',$2)`, club, uid, other)
+		exec(`insert into club_posts(club_id,author_id,body_kk,status) values ($1,$2,'fixture','published')`, club, uid)
 		return nil
 	})
 	if err != nil {

@@ -398,14 +398,15 @@ function initForm(e?: DbEvent): FormState {
   };
 }
 
-function EventForm({ edit, onSaved }: { edit?: DbEvent; onSaved?: () => void }) {
+/** create / edit an event; with clubId (a club admin on the club page) the event belongs to that club and its university */
+export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?: () => void; clubId?: number }) {
   const { tt, lang, L, toast, go } = useApp();
   const acc = useAccount();
   const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), university: edit?.university ?? acc.user?.university ?? '' }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF(x => ({ ...x, [k]: v }));
-  const admin = acc.user?.role === 'admin';
+  const admin = acc.user?.role === 'admin' && !clubId;
   const titleOk = f.title_kk.trim().length >= 3 && (!admin || !!edit || f.university.trim().length >= 2);
   const save = async (status?: 'draft' | 'published') => {
     if (!titleOk || busy) return;
@@ -417,6 +418,7 @@ function EventForm({ edit, onSaved }: { edit?: DbEvent; onSaved?: () => void }) 
       gives_cert: f.gives_cert, teams_enabled: f.teams_enabled,
     };
     if (status) body.status = status;
+    if (!edit && clubId) body.club_id = clubId;
     if (!edit && admin && f.university.trim()) body.university = f.university.trim();
     setBusy(true); setErr('');
     try {

@@ -35,6 +35,8 @@ export interface Config {
     courseqa: boolean;
     /** «Пәтерлес» (FEATURE_ROOMMATES) */
     roommates: boolean;
+    /** «Клубтар»: university clubs catalogue, club pages, join requests (FEATURE_CLUBS) */
+    clubs: boolean;
   };
 }
 
@@ -43,7 +45,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false },
 };
 
 export type FeatureName = keyof Config['features'];

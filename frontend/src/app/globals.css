@@ -1880,7 +1880,6 @@ textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fon
 .uv-bar { height: 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
 .uv-bar span { display: block; height: 100%; background: var(--primary); }
 .uv-texts { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
-=======
 /* ---------- community: lost & found, course Q&A, roommates (views/lostfound.tsx, qa.tsx, roommates.tsx) ---------- */
 .cm-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .cm-fieldset legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
@@ -1897,3 +1896,13 @@ textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fon
 .cm-lock { border-color: var(--danger); background: var(--danger-soft); }
 .cm-rule { border-style: dashed; }
 .cm-listing .badges { gap: 4px; }
+=======
+/* clubs (FEATURE_CLUBS): direction badges in the pastel families, solid fill, no border except «other» */
+.dir-sky { background: var(--p-sky); color: var(--p-sky-ink); }
+.dir-violet { background: var(--p-violet); color: var(--p-violet-ink); }
+.dir-rose { background: var(--p-rose); color: var(--p-rose-ink); }
+.dir-mint { background: var(--p-mint); color: var(--p-mint-ink); }
+.dir-peach { background: var(--p-peach); color: var(--p-peach-ink); }
+.dir-line { border: 1px solid var(--line); color: var(--muted); }
+.club-card { display: flex; flex-direction: column; gap: 6px; text-align: left; min-width: 0; }
+.club-card .row-title, .club-card .small { overflow-wrap: anywhere; }

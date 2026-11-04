@@ -34,6 +34,7 @@ import { FeedbackScreen, SurveysScreen, VoiceStaff, WellbeingScreen } from '@/co
 import { LostFoundScreen } from '@/components/views/lostfound';
 import { QAScreen } from '@/components/views/qa';
 import { RoommatesScreen } from '@/components/views/roommates';
+import { AdminClubs, ClubScreen, ClubsScreen } from '@/components/views/clubs';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -85,6 +86,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'staff') return <AdminStaff />;
       if (prm === 'points') return <AdminPoints />;
       if (prm === 'cafe' || prm.startsWith('cafe?')) return <AdminCafe />;
+      if (prm === 'clubs') return <AdminClubs />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
@@ -112,6 +114,8 @@ export function Screen({ v }: { v: string }) {
     case 'lostfound': return <LostFoundScreen />;
     case 'qa': return <QAScreen />;
     case 'roommates': return <RoommatesScreen />;
+    case 'clubs': return <ClubsScreen />;
+    case 'club': return <ClubScreen />;
     default: return <Home />;
   }
 }

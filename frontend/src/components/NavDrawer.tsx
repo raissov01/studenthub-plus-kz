@@ -63,6 +63,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
       ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
       ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
+      ...(cfg.features.clubs ? [['clubs', 'user', tt('Клубтар', 'Клубы')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
