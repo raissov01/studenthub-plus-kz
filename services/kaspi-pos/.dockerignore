@@ -1,0 +1,12 @@
+node_modules
+logs
+*.json.bak
+keypair.json
+device.json
+ecdh-keypair.json
+tracked-payments.json
+webhook-retries.json
+webhooks.json
+.env
+test
+docs
