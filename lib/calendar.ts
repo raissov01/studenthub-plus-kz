@@ -4,15 +4,40 @@
 export type Ymd = string;
 export type CalLang = 'kk' | 'ru';
 
-/** a deadline the student added on this device (AppState.deadlines) */
+/** how much an item matters to the student: set on own deadlines and pinned items */
+export type Priority = 'high' | 'mid' | 'low';
+export const PRIORITIES: Priority[] = ['high', 'mid', 'low'];
+export const isPriority = (p: unknown): p is Priority => p === 'high' || p === 'mid' || p === 'low';
+
+/** a deadline (or a to-do task) the student added on this device (AppState.deadlines) */
 export interface OwnDeadline {
   id: string;
   title: string;
-  /** 'YYYY-MM-DD' Almaty day */
+  /** 'YYYY-MM-DD' Almaty day; '' = a to-do task without a date (never on the grid) */
   date: Ymd;
   /** 'HH:MM' Almaty wall clock, empty for an all-day deadline */
   time: string;
   note: string;
+  created: number;
+  /** added with the to-do list: older stored data gets 'mid' and 0 */
+  prio: Priority;
+  /** when it was checked off; 0 = open */
+  done: number;
+}
+
+/** what can be pinned into the student's own calendar from a page or a list row */
+export type PinKind = 'opp' | 'job' | 'event';
+/** an opportunity, vacancy or event the student pinned (AppState.calendarPins). The title and date are a copy, so the
+    pin stays on the calendar when the item leaves the feed; the live item's date wins while it is there. */
+export interface CalPin {
+  /** the item's view id: 'opp:<id>', 'job:<id>', 'event:<id>' */
+  ref: string;
+  kind: PinKind;
+  title: { kk: string; ru: string };
+  date: Ymd;
+  time: string;
+  prio: Priority;
+  done: number;
   created: number;
 }
 
@@ -108,10 +133,34 @@ export function cleanDeadlines(raw: unknown): OwnDeadline[] {
   for (const r of raw) {
     if (!r || typeof r !== 'object') continue;
     const x = r as Partial<OwnDeadline>;
-    if (typeof x.id !== 'string' || !x.id || typeof x.title !== 'string' || !x.title.trim() || !isYmd(x.date)) continue;
+    if (typeof x.id !== 'string' || !x.id || typeof x.title !== 'string' || !x.title.trim() || !(isYmd(x.date) || x.date === '')) continue;
     out.push({
-      id: x.id, title: x.title.slice(0, 200), date: x.date, time: isHm(x.time) ? x.time : '',
+      id: x.id, title: x.title.slice(0, 200), date: x.date, time: x.date && isHm(x.time) ? x.time : '',
       note: typeof x.note === 'string' ? x.note.slice(0, 2000) : '', created: typeof x.created === 'number' ? x.created : 0,
+      prio: isPriority(x.prio) ? x.prio : 'mid', done: typeof x.done === 'number' && x.done > 0 ? x.done : 0,
+    });
+  }
+  return out;
+}
+
+/** stored pins (absent before the feature) -> valid CalPin[], one per item */
+export function cleanPins(raw: unknown): CalPin[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CalPin[] = [];
+  const seen = new Set<string>();
+  for (const r of raw) {
+    if (!r || typeof r !== 'object') continue;
+    const x = r as Partial<CalPin>;
+    if (typeof x.ref !== 'string' || seen.has(x.ref) || !/^(opp|job|event):\S+$/.test(x.ref) || !isYmd(x.date)) continue;
+    const kind = x.ref.slice(0, x.ref.indexOf(':')) as PinKind;
+    const t = x.title && typeof x.title === 'object' ? x.title : { kk: '', ru: '' };
+    const kk = typeof t.kk === 'string' ? t.kk.slice(0, 200) : '', ru = typeof t.ru === 'string' ? t.ru.slice(0, 200) : '';
+    if (!kk && !ru) continue;
+    seen.add(x.ref);
+    out.push({
+      ref: x.ref, kind, title: { kk: kk || ru, ru: ru || kk }, date: x.date, time: isHm(x.time) ? x.time : '',
+      prio: isPriority(x.prio) ? x.prio : 'mid', done: typeof x.done === 'number' && x.done > 0 ? x.done : 0,
+      created: typeof x.created === 'number' ? x.created : 0,
     });
   }
   return out;

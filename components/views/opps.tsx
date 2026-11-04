@@ -5,6 +5,7 @@ import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
 import { DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
+import { PinButton } from '@/components/views/calendar';
 import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { deadlineText, jobApplyText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, diffDays } from '@/lib/format';
@@ -35,7 +36,7 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
       {heart ? null : <span className="chev" style={{ alignSelf: 'center' }}><Icon n="chev" s={18} /></span>}
     </button>
   );
-  return heart ? <div className="sr">{row}<span className="sr-end sr-heart"><Heart id={j.id} opp={false} /></span></div> : row;
+  return heart ? <div className="sr">{row}<span className="sr-end sr-heart"><Heart id={j.id} opp={false} /><PinButton item={'job:' + j.id} /></span></div> : row;
 }
 
 export function EventCard({ e, demo }: { e: EventItem; demo?: boolean }) {
@@ -87,6 +88,7 @@ export function OppCard({ o }: { o: Opportunity }) {
         </div>
       </button>
       <Heart id={o.id} opp />
+      <PinButton item={'opp:' + o.id} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { RoadmapState } from '@/features/roadmap/logic';
-import type { OwnDeadline } from '@/lib/calendar';
+import type { CalPin, OwnDeadline } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
 
 export type { IconName };
@@ -193,4 +193,6 @@ export interface AppState {
   roadmap: RoadmapState;
   /** «Күнтізбе»: the student's own deadlines (lib/calendar.ts); added later, so load() fills it in for older stored data */
   deadlines: OwnDeadline[];
+  /** «Күнтізбеге қосу»: opportunities, vacancies and events pinned into the calendar (lib/calendar.ts CalPin); added later */
+  calendarPins: CalPin[];
 }

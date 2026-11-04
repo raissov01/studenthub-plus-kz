@@ -9,6 +9,7 @@ import { featureOn, useConfig } from '@/lib/config';
 import { openTelegramLink, useTelegram } from '@/lib/telegram';
 import { DemoBadge, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import { VerifiedSheet } from '@/components/views/sheets';
+import { CalendarActions, deadlinePinTarget } from '@/components/views/calendar';
 import { EmployerApplyCta, EmployerJobInfo, JobReportButton, LiveEmployerJob, OfficialBadge } from '@/components/views/jobs-b2b';
 import { isEmployerJob, jobDbId } from '@/lib/b2b';
 import { reportHref } from '@/lib/config';
@@ -107,6 +108,7 @@ export function JobBody({ j }: { j: Job }) {
           <dt>{tt('Қала', 'Город')}</dt><dd>{L(CITIES[j.city])}</dd>
         </dl>
       </div>
+      <CalendarActions item={'job:' + j.id} target={deadlinePinTarget('job', j)} />
       <EmployerJobInfo j={j} />
       <section className="section"><h2>{tt('Не істеу керек', 'Что нужно делать')}</h2><p style={real ? { whiteSpace: 'pre-line', overflowWrap: 'anywhere' } : undefined}>{L(j.desc)}</p></section>
       {j.req.length ? <section className="section"><h2>{tt('Талаптар', 'Требования')}</h2><ul className="bullets">{j.req.map((r, i) => <li key={i}>{L(r)}</li>)}</ul></section> : null}
@@ -166,6 +168,7 @@ export function OppBody({ o }: { o: Opportunity }) {
           ? <>{tt('Қабылдау', 'Приём до')}: {I.fDate(dOff(left))} · {I.daysLeftTxt(left)}</>
           : tt('Өтінім мерзімі шектелмеген', 'Приём заявок без срока')}</p>
       </div>
+      <CalendarActions item={'opp:' + o.id} target={deadlinePinTarget('opp', o)} />
       <p>{L(o.desc)}</p>
       <section className="card">
         <div className="card-row" style={{ alignItems: 'center' }}>
@@ -228,6 +231,7 @@ export function EventView({ id }: { id: string }) {
         <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={e.time} chev={false} />
         <Row go="map" icon="pin" title={L(e.place)} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')} />
       </div>
+      <CalendarActions item={'event:' + e.id} />
       {L(e.desc) ? <p>{L(e.desc)}</p> : null}
       {reg ? (
         <>

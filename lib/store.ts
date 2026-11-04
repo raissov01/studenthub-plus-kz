@@ -3,7 +3,7 @@
    A second, in-memory store keeps transient UI state (filters, search text, chat draft) for the session. */
 import { useSyncExternalStore } from 'react';
 import { emptyRoadmap, type RoadmapState } from '@/features/roadmap/logic';
-import { cleanDeadlines } from '@/lib/calendar';
+import { cleanDeadlines, cleanPins } from '@/lib/calendar';
 import type { AppState } from '@/lib/types';
 import { defaults, UI_INIT, type UiState } from '@/lib/defaults';
 import { clearTickets } from '@/lib/tickets';
@@ -41,7 +41,7 @@ function load(): AppState {
   let s: Partial<AppState> & { ai?: unknown } | null = null;
   try { const raw = lsGet(); if (raw) s = JSON.parse(raw); } catch { s = null; }
   if (!s || typeof s !== 'object') return d;
-  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}), roadmap: cleanRoadmap(s.roadmap), deadlines: cleanDeadlines(s.deadlines) }) as AppState & { ai?: unknown };
+  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}), roadmap: cleanRoadmap(s.roadmap), deadlines: cleanDeadlines(s.deadlines), calendarPins: cleanPins(s.calendarPins) }) as AppState & { ai?: unknown };
   delete merged.ai; // old client-side API key setting, no longer used
   return merged;
 }

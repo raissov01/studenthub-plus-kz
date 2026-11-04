@@ -167,7 +167,12 @@ export function Shell({ children }: { children: ReactNode }) {
       ) : null}
       <NavDrawer open={menu} onClose={closeMenu} />
       <UpdateBar />
-      {toastMsg ? <div className="toast" role="status" key={toastMsg.key}>{toastMsg.text}</div> : null}
+      {toastMsg ? (
+        <div className={`toast${toastMsg.action ? ' toast-act' : ''}`} role="status" key={toastMsg.key}>
+          <span>{toastMsg.text}</span>
+          {toastMsg.action ? <button type="button" className="toast-btn" onClick={toastMsg.action.run}>{toastMsg.action.label}</button> : null}
+        </div>
+      ) : null}
     </>
   );
 }

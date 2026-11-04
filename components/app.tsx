@@ -12,6 +12,8 @@ import { setUi, update, useAppState, useUi, type UiState } from '@/lib/store';
 import type { AppState, Content } from '@/lib/types';
 
 interface GoOpts { replace?: boolean }
+/** a button inside the toast, e.g. «Ашу» after pinning to the calendar */
+export interface ToastAction { label: string; run: () => void }
 interface Ctx {
   content: Content;
   refreshContent: () => Promise<Content>;
@@ -21,9 +23,9 @@ interface Ctx {
   closeSheet: () => void;
   /** remove the sheet without touching history (used right before a navigation that replaces its entry) */
   closeSheetDom: () => void;
-  toast: (msg: string) => void;
+  toast: (msg: string, action?: ToastAction) => void;
   sheet: ReactNode;
-  toastMsg: { text: string; key: number } | null;
+  toastMsg: { text: string; key: number; action?: ToastAction } | null;
   /** the tab that should look active on the current screen; set by the shell */
   setActiveTab: (t: string) => void;
   fromOf: (path: string) => string;
@@ -64,7 +66,7 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
   const [sheet, setSheet] = useState<ReactNode>(null);
   const sheetOpen = useRef(false);
   const sheetVersion = useRef(0);
-  const [toastMsg, setToastMsg] = useState<{ text: string; key: number } | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; key: number; action?: ToastAction } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const navStarted = useRef(false);
   const activeTab = useRef('');
@@ -123,10 +125,10 @@ export function AppProvider({ content: raw, children }: { content: Content; chil
     }, 350);
   }, [closeSheet, go, router]);
 
-  const toast = useCallback((text: string) => {
-    setToastMsg({ text, key: Date.now() });
+  const toast = useCallback((text: string, action?: ToastAction) => {
+    setToastMsg({ text, key: Date.now(), action });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastMsg(null), 2400);
+    toastTimer.current = setTimeout(() => setToastMsg(null), action ? 6000 : 2400);
   }, []);
 
   const setActiveTab = useCallback((t: string) => { activeTab.current = t; }, []);

@@ -6,6 +6,7 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row } from '@/components/ui';
+import { PinButton } from '@/components/views/calendar';
 import { useFeature } from '@/components/views/common';
 import { SearchRow } from '@/components/views/home';
 import { MarketSearchResults } from '@/components/views/market';
@@ -215,7 +216,12 @@ function EventsResults() {
       {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
       <Count n={items.length} />
       {items.length
-        ? <div className="group">{items.map(e => <Row key={e.id} go={'event:' + e.id} icon="calendar" title={<>{evTitle(e, lang)} <DemoBadge show={!!e.is_demo} /></>} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />)}</div>
+        ? <div className="group">{items.map(e => (
+          <div className="sr" key={e.id}>
+            <Row go={'event:' + e.id} icon="calendar" title={<>{evTitle(e, lang)} <DemoBadge show={!!e.is_demo} /></>} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
+            <span className="sr-end"><PinButton item={'event:' + e.id} /></span>
+          </div>
+        ))}</div>
         : <NoResults icon="calendar" cat="events" msg={tt('Іс-шара табылмады.', 'Событий не найдено.')} />}
     </>
   );

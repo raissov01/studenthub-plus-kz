@@ -7,7 +7,7 @@ import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/compone
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
-import { saveFile, UpcomingDeadlines } from '@/components/views/calendar';
+import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
@@ -163,6 +163,7 @@ export function SearchRow({ it }: { it: SearchItem }) {
       <span className="sr-end">
         {it.badge ? <span className={`tag tag-${it.badge[1]}`}>{it.badge[0]}</span> : null}
         {it.noFav ? null : <Heart id={it.id} opp={OPP_KINDS.includes(it.k)} />}
+        {it.go ? <PinButton item={it.go} /> : null}
       </span>
     </div>
   );

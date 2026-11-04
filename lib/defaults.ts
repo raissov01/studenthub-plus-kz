@@ -17,6 +17,7 @@ export function defaults(lang?: Lang): AppState {
     gpaPlan: [],
     roadmap: emptyRoadmap(),
     deadlines: [],
+    calendarPins: [],
   };
 }
 
@@ -38,7 +39,9 @@ export interface UiState {
   geoAuto: boolean; nearCat: string; sq: string; sk: string; nk: string; sqFocus: boolean; matchId: string;
   oppCheck: Record<string, boolean>; target: number; nextCr: number;
   /** «Күнтізбе»: selected day ('' = today), shown month 'YYYY-MM' ('' = the selected day's), month or week list, saved-only filter */
-  calSel: string; calMonth: string; calView: 'month' | 'week'; calSaved: boolean;
+  calSel: string; calMonth: string; calView: 'month' | 'week' | 'tasks'; calSaved: boolean;
+  /** the «Сабақтар» layer: 'auto' = off in the month grid, on in the week list */
+  calClasses: 'auto' | 'on' | 'off';
   study: null | { id: string; mode: string; queue: { q: string; a: string }[]; total: number; firstOk: number; wrong: string[]; flipped: boolean };
 }
 export const UI_INIT: UiState = {
@@ -46,5 +49,5 @@ export const UI_INIT: UiState = {
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, chatBusy: false, chatErr: '', chatDraft: '',
   mapSel: null, mapNear: false, geoAuto: false, nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false,
   matchId: 'j8', oppCheck: {}, target: 3.5, nextCr: 60, study: null,
-  calSel: '', calMonth: '', calView: 'month', calSaved: false,
+  calSel: '', calMonth: '', calView: 'month', calSaved: false, calClasses: 'auto',
 };

@@ -13,6 +13,7 @@ import { api, apiDownload, useAccount } from '@/lib/account';
 import { keepPagesOffline, useOnline } from '@/lib/pwa';
 import { rememberEvent, rememberMine, savedTicket, savedTickets, withMy } from '@/lib/tickets';
 import { BUILDINGS } from '@/lib/data/campus';
+import { CalendarActions, eventPinTarget } from '@/components/views/calendar';
 import {
   ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
   type Attendance, type CheckinResult, type DbEvent, type FeedbackSummary, type LiveView, type RegRow, type RegsResp,
@@ -118,6 +119,7 @@ function DbEvent_({ id }: { id: string }) {
           sub={e.capacity == null ? tt('Орын шектелмеген', 'Без ограничения мест') : e.spots_left ? tt(`Бос орын: ${e.spots_left} / ${e.capacity}`, `Свободно: ${e.spots_left} из ${e.capacity}`) : tt(`Орын толды (${e.capacity}). Күту тізімі бар`, `Мест нет (${e.capacity}). Есть лист ожидания`)}
           onClick={att.data?.attendees ? () => openSheet(<AttendeesSheet list={att.data?.attendees ?? []} />) : undefined} chev={!!att.data?.attendees} />
       </div>
+      {e.status !== 'cancelled' && !isPast(e.ends_at) ? <CalendarActions item={'event:' + e.id} target={eventPinTarget(e.id, { kk: e.title_kk, ru: e.title_ru }, e.starts_at)} /> : null}
       {!att.data?.attendees ? <p className="tiny muted">{tt('Қатысушылардың аты тек тіркелгендерге көрінеді.', 'Имена участников видны только записавшимся.')}</p> : null}
       {evDesc(e, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evDesc(e, lang)}</p> : null}
       {e.can_manage ? <button className="btn secondary block" type="button" onClick={() => go('organize:' + e.id)}><Icon n="gear" s={18} /> {tt('Іс-шараны басқару', 'Управлять мероприятием')}</button> : null}

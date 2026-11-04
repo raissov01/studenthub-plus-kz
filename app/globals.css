@@ -1252,14 +1252,13 @@ main.quiz-host-main { max-width: 1200px; }
 .cal-day-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
 .cal-dots { display: flex; gap: 3px; height: 6px; }
 .cal-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-.cal-k-opp { --k: var(--c0); }
-.cal-k-job { --k: var(--c2); }
-.cal-k-event { --k: var(--c1); }
-.cal-k-own { --k: var(--c3); }
+.cal-k-class { --k: var(--cal-class); }
+.cal-k-opp { --k: var(--cal-opp); }
+.cal-k-job { --k: var(--cal-job); }
+.cal-k-event { --k: var(--cal-event); }
+.cal-k-exam { --k: var(--cal-exam); }
+.cal-k-own { --k: var(--cal-own); }
 .cal-dot[class*="cal-k-"] { background: var(--k); }
-:root[data-theme="dark"] .cal-k-opp { --k: var(--primary); }
-.cal-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .cal-ico { width: 40px; height: 40px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--surface-2); color: var(--k, var(--primary)); border: 1px solid var(--line); }
 .cal-item .sr-end { justify-content: center; padding: 4px 4px 4px 0; }
 .cal-day h2, .cal-day-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1274,3 +1273,55 @@ main.quiz-host-main { max-width: 1200px; }
 /* brand mark (components/Logo.tsx) */
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .brand .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--primary); color: var(--on-primary); flex: none; }
+
+/* ---------- «Күнтізбе»: kind colours (solid, ≥4.5:1 on surfaces in both themes), priority, pins, «Тапсырмалар» ---------- */
+:root { --cal-class: #5A6385; --cal-opp: #2F57E8; --cal-job: #0B7A6E; --cal-event: #7A45E8; --cal-exam: #B4236B; --cal-own: #C2410C; }
+:root[data-theme="dark"] { --cal-class: #A3AAC6; --cal-opp: #8EA6FF; --cal-job: #4FD1C1; --cal-event: #B99CFF; --cal-exam: #F48FBA; --cal-own: #FFA36E; }
+.cal-dots { height: 10px; align-items: center; }
+.cal-dot.hi { width: 9px; height: 9px; border-radius: 2px; box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--k); }
+.cal-item, .task, .cal-home-row { box-shadow: inset 3px 0 0 var(--k, transparent); }
+.cal-item.prio-high, .task.prio-high, .cal-home-row.prio-high { box-shadow: inset 6px 0 0 var(--k, transparent); }
+.prio-high .row-title, .prio-high .task-title { font-weight: 700; }
+.prio-low .row-title, .prio-low .task-title { color: var(--muted); font-weight: 500; }
+.is-done .row-title, .is-done .task-title { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.cal-kind-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; font-weight: 600; color: var(--k); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.prio-tag { display: inline-flex; align-items: center; gap: 3px; font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--text); background: var(--text); color: var(--surface); }
+.prio-tag-low { background: transparent; color: var(--muted); border: 1px dashed var(--muted); font-weight: 500; }
+.cal-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--k); font-weight: 600; }
+.cal-legend { display: flex; flex-direction: column; gap: 6px; color: var(--muted); }
+.cal-legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.cal-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.cal-sw { width: 20px; height: 20px; border-radius: 6px; background: var(--k); color: var(--surface); display: grid; place-items: center; flex: none; }
+.prio-pick { border: 0; margin: 0; padding: 0; min-width: 0; }
+.prio-pick legend { font-size: .9rem; font-weight: 600; margin-bottom: 8px; padding: 0; }
+.prio-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.prio-opt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; min-height: 44px; background: var(--surface); cursor: pointer; }
+.prio-opt input { width: 20px; height: 20px; margin: 0; accent-color: var(--primary); }
+.prio-opt:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+.prio-opt-high span { font-weight: 700; }
+.prio-opt-low span { color: var(--muted); }
+.cal-actions { display: flex; flex-direction: column; gap: 10px; }
+.cal-pin-ico { width: 40px; height: 40px; color: var(--muted); }
+.cal-pin-ico[aria-pressed="true"] { color: var(--on-primary); background: var(--primary); }
+.fav-card > .cal-pin-ico { position: absolute; top: 48px; right: 6px; }
+.fav-card > .card > h3 { padding-right: 34px; }
+.toast-act { display: flex; align-items: center; gap: 12px; }
+.toast-btn { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; padding: 6px 4px; min-height: 32px; cursor: pointer; flex: none; }
+.task-add { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+.task-add-row { display: flex; gap: 8px; }
+.task-add-row .input { flex: 1; min-width: 0; }
+.task-add-row .btn { flex: none; }
+.task-add-opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.task-add-opts .chips { flex-wrap: wrap; }
+.task-date { width: auto; flex: 1 1 150px; min-width: 0; }
+.task-prio { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
+.task-prio select.input { width: auto; min-height: 40px; padding: 6px 10px; }
+.task-list { list-style: none; margin: 0; padding: 0; }
+.task { display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 16px; }
+.task + .task { border-top: 1px solid var(--line); }
+.task-check { width: 22px; height: 22px; margin: 0; accent-color: var(--primary); flex: none; cursor: pointer; }
+.task-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 4px 0; }
+.task-title { font-weight: 600; overflow-wrap: anywhere; }
+.task-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: .8rem; color: var(--muted); }
+.task-g-overdue .cal-day-h { color: var(--danger); }
+.cal-home-check { display: flex; align-items: center; padding-left: 14px; flex: none; }
