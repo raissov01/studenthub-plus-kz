@@ -28,8 +28,19 @@ func SuccessTx(ctx context.Context, tx pgx.Tx, endpoint string) error {
 		if _, err := notify.PruneInbox(ctx, tx, time.Now()); err != nil {
 			return err
 		}
+		for _, fn := range daily {
+			if err := fn(ctx, tx); err != nil {
+				return err
+			}
+		}
 	}
 	_, err := tx.Exec(ctx, `insert into cron_runs (endpoint, last_success_at) values ($1, $2)
    on conflict (endpoint) do update set last_success_at = greatest(cron_runs.last_success_at, excluded.last_success_at)`, endpoint, time.Now().UTC())
 	return err
 }
+
+var daily []func(context.Context, pgx.Tx) error
+
+// OnDaily adds housekeeping to the main daily cron (/api/cron), in the same transaction as its
+// success record (e.g. community: archive 30-day-old posts). Register from init only.
+func OnDaily(fn func(context.Context, pgx.Tx) error) { daily = append(daily, fn) }
