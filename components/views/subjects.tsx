@@ -107,11 +107,11 @@ function SubjectPage({ id }: { id: string }) {
   const notes = study.notes.filter(n => n.subject === s.id).sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.updated - a.updated);
 
   // deadlines and to-do items: linked by id once the to-do list has one, otherwise by naming the subject
-  type Dl = AppState['deadlines'][number] & { done?: number; courseId?: string };
+  // (`courseId` is read if the to-do model ever gets one; until then the title decides)
+  type Dl = AppState['deadlines'][number] & { courseId?: string };
   const deadlines = (S.deadlines as Dl[]).filter(d => !d.done && belongs(s, d, d.title + ' ' + d.note))
     .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (a.time || '').localeCompare(b.time || ''));
-  type Pin = { ref: string; title: { kk: string; ru: string }; date: string; done?: number };
-  const pins = ((S as AppState & { calendarPins?: Pin[] }).calendarPins ?? []).filter(p => !p.done && (mentions(s, p.title.kk) || mentions(s, p.title.ru)));
+  const pins = (S.calendarPins ?? []).filter(p => !p.done && (mentions(s, p.title.kk) || mentions(s, p.title.ru)));
   const ymdTxt = (d: string, t = '') => (d ? I.fDate(new Date(d + 'T00:00:00')) + (t ? ', ' + t : '') : tt('Мерзімсіз', 'Без срока'));
 
   const plan = S.plans.find(p => mentions(s, p.subject));

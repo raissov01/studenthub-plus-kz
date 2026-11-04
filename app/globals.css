@@ -1452,7 +1452,7 @@ main.quiz-host-main { max-width: 1200px; }
 .note-blocks { display: flex; flex-direction: column; gap: 6px; }
 .nb { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
 .nb-in { padding-left: 24px; }
-.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; min-height: 40px; line-height: 1.45; }
+textarea.input.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; min-height: 44px; line-height: 1.45; }
 .nb-h { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
 .nb-dot { flex: none; width: 12px; padding-top: 10px; text-align: center; color: var(--muted); }
 .nb-check { flex: none; width: 20px; height: 20px; margin-top: 10px; accent-color: var(--primary); }
