@@ -21,6 +21,10 @@ export interface Config {
     quiz: boolean;
     /** «Ұпайлар / Баллы»: XP, streak, coins and the rewards shop (FEATURE_POINTS) */
     points: boolean;
+    /** spec 08 «kind streak»: evening reminder, milestones, session pause, 2 freezes (FEATURE_STREAK, needs points) */
+    streak?: boolean;
+    /** spec 10 career-fair booths: exhibitors, booth QR check-in, next-day summary (FEATURE_FAIRS, needs events) */
+    fairs?: boolean;
   };
 }
 

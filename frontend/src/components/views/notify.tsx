@@ -7,6 +7,7 @@ import { useApp } from '@/components/app';
 import { ErrorLine, errText, hasAccount, Loading, useLoad } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
+import { StreakReminderSetting } from '@/components/views/streak';
 
 type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface NotifyPrefs {
@@ -79,6 +80,7 @@ function NotifySection_() {
             ))}
 
           </div>
+          <StreakReminderSetting />
 
           <div className="group">
             <label className="row toggle-row">

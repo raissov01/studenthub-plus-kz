@@ -233,4 +233,7 @@ var routePolicies = map[string]RoutePolicy{
 	"POST /api/admin/points/redemptions/{id}/reject":       {"admin", "yes", "yes", "points"},
 	"GET /api/admin/points/users/{userId}":                 {"admin", "no", "yes", "points"},
 	"POST /api/admin/points/users/{userId}/adjust":         {"admin", "yes", "yes", "points"},
+	"POST /api/points/pause":                               {"signed-in (consented; once per semester, 1–14 days)", "yes", "yes", "streak"},
+	"PATCH /api/points/streak":                             {"signed-in (consented; reminder on/off, 19:00–21:00)", "yes", "yes", "streak"},
+	"GET /api/cron/streak":                                 {"cron (CRON_SECRET)", "no", "yes", "streak"},
 }
