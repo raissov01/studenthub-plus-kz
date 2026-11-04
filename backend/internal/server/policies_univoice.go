@@ -34,6 +34,7 @@ var univoicePolicies = map[string]RoutePolicy{
 	"GET /api/cron/feedback":                        {"cron (CRON_SECRET)", "no", "yes", "feedback"},
 
 	"GET /api/wellbeing/contacts":       {"anonymous", "no", "yes", "wellbeing"},
+	"GET /api/staff/wellbeing/contacts": {"university_staff (bound university), admin", "no", "yes", "wellbeing"},
 	"PUT /api/staff/wellbeing/contacts": {"university_staff (bound university), admin", "yes", "yes", "wellbeing"},
 }
 

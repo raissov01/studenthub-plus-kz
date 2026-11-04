@@ -167,6 +167,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/staff/surveys/{id}` | university_staff (bound university), admin | no | yes | surveys |
 | GET | `/api/staff/surveys/{id}/results` | university_staff (bound university), admin; aggregates only, groups under 5 hidden | no | yes | surveys |
 | GET | `/api/staff/surveys/{id}/results.csv` | university_staff (bound university), admin; aggregate CSV only, no texts, under 5 hidden | no | yes | surveys |
+| GET | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | no | yes | wellbeing |
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
 | GET | `/api/surveys` | student, ambassador (consented; only surveys whose university/audience match) | no | no (no input) | surveys |
 | GET | `/api/surveys/{id}` | student, ambassador (consented; eligible surveys only, else 404) | no | yes | surveys |

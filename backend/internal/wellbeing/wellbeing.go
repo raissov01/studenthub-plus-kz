@@ -44,16 +44,29 @@ var (
 func Routes(mux httpx.Router) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, features.RequireFunc(Feature, fn)) }
 	h("GET /api/wellbeing/contacts", list)
+	h("GET /api/staff/wellbeing/contacts", auth.Need(staffList))
 	h("PUT /api/staff/wellbeing/contacts", auth.Write(auth.Need(replace)))
 }
 
-// list: public; ?university= narrows it (the frontend passes the student's university).
-func list(w http.ResponseWriter, r *http.Request) {
-	univ := r.URL.Query().Get("university")
-	if len(univ) > 160 {
-		univoice.Bad(w, r, "bad_request", httpx.MsgBad)
+// staffList: the caller's editable list — university_staff get their bound university, admins pass ?university=.
+func staffList(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	sc, ok := univoice.StaffScope(w, r, u)
+	if !ok {
 		return
 	}
+	univ := sc.University
+	if sc.Admin {
+		univ = r.URL.Query().Get("university")
+	}
+	out, err := load(r, univ)
+	if err != nil {
+		univoice.Internal(w, r, "wellbeing staff list", err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"university": univ, "contacts": out})
+}
+
+func load(r *http.Request, univ string) ([]Contact, error) {
 	out := []Contact{}
 	err := db.Tx(r.Context(), func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(), `select university, name, role, phone, email, place, hours, updated_at from wellbeing_contacts
@@ -67,6 +80,17 @@ func list(w http.ResponseWriter, r *http.Request) {
 		})
 		return err
 	})
+	return out, err
+}
+
+// list: public; ?university= narrows it (the frontend passes the student's university).
+func list(w http.ResponseWriter, r *http.Request) {
+	univ := r.URL.Query().Get("university")
+	if len(univ) > 160 {
+		univoice.Bad(w, r, "bad_request", httpx.MsgBad)
+		return
+	}
+	out, err := load(r, univ)
 	if err != nil {
 		univoice.Internal(w, r, "wellbeing list", err)
 		return
