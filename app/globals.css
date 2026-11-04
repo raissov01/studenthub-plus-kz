@@ -1274,3 +1274,37 @@ main.quiz-host-main { max-width: 1200px; }
 /* brand mark (components/Logo.tsx) */
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .brand .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--primary); color: var(--on-primary); flex: none; }
+/* ---------- «Ұпайлар / Баллы» (components/views/points.tsx): flat — solid fills and 1px borders only ---------- */
+.pts { display: flex; flex-direction: column; gap: 14px; }
+.pts-chip {
+  display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px; margin: 0 0 12px; padding: 6px 10px 6px 12px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--r); text-align: left; font: inherit;
+}
+.pts-chip:active { background: var(--surface-2); }
+.pts-chip-i { display: inline-flex; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; white-space: nowrap; }
+.pts-chip-i svg { color: var(--primary); flex: none; }
+.pts-chip-i b { font-size: .98rem; }
+.pts-chip-chev { color: var(--muted); flex: none; }
+.pts-level { display: flex; flex-direction: column; gap: 10px; }
+.pts-level-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pts-level-main { display: flex; flex-direction: column; min-width: 0; }
+.pts-level-main h2 { margin: 0; }
+.pts-badge { width: 44px; height: 44px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--line); }
+.pts-stats .stat span { display: inline-flex; align-items: center; gap: 4px; }
+.pts-board { list-style: none; margin: 0; padding: 0; }
+.pts-board .row { gap: 12px; }
+.pts-rank { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: .86rem; background: var(--surface-2); border: 1px solid var(--line); }
+.pts-me { background: var(--primary-soft); }
+.pts-me .pts-rank { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.pts-inline { display: flex; gap: 8px; min-width: 0; }
+.pts-inline .input { flex: 1 1 auto; min-width: 0; }
+.pts-inline .btn { flex: none; }
+.pts-shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.pts-reward { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pts-reward h3 { margin: 0; overflow-wrap: anywhere; }
+.pts-reward-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; }
+.pts-reward-foot b { display: inline-flex; align-items: center; gap: 4px; }
+.pts-reward-foot .btn { margin-left: auto; }
+.pts-code { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.pts-code .code { padding: 4px 10px; border: 1px dashed var(--primary); border-radius: var(--r-sm); background: var(--surface); overflow-wrap: anywhere; user-select: all; }
+.pts-red .row-title { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }

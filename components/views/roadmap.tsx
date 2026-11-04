@@ -12,6 +12,9 @@ import {
 } from '@/features/roadmap/logic';
 import { parseYmd } from '@/lib/format';
 import { getState } from '@/lib/store';
+import { api, getAccount } from '@/lib/account';
+import { CONFIG } from '@/lib/config';
+import { awardText, pointsChanged, type PointsReply } from '@/lib/points';
 
 /** where an item's «link» leads in the app */
 const LINKS: Record<RoadmapLink, { view: string; oppType?: string }> = {
@@ -40,6 +43,14 @@ function markStep(app: App, item: string, index: number, done: boolean) {
   if (!done) return;
   track('roadmap_item_done', { item });
   if (!isItemDone(before, item) && isItemDone(next, item)) app.toast(app.tt('Пункт толық орындалды. Жарайсың!', 'Пункт полностью выполнен. Отлично!'));
+  // «Ұпайлар»: a device-only step earns a little XP (never coins), once per step, capped by the server
+  const acc = getAccount();
+  if (CONFIG.features.points && acc.user && !acc.needsConsent) {
+    api<PointsReply>('/api/points/claim', { method: 'POST', body: { action: 'roadmap_step', ref: `${item}:${index}` }, lang: app.lang }).then(r => {
+      const earned = awardText(r.award, app.tt);
+      if (earned) { app.toast(earned); pointsChanged(); }
+    }, () => { /* points are a bonus; the step itself is saved on the device */ });
+  }
 }
 
 /** this week's steps as checkable rows (shared by the screen and the home board) */

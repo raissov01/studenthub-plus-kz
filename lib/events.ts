@@ -1,6 +1,7 @@
 /* Events (prompt 05) on the client: API shapes (docs/api/events.md, the Go code wins) and the pure list helpers
    that merge DB events with the legacy demo EVENTS. Kept free of React so a search screen can reuse them. */
 import { EVENT_CATS } from '@/lib/data/static';
+import type { PointsAward } from '@/lib/points';
 import type { EventItem, LText } from '@/lib/types';
 
 export interface MyReg { status: 'registered' | 'waitlist'; ticket: string; checked_in_at: string | null; team_no: number | null; feedback_score: number | null }
@@ -23,7 +24,7 @@ export interface RegRow {
 }
 /** University staff (aggregate_only) get counters of 1–4 as "< 5" (10-032). */
 export interface RegsResp { registered: number | string; checked_in: number | string; waitlist: number | string; regs: RegRow[]; aggregate_only?: boolean }
-export interface CheckinResult { status: 'checked_in' | 'already'; team_no: number | null; method: 'qr' | 'walk_in' | 'manual'; message: string }
+export interface CheckinResult { status: 'checked_in' | 'already'; team_no: number | null; method: 'qr' | 'walk_in' | 'manual'; message: string; points?: PointsAward }
 export interface FeedbackSummary { count: number; average: number | null; distribution: number[]; comments: { score: number; text: string; at: string }[] }
 export interface Attendance { event_id: number; title_kk: string; title_ru: string | null; cat: string; university: string; starts_at: string; checked_in_at: string; has_certificate: boolean; verified: boolean }
 

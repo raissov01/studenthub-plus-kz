@@ -6,6 +6,7 @@ import { useAccount } from '@/lib/account';
 import { quizApi, type Answer, type AnswerInput, type QuizPlay, type QuizResult } from '@/lib/quiz-api';
 import { AnswerControl, QuestionMedia, ReviewAnswer, Timer } from './answer';
 import { ErrorText, Loading, useTask } from './common';
+import { awardText, pointsChanged } from '@/lib/points';
 export function QuizPlayScreen({
   id,
   share = '',
@@ -15,7 +16,7 @@ export function QuizPlayScreen({
   share?: string;
   attempt?: string;
 }) {
-  const { tt, lang } = useApp();
+  const { tt, lang, toast } = useApp();
   const account = useAccount();
   const [initialLang] = useState(lang);
   const [data, setData] = useState<QuizPlay | null>(null),
@@ -130,16 +131,20 @@ export function QuizPlayScreen({
         { questionId: q.id, answer, timeSpent: Math.round((Date.now() - start.current) / 1000) },
       ];
       if (index + 1 === data.questions.length) {
-        setResult(
-          await quizApi.submit(
-            data.quiz.id,
-            all,
-            lang,
-            data.questions.map((x) => x.id),
-            data.retryOf,
-            share || data.quiz.shareCode || '',
-          ),
+        const res = await quizApi.submit(
+          data.quiz.id,
+          all,
+          lang,
+          data.questions.map((x) => x.id),
+          data.retryOf,
+          share || data.quiz.shareCode || '',
         );
+        setResult(res);
+        const earned = awardText(res.points, tt);
+        if (earned) {
+          toast(earned);
+          pointsChanged();
+        }
         return;
       }
       setAnswers(all);
