@@ -62,13 +62,6 @@ export function Empty({ icon, children, action }: { icon?: IconName; children: R
   return <div className="empty">{icon ? <Icon n={icon} s={28} /> : null}<span>{children}</span>{action}</div>;
 }
 
-/** «үлгі» marker for demo records (cards and detail) */
-export function DemoBadge({ show }: { show: boolean }) {
-  const { tt } = useApp();
-  if (!show) return null;
-  return <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span>;
-}
-
 /** Bytes of the UTF-8 encoding as a latin-1 string, so the byte-mode QR carries Cyrillic names intact. */
 function utf8Latin1(s: string) {
   return Array.from(new TextEncoder().encode(s), b => String.fromCharCode(b)).join('');

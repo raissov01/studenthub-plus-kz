@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
-import { test, expect, onboard, fits, label, deviceState } from './fixtures';
+import { test, expect, onboard, fits, label, deviceState, seedTimetable } from './fixtures';
 
 const almatyToday = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
 const plusDays = (d: string, n: number) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400_000).toISOString().slice(0, 10);
@@ -26,6 +26,7 @@ const AI_ANSWER = [
 test('study core: subject page from the menu, Cornell note survives reload, export, AI cards, spaced repetition', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
+  await seedTimetable(page, [0, 1, 2, 3, 4, 5, 6]); // every day, so the home «next class» card has one in the morning
 
   await test.step('subject page from the hamburger menu', async () => {
     await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
@@ -136,6 +137,7 @@ test('study core: subject page from the menu, Cornell note survives reload, expo
 test('notes: search, a lecture template from the notes list, and offline opening', async ({ page, context, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
+  await seedTimetable(page);
   await page.goto('/notes');
   await page.getByRole('button', { name: t('Жаңа конспект', 'Новый конспект') }).click();
   const sheet = page.getByRole('dialog');

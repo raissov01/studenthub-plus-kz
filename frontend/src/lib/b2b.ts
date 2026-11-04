@@ -23,7 +23,7 @@ export type AnyJob = Job & EmployerJobFields;
 
 export const isEmployerJob = (j: Job): j is Job & Required<Pick<EmployerJobFields, 'employer'>> & EmployerJobFields =>
   (j as AnyJob).source === 'employer' && /^job-\d+$/.test(j.id);
-/** "job-12" → 12 (the API path id); 0 for demo / scraped jobs */
+/** "job-12" → 12 (the API path id); 0 for admin / Sheets jobs */
 export const jobDbId = (id: string) => (/^job-\d+$/.test(id) ? Number(id.slice(4)) : 0);
 
 /** /api/content is public and cached, so it cannot filter by age: a signed-in student whose isAdult is not true

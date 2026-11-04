@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useApp, type App } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { NewNoteSheet } from '@/components/views/notes';
-import { SCHEDULE } from '@/lib/data/static';
 import { buildPlan } from '@/lib/domain';
 import { diffDays, plural } from '@/lib/format';
 import { almatyYmd } from '@/lib/calendar';
@@ -28,14 +27,14 @@ export function useQueryId(): string | null {
   return fromRouter ?? fromBar;
 }
 
-/** every subject the student sees, in timetable order, own ones last */
+/** every subject the student sees, in timetable order (the student's own timetable), own ones last */
 export function useSubjects(): { list: Subject[]; study: StudySnap } {
   const { S } = useApp();
   const study = useStudy();
-  return { list: subjectsFrom(SCHEDULE, study.subjects, S.lang === 'ru' ? 'ru' : 'kk'), study };
+  return { list: subjectsFrom(S.timetable, study.subjects), study };
 }
 
-/** the student's own decks of a subject: made for it, or named after it (the demo deck is only a sample) */
+/** the student's own decks of a subject: made for it, or named after it */
 export const subjectDecks = (S: AppState, s: Subject): Deck[] =>
   S.decks.filter(d => belongs(s, d, d.name));
 
@@ -65,7 +64,13 @@ function SubjectList() {
   };
   return (
     <>
-      <p className="small muted">{tt('Пәндер сабақ кестесінен алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
+      {S.timetable.length
+        ? <p className="small muted">{tt('Пәндер сіздің сабақ кестеңізден алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из вашего расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
+        : (
+          <Empty icon="clock" action={<button className="btn secondary" type="button" id="subjAddTimetable" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>}>
+            {tt('Сабақ кестеңізді қосыңыз — пәндер одан өздігінен шығады. Немесе пәнді төменнен қолмен қосыңыз.', 'Добавьте своё расписание — предметы появятся из него сами. Или добавьте предмет вручную ниже.')}
+          </Empty>
+        )}
       <div className="group" id="subjectList">
         {list.map(s => {
           const nx = nextSlot(s, new Date());
@@ -136,11 +141,13 @@ function SubjectPage({ id }: { id: string }) {
         {nx ? (
           <>
             <span className="row-sub">
-              {tt('Келесі сабақ', 'Следующая пара')}: <b className="num">{nx.today ? tt('бүгін', 'сегодня') : `${app.wd[nx.at.getDay()]}`} {nx.slot.t}–{nx.slot.end}</b>, {L(nx.slot.kind)}
+              {tt('Келесі сабақ', 'Следующая пара')}: <b className="num">{nx.today ? tt('бүгін', 'сегодня') : `${app.wd[nx.at.getDay()]}`} {nx.slot.t}–{nx.slot.end}</b>{nx.slot.kind ? `, ${nx.slot.kind}` : ''}
             </span>
-            <button className="btn ghost" type="button" onClick={() => { setUi({ mapQ: nx.slot.room, mapSel: null }); go('map:campus'); }}>
-              <Icon n="pin" s={18} /> {tt(`${nx.slot.room} аудитория — картада`, `Аудитория ${nx.slot.room} на карте`)}
-            </button>
+            {nx.slot.room ? (
+              <button className="btn ghost" type="button" onClick={() => { setUi({ mapQ: nx.slot.room, mapSel: null }); go('map:campus'); }}>
+                <Icon n="pin" s={18} /> {tt(`${nx.slot.room} аудитория — картада`, `Аудитория ${nx.slot.room} на карте`)}
+              </button>
+            ) : null}
           </>
         ) : <span className="row-sub">{tt('Бұл пән кестеде жоқ.', 'Этого предмета нет в расписании.')}</span>}
       </section>

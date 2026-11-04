@@ -4,11 +4,12 @@
    only the changed field; the reply's full prefs replace the local copy. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
+import { Icon } from '@/components/ui';
 import { ErrorLine, errText, hasAccount, Loading, useLoad } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
 
-type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
+export type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface NotifyPrefs {
   categories: Record<Cat, boolean>;
   quietHours: { enabled: boolean; start: string; end: string; timezone: string };
@@ -33,6 +34,50 @@ export function NotifySection() {
   const acc = useAccount();
   if (!hasAccount(acc)) return null;
   return <NotifySection_ />;
+}
+
+/** under an empty list («Әзірге вакансия жоқ»): one switch of the Telegram notifications for new items of that kind.
+    Signed out: the way to sign in (a device cannot be notified without an account). */
+export function NotifyToggle({ cat, label }: { cat: Cat; label: [string, string] }) {
+  const { tt, go } = useApp();
+  const acc = useAccount();
+  if (!hasAccount(acc)) {
+    return (
+      <button className="btn secondary" type="button" id="notifySignIn" onClick={() => go('settings')}>
+        <Icon n="bell" s={18} /> {tt('Хабарлама алу үшін аккаунтқа кіру', 'Войти, чтобы получать уведомления')}
+      </button>
+    );
+  }
+  return <NotifyToggle_ cat={cat} label={label} />;
+}
+
+function NotifyToggle_({ cat, label }: { cat: Cat; label: [string, string] }) {
+  const { tt, lang } = useApp();
+  const { data } = useLoad<{ prefs: NotifyPrefs }>('/api/me/notifications');
+  const [on, setOn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const value = on ?? (data ? !!data.prefs.categories[cat] : null);
+  if (value == null) return null;
+  const flip = async (v: boolean) => {
+    setOn(v); setBusy(true); setError('');
+    try {
+      const r = await api<{ prefs: NotifyPrefs }>('/api/me/notifications', { method: 'PUT', body: { categories: { [cat]: v } }, lang });
+      setOn(!!r.prefs.categories[cat]);
+    } catch (e) {
+      setOn(!v);
+      setError(errText(e, tt('Сақталмады', 'Не сохранилось')));
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="group notify-toggle">
+      <label className="row toggle-row">
+        <span className="row-main"><span className="row-title">{tt(...label)}</span><span className="row-sub">{tt('Telegram боты арқылы', 'Через Telegram-бота')}</span></span>
+        <input type="checkbox" checked={value} disabled={busy} onChange={e => { void flip(e.target.checked); }} />
+      </label>
+      <ErrorLine err={error} />
+    </div>
+  );
 }
 
 function NotifySection_() {

@@ -1,8 +1,8 @@
-/* Events (prompt 05) on the client: API shapes (docs/api/events.md, the Go code wins) and the pure list helpers
-   that merge DB events with the legacy demo EVENTS. Kept free of React so a search screen can reuse them. */
+/* Events (prompt 05) on the client: API shapes (docs/api/events.md, the Go code wins) and pure helpers.
+   Kept free of React so a search screen can reuse them. */
 import { EVENT_CATS } from '@/lib/data/static';
 import type { PointsAward } from '@/lib/points';
-import type { EventItem, LText } from '@/lib/types';
+import type { LText } from '@/lib/types';
 
 export interface MyReg { status: 'registered' | 'waitlist'; ticket: string; checked_in_at: string | null; team_no: number | null; feedback_score: number | null }
 export interface DbEvent {
@@ -28,7 +28,7 @@ export interface CheckinResult { status: 'checked_in' | 'already'; team_no: numb
 export interface FeedbackSummary { count: number; average: number | null; distribution: number[]; comments: { score: number; text: string; at: string }[] }
 export interface Attendance { event_id: number; title_kk: string; title_ru: string | null; cat: string; university: string; starts_at: string; checked_in_at: string; has_certificate: boolean; verified: boolean }
 
-/** every category the API accepts; the first seven are the legacy demo ones */
+/** every category the API accepts */
 export const ALL_EVENT_CATS: Record<string, LText> = {
   ...EVENT_CATS,
   mentoring: { kk: 'Топтық менторлық', ru: 'Групповое менторство' },
@@ -37,27 +37,6 @@ export const ALL_EVENT_CATS: Record<string, LText> = {
 
 export const evTitle = (e: Pick<DbEvent, 'title_kk' | 'title_ru'>, lang: 'kk' | 'ru') => (lang === 'ru' && e.title_ru ? e.title_ru : e.title_kk);
 export const evDesc = (e: Pick<DbEvent, 'desc_kk' | 'desc_ru'>, lang: 'kk' | 'ru') => (lang === 'ru' && e.desc_ru ? e.desc_ru : e.desc_kk || '');
-
-export type EventListItem = { kind: 'db'; e: DbEvent } | { kind: 'demo'; e: EventItem };
-
-/** one event list for the «Іс-шара» tab: DB events (upcoming, by start) and — when the database has none, or the
-    student is not signed in — the demo EVENTS marked «үлгі». `cat` 'all' = every category; `q` = free text. */
-export function eventListItems(db: DbEvent[] | null, demo: EventItem[], o: { signedIn: boolean; cat: string; q: string; lang: 'kk' | 'ru' }): EventListItem[] {
-  const q = o.q.trim().toLowerCase();
-  const L = (t: LText) => t[o.lang] || t.kk;
-  const out: EventListItem[] = [];
-  for (const e of db || []) {
-    if (o.cat !== 'all' && e.cat !== o.cat) continue;
-    if (q && ![evTitle(e, o.lang), e.place_text || '', evDesc(e, o.lang)].join(' ').toLowerCase().includes(q)) continue;
-    out.push({ kind: 'db', e });
-  }
-  if (!db || !db.length || !o.signedIn) {
-    demo.filter(e => !e.past && (o.cat === 'all' || e.cat === o.cat) && (!q || [L(e.title), L(e.place), L(e.desc)].join(' ').toLowerCase().includes(q)))
-      .sort((a, b) => a.day - b.day)
-      .forEach(e => out.push({ kind: 'demo', e }));
-  }
-  return out;
-}
 
 /** roles that may create events (prompt 05; an approved mentor only manages mentoring meetings it already has) */
 export const canCreateEvents = (role: string | undefined) => role === 'admin' || role === 'ambassador' || role === 'university_staff';

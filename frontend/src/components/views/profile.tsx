@@ -1,14 +1,13 @@
 'use client';
-/* Profile and its sub-pages, the student card and GPA bonus of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
+/* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { ConfirmSheet, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
+import { ConfirmSheet, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
-import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
+import { ADMISSION, CITIES, DOCS, GRADES, HOME_CITIES, LEVELS, SKILLS, SPECS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
-import { dOff, money } from '@/lib/format';
-import { demoProfile } from '@/lib/defaults';
 import { getState, resetState, update } from '@/lib/store';
+import { DeadlineSheet } from '@/components/views/calendar';
 import { track } from '@/features/analytics/track';
 import { useTelegram } from '@/lib/telegram';
 import { AccountSection } from '@/components/views/account';
@@ -62,7 +61,7 @@ function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean 
 }
 
 /** read the form into the profile (legacy readProfileForm); marks the profile as the student's own */
-function readProfileForm(root: HTMLElement, keepDemo = false) {
+function readProfileForm(root: HTMLElement) {
   const v = (id: string) => root.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('#' + id)?.value;
   const has = (id: string) => !!root.querySelector('#' + id);
   update(s => {
@@ -81,7 +80,7 @@ function readProfileForm(root: HTMLElement, keepDemo = false) {
     if (has('fAbout')) p.about = v('fAbout') || '';
     if (has('fPhone')) p.phone = (v('fPhone') || '').trim();
     if (has('fEmail')) p.email = (v('fEmail') || '').trim();
-    if (!keepDemo) p.demo = false;
+    delete p.demo;
   });
 }
 
@@ -110,7 +109,6 @@ export function Onboarding() {
       }}>
         <ProfileFields compact blank />
         <button className="btn" type="submit">{tt('Бастау', 'Начать')}</button>
-        <button className="btn ghost" type="button" id="obDemo" onClick={() => { update(s => { s.profile = demoProfile(s.lang); s.onboarded = true; }); closeSheet(); }}>{tt('Үлгі профильмен қарау', 'Посмотреть с примером профиля')}</button>
       </form>
     </>
   );
@@ -158,7 +156,6 @@ export function Profile() {
         {fill < 100 ? <span className="row-sub">{tt('Тәжірибе мен өзіңіз туралы толтырсаңыз, түйіндеме мен іріктеме дәлірек болады.', 'Заполните опыт и «о себе», чтобы резюме и подборка были точнее.')}</span> : null}
       </button>
       <RoadmapProgress />
-      {p.demo ? <Note>{tt('Бұл — үлгі профиль. Өз деректеріңізді енгізіңіз.', 'Это пример профиля. Укажите свои данные.')}</Note> : null}
       <div className="group">
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
         <Row go="gpa" icon="cap" title={tt('Білім туралы', 'Об учёбе')} />
@@ -188,29 +185,7 @@ export function StudentCardHero() {
         </div>
         <span className="code">{studentCode(p)}</span>
       </button>
-      <Note>{tt('Серіктестер мен жеңілдік мөлшері — үлгі. Нақты шарттар серіктестермен жасалған келісімге байланысты.', 'Партнёры и размеры скидок — примеры. Реальные условия зависят от соглашений с партнёрами.')}</Note>
     </>
-  );
-}
-
-/** «Үздік оқығаны үшін бонус» under the discounts */
-export function BonusTiers() {
-  const { S, tt, tp, go } = useApp();
-  const p = S.profile;
-  const tier = TIERS.find(t => p.gpa != null && p.gpa >= t.min);
-  const next = TIERS.slice().reverse().find(t => p.gpa != null && p.gpa < t.min);
-  return (
-    <section className="section">
-      <h2>{tt('Үздік оқығаны үшін бонус', 'Бонусы за успеваемость')}</h2>
-      <div className="card">
-        <div className="card-row" style={{ alignItems: 'center' }}><span className={`ico ${tier ? 'sun' : ''}`}><Icon n="award" /></span>
-          <div className="row-main"><span className="row-title">{tier ? tp(tier.name) : tt('Деңгей әзірге жоқ', 'Уровня пока нет')}</span>
-            <span className="row-sub">GPA {(p.gpa == null ? tt('көрсетілмеген', 'не указан') : p.gpa.toFixed(2))}{next ? ' · ' + tt(`${tp(next.name)} үшін ${next.min.toFixed(2)} керек`, `для уровня «${tp(next.name)}» нужно ${next.min.toFixed(2)}`) : ''}</span></div></div>
-        {tier ? <ul className="bullets">{tier.perks.map((x, i) => <li key={i}>{tp(x)}</li>)}</ul> : null}
-        <p className="tiny muted">{tt('Жоғары баға өздігінен жеңілдік бермейді: ереже мен қаржыландыру университетпен және серіктестермен келісіледі.', 'Высокие оценки сами по себе не дают права на скидку: правила и финансирование согласуются с университетом и партнёрами.')}</p>
-        <button className="btn ghost" type="button" onClick={() => go('gpa')}><Icon n="chart" s={18} /> {tt('GPA калькуляторы', 'Калькулятор GPA')}</button>
-      </div>
-    </section>
   );
 }
 
@@ -244,10 +219,15 @@ export function Gpa() {
         <span className="tiny muted num">{p.credits} {tt('кредит жиналды', 'кредитов набрано')} · {tt('4.0 шкаласы', 'шкала 4.0')}</span>
       </div>
       <section className="section">
-        <SectionHead title={tt('Осы сессиядағы пәндер', 'Дисциплины этой сессии')} more={<button className="link-btn" type="button" onClick={() => update(s => { s.gpaPlan.push({ n: tt('Жаңа пән', 'Новый предмет'), cr: 5, g: 'B' }); })}>+ {tt('Пән қосу', 'Добавить')}</button>} />
+        <SectionHead title={tt('Осы сессиядағы пәндер', 'Дисциплины этой сессии')} more={<button className="link-btn" type="button" onClick={() => update(s => { s.gpaPlan.push({ n: '', cr: 5, g: 'B' }); })}>+ {tt('Пән қосу', 'Добавить')}</button>} />
+        {plan.length ? null : (
+          <Empty icon="chart" action={<button className="btn secondary" type="button" id="gpaAdd" onClick={() => update(s => { s.gpaPlan.push({ n: '', cr: 5, g: 'B' }); })}><Icon n="plus" s={18} /> {tt('Пән қосу', 'Добавить предмет')}</button>}>
+            {tt('Осы сессиядағы пәндеріңізді, кредитін және күтілетін бағаңызды қосыңыз — сессиядан кейінгі GPA есептеледі.', 'Добавьте предметы этой сессии, их кредиты и ожидаемую оценку — посчитаем GPA после сессии.')}
+          </Empty>
+        )}
         <div className="group">{plan.map((x, i) => (
           <div key={i} className="row" style={{ gap: 8 }}>
-            <input className="input" style={{ flex: 1, minWidth: 0 }} aria-label={tt('Пән', 'Дисциплина')} value={x.n} onChange={e => setRow(i, 'n', e.target.value)} />
+            <input className="input" style={{ flex: 1, minWidth: 0 }} aria-label={tt('Пән', 'Дисциплина')} placeholder={tt('Пән атауы', 'Название предмета')} value={x.n} onChange={e => setRow(i, 'n', e.target.value)} />
             <input className="input num" style={{ width: 64, flex: 'none' }} type="number" min="1" max="15" aria-label={tt('Кредит', 'Кредиты')} value={x.cr} onChange={e => setRow(i, 'cr', e.target.value)} />
             <select className="input" style={{ width: 78, flex: 'none' }} aria-label={tt('Баға', 'Оценка')} value={x.g} onChange={e => setRow(i, 'g', e.target.value)}>{GRADES.map(gr => <option key={gr[0]}>{gr[0]}</option>)}</select>
             <button className="icon-btn" type="button" style={{ color: 'var(--muted)', flex: 'none' }} aria-label={tt('Жою', 'Удалить')} onClick={() => update(s => { s.gpaPlan.splice(i, 1); })}><Icon n="x" s={18} /></button>
@@ -332,25 +312,22 @@ export function Admission() {
   );
 }
 
+/** «Оқу ақысы»: the university's finance system is not connected, so no sums are shown — only where to check them
+    and a way to keep one's own payment deadline in the calendar */
 export function Pay() {
-  const { tt, L, I } = useApp();
-  const y = PAYMENT, rest = y.year - y.paid, pct = Math.round(100 * y.paid / y.year), due = dOff(y.nextDue);
+  const { tt, openSheet } = useApp();
   return (
     <>
-      <Note>{tt('Сомалар — үлгі. Нақты деректер университеттің қаржы жүйесімен келісілген қосылудан кейін көрсетіледі.', 'Суммы — пример. Реальные данные появятся после согласованного подключения к финансовой системе университета.')}</Note>
-      <div className="card">
-        <span className="eyebrow">{tt('2026–2027 оқу жылы', '2026–2027 учебный год')}</span>
-        <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num" style={{ fontSize: '1.7rem' }}>{money(y.paid)}</span><span className="muted small">/ {money(y.year)}</span></div>
-        <div className="meter"><i style={{ width: `${pct}%` }}></i></div>
-        <dl className="kv"><dt>{tt('Қалдық', 'Остаток')}</dt><dd className="num">{money(rest)}</dd><dt>{tt('Берешек', 'Задолженность')}</dt><dd style={{ color: 'var(--ok)' }}>{tt('Жоқ', 'Нет')}</dd></dl>
+      <Empty icon="tenge" action={
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button className="btn secondary" type="button" id="payDeadline" onClick={() => openSheet(<DeadlineSheet />)}><Icon n="bell" s={18} /> {tt('Төлем мерзімін күнтізбеге қосу', 'Добавить срок оплаты в календарь')}</button>
+        </div>
+      }>
+        {tt('Оқу ақысының деректері әзірге қосылмаған. Сома, мерзім мен төлем тарихын университеттің ақпараттық жүйесінен немесе бухгалтериядан тексеріңіз.', 'Данные об оплате обучения пока не подключены. Сумму, сроки и историю платежей проверяйте в информационной системе университета или в бухгалтерии.')}
+      </Empty>
+      <div className="group">
+        <Row href="https://kazatu.edu.kz/ru/contacts" icon="globe" title={tt('Университет байланыстары', 'Контакты университета')} sub="kazatu.edu.kz" />
       </div>
-      <div className="group"><Row icon="bell" tone={y.nextDue <= 7 ? 'bad' : 'sun'} title={tt('Келесі төлем', 'Следующий платёж') + ': ' + money(y.nextAmount)} sub={`${I.fDate(due)} ${tt('дейін', 'до')} · ${I.daysLeftTxt(y.nextDue)}`} chev={false} /></div>
-      <section className="section"><h2>{tt('Төлемдер тарихы', 'История платежей')}</h2>
-        <div className="group table-wrap"><table><thead><tr><th>{tt('Күні', 'Дата')}</th><th>{tt('Тәсілі', 'Способ')}</th><th className="r">{tt('Сома', 'Сумма')}</th></tr></thead>
-          <tbody>{y.history.map(h => <tr key={h.day}><td>{I.fDateY(dOff(h.day))}</td><td>{L(h.via)}</td><td className="r">{money(h.amount)}</td></tr>)}</tbody></table></div></section>
-      <section className="card"><h3>{tt('Құны неге өзгерді?', 'Почему изменилась стоимость?')}</h3>
-        <dl className="kv"><dt>{tt('Бұрын', 'Было')}</dt><dd className="num">{money(y.change.from)}</dd><dt>{tt('Қазір', 'Стало')}</dt><dd className="num">{money(y.change.to)}</dd>
-          <dt>{tt('Күні', 'Дата')}</dt><dd>{I.fDateY(dOff(y.change.date))}</dd><dt>{tt('Негізі', 'Основание')}</dt><dd>{L(y.change.basis)}</dd></dl></section>
       <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>
     </>
   );
@@ -359,7 +336,6 @@ export function Pay() {
 export function Portfolio() {
   const { S, I, tt, L, go, openSheet } = useApp();
   const certs = certificates(S, I);
-  const attended = EVENTS.filter(e => e.past && S.events[e.id]);
   const p = S.profile;
   const exp = (p.exp || '').split('\n').filter(s => s.trim());
   return (
@@ -371,8 +347,7 @@ export function Portfolio() {
             end={c.src === 'manual' ? <button className="icon-btn" type="button" style={{ color: 'var(--muted)' }} aria-label={tt('Жою', 'Удалить')} onClick={() => update(s => { s.certs.splice(c.i ?? -1, 1); })}><Icon n="trash" s={18} /></button> : null} />
         )) : <div className="empty">{tt('Курсты аяқтаңыз немесе сертификат қосыңыз', 'Пройдите курс или добавьте сертификат')}</div>}</div></section>
       <section className="section"><h2>{tt('Қатысқан іс-шаралар', 'Мероприятия')}</h2>
-        <VerifiedAttendance />
-        <div className="group">{attended.length ? attended.map(e => <Row key={e.id} icon="calendar" title={L(e.title)} sub={I.fDateY(dOff(e.day))} chev={false} />) : <div className="empty">{tt('Әзірге жоқ', 'Пока нет')}</div>}</div></section>
+        <VerifiedAttendance empty={<div className="group"><div className="empty">{tt('Әзірге жоқ. Іс-шараға QR арқылы белгіленсеңіз, мұнда расталған қатысу шығады.', 'Пока нет. Отметьтесь на мероприятии по QR — здесь появится подтверждённое участие.')}</div></div>} /></section>
       <section className="section"><h2>{tt('Тәжірибе', 'Опыт')}</h2>
         <div className="group">{exp.length ? exp.map((s, i) => <Row key={i} icon="briefcase" title={s} chev={false} />) : <div className="empty">{tt('Профильге тәжірибе қосыңыз', 'Добавьте опыт в профиль')}</div>}</div></section>
       <section className="section"><h2>{tt('Дағдылар', 'Навыки')}</h2><div className="chips wrap">{p.skills.filter(k => SKILLS[k]).map(k => <span key={k} className="chip">{L(SKILLS[k])}</span>)}</div></section>

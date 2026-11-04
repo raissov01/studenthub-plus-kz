@@ -49,7 +49,7 @@ export const TOGGLES: [ToggleKey, LText][] = [
 
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n).trimEnd() : s);
 
-/** the device's self-declared items, in the PUT /api/portfolio/items shape (demo event certificates are not real, so they never go) */
+/** the device's self-declared items, in the PUT /api/portfolio/items shape (only own certificates and courses) */
 export function localItems(S: AppState, lang: 'kk' | 'ru'): PortfolioItem[] {
   const out: PortfolioItem[] = [];
   const L = (t: LText) => t[lang] || t.kk;

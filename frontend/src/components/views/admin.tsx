@@ -3,7 +3,6 @@
    Users by role, role grant/revoke with a required reason, feature switches, and the three analytics metrics
    from docs/ANALYTICS.md in plain words. */
 import { useCallback, useEffect, useState } from 'react';
-import { DemoSettings } from '@/components/views/admin-settings';
 import { useApp } from '@/components/app';
 import { Row, SectionHead } from '@/components/ui';
 import { NotFound } from '@/components/views/common';
@@ -88,7 +87,6 @@ function Dashboard() {
   return (
     <>
       <div className="group"><Row go="admin:health" icon="shield" title={tt('Денсаулық', 'Состояние системы')} sub={tt('Қателер, бот және күнделікті тапсырмалар', 'Ошибки, бот и ежедневные задачи')} /></div>
-      <DemoSettings />
       <ModerationLinks />
       <section className="section">
         <SectionHead title={tt('Басты 3 көрсеткіш (30 күн)', 'Главные 3 показателя (30 дней)')} />

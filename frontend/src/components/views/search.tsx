@@ -5,14 +5,15 @@
    category open in a bottom sheet on this screen. */
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, DemoBadge, Empty, Heart, Icon, Row } from '@/components/ui';
+import { Chip, Empty, Heart, Icon, Row } from '@/components/ui';
 import { PinButton } from '@/components/views/calendar';
 import { useFeature } from '@/components/views/common';
 import { SearchRow } from '@/components/views/home';
 import { MarketSearchResults } from '@/components/views/market';
 import { JobRow, OppCard, SuggestLink } from '@/components/views/opps';
-import { BonusTiers, StudentCardHero } from '@/components/views/profile';
+import { StudentCardHero } from '@/components/views/profile';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
+import { NotifyToggle, type Cat as NotifyCat } from '@/components/views/notify';
 import { useAccount } from '@/lib/account';
 import { CITIES, COURSES, DEAL_CATS, EVENT_CATS, JOB_TAGS, OPP_TYPES } from '@/lib/data/static';
 import { hourly, oppKind, oppLeft, searchItems, type SearchItem } from '@/lib/domain';
@@ -164,12 +165,21 @@ function NoResults({ icon, msg, cat }: { icon: 'search' | 'globe' | 'calendar' |
   );
 }
 
+/** the category has nothing published yet (not «nothing matches»): say so, and offer to be notified */
+function NothingYet({ icon, msg, notify }: { icon: 'briefcase' | 'globe' | 'calendar' | 'tag'; msg: string; notify?: [NotifyCat, [string, string]] }) {
+  return (
+    <div className="nothing-yet" data-empty="true">
+      <Empty icon={icon} action={notify ? <NotifyToggle cat={notify[0]} label={notify[1]} /> : null}>{msg}</Empty>
+    </div>
+  );
+}
+
 const Count = ({ n }: { n: number }) => {
   const { tt } = useApp();
   return <p className="tiny muted" role="status">{tt(`Табылды: ${n}`, `Найдено: ${n}`)}</p>;
 };
 
-/** Public events follow the server's demo filter; management APIs are used only by detail screens. */
+/** Public events from the content feed (the server never sends sample events); management APIs are used only by detail screens. */
 function useEventItems(cat: string) {
   const { ui, lang, content } = useApp();
   return (content.events ?? []).filter(e => (cat === 'all' || e.cat === cat)
@@ -182,6 +192,15 @@ function JobsResults() {
   let list = content.jobs.filter(j => (!f.today || j.today) && ['noexp', 'daily', 'remote', 'near'].every(k => !f[k] || j.tags.includes(k))
     && (ui.city === 'all' || j.city === ui.city) && matches(ui.sq, L(j.title), L(j.org), L(j.desc), L(CITIES[j.city] ?? { kk: '', ru: '' })));
   if (ui.sortPay) list = list.slice().sort((a, b) => hourly(b) - hourly(a));
+  if (!content.jobs.length) {
+    return (
+      <>
+        <NothingYet icon="briefcase" msg={tt('Әзірге вакансия жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Вакансий пока нет — сообщим, когда появятся новые.')}
+          notify={['jobs', ['Жаңа вакансиялар туралы хабарлау', 'Сообщать о новых вакансиях']]} />
+        <SuggestLink />
+      </>
+    );
+  }
   return (
     <>
       <Count n={list.length} />
@@ -197,6 +216,20 @@ function OppResults({ cat }: { cat: SearchCat }) {
   const list = content.opportunities
     .filter(o => oppKind(o) === cat && (cat !== 'intern' || !INTERN_TYPES.includes(ui.oppType) || o.type === ui.oppType) && matches(ui.sq, L(o.title), L(o.org), L(o.desc)))
     .sort((a, b) => oppLeft(a) - oppLeft(b));
+  if (!content.opportunities.some(o => oppKind(o) === cat)) {
+    const what: Record<string, [string, string]> = {
+      intern: ['Әзірге тағылымдама жоқ', 'Стажировок пока нет'], grant: ['Әзірге грант пен байқау жоқ', 'Грантов и конкурсов пока нет'],
+      mobility: ['Әзірге академиялық ұтқырлық бағдарламасы жоқ', 'Программ академической мобильности пока нет'],
+    };
+    const w = what[cat] ?? what.intern;
+    return (
+      <>
+        <NothingYet icon="globe" msg={tt(`${w[0]} — жаңалары жарияланғанда хабарлаймыз.`, `${w[1]} — сообщим, когда появятся новые.`)}
+          notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
+        <SuggestLink />
+      </>
+    );
+  }
   return (
     <>
       <Count n={list.length} />
@@ -208,17 +241,20 @@ function OppResults({ cat }: { cat: SearchCat }) {
 }
 
 function EventsResults() {
-  const { ui, tt, go, lang, I } = useApp();
+  const { ui, tt, go, lang, I, content } = useApp();
   const acc = useAccount();
   const items = useEventItems(ui.evCat);
+  const none = !(content.events ?? []).length;
   return (
     <>
       {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
-      <Count n={items.length} />
-      {items.length
+      {none ? null : <Count n={items.length} />}
+      {none ? <NothingYet icon="calendar" msg={tt('Әзірге іс-шара жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Мероприятий пока нет — сообщим, когда появятся новые.')}
+        notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
+        : items.length
         ? <div className="group">{items.map(e => (
           <div className="sr" key={e.id}>
-            <Row go={'event:' + e.id} icon="calendar" title={<>{evTitle(e, lang)} <DemoBadge show={!!e.is_demo} /></>} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
+            <Row go={'event:' + e.id} icon="calendar" title={evTitle(e, lang)} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
             <span className="sr-end"><PinButton item={'event:' + e.id} /></span>
           </div>
         ))}</div>
@@ -258,7 +294,7 @@ export function DealCard({ d }: { d: Discount }) {
   return (
     <div className="fav-card">
       <button className="card" type="button" onClick={() => openSheet(<DealSheet id={d.id} />)}>
-        <span className="badges" style={{ alignSelf: 'flex-start' }}><span className="badge b-line">{L(DEAL_CATS[d.cat])}</span><DemoBadge show={d.is_demo} /></span>
+        <span className="badges" style={{ alignSelf: 'flex-start' }}><span className="badge b-line">{L(DEAL_CATS[d.cat])}</span></span>
         <span className="deal-pct">{d.pct}</span>
         <span className="row-title">{L(d.name)}</span>
         <span className="row-sub">{L(d.what)}</span>
@@ -275,11 +311,14 @@ function DealsResults() {
   return (
     <>
       <StudentCardHero />
-      <Count n={list.length} />
-      {list.length ? (
-        <div className="deals">{list.map(d => <DealCard key={d.id} d={d} />)}</div>
-      ) : <NoResults icon="tag" cat="deals" msg={tt('Жеңілдік табылмады.', 'Скидки не найдены.')} />}
-      <BonusTiers />
+      {!content.discounts.length ? <NothingYet icon="tag" msg={tt('Әзірге серіктес жеңілдігі жоқ. Келісімдер жасалғанда осында шығады.', 'Скидок партнёров пока нет. Появятся здесь, когда будут заключены соглашения.')} /> : (
+        <>
+          <Count n={list.length} />
+          {list.length ? (
+            <div className="deals">{list.map(d => <DealCard key={d.id} d={d} />)}</div>
+          ) : <NoResults icon="tag" cat="deals" msg={tt('Жеңілдік табылмады.', 'Скидки не найдены.')} />}
+        </>
+      )}
     </>
   );
 }
@@ -292,13 +331,13 @@ function AllResults() {
   const evItems: SearchItem[] = evs.map(e => {
     const d = new Date(new Date(e.starts_at).getTime() + 5 * 3600_000);
     return {
-      k: 'events', id: 'ev' + e.id, go: 'event:' + e.id, org: evTitle(e, lang), noFav: true, fav: false, demo: !!e.is_demo, badge: null,
+      k: 'events', id: 'ev' + e.id, go: 'event:' + e.id, org: evTitle(e, lang), noFav: true, fav: false, badge: null,
       title: `${d.getUTCDate()} ${monS[d.getUTCMonth()]}${e.place_text ? ', ' + e.place_text : ''}`, meta: `${L(ALL_EVENT_CATS[e.cat] ?? ALL_EVENT_CATS.other)} · ${tt('Іс-шара', 'Событие')}`,
     };
   });
   const courseItems: SearchItem[] = COURSES.map(c => ({
     k: 'courses', id: c.id, act: 'course', org: L(c.title), title: `${c.platform}, ${weeksTxt(c.weeks, tt)}`, meta: tt('Курс', 'Курс'),
-    badge: c.cert === 'paid' ? null : [tt('Тегін', 'Бесплатно'), 'new'], fav: false, demo: false, noFav: true,
+    badge: c.cert === 'paid' ? null : [tt('Тегін', 'Бесплатно'), 'new'], fav: false, noFav: true,
   }));
   const deals = base.filter(it => it.k === 'deals');
   const list = [...base.filter(it => it.k !== 'deals'), ...evItems, ...courseItems, ...deals].filter(it => matches(ui.sq, it.org, it.title, it.meta));

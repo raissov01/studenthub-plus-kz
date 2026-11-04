@@ -3,10 +3,10 @@
    seconds. It stops while the student touches, hovers or focuses it, in a hidden tab, and for prefers-reduced-motion. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { DemoBadge, Icon } from '@/components/ui';
+import { Icon } from '@/components/ui';
 import type { IconName } from '@/lib/types';
 
-export type NewsCard = { go: string; icon: IconName; id: string; demo: boolean; title: string; sub: string; kind: string };
+export type NewsCard = { go: string; icon: IconName; id: string; title: string; sub: string; kind: string };
 
 const TONES = ['violet', 'mint', 'peach', 'sky', 'rose'];
 const EVERY_MS = 4500;
@@ -57,7 +57,7 @@ export function NewsCarousel({ items }: { items: NewsCard[] }) {
             <span className="news-card-text">
               <span className="news-kind">{n.kind}</span>
               <span className="news-title">{n.title}</span>
-              <span className="news-sub">{n.sub} <DemoBadge show={n.demo} /></span>
+              <span className="news-sub">{n.sub}</span>
             </span>
             <span className="news-ico" aria-hidden="true"><Icon n={n.icon} s={34} /></span>
           </button>

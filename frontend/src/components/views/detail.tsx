@@ -1,5 +1,5 @@
 'use client';
-/* Detail screens: vacancy, opportunity, event. Job and opportunity pages carry the trust block. */
+/* Detail screens: vacancy and opportunity (database events: views/events.tsx). Job and opportunity pages carry the trust block. */
 import { useEffect, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { CommunityReport } from '@/components/views/ambassador';
@@ -7,13 +7,13 @@ import { track } from '@/features/analytics/track';
 import { remindLink } from '@/features/telegram/webapp';
 import { featureOn, useConfig } from '@/lib/config';
 import { openTelegramLink, useTelegram } from '@/lib/telegram';
-import { DemoBadge, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
+import { Icon, SectionHead, ShareRow } from '@/components/ui';
 import { VerifiedSheet } from '@/components/views/sheets';
 import { CalendarActions, deadlinePinTarget } from '@/components/views/calendar';
 import { EmployerApplyCta, EmployerJobInfo, JobReportButton, LiveEmployerJob, OfficialBadge } from '@/components/views/jobs-b2b';
 import { isEmployerJob, jobDbId } from '@/lib/b2b';
 import { reportHref } from '@/lib/config';
-import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
+import { CITIES, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
 import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
@@ -54,8 +54,8 @@ function TrustBlock({ item, kind, id, report }: { item: Provenance; kind: string
       <div className="card">
         <dl className="kv">
           <dt>{tt('Ресми дереккөз', 'Официальный источник')}</dt>
-          <dd>{item.is_demo || !item.source_url
-            ? <span className="muted">{tt('Үлгі жазба — ресми дереккөз әлі жоқ', 'Пример — официального источника пока нет')}</span>
+          <dd>{!item.source_url
+            ? <span className="muted">{tt('Көрсетілмеген', 'Не указан')}</span>
             : <a href={item.source_url} target="_blank" rel="noopener">{hostOf(item.source_url)}</a>}</dd>
           {item.posted_at ? <><dt>{tt('Жарияланған күні', 'Дата публикации')}</dt><dd>{fDateY(parseYmd(item.posted_at))}</dd></> : null}
           {item.verified_at ? <><dt>{tt('Соңғы тексерілген күні', 'Последняя проверка')}</dt><dd>{fDateY(parseYmd(item.verified_at))}</dd></> : null}
@@ -96,7 +96,6 @@ export function JobBody({ j }: { j: Job }) {
         <div className="badges">
           {j.today ? <span className="badge b-sun"><Icon n="bolt" s={12} /> {tt('Бүгінгі жұмыс', 'Работа на сегодня')}</span> : null}
           {j.tags.filter(k => JOB_TAGS[k]).map(k => <span key={k} className="badge b-line">{tp(JOB_TAGS[k])}</span>)}
-          <DemoBadge show={j.is_demo} />
         </div>
         <h1>{L(j.title)}</h1>
         <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} kind="job" id={j.id} />
@@ -160,7 +159,6 @@ export function OppBody({ o }: { o: Opportunity }) {
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-ok">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
           <OfficialBadge o={o} />
-          <DemoBadge show={o.is_demo} />
         </div>
         <h1>{L(o.title)}</h1>
         <ShareRow path={pathOf('opp:' + o.id)} title={L(o.title)} kind="opp" id={o.id} />
@@ -213,47 +211,6 @@ export function OppBody({ o }: { o: Opportunity }) {
           </a>
         ) : null}
       </div>
-    </>
-  );
-}
-
-export function EventView({ id }: { id: string }) {
-  const { S, tt, L, I, monS, wd, update, toast } = useApp();
-  const e = EVENTS.find(x => x.id === id);
-  if (!e) return null;
-  const d = dOff(e.day), reg = S.events[e.id];
-  return (
-    <>
-      <div className="card-row">
-        <div className="date" style={{ width: 64 }}><small>{monS[d.getMonth()]}</small><b style={{ fontSize: '1.6rem' }}>{d.getDate()}</b></div>
-        <div className="detail-head" style={{ minWidth: 0 }}><h1>{L(e.title)}</h1>
-          <div className="badges"><span className="badge b-line">{L(EVENT_CATS[e.cat])}</span>{e.cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}</div></div>
-      </div>
-      <div className="group">
-        <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={e.time} chev={false} />
-        <Row go="map" icon="pin" title={L(e.place)} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')} />
-      </div>
-      <CalendarActions item={'event:' + e.id} />
-      {L(e.desc) ? <p>{L(e.desc)}</p> : null}
-      {reg ? (
-        <>
-          <div className="card" style={{ alignItems: 'center', textAlign: 'center' }}>
-            <span className="eyebrow">{tt('Электрондық билет', 'Электронный билет')}</span>
-            <Qr text={`STUDENTHUB|${e.id}|${reg.code}|${S.profile.name}`} />
-            <span className="code">{reg.code}</span>
-            <span className="tiny muted">{tt('Кіреберісте көрсетіңіз', 'Покажите на входе')}</span>
-          </div>
-          <button className="btn danger block" type="button" onClick={() => { update(s => { delete s.events[e.id]; delete s.remind[e.id]; }); toast(tt('Тіркеу жойылды', 'Запись отменена')); }}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button>
-        </>
-      ) : (
-        <div className="sticky-cta">
-          <button className="btn block" type="button" onClick={() => {
-            update(s => { s.events[e.id] = { code: `EV-${e.id.toUpperCase()}-${String(Math.floor(1000 + Math.random() * 9000))}` }; s.remind[e.id] = true; });
-            toast(tt('Сіз тіркелдіңіз', 'Вы записаны'));
-          }}><Icon n="check" s={18} /> {tt('Тіркелу', 'Записаться')}</button>
-        </div>
-      )}
-      {e.cert ? <p className="tiny muted">{tt('Қатысқаннан кейін сертификат портфолиоңызға қосылады (егер ұйымдастырушы берсе).', 'После участия сертификат появится в портфолио (если его выдаёт организатор).')}</p> : null}
     </>
   );
 }

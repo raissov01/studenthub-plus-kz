@@ -4,7 +4,7 @@ import { buildScheduleIcs, escText, foldLine, semesterRange } from "./ics";
 
 const cls = (over: Partial<Parameters<typeof buildScheduleIcs>[0][0]> = {}) => ({
   key: "Микроэкономика|09:00|4-214", start: "09:00", end: "09:50", summary: "Микроэкономика (Дәріс)",
-  location: "4-корпус, 2-қабат, 4-214 аудитория", description: "Student Hub; үлгі кесте", ...over,
+  location: "4-корпус, 2-қабат, 4-214 аудитория", description: "Student Hub; менің кестем", ...over,
 });
 
 test("CRLF only, every line at most 75 octets, unfolds back", () => {
@@ -28,6 +28,14 @@ test("weekly RRULE until the semester end, TZID Asia/Almaty, stable UID", () => 
   const uid = (s: string) => /\r\nUID:([^\r]+)\r\n/.exec(s)?.[1];
   assert.equal(uid(a), uid(b));
   assert.match(a, /LOCATION:4-корпус\\, 2-қабат\\, 4-214 аудитория/);
+});
+
+test("a class of the own timetable repeats on its weekday only", () => {
+  const ics = buildScheduleIcs([cls({ days: [3] })], { now: new Date("2026-10-28T06:00:00Z"), calName: "K", lang: "kk" });
+  assert.match(ics, /\r\nRRULE:FREQ=WEEKLY;BYDAY=TH;UNTIL=20261231T185959Z\r\n/);
+  assert.match(ics, /DTSTART;TZID=Asia\/Almaty:20261029T090000/); // Wednesday 28 Oct -> Thursday 29 Oct
+  const sat = buildScheduleIcs([cls({ days: [5] })], { now: new Date("2026-10-31T06:00:00Z"), calName: "K", lang: "kk" });
+  assert.match(sat, /DTSTART;TZID=Asia\/Almaty:20261031T090000/);
 });
 
 test("weekend export starts on Monday; summer exports the autumn semester", () => {

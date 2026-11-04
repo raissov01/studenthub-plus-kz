@@ -1,5 +1,5 @@
 /* Content loading for SERVER components only (the job / opportunity detail pages need it for their metadata and
-   their existence check): GET /api/content from the Go API, uncached so demo settings apply at once. The app shell
+   their existence check): GET /api/content from the Go API, uncached so new records show at once. The app shell
    and every tab are static and load the same feed in the browser instead (lib/content-client.ts).
    When the API is unreachable the lists are empty: the Go API itself already falls back to backend/data/*.json. */
 import { cache } from 'react';

@@ -48,6 +48,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
+      ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
       ['subjects', 'folder', tt('Пәндер', 'Предметы')],
     ]],
     [tt('Университет', 'Университет'), [
