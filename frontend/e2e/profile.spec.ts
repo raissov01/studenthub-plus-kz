@@ -12,7 +12,8 @@ test('demo profile appears only after explicit selection', async ({ page, lang }
   await dialog.getByRole('button', { name: label(lang, 'Үлгі профильмен қарау', 'Посмотреть с примером профиля'), exact: true }).click();
   await expect(dialog).not.toBeVisible();
   expect((await deviceState(page)).profile).toEqual(demoProfile(lang));
-  await page.reload();
+  // the home greeting is gone; the demo name shows on the profile
+  await page.goto('/profile');
   await expect(page.locator('body')).toContainText(lang === 'kk' ? 'Құралай' : 'Куралай');
 });
 

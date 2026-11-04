@@ -32,6 +32,8 @@ export interface Attendance { event_id: number; title_kk: string; title_ru: stri
 export const ALL_EVENT_CATS: Record<string, LText> = {
   ...EVENT_CATS,
   mentoring: { kk: 'Топтық менторлық', ru: 'Групповое менторство' },
+  contest: { kk: 'Байқау', ru: 'Конкурс' },
+  hackathon: { kk: 'Хакатон', ru: 'Хакатон' },
   other: { kk: 'Басқа', ru: 'Другое' },
 };
 

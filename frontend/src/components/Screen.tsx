@@ -3,7 +3,7 @@
 import { Ai, Cards, Chat, DeckView, Exam, Interview, Match, PlanView, Resume, Study } from '@/components/views/ai';
 import { EventView, JobView, OppView } from '@/components/views/detail';
 import { Home, Materials, Notifications, Saved, Services } from '@/components/views/home';
-import { Search } from '@/components/views/search';
+import { Search, SectionScreen } from '@/components/views/search';
 import { MapView } from '@/components/views/map';
 import { Mine } from '@/components/views/opps';
 import { Admission, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
@@ -28,7 +28,7 @@ import { SubjectsScreen } from '@/components/views/subjects';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
 import { parseView } from '@/lib/routes';
-import { catOfView } from '@/lib/search';
+import { sectionOfView } from '@/lib/sections';
 
 export function Screen({ v }: { v: string }) {
   const [name, prm] = parseView(v);
@@ -39,8 +39,8 @@ export function Screen({ v }: { v: string }) {
     case 'services': return <Services />;
     case 'materials': return <Materials />;
     case 'saved': return <Saved />;
-    // the old «Мүмкіндіктер» and discounts URLs are the search screen with their category selected
-    case 'opps': case 'bonus': return <Search fixed={catOfView(name, prm)} />;
+    // the sections (/jobs, /internships, /events, /courses, /discounts), each with its own sub-tabs
+    case 'opps': case 'bonus': { const sec = sectionOfView(name, prm) ?? 'jobs'; return <SectionScreen key={sec} section={sec} />; }
     case 'mine': return <Mine />;
     case 'job': return <JobView id={prm} />;
     case 'opp': return <OppView id={prm} />;
