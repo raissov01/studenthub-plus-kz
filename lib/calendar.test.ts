@@ -64,7 +64,7 @@ test("cleanDeadlines keeps valid entries and drops garbage (old saved state)", (
     { id: "z", title: "Есеп", date: "01.12.2026" },
     null,
   ]);
-  assert.deepEqual(out, [{ id: "x", title: "Курстық жұмыс", date: "2026-12-01", time: "", note: "", created: 0, prio: "mid", done: 0 }]);
+  assert.deepEqual(out, [{ id: "x", title: "Курстық жұмыс", date: "2026-12-01", time: "", note: "", created: 0, prio: "mid", done: 0, end: "", place: "", color: 0 }]);
 });
 
 test("Google Calendar link: all-day spans to the next day; timed is one hour in Asia/Almaty", () => {

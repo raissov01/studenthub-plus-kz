@@ -38,8 +38,8 @@ export interface UiState {
   iv: number; chatBusy: boolean; chatErr: string; chatDraft: string; mapSel: string | null; mapNear: boolean;
   geoAuto: boolean; nearCat: string; sq: string; sk: string; nk: string; sqFocus: boolean; matchId: string;
   oppCheck: Record<string, boolean>; target: number; nextCr: number;
-  /** «Күнтізбе»: selected day ('' = today), shown month 'YYYY-MM' ('' = the selected day's), month or week list, saved-only filter */
-  calSel: string; calMonth: string; calView: 'month' | 'week' | 'tasks'; calSaved: boolean;
+  /** «Күнтізбе»: selected day ('' = today), shown month 'YYYY-MM' ('' = the selected day's; its year in the year view), view, saved-only filter */
+  calSel: string; calMonth: string; calView: 'month' | 'week' | 'year' | 'tasks'; calSaved: boolean;
   /** the «Сабақтар» layer: 'auto' = off in the month grid, on in the week list */
   calClasses: 'auto' | 'on' | 'off';
   study: null | { id: string; mode: string; queue: { q: string; a: string }[]; total: number; firstOk: number; wrong: string[]; flipped: boolean };

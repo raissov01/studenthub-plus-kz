@@ -3,7 +3,9 @@
    «Тапсырмалар» to-do list. It shows application deadlines (opportunities, vacancies), events, exam plans, the
    sample class timetable as a «Сабақтар» layer, the student's own deadlines and the items pinned with
    «Күнтізбеге қосу» (PinButton, used on detail pages and list rows). Every kind has its own colour, icon and label;
-   own deadlines and pins carry a priority. Date logic: lib/calendar.ts; grouping and colours: lib/caltasks.ts. */
+   own deadlines and pins carry a priority. The student's own events («Іс-шара қосу») carry a colour of their choice and
+   show as titled chips inside the month cells. Date logic: lib/calendar.ts; grouping and kind colours: lib/caltasks.ts;
+   year grid, cell packing, agenda order and event colours: lib/calview.ts. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useApp } from '@/components/app';
 import { ConfirmSheet, DemoBadge, Empty, Icon, SectionHead } from '@/components/ui';
@@ -14,6 +16,9 @@ import {
 import {
   CAL_KINDS, GROUP_LABEL, groupTasks, isClassDay, KIND_STYLE, kindColor, PRIO_LABEL, prioClass, type CalKind,
 } from '@/lib/caltasks';
+import {
+  DEFAULT_EV_COLOR, EV_COLORS, evColorName, evColorVars, isEvColor, monthCounts, packCell, sortAgenda, timeRange, yearGrid, yearOptions,
+} from '@/lib/calview';
 import { EVENTS, SCHEDULE } from '@/lib/data/static';
 import { typeLabel } from '@/lib/domain';
 import { buildOneIcs } from '@/lib/ics';
@@ -27,8 +32,12 @@ export interface CalItem {
   kind: CalKind;
   date: Ymd;
   time: string;
-  /** a class's end time */
+  /** a class's or own event's end time */
   end?: string;
+  /** an own event's place */
+  place?: string;
+  /** an own event's colour 1–8 (lib/calview.ts EV_COLORS); absent for everything else */
+  color?: number;
   title: string;
   sub: string;
   go?: string;
@@ -45,11 +54,23 @@ export interface CalItem {
 export const todayYmd = () => almatyYmd(Date.now());
 const kindLabel = (k: CalKind, I: I18n) => I.tt(KIND_STYLE[k].kk, KIND_STYLE[k].ru);
 const kindStyle = (k: CalKind) => ({ '--k': kindColor(k) }) as CSSProperties;
+/** an item's colour variables: its kind's colour, or an own event's chosen colour with its chip background and ink */
+function itemStyle(it: Pick<CalItem, 'kind' | 'color'>): CSSProperties {
+  if (!it.color) return kindStyle(it.kind);
+  const c = evColorVars(it.color);
+  return { '--k': c.solid, '--kbg': c.soft, '--kink': c.ink } as CSSProperties;
+}
+const isOwnEvent = (it: CalItem) => !!it.own?.color;
+/** «Менің іс-шарам» for an own event, else the kind's name */
+const itemKindLabel = (it: CalItem, I: I18n) => (isOwnEvent(it) ? I.tt('Менің іс-шарам', 'Моё событие') : kindLabel(it.kind, I));
 
 function ownItem(d: OwnDeadline, I: I18n): CalItem {
+  const ev = d.color > 0;
   return {
-    key: 'own:' + d.id, kind: 'own', date: d.date, time: d.time, title: d.title, sub: d.note || I.tt('Менің дедлайным', 'Мой дедлайн'),
-    saved: true, demo: false, own: d, prio: d.prio, done: d.done,
+    key: 'own:' + d.id, kind: 'own', date: d.date, time: d.time, title: d.title,
+    sub: ev ? d.place || d.note : d.note || I.tt('Менің дедлайным', 'Мой дедлайн'),
+    saved: true, demo: false, own: d, prio: ev ? undefined : d.prio, done: d.done,
+    ...(ev ? { color: d.color, end: d.end || undefined, place: d.place } : {}),
   };
 }
 
@@ -117,17 +138,19 @@ export function calItems(S: AppState, I: I18n, C: Content): CalItem[] {
   return out;
 }
 
-/** the next open deadlines from today (not events, not done): the home card */
+/** the next open deadlines from today (not feed events or exams, not done) and the student's own timed events of today
+    and tomorrow: the home card */
 export function nextDeadlines(S: AppState, I: I18n, C: Content, n: number): CalItem[] {
-  const today = todayYmd();
-  return calItems(S, I, C).filter(i => i.kind !== 'event' && i.kind !== 'exam' && !i.done && i.date >= today)
+  const today = todayYmd(), tomorrow = addDays(today, 1);
+  return calItems(S, I, C).filter(i => i.kind !== 'event' && i.kind !== 'exam' && !i.done && i.date >= today
+    && (!isOwnEvent(i) || (!!i.time && i.date <= tomorrow)))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || '')).slice(0, n);
 }
 
-/** the to-do list: own deadlines (with undated tasks) and pinned items */
+/** the to-do list: own deadlines (with undated tasks) and pinned items; own events stay on the calendar only */
 export function taskItems(S: AppState, I: I18n, C: Content): CalItem[] {
   return [
-    ...calItems(S, I, C).filter(i => i.pin || i.own),
+    ...calItems(S, I, C).filter(i => i.pin || (i.own && !i.own.color)),
     ...(S.deadlines ?? []).filter(d => !d.date).map(d => ownItem(d, I)),
   ];
 }
@@ -251,27 +274,35 @@ export function relLabel(d: Ymd, I: I18n) {
   return I.daysLeftTxt(n);
 }
 
-interface Exp { key: string; title: string; date: Ymd; time: string; details: string }
-function exportOf(x: { key: string; title: string; date: Ymd; time: string; go?: string; note: string }): Exp {
+interface Exp { key: string; title: string; date: Ymd; time: string; end: string; place: string; details: string }
+function exportOf(x: { key: string; title: string; date: Ymd; time: string; end?: string; place?: string; go?: string; note: string }): Exp {
   const link = x.go && typeof window !== 'undefined' ? window.location.origin + pathOf(x.go) : '';
-  return { key: x.key, title: x.title, date: x.date, time: x.time, details: [x.note, link, 'Student Hub'].filter(Boolean).join('\n') };
+  return {
+    key: x.key, title: x.title, date: x.date, time: x.time, end: x.end ?? '', place: x.place ?? '',
+    details: [x.note, link, 'Student Hub'].filter(Boolean).join('\n'),
+  };
 }
 function itemExport(it: CalItem, I: I18n): Exp {
   const title = it.kind === 'opp' || it.kind === 'job' ? I.tt('Мерзім: ', 'Дедлайн: ') + it.title : it.title;
-  return exportOf({ key: it.key, title, date: it.date, time: it.time, go: it.go, note: it.kind === 'own' ? it.own?.note ?? '' : it.sub });
+  return exportOf({
+    key: it.key, title, date: it.date, time: it.time, end: it.own ? it.own.end : '', place: it.own?.place ?? '', go: it.go,
+    note: it.kind === 'own' ? it.own?.note ?? '' : it.sub,
+  });
 }
+const minutesOf = (hm: string) => +hm.slice(0, 2) * 60 + +hm.slice(3, 5);
 
 /** «Google Calendar-ға қосу» + «.ics жүктеу» for one item */
 function ExportButtons({ ex }: { ex: Exp }) {
   const { tt, lang, toast } = useApp();
   const ics = () => {
-    saveFile(buildOneIcs({ key: ex.key, date: ex.date, time: ex.time, summary: ex.title, description: ex.details }, { now: new Date(), lang }),
+    const minutes = ex.time && ex.end > ex.time ? minutesOf(ex.end) - minutesOf(ex.time) : undefined;
+    saveFile(buildOneIcs({ key: ex.key, date: ex.date, time: ex.time, minutes, summary: ex.title, description: ex.details, location: ex.place }, { now: new Date(), lang }),
       `studenthub-${ex.date}.ics`);
     toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
   };
   return (
     <div className="btn-row">
-      <a className="btn secondary" href={googleCalendarUrl(ex)} target="_blank" rel="noopener"><Icon n="ext" s={18} /> {tt('Google Calendar-ға қосу', 'Добавить в Google Calendar')}</a>
+      <a className="btn secondary" href={googleCalendarUrl({ ...ex, location: ex.place })} target="_blank" rel="noopener"><Icon n="ext" s={18} /> {tt('Google Calendar-ға қосу', 'Добавить в Google Calendar')}</a>
       <button className="btn ghost" type="button" onClick={ics}><Icon n="calendar" s={18} /> {tt('.ics жүктеу', 'Скачать .ics')}</button>
     </div>
   );
@@ -334,12 +365,18 @@ function useDoneToggle() {
 function ItemSheet({ it }: { it: CalItem }) {
   const { S, tt, I, go, openSheet, update, toast, closeSheet } = useApp();
   const pin = it.pin ? (S.calendarPins ?? []).find(p => p.ref === it.pin!.ref) : undefined;
+  const ev = isOwnEvent(it);
+  const range = timeRange(it.time, it.end);
   return (
     <>
-      <span className={`eyebrow cal-eyebrow cal-k-${it.kind}`} style={kindStyle(it.kind)}><Icon n={KIND_STYLE[it.kind].icon} s={14} /> {it.kind === 'own' ? tt('Менің дедлайным', 'Мой дедлайн') : kindLabel(it.kind, I)}</span>
+      <span className={`eyebrow cal-eyebrow cal-k-${it.kind}`} style={itemStyle(it)}>
+        {ev ? <i className="cal-sw-dot" aria-hidden="true" /> : <Icon n={KIND_STYLE[it.kind].icon} s={14} />}
+        {' '}{ev ? `${itemKindLabel(it, I)} · ${evColorName(it.color!, I.lang)}` : it.kind === 'own' ? tt('Менің дедлайным', 'Мой дедлайн') : kindLabel(it.kind, I)}
+      </span>
       <h2>{it.title}</h2>
-      <p className="muted">{it.date ? <>{dayLabel(it.date, I, true)}{it.time ? `, ${it.time}${it.end ? '–' + it.end : ''}` : ''} · {relLabel(it.date, I)}</> : tt('Мерзімі жоқ', 'Без срока')}</p>
+      <p className="muted">{it.date ? <>{dayLabel(it.date, I, true)}{range ? `, ${range}` : ''} · {relLabel(it.date, I)}</> : tt('Мерзімі жоқ', 'Без срока')}</p>
       {it.kind === 'class' ? <p>{it.sub}</p> : null}
+      {ev && it.place ? <p className="cal-place"><Icon n="pin" s={16} /> {it.place}</p> : null}
       {it.kind === 'own' && it.own?.note ? <p className="cal-note">{it.own.note}</p> : null}
       {pin ? (
         <PriorityField name="pinPrio" value={pin.prio} onPick={p => update(s => { const x = (s.calendarPins ?? []).find(y => y.ref === pin.ref); if (x) x.prio = p; })} />
@@ -355,7 +392,9 @@ function ItemSheet({ it }: { it: CalItem }) {
       ) : null}
       {it.own ? (
         <div className="btn-row">
-          <button className="btn ghost" type="button" onClick={() => openSheet(<DeadlineSheet edit={it.own} />)}><Icon n="edit" s={18} /> {tt('Өзгерту', 'Изменить')}</button>
+          <button className="btn ghost" type="button" onClick={() => openSheet(ev ? <EventSheet edit={it.own} /> : <DeadlineSheet edit={it.own} />)}>
+            <Icon n="edit" s={18} /> {tt('Өзгерту', 'Изменить')}
+          </button>
           <DeleteButton d={it.own} />
         </div>
       ) : null}
@@ -363,19 +402,25 @@ function ItemSheet({ it }: { it: CalItem }) {
   );
 }
 
-function DeleteButton({ d }: { d: OwnDeadline }) {
+function useDeleteOwn() {
   const { tt, update, toast, openSheet } = useApp();
-  return (
-    <button className="btn danger" type="button" onClick={() => openSheet(
-      <ConfirmSheet msg={tt(`«${d.title}» дедлайнын жою керек пе?`, `Удалить дедлайн «${d.title}»?`)} yes={() => {
-        update(s => { s.deadlines = (s.deadlines ?? []).filter(x => x.id !== d.id); });
-        toast(tt('Дедлайн жойылды', 'Дедлайн удалён'));
-      }} />,
-    )}><Icon n="trash" s={18} /> {tt('Жою', 'Удалить')}</button>
+  return (d: OwnDeadline) => openSheet(
+    <ConfirmSheet msg={d.color
+      ? tt(`«${d.title}» іс-шарасын жою керек пе?`, `Удалить событие «${d.title}»?`)
+      : tt(`«${d.title}» дедлайнын жою керек пе?`, `Удалить дедлайн «${d.title}»?`)} yes={() => {
+      update(s => { s.deadlines = (s.deadlines ?? []).filter(x => x.id !== d.id); });
+      toast(d.color ? tt('Іс-шара жойылды', 'Событие удалено') : tt('Дедлайн жойылды', 'Дедлайн удалён'));
+    }} />,
   );
 }
 
-/** «Дедлайн қосу» / edit form */
+function DeleteButton({ d }: { d: OwnDeadline }) {
+  const { tt } = useApp();
+  const del = useDeleteOwn();
+  return <button className="btn danger" type="button" onClick={() => del(d)}><Icon n="trash" s={18} /> {tt('Жою', 'Удалить')}</button>;
+}
+
+/** «Дедлайн қосу» / edit form (own deadlines; the to-do list adds them too) */
 export function DeadlineSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }) {
   const { tt, update, toast, closeSheet, setUi } = useApp();
   const dateRequired = !edit || !!edit.date;
@@ -391,7 +436,7 @@ export function DeadlineSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }
         if (!title || (d ? !isYmd(d) : dateRequired)) return;
         const rec: OwnDeadline = {
           id: edit?.id ?? 'dl' + Date.now().toString(36), title, date: d, time: d && isHm(time) ? time : '', note, created: edit?.created ?? Date.now(),
-          prio: isPriority(pr) ? pr : 'mid', done: edit?.done ?? 0,
+          prio: isPriority(pr) ? pr : 'mid', done: edit?.done ?? 0, end: '', place: edit?.place ?? '', color: 0,
         };
         update(s => {
           const list = (s.deadlines ?? []).filter(x => x.id !== rec.id);
@@ -421,77 +466,223 @@ export function DeadlineSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }
   );
 }
 
-/* ---------- month / week ---------- */
-function ItemRow({ it }: { it: CalItem }) {
-  const { tt, I, go, openSheet } = useApp();
-  const open = () => (it.go ? go(it.go) : openSheet(<ItemSheet it={it} />));
+/** «Іс-шара қосу» / edit form: an own event with a date, an optional time span, place and note, and a colour */
+export function EventSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }) {
+  const { tt, lang, update, toast, closeSheet, setUi } = useApp();
+  const [err, setErr] = useState('');
   return (
-    <div className={`sr cal-item cal-k-${it.kind} ${prioClass(it.prio)}${it.done ? ' is-done' : ''}`} data-kind={it.kind} style={kindStyle(it.kind)}>
-      <button className="sr-main" type="button" onClick={open}>
-        <span className="cal-ico" aria-hidden="true"><Icon n={KIND_STYLE[it.kind].icon} s={20} /></span>
-        <span className="row-main">
-          <span className="row-title">{it.title}</span>
-          <span className="row-sub">{it.time ? <b className="num">{it.time}{it.end ? '–' + it.end : ''} </b> : null}{it.kind === 'class' ? `${kindLabel('class', I)} · ${it.sub.split(' · ').slice(0, 2).join(' · ')}` : it.sub}{it.demo && it.kind !== 'class' ? <> <DemoBadge show /></> : null}</span>
-          <span className="badges">
-            <span className="cal-kind-tag">{kindLabel(it.kind, I)}</span>
-            <PrioTag p={it.prio} />
-            {it.done ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Орындалды', 'Выполнено')}</span> : null}
-            {it.pin ? <span className="badge b-line"><Icon n="bookmark" s={12} /> {tt('Күнтізбеде', 'В календаре')}</span>
-              : it.saved && it.kind !== 'own' && it.kind !== 'class' && it.kind !== 'exam' ? <span className="badge b-sun"><Icon n="heart" s={12} /> {tt('Сақталған', 'Сохранено')}</span> : null}
-          </span>
-        </span>
-      </button>
-      {it.kind === 'class' ? null : (
-        <span className="sr-end">
-          <button className="icon-btn" type="button" onClick={() => openSheet(<ItemSheet it={it} />)}
-            aria-label={(it.own || it.pin ? tt('Өзгерту немесе күнтізбеге қосу: ', 'Изменить или добавить в календарь: ') : tt('Күнтізбеге қосу: ', 'Добавить в календарь: ')) + it.title}>
-            <Icon n={it.own || it.pin ? 'edit' : 'plus'} s={20} />
-          </button>
-        </span>
-      )}
-    </div>
+    <>
+      <h2>{edit ? tt('Іс-шараны өзгерту', 'Изменить событие') : tt('Іс-шара қосу', 'Добавить событие')}</h2>
+      <form className="form cal-ev-form" id="eventForm" onSubmit={e => {
+        e.preventDefault();
+        const f = e.currentTarget;
+        const val = (id: string) => (f.querySelector<HTMLInputElement | HTMLTextAreaElement>('#' + id)?.value || '').trim();
+        const title = val('evTitle'), d = val('evDate'), start = val('evStart'), end = val('evEnd'), place = val('evPlace'), note = val('evNote');
+        const color = Number(f.querySelector<HTMLInputElement>('input[name="evColor"]:checked')?.value);
+        if (!title || !isYmd(d)) return;
+        const time = isHm(start) ? start : '';
+        if (end && !time) { setErr(tt('Алдымен басталу уақытын көрсетіңіз.', 'Сначала укажите время начала.')); f.querySelector<HTMLInputElement>('#evStart')?.focus(); return; }
+        if (end && isHm(end) && end <= time) { setErr(tt('Аяқталуы басталуынан кейін болуы керек.', 'Окончание должно быть позже начала.')); f.querySelector<HTMLInputElement>('#evEnd')?.focus(); return; }
+        const rec: OwnDeadline = {
+          id: edit?.id ?? 'ev' + Date.now().toString(36), title: title.slice(0, 200), date: d, time, end: time && isHm(end) ? end : '',
+          place: place.slice(0, 200), note: note.slice(0, 2000), color: isEvColor(color) ? color : DEFAULT_EV_COLOR,
+          created: edit?.created ?? Date.now(), prio: edit?.prio ?? 'mid', done: edit?.done ?? 0,
+        };
+        update(s => {
+          const list = (s.deadlines ?? []).filter(x => x.id !== rec.id);
+          list.push(rec);
+          s.deadlines = list;
+        });
+        setUi({ calSel: d, calMonth: '', calView: 'month' });
+        toast(edit ? tt('Сақталды', 'Сохранено') : tt('Іс-шара қосылды', 'Событие добавлено'));
+        closeSheet();
+      }}>
+        <div className="field"><label htmlFor="evTitle">{tt('Атауы', 'Название')}</label>
+          <input className="input" id="evTitle" required maxLength={200} autoComplete="off" defaultValue={edit?.title ?? ''}
+            placeholder={tt('Мысалы: топпен кездесу', 'Например: встреча с группой')} /></div>
+        <div className="field"><label htmlFor="evDate">{tt('Күні', 'Дата')}</label>
+          <input className="input" id="evDate" type="date" required defaultValue={edit ? edit.date : date ?? todayYmd()} /></div>
+        <div className="cal-form-row cal-time-row">
+          <div className="field"><label htmlFor="evStart">{tt('Басталуы', 'Начало')} <span className="cal-opt">{tt('міндетті емес', 'необязательно')}</span></label>
+            <input className="input" id="evStart" type="time" defaultValue={edit?.time ?? ''} onChange={() => setErr('')} /></div>
+          <div className="field"><label htmlFor="evEnd">{tt('Аяқталуы', 'Окончание')} <span className="cal-opt">{tt('міндетті емес', 'необязательно')}</span></label>
+            <input className="input" id="evEnd" type="time" defaultValue={edit?.end ?? ''} onChange={() => setErr('')}
+              aria-invalid={err ? true : undefined} aria-describedby={err ? 'evTimeErr' : undefined} /></div>
+        </div>
+        {err ? <p className="field-err" id="evTimeErr" role="alert">{err}</p> : null}
+        <fieldset className="ev-colors">
+          <legend>{tt('Түсі', 'Цвет')}</legend>
+          <div className="ev-swatches">
+            {EV_COLORS.map(c => (
+              <label key={c.n} className="ev-sw" style={{ '--sw': evColorVars(c.n).solid } as CSSProperties}>
+                <input type="radio" name="evColor" value={c.n} defaultChecked={(edit?.color || DEFAULT_EV_COLOR) === c.n} aria-label={c[lang]} />
+                <span className="ev-sw-dot" aria-hidden="true"><Icon n="check" s={16} /></span>
+                <span className="ev-sw-name" aria-hidden="true">{c[lang]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="field"><label htmlFor="evPlace">{tt('Орны', 'Место')} <span className="cal-opt">{tt('міндетті емес', 'необязательно')}</span></label>
+          <input className="input" id="evPlace" maxLength={200} autoComplete="off" defaultValue={edit?.place ?? ''}
+            placeholder={tt('Мысалы: 3-корпус, 214', 'Например: корпус 3, 214')} /></div>
+        <div className="field"><label htmlFor="evNote">{tt('Ескертпе', 'Заметка')} <span className="cal-opt">{tt('міндетті емес', 'необязательно')}</span></label>
+          <textarea className="input" id="evNote" rows={2} maxLength={2000} defaultValue={edit?.note ?? ''} /></div>
+        <button className="btn" type="submit">{edit ? tt('Сақтау', 'Сохранить') : tt('Қосу', 'Добавить')}</button>
+        <p className="tiny muted">{tt('Іс-шара тек осы құрылғыда сақталады.', 'Событие хранится только на этом устройстве.')}</p>
+      </form>
+    </>
   );
 }
 
-function DayList({ d, items, heading }: { d: Ymd; items: CalItem[]; heading?: boolean }) {
+/* ---------- the day agenda (month and week) ---------- */
+function AgendaRow({ it }: { it: CalItem }) {
+  const { tt, I, go, openSheet, update, toast } = useApp();
+  const del = useDeleteOwn();
+  const open = () => (it.go ? go(it.go) : openSheet(<ItemSheet it={it} />));
+  const ev = isOwnEvent(it);
+  const sub = it.kind === 'class' ? it.sub.split(' · ').slice(0, 2).join(' · ') : it.sub;
+  const unpin = () => {
+    update(s => { s.calendarPins = (s.calendarPins ?? []).filter(p => p.ref !== it.key); });
+    toast(tt('Күнтізбеден алынды', 'Убрано из календаря'));
+  };
+  const savedBadge = !it.pin && it.saved && it.kind !== 'own' && it.kind !== 'class' && it.kind !== 'exam';
+  return (
+    <li className={`cal-item cal-k-${it.kind} ${prioClass(it.prio)}${it.done ? ' is-done' : ''}${ev ? ' is-own-ev' : ''}`} data-kind={it.kind} style={itemStyle(it)}>
+      <span className="cal-time num">
+        {it.time ? <><b>{it.time}</b>{it.end ? <span>{it.end}</span> : null}</> : <span className="cal-allday">{tt('Күні бойы', 'Весь день')}</span>}
+      </span>
+      <button className="cal-tl-main" type="button" onClick={open}>
+        <span className="row-title">{it.title}</span>
+        {sub ? <span className="row-sub">{ev && it.place ? <Icon n="pin" s={13} /> : null}{sub}{it.demo && it.kind !== 'class' ? <> <DemoBadge show /></> : null}</span> : null}
+        <span className="badges">
+          <span className="cal-kind-tag">{ev ? <i className="cal-sw-dot" aria-hidden="true" /> : <Icon n={KIND_STYLE[it.kind].icon} s={12} />}{itemKindLabel(it, I)}</span>
+          <PrioTag p={it.prio} />
+          {it.done ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Орындалды', 'Выполнено')}</span> : null}
+          {it.pin ? <span className="badge b-line"><Icon n="bookmark" s={12} /> {tt('Күнтізбеде', 'В календаре')}</span>
+            : savedBadge ? <span className="badge b-sun"><Icon n="heart" s={12} /> {tt('Сақталған', 'Сохранено')}</span> : null}
+        </span>
+      </button>
+      {it.kind === 'class' ? null : (
+        <span className="cal-tl-act">
+          {it.own ? (
+            <>
+              <button className="icon-btn" type="button" onClick={() => openSheet(ev ? <EventSheet edit={it.own} /> : <DeadlineSheet edit={it.own} />)}
+                aria-label={tt('Өзгерту: ', 'Изменить: ') + it.title}><Icon n="edit" s={20} /></button>
+              <button className="icon-btn" type="button" onClick={() => del(it.own!)} aria-label={tt('Жою: ', 'Удалить: ') + it.title}><Icon n="trash" s={20} /></button>
+            </>
+          ) : (
+            <>
+              <button className="icon-btn" type="button" onClick={() => openSheet(<ItemSheet it={it} />)}
+                aria-label={(it.pin ? tt('Өзгерту немесе күнтізбеге қосу: ', 'Изменить или добавить в календарь: ') : tt('Күнтізбеге қосу: ', 'Добавить в календарь: ')) + it.title}>
+                <Icon n={it.pin ? 'edit' : 'plus'} s={20} />
+              </button>
+              {it.pin ? (
+                <button className="icon-btn" type="button" onClick={unpin} aria-label={tt('Күнтізбеден алу: ', 'Убрать из календаря: ') + it.title}><Icon n="x" s={20} /></button>
+              ) : null}
+            </>
+          )}
+        </span>
+      )}
+    </li>
+  );
+}
+
+const countTxt = (n: number, I: I18n) => (n ? I.tt(`${n} жазба`, `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'запись' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'записи' : 'записей'}`) : I.tt('жазба жоқ', 'нет записей'));
+
+/** one day's items as a timeline: all-day first, then by time. `onAdd` = the month view's empty state with an add button */
+function DayAgenda({ d, items, heading, onAdd }: { d: Ymd; items: CalItem[]; heading?: boolean; onAdd?: () => void }) {
   const { tt, I } = useApp();
-  const title = <>{dayLabel(d, I)}{d === todayYmd() ? <span className="badge b-sky cal-today-badge">{tt('Бүгін', 'Сегодня')}</span> : null}</>;
+  const list = sortAgenda(items);
+  const H = heading ? 'h3' : 'h2';
   return (
     <section className="section cal-day" aria-label={dayLabel(d, I, true)}>
-      {heading ? <h3 className="cal-day-h">{title}</h3> : <SectionHead title={title} />}
-      {items.length
-        ? <div className="group">{items.map(it => <ItemRow key={it.key} it={it} />)}</div>
-        : <p className="note cal-none">{tt('Бұл күні жазба жоқ.', 'На этот день записей нет.')}</p>}
+      <div className="cal-day-head">
+        <H className="cal-day-h">{dayLabel(d, I)}{d === todayYmd() ? <span className="badge b-sky cal-today-badge">{tt('Бүгін', 'Сегодня')}</span> : null}</H>
+        <span className="tiny muted num">{countTxt(list.length, I)}</span>
+      </div>
+      {list.length ? <ol className="group cal-tl">{list.map(it => <AgendaRow key={it.key} it={it} />)}</ol>
+        : onAdd ? (
+          <div className="cal-empty">
+            <Icon n="calendar" s={28} />
+            <p>{tt('Бұл күні жазба жоқ. Сабақтан тыс кездесу, дайындық немесе демалыс — өзіңіз қосыңыз.', 'На этот день записей нет. Встреча, подготовка или отдых — добавьте сами.')}</p>
+            <button className="btn ghost" type="button" onClick={onAdd}><Icon n="plus" s={18} /> {tt('Осы күнге қосу', 'Добавить на этот день')}</button>
+          </div>
+        ) : <p className="note cal-none">{tt('Бұл күні жазба жоқ.', 'На этот день записей нет.')}</p>}
     </section>
   );
 }
 
-/** the colour key: every kind with its icon and name, and what the priority marks look like */
+/** the colour key: every kind with its icon and name, own events, and what the priority marks look like */
 function Legend({ classes }: { classes: boolean }) {
   const { tt, I } = useApp();
   return (
-    <div className="cal-legend tiny">
+    <details className="cal-legend tiny">
+      <summary>{tt('Түстер мен белгілер', 'Цвета и обозначения')}<Icon n="chev" s={16} /></summary>
       <ul aria-label={tt('Түстер', 'Цвета')}>
         {CAL_KINDS.filter(k => classes || k !== 'class').map(k => (
           <li key={k} className={`cal-k-${k}`} style={kindStyle(k)}><span className="cal-sw" aria-hidden="true"><Icon n={KIND_STYLE[k].icon} s={12} /></span> {kindLabel(k, I)}</li>
         ))}
+        <li><span className="cal-sw cal-sw-own" aria-hidden="true" /> {tt('Менің іс-шарам — өзім таңдаған түс', 'Моё событие — выбранный мной цвет')}</li>
       </ul>
       <ul aria-label={tt('Маңыздылығы', 'Важность')}>
         <li><PrioTag p="high" /></li>
         <li><PrioTag p="low" /></li>
       </ul>
+    </details>
+  );
+}
+
+/** a month cell's titled chips: the kind's colour (or an own event's) as a stripe and soft background */
+function CellChips({ items }: { items: CalItem[] }) {
+  const { shown, more } = packCell(items, 3);
+  if (!items.length) return null;
+  return (
+    <span className="cal-chips" aria-hidden="true">
+      {shown.map(it => (
+        <span key={it.key} className={`cal-chip cal-k-${it.kind} ${prioClass(it.prio)}${it.done ? ' is-done' : ''}${it.color ? ' is-own-ev' : ''}`} style={itemStyle(it)}>{it.title}</span>
+      ))}
+      {more ? <span className="cal-more num">+{more}</span> : null}
+    </span>
+  );
+}
+
+/** «Жыл»: 12 mini months; a month opens in the month view */
+function YearView({ y, dates, onOpen }: { y: number; dates: Map<Ymd, unknown[]>; onOpen: (m: number) => void }) {
+  const { I, lang } = useApp();
+  const today = todayYmd();
+  const counts = monthCounts([...dates.entries()].flatMap(([d, a]) => a.map(() => d)), y);
+  return (
+    <div className="cal-year" role="list" aria-labelledby="calTitle">
+      {yearGrid(y).map(({ ref, weeks }) => {
+        const cur = monthKey(ref) === today.slice(0, 7);
+        return (
+          <div role="listitem" key={ref.m} className="cal-mini-wrap">
+            <button type="button" className={`cal-mini${cur ? ' cur' : ''}`} onClick={() => onOpen(ref.m)}
+              aria-label={`${MONTHS[lang][ref.m]} ${y}, ${countTxt(counts[ref.m], I)}`}>
+              <span className="cal-mini-name">{MONTHS[lang][ref.m]}</span>
+              <span className="cal-mini-grid" aria-hidden="true">
+                {weeks.flat().map((d, i) => d
+                  ? <span key={d.ymd} className={`cal-mini-d num${dates.has(d.ymd) ? ' has' : ''}${d.ymd === today ? ' today' : ''}`}>{d.day}</span>
+                  : <span key={'x' + i} />)}
+              </span>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+type CalViewKind = 'month' | 'week' | 'year' | 'tasks';
 
 export function CalendarView() {
   const { S, I, tt, lang, ui, setUi, openSheet, content } = useApp();
   const today = todayYmd();
   const sel = isYmd(ui.calSel) ? ui.calSel : today;
   const month = /^\d{4}-\d{2}$/.test(ui.calMonth) ? { y: +ui.calMonth.slice(0, 4), m: +ui.calMonth.slice(5, 7) - 1 } : monthOf(sel);
-  const view = ui.calView === 'week' || ui.calView === 'tasks' ? ui.calView : 'month';
-  const week = view === 'week';
-  // the «Сабақтар» layer: by default off in the month view (too noisy), on in the week list; the chip sets it for both
+  const view: CalViewKind = ui.calView === 'week' || ui.calView === 'tasks' || ui.calView === 'year' ? ui.calView : 'month';
+  const week = view === 'week', year = view === 'year';
+  // the «Сабақтар» layer: by default off in the month grid (too noisy), on in the week list; the chip sets it for both
   const classesOn = ui.calClasses === 'auto' ? week : ui.calClasses === 'on';
   const all = calItems(S, I, content).filter(i => !ui.calSaved || i.saved);
   const days = byDay(all);
@@ -510,6 +701,13 @@ export function CalendarView() {
   };
   const moveMonth = (n: number) => setUi({ calMonth: monthKey(shiftMonth(month, n)) });
   const goToday = () => setUi({ calSel: today, calMonth: '' });
+  const openMonth = (y: number, m: number) => {
+    const key = monthKey({ y, m });
+    // keep the selected day when it is in that month, else select the 1st (today when it is today's month)
+    const d = sel.slice(0, 7) === key ? sel : today.slice(0, 7) === key ? today : `${key}-01`;
+    setUi({ calSel: d, calMonth: key, calView: 'month' });
+  };
+  const addOn = (d: Ymd) => openSheet(<EventSheet date={d < today ? today : d} />);
 
   const onGridKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
@@ -539,48 +737,68 @@ export function CalendarView() {
     const da = new Date(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10)), db = new Date(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10));
     return a.slice(0, 7) === b.slice(0, 7) ? `${da.getDate()}–${I.fDate(db)}` : `${I.fDate(da)} – ${I.fDate(db)}`;
   })();
-  const gridClasses = classesOn && !week ? byDay(classItems(I, weeks[0][0].ymd, weeks[weeks.length - 1][6].ymd)) : null;
-  const withClasses = (d: Ymd, list: CalItem[], on: boolean) => (on && isClassDay(d) ? [...list, ...classItems(I, d, d)].sort((a, b) => (a.time || '').localeCompare(b.time || '')) : list);
-  const countTxt = (n: number) => (n ? tt(`${n} жазба`, `${n} ${n === 1 ? 'запись' : n < 5 ? 'записи' : 'записей'}`) : tt('жазба жоқ', 'нет записей'));
-  const setView = (v: 'month' | 'week' | 'tasks') => setUi({ calView: v });
+  const gridClasses = classesOn && !week && !year ? byDay(classItems(I, weeks[0][0].ymd, weeks[weeks.length - 1][6].ymd)) : null;
+  const withClasses = (d: Ymd, list: CalItem[], on: boolean) => (on && isClassDay(d) ? [...list, ...classItems(I, d, d)] : list);
+  const setView = (v: CalViewKind) => setUi({ calView: v });
+  const nav = (n: number) => (week ? pick(addDays(sel, 7 * n)) : year ? moveMonth(12 * n) : moveMonth(n));
+  const navLabel = (n: number) => (week ? (n < 0 ? tt('Алдыңғы апта', 'Предыдущая неделя') : tt('Келесі апта', 'Следующая неделя'))
+    : year ? (n < 0 ? tt('Алдыңғы жыл', 'Предыдущий год') : tt('Келесі жыл', 'Следующий год'))
+      : n < 0 ? tt('Алдыңғы ай', 'Предыдущий месяц') : tt('Келесі ай', 'Следующий месяц'));
+  const addBtn = (
+    <button className="btn block cal-add" type="button" onClick={() => addOn(sel)}>
+      <Icon n="plus" s={20} /> {tt('Іс-шара қосу', 'Добавить событие')}
+    </button>
+  );
+
+  const dayName = (d: Ymd, its: CalItem[]) => {
+    const hi = its.some(i => i.prio === 'high' && !i.done);
+    const titles = sortAgenda(its).map(i => `${i.time ? i.time + ' ' : ''}${i.title} (${itemKindLabel(i, I)})`);
+    return `${dayLabel(d, I, true)}, ${countTxt(its.length, I)}${titles.length ? ': ' + titles.join('; ') : ''}${hi ? ', ' + tt('маңызды бар', 'есть важное') : ''}`;
+  };
 
   return (
-    <>
-      <div className="cal-top">
-        <div className="seg" role="group" aria-label={tt('Көрініс', 'Вид')}>
-          <button type="button" aria-pressed={view === 'month'} onClick={() => setView('month')}>{tt('Ай', 'Месяц')}</button>
-          <button type="button" aria-pressed={week} onClick={() => setView('week')}>{tt('Апта', 'Неделя')}</button>
-          <button type="button" aria-pressed={view === 'tasks'} onClick={() => setView('tasks')}>{tt('Тапсырмалар', 'Задачи')}</button>
-        </div>
-        <button className="btn cal-add" type="button" onClick={() => openSheet(<DeadlineSheet date={sel < today ? today : sel} />)}>
-          <Icon n="plus" s={18} /> {tt('Дедлайн қосу', 'Добавить дедлайн')}
-        </button>
+    <div className="cal-screen">
+      <div className="seg cal-views" role="group" aria-label={tt('Көрініс', 'Вид')}>
+        <button type="button" aria-pressed={view === 'month'} onClick={() => setView('month')}>{tt('Ай', 'Месяц')}</button>
+        <button type="button" aria-pressed={week} onClick={() => setView('week')}>{tt('Апта', 'Неделя')}</button>
+        <button type="button" aria-pressed={year} onClick={() => setView('year')}>{tt('Жыл', 'Год')}</button>
+        <button type="button" aria-pressed={view === 'tasks'} onClick={() => setView('tasks')}>{tt('Тапсырмалар', 'Задачи')}</button>
       </div>
 
       {view === 'tasks' ? <TasksView /> : (
         <>
-          <div className="cal-nav">
-            <button className="icon-btn" type="button" onClick={() => (week ? pick(addDays(sel, -7)) : moveMonth(-1))}
-              aria-label={week ? tt('Алдыңғы апта', 'Предыдущая неделя') : tt('Алдыңғы ай', 'Предыдущий месяц')}><Icon n="back" s={20} /></button>
-            <h2 className="cal-title" id="calTitle" aria-live="polite">{week ? weekTitle : monthTitle}</h2>
-            <button className="icon-btn" type="button" onClick={() => (week ? pick(addDays(sel, 7)) : moveMonth(1))}
-              aria-label={week ? tt('Келесі апта', 'Следующая неделя') : tt('Келесі ай', 'Следующий месяц')}><Icon n="chev" s={20} /></button>
-            <button className="chip" type="button" onClick={goToday}>{tt('Бүгін', 'Сегодня')}</button>
-          </div>
-
-          <div className="chips">
-            <button className="chip" type="button" aria-pressed={ui.calSaved} onClick={() => setUi({ calSaved: !ui.calSaved })}>
-              <Icon n="heart" s={16} /> {tt('Сақталғандар мен менікі', 'Сохранённое и моё')}
-            </button>
-            <button className="chip cal-classes-chip" type="button" aria-pressed={classesOn} onClick={() => setUi({ calClasses: classesOn ? 'off' : 'on' })}>
-              <Icon n="book" s={16} /> {tt('Сабақтар', 'Занятия')}
-            </button>
-          </div>
-
-          {week ? (
-            <div className="cal-week">
-              {weekDays.map(d => <DayList key={d} d={d} items={withClasses(d, days.get(d) ?? [], classesOn)} heading />)}
+          <div className="cal-filters">
+            <div className="chips">
+              <button className="chip" type="button" aria-pressed={ui.calSaved} onClick={() => setUi({ calSaved: !ui.calSaved })}>
+                <Icon n="heart" s={16} /> {tt('Сақталғандар мен менікі', 'Сохранённое и моё')}
+              </button>
+              {year ? null : (
+                <button className="chip cal-classes-chip" type="button" aria-pressed={classesOn} onClick={() => setUi({ calClasses: classesOn ? 'off' : 'on' })}>
+                  <Icon n="book" s={16} /> {tt('Сабақтар', 'Занятия')}
+                </button>
+              )}
             </div>
+            {week ? null : (
+              <MonthPicker month={month} onPick={(y, m) => (year ? setUi({ calMonth: monthKey({ y, m }) }) : openMonth(y, m))} onMonth={m => openMonth(month.y, m)} />
+            )}
+          </div>
+
+          <div className="cal-nav">
+            <button className="icon-btn" type="button" onClick={() => nav(-1)} aria-label={navLabel(-1)}><Icon n="back" s={20} /></button>
+            <h2 className="cal-title" id="calTitle" aria-live="polite">{week ? weekTitle : year ? String(month.y) : monthTitle}</h2>
+            <button className="icon-btn" type="button" onClick={() => nav(1)} aria-label={navLabel(1)}><Icon n="chev" s={20} /></button>
+            <button className="chip cal-today-chip" type="button" onClick={year ? () => setUi({ calSel: today, calMonth: today.slice(0, 7) }) : goToday}>{tt('Бүгін', 'Сегодня')}</button>
+          </div>
+
+          {year ? (
+            <YearView y={month.y} dates={days} onOpen={m => openMonth(month.y, m)} />
+          ) : week ? (
+            <>
+              {addBtn}
+              <div className="cal-week">
+                {weekDays.map(d => <DayAgenda key={d} d={d} items={withClasses(d, days.get(d) ?? [], classesOn)} heading />)}
+              </div>
+            </>
           ) : (
             <>
               <div className="cal-grid" role="grid" aria-labelledby="calTitle" ref={gridRef} onKeyDown={onGridKey}>
@@ -592,20 +810,16 @@ export function CalendarView() {
                 {weeks.map(w => (
                   <div className="cal-row" role="row" key={w[0].ymd}>
                     {w.map(d => {
-                      const its = [...(days.get(d.ymd) ?? []), ...(gridClasses?.get(d.ymd) ?? [])];
-                      const kinds = CAL_KINDS.filter(k => its.some(i => i.kind === k));
-                      const hi = new Set(its.filter(i => i.prio === 'high' && !i.done).map(i => i.kind));
+                      const its = sortAgenda([...(days.get(d.ymd) ?? []), ...(gridClasses?.get(d.ymd) ?? [])]);
                       return (
                         <span role="gridcell" key={d.ymd} className="cal-cell">
                           <button type="button" data-ymd={d.ymd} className={`cal-day-btn${d.inMonth ? '' : ' out'}${its.length ? ' has' : ''}`}
                             tabIndex={d.ymd === tabStop ? 0 : -1}
                             aria-current={d.ymd === today ? 'date' : undefined} aria-pressed={d.ymd === sel}
-                            aria-label={`${dayLabel(d.ymd, I, true)}, ${countTxt(its.length)}${kinds.length ? ': ' + kinds.map(k => kindLabel(k, I)).join(', ') : ''}${hi.size ? ', ' + tt('маңызды бар', 'есть важное') : ''}`}
+                            aria-label={dayName(d.ymd, its)}
                             onClick={() => pick(d.ymd)}>
                             <span className="cal-num num">{d.day}</span>
-                            <span className="cal-dots" aria-hidden="true">
-                              {kinds.slice(0, 4).map(k => <i key={k} className={`cal-dot cal-k-${k}${hi.has(k) ? ' hi' : ''}`} style={kindStyle(k)} />)}
-                            </span>
+                            <CellChips items={its} />
                           </button>
                         </span>
                       );
@@ -613,19 +827,36 @@ export function CalendarView() {
                   </div>
                 ))}
               </div>
-              <Legend classes={classesOn} />
-              <DayList d={sel} items={withClasses(sel, days.get(sel) ?? [], classesOn)} />
+              {addBtn}
+              <DayAgenda d={sel} items={withClasses(sel, days.get(sel) ?? [], classesOn)} onAdd={() => addOn(sel)} />
             </>
           )}
-          {week ? <Legend classes={classesOn} /> : null}
-          {all.length === 0 && !week ? (
+          {year ? null : <Legend classes={classesOn} />}
+          {all.length === 0 && year ? (
             <Empty icon="calendar">{ui.calSaved
-              ? tt('Сақталған мерзімдер мен өз дедлайндарыңыз әзірге жоқ.', 'Сохранённых сроков и своих дедлайнов пока нет.')
-              : tt('Әзірге мерзімдер жоқ. Өз дедлайныңызды қосыңыз.', 'Сроков пока нет. Добавьте свой дедлайн.')}</Empty>
+              ? tt('Сақталған мерзімдер мен өз жазбаларыңыз әзірге жоқ.', 'Сохранённых сроков и своих записей пока нет.')
+              : tt('Әзірге мерзімдер жоқ. Өз іс-шараңызды қосыңыз.', 'Сроков пока нет. Добавьте своё событие.')}</Empty>
           ) : null}
         </>
       )}
-    </>
+    </div>
+  );
+}
+
+/** «Айды таңдау: [Қараша ▾] [2026 ▾]»: jumps the month view (in the year view the year select changes the year) */
+function MonthPicker({ month, onPick, onMonth }: { month: { y: number; m: number }; onPick: (y: number, m: number) => void; onMonth: (m: number) => void }) {
+  const { tt, lang } = useApp();
+  const thisYear = +todayYmd().slice(0, 4);
+  return (
+    <div className="cal-pick" role="group" aria-labelledby="calPickL">
+      <span id="calPickL" className="cal-pick-l">{tt('Айды таңдау', 'Выбрать месяц')}:</span>
+      <select className="input" aria-label={tt('Ай', 'Месяц')} value={month.m} onChange={e => onMonth(+e.target.value)}>
+        {MONTHS[lang].map((n, i) => <option key={n} value={i}>{n}</option>)}
+      </select>
+      <select className="input cal-pick-y" aria-label={tt('Жыл', 'Год')} value={month.y} onChange={e => onPick(+e.target.value, month.m)}>
+        {yearOptions(thisYear, month.y).map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
   );
 }
 
@@ -635,7 +866,7 @@ type DateMode = '' | 'today' | 'tomorrow' | 'pick';
 /** a quick-added to-do task: an own deadline, maybe without a date */
 function newTask(title: string, date: Ymd, prio: Priority): OwnDeadline {
   const now = Date.now();
-  return { id: 'dl' + now.toString(36), title: title.slice(0, 200), date, time: '', note: '', created: now, prio, done: 0 };
+  return { id: 'dl' + now.toString(36), title: title.slice(0, 200), date, time: '', note: '', created: now, prio, done: 0, end: '', place: '', color: 0 };
 }
 
 function TaskRow({ it }: { it: CalItem }) {
@@ -734,14 +965,14 @@ export function UpcomingDeadlines() {
         more={<button className="link-btn" type="button" onClick={() => go('calendar')}>{tt('Күнтізбе', 'Календарь')}</button>} />
       <div className="group">
         {list.map(it => (
-          <div key={it.key} className={`sr cal-home-row cal-k-${it.kind} ${prioClass(it.prio)}`} style={kindStyle(it.kind)}>
+          <div key={it.key} className={`sr cal-home-row cal-k-${it.kind} ${prioClass(it.prio)}`} style={itemStyle(it)}>
             <span className="cal-home-check">
               <input type="checkbox" className="task-check" checked={false} onChange={e => toggle(it, e.target.checked)}
                 aria-label={tt('Орындалды деп белгілеу: ', 'Отметить выполненным: ') + it.title} />
             </span>
             <button className="row" type="button" onClick={() => { if (it.go) { go(it.go); return; } openDay(it.date); }}>
               <span className="cal-ico" aria-hidden="true"><Icon n={KIND_STYLE[it.kind].icon} s={20} /></span>
-              <span className="row-main"><span className="row-title">{it.title}</span><span className="row-sub">{kindLabel(it.kind, I)} · {dayLabel(it.date, I)}{it.time ? `, ${it.time}` : ''}</span></span>
+              <span className="row-main"><span className="row-title">{it.title}</span><span className="row-sub">{itemKindLabel(it, I)} · {dayLabel(it.date, I)}{it.time ? `, ${timeRange(it.time, it.end)}` : ''}</span></span>
               <span className={`tag ${daysBetween(todayYmd(), it.date) <= 3 ? 'tag-warn' : 'tag-new'}`}>{relLabel(it.date, I)}</span>
             </button>
           </div>

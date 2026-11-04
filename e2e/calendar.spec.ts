@@ -67,22 +67,22 @@ test('calendar: menu entry, month navigation, a seeded deadline, own deadline su
   await page.goBack();
   await expect(page).toHaveURL(/\/calendar$/);
 
-  // add an own deadline
+  // add an own event (the «Іс-шара қосу» button under the grid)
   const mine = plusDays(today, 3);
   const myTitle = t('Курстық жұмысты тапсыру', 'Сдать курсовую');
-  await page.getByRole('button', { name: t('Дедлайн қосу', 'Добавить дедлайн') }).click();
+  await page.getByRole('button', { name: t('Іс-шара қосу', 'Добавить событие'), exact: true }).click();
   const sheet = page.locator('.sheet');
   await sheet.getByLabel(t('Атауы', 'Название')).fill(myTitle);
-  await sheet.locator('#dlDate').fill(mine);
-  await sheet.locator('#dlTime').fill('10:30');
-  await sheet.locator('#dlNote').fill(t('Кафедраға', 'На кафедру'));
+  await sheet.locator('#evDate').fill(mine);
+  await sheet.locator('#evStart').fill('10:30');
+  await sheet.locator('#evNote').fill(t('Кафедраға', 'На кафедру'));
   await fits(page);
   await sheet.getByRole('button', { name: t('Қосу', 'Добавить'), exact: true }).click();
   await expect(sheet).toHaveCount(0);
   await expect(day(mine)).toHaveAttribute('aria-pressed', 'true');
   await expect(day(mine)).toHaveAttribute('aria-label', new RegExp(t('1 жазба', '1 запись')));
   await expect(page.locator('.cal-day .cal-item', { hasText: myTitle })).toBeVisible();
-  expect((await deviceState(page)).deadlines).toMatchObject([{ title: myTitle, date: mine, time: '10:30' }]);
+  expect((await deviceState(page)).deadlines).toMatchObject([{ title: myTitle, date: mine, time: '10:30', color: 1 }]);
 
   // survives a reload
   await page.reload();
@@ -115,6 +115,154 @@ test('calendar: menu entry, month navigation, a seeded deadline, own deadline su
   await expect(page.locator('.cal-item', { hasText: myTitle })).toHaveCount(0);
   await expect(day(mine)).toHaveAttribute('aria-label', new RegExp(t('жазба жоқ', 'нет записей')));
   expect((await deviceState(page)).deadlines).toEqual([]);
+});
+
+/** the computed colour of a CSS value such as 'var(--ev-7)' in the current theme */
+const cssColor = (page: import('@playwright/test').Page, value: string) => page.evaluate(v => {
+  const i = document.createElement('i');
+  i.style.color = v;
+  document.body.append(i);
+  const c = getComputedStyle(i).color;
+  i.remove();
+  return c;
+}, value);
+
+test('own events: a chosen colour and time, titles inside the month cell with «+N», day timeline in time order, reload, edit, delete', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await onboard(page, lang);
+  await page.goto('/calendar');
+  const d = plusDays(almatyToday(), 2);
+  const grid = page.getByRole('grid');
+  const cell = grid.locator(`button[data-ymd="${d}"]`);
+  const sheet = page.locator('.sheet');
+  const add = async (title: string, start: string, end: string, colour?: [string, string], place = '') => {
+    await page.getByRole('button', { name: t('Іс-шара қосу', 'Добавить событие'), exact: true }).click();
+    await sheet.getByLabel(t('Атауы', 'Название')).fill(title);
+    await sheet.locator('#evDate').fill(d);
+    if (start) await sheet.locator('#evStart').fill(start);
+    if (end) await sheet.locator('#evEnd').fill(end);
+    if (place) await sheet.locator('#evPlace').fill(place);
+    if (colour) await sheet.getByRole('radio', { name: t(...colour), exact: true }).check();
+    await sheet.getByRole('button', { name: t('Қосу', 'Добавить'), exact: true }).click();
+    await expect(sheet).toHaveCount(0);
+  };
+
+  // the sheet: eight colour swatches as radio buttons with names; the end must be after the start
+  await page.getByRole('button', { name: t('Іс-шара қосу', 'Добавить событие'), exact: true }).click();
+  await expect(sheet.getByRole('group', { name: t('Түсі', 'Цвет') }).getByRole('radio')).toHaveCount(8);
+  await expect(sheet.getByRole('radio', { name: t('Көк', 'Синий'), exact: true })).toBeChecked();
+  await sheet.getByLabel(t('Атауы', 'Название')).fill('X');
+  await sheet.locator('#evStart').fill('12:00');
+  await sheet.locator('#evEnd').fill('11:00');
+  await fits(page);
+  await sheet.getByRole('button', { name: t('Қосу', 'Добавить'), exact: true }).click();
+  await expect(sheet.getByRole('alert')).toContainText(t('Аяқталуы басталуынан кейін', 'Окончание должно быть позже'));
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+
+  const meet = t('Топпен кездесу', 'Встреча с группой');
+  await add(meet, '14:00', '15:30', ['Жасыл', 'Зелёный'], t('Кітапхана', 'Библиотека'));
+  // the title is inside the cell, in the chosen colour; the day button names it
+  const chip = cell.locator('.cal-chip', { hasText: meet });
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveCSS('background-color', await cssColor(page, 'var(--ev-7-soft)'));
+  await expect(chip).toHaveCSS('border-left-color', await cssColor(page, 'var(--ev-7)'));
+  await expect(cell).toHaveAttribute('aria-label', new RegExp(`14:00 ${meet}`));
+  expect((await deviceState(page)).deadlines).toMatchObject([{ title: meet, date: d, time: '14:00', end: '15:30', color: 7 }]);
+
+  // an earlier one and an all-day one: the timeline is all-day first, then by time
+  const run = t('Таңғы жүгіру', 'Утренняя пробежка');
+  const bday = t('Досымның туған күні', 'День рождения друга');
+  await add(run, '08:00', '', ['Қызғылт сары', 'Оранжевый']);
+  await add(bday, '', '', ['Күлгін', 'Фиолетовый']);
+  const rows = page.locator('.cal-day .cal-item');
+  await expect(rows.locator('.row-title')).toHaveText([bday, run, meet]);
+  await expect(rows.nth(0).locator('.cal-time')).toHaveText(t('Күні бойы', 'Весь день'));
+  await expect(rows.nth(2).locator('.cal-time')).toHaveText('14:0015:30');
+  await expect(rows.nth(2)).toContainText(t('Кітапхана', 'Библиотека'));
+  await expect(rows.nth(2).locator('.cal-tl-main')).toHaveCSS('border-left-color', await cssColor(page, 'var(--ev-7)'));
+  await expect(cell.locator('.cal-chip')).toHaveCount(3);
+  await fits(page);
+
+  // a fourth: the cell shows two titles and «+2»
+  await add(t('Кітап оқу', 'Чтение'), '20:00', '');
+  await expect(cell.locator('.cal-chip')).toHaveCount(2);
+  await expect(cell.locator('.cal-more')).toHaveText('+2');
+  await expect(cell).toHaveAttribute('aria-label', new RegExp(t('4 жазба', '4 записи')));
+  await fits(page);
+
+  // survives a reload
+  await page.reload();
+  await grid.locator(`button[data-ymd="${d}"]`).click();
+  await expect(rows).toHaveCount(4);
+  await expect(rows.locator('.row-title')).toHaveText([bday, run, meet, t('Кітап оқу', 'Чтение')]);
+
+  // edit: rename, move it to 07:00 and change the colour → it moves to the top of the timed ones
+  await rows.filter({ hasText: meet }).getByRole('button', { name: t('Өзгерту: ', 'Изменить: ') + meet }).click();
+  await expect(sheet.getByLabel(t('Атауы', 'Название'))).toHaveValue(meet);
+  await expect(sheet.getByRole('radio', { name: t('Жасыл', 'Зелёный'), exact: true })).toBeChecked();
+  const meet2 = meet + ' 2';
+  await sheet.getByLabel(t('Атауы', 'Название')).fill(meet2);
+  await sheet.locator('#evStart').fill('07:00');
+  await sheet.locator('#evEnd').fill('07:45');
+  await sheet.getByRole('radio', { name: t('Көк', 'Синий'), exact: true }).check();
+  await sheet.getByRole('button', { name: t('Сақтау', 'Сохранить'), exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(rows.locator('.row-title')).toHaveText([bday, meet2, run, t('Кітап оқу', 'Чтение')]);
+  expect((await deviceState(page)).deadlines.find((x: { title: string }) => x.title === meet2)).toMatchObject({ time: '07:00', end: '07:45', color: 1 });
+
+  // delete from the row
+  await rows.filter({ hasText: meet2 }).getByRole('button', { name: t('Жою: ', 'Удалить: ') + meet2 }).click();
+  await sheet.getByRole('button', { name: t('Иә, жою', 'Да, удалить') }).click();
+  await expect(rows).toHaveCount(3);
+  await expect(rows.filter({ hasText: meet2 })).toHaveCount(0);
+  expect((await deviceState(page)).deadlines).toHaveLength(3);
+  // own events are not to-do tasks
+  await page.getByRole('button', { name: t('Тапсырмалар', 'Задачи'), exact: true }).click();
+  await expect(page.locator('.task', { hasText: run })).toHaveCount(0);
+});
+
+test('year view: 12 months with marked days, a month opens in the month view; the month/year picker jumps', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await onboard(page, lang);
+  await page.goto('/calendar');
+  const y = +almatyToday().slice(0, 4);
+  const title = page.locator('#calTitle');
+  const monthTitle = (yy: number, m: number) => `${MONTHS[lang][m]} ${yy}`;
+
+  await page.getByRole('button', { name: t('Жыл', 'Год'), exact: true }).click();
+  await expect(page.getByRole('button', { name: t('Жыл', 'Год'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(title).toHaveText(String(y));
+  const year = page.getByRole('list', { name: String(y) });
+  await expect(year.getByRole('listitem')).toHaveCount(12);
+  // the seeded opportunity's day is marked in its month (when it falls in this year)
+  if (+OPP_DEADLINE.slice(0, 4) === y) {
+    const m = +OPP_DEADLINE.slice(5, 7) - 1;
+    await expect(year.getByRole('button', { name: new RegExp(`^${monthTitle(y, m)}, ${t('1 жазба', '1 запись')}`) })).toBeVisible();
+    await expect(year.getByRole('listitem').nth(m).locator('.cal-mini-d.has')).toHaveText(String(+OPP_DEADLINE.slice(8, 10)));
+  }
+  await fits(page);
+
+  // year arrows
+  await page.getByRole('button', { name: t('Келесі жыл', 'Следующий год') }).click();
+  await expect(title).toHaveText(String(y + 1));
+  await page.getByRole('button', { name: t('Алдыңғы жыл', 'Предыдущий год') }).click();
+  await expect(title).toHaveText(String(y));
+
+  // a month opens in the month view
+  await page.getByRole('button', { name: new RegExp(`^${monthTitle(y, 3)},`) }).click();
+  await expect(page.getByRole('button', { name: t('Ай', 'Месяц'), exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(title).toHaveText(monthTitle(y, 3));
+  await expect(page.getByRole('grid').locator(`button[data-ymd="${y}-04-01"]`)).toHaveAttribute('aria-pressed', 'true');
+
+  // the picker after the filter chips
+  const picker = page.getByRole('group', { name: t('Айды таңдау', 'Выбрать месяц') });
+  await picker.getByRole('combobox', { name: t('Ай', 'Месяц'), exact: true }).selectOption({ label: MONTHS[lang][1] });
+  await expect(title).toHaveText(monthTitle(y, 1));
+  await picker.getByRole('combobox', { name: t('Жыл', 'Год'), exact: true }).selectOption(String(y + 1));
+  await expect(title).toHaveText(monthTitle(y + 1, 1));
+  await expect(page.getByRole('grid').locator(`button[data-ymd="${y + 1}-02-01"]`)).toHaveAttribute('aria-pressed', 'true');
+  await fits(page);
 });
 
 test('tab bar: «Күнтізбе» replaces notifications, which open from the header bell on every root screen', async ({ page, lang }) => {
@@ -183,7 +331,8 @@ test('pin an event into the calendar from its page: toast «Ашу», kind colou
   const row = page.locator('.cal-day .cal-item', { hasText: evTitle });
   await expect(row).toHaveAttribute('data-kind', 'event');
   await expect(row.locator('.cal-kind-tag')).toHaveText(t('Іс-шара', 'Мероприятие'));
-  await expect(row.locator('.cal-ico')).toHaveCSS('color', 'rgb(90, 63, 192)') // --cal-event = --p-violet-ink #5A3FC0;
+  await expect(row.locator('.cal-tl-main')).toHaveCSS('border-left-color', await cssColor(page, 'var(--cal-event)'));
+  await expect(page.getByRole('grid').locator(`button[data-ymd="${date}"] .cal-chip`, { hasText: evTitle })).toBeVisible();
   await expect(row).toContainText(t('Күнтізбеде', 'В календаре'));
   await expect(page.locator('.cal-legend')).toContainText(t('Іс-шара', 'Мероприятие'));
   // a pinned item stays when only saved items are shown
