@@ -532,6 +532,7 @@
   {
     "id": "o9",
     "type": "grant",
+    "subtype": "competition",
     "funded": true,
     "title": {
       "kk": "Студенттік ғылыми жобалар байқауы",
