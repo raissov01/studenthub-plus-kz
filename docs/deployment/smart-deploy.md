@@ -49,7 +49,7 @@
 ### Timer-лер
 
 - `docker/systemd/**`
-- Әрекет: unit-тер `/etc/systemd/system/`-ке, `daemon-reload`, `enable --now` екі timer.
+- Әрекет: unit-тер `/etc/systemd/system/`-ке, `daemon-reload`, `enable --now` үш timer (cron, notify, feeds).
 
 ### Белгісіз файл → қауіпсіз толық деплой
 
