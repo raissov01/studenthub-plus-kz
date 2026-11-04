@@ -948,13 +948,25 @@ body::before { height: calc(env(safe-area-inset-top, 0px) + var(--tg-top)); }
   .cert { border: 2px solid #000000; }
 }
 
-/* ---------- one search screen (search box sticky under the header, chips wrap, removable filter chips) ---------- */
+/* ---------- «Іздеу» and the sections (search box sticky under the header, removable filter chips) ---------- */
 .search-top {
   position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--tg-top) + 59px); z-index: 15; background: var(--bg);
   margin: -8px -16px -12px; padding: 8px 16px 12px;
 }
-.search-cats { gap: 8px 6px; }
-.search-cats .chip { min-height: 36px; padding: 6px 12px; }
+/* a section's own sub-tabs (components/views/search.tsx SubTabs): one scrollable row of flat pastel pills, sticky
+   with the search box under the header */
+.subtabs {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 10px; padding: 2px 16px;
+  scroll-padding-inline: 16px; overscroll-behavior-x: contain;
+}
+.subtabs::-webkit-scrollbar { display: none; }
+.subtab {
+  flex: none; min-height: 38px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--muted); font: inherit; font-size: .86rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+.subtab:active { background: var(--surface-2); }
+.subtab[aria-selected="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.subtab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .active-filters { align-items: center; gap: 6px; margin-top: -10px; }
 .active-filters .chip { min-height: 34px; padding: 5px 10px 5px 12px; font-size: .84rem; }
 .active-filters .link-btn { min-height: 34px; padding: 4px 6px; }
@@ -1189,6 +1201,8 @@ main.quiz-host-main { max-width: 1200px; }
 }
 .drawer-item:active, .drawer-item:hover { background: var(--surface-2); }
 .drawer-item svg { flex: none; color: var(--primary); }
+.drawer-label { display: flex; flex-direction: column; min-width: 0; padding: 6px 0; }
+.drawer-sub { font-size: .76rem; font-weight: 500; color: var(--muted); line-height: 1.3; }
 .tile-all { background: var(--surface); border: 1px solid var(--line); }
 .day-more { margin-top: 10px; }
 .day-more > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
@@ -1196,52 +1210,6 @@ main.quiz-host-main { max-width: 1200px; }
 .day-more[open] > summary { margin-bottom: 8px; }
 @media (prefers-reduced-motion: no-preference) { .drawer { animation: drawer-in .18s ease-out; } }
 @keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
-
-/* ---------- home hero with the turning cube (components/views/hero3d.tsx) ---------- */
-.hero3d {
-  display: grid; grid-template-columns: 1fr 160px; align-items: center; gap: 0; min-height: 196px;
-  background: var(--primary); color: var(--on-primary); border-radius: 22px; padding: 20px 8px 20px 20px; overflow: hidden;
-}
-.hero3d h1 { font-size: 1.7rem; line-height: 1.1; color: inherit; overflow-wrap: anywhere; }
-.hero3d p { margin-top: 6px; font-size: .92rem; line-height: 1.4; opacity: .92; }
-.hero3d-btn { margin-top: 14px; min-height: 44px; padding: 10px 16px; background: #FFFFFF; color: var(--primary); }
-.hero3d-scene { position: relative; width: 160px; height: 180px; touch-action: pan-y; perspective: 520px; display: grid; place-items: center; }
-.hero3d-cube { --s: 72px; position: relative; width: var(--s); height: var(--s); transform-style: preserve-3d; transform: rotateX(-24deg) rotateY(-36deg); }
-.hero3d-face {
-  position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 2px;
-  border: 1px solid rgba(20, 26, 51, .14); border-radius: 12px; backface-visibility: hidden; font-size: .62rem; text-align: center;
-}
-.hero3d-face b { font-weight: 700; line-height: 1.1; padding: 0 4px; }
-.hf-0 { background: var(--t-sage); color: var(--t-sage-ink); }
-.hf-1 { background: var(--t-mauve); color: var(--t-mauve-ink); }
-.hf-2 { background: var(--t-taupe); color: var(--t-taupe-ink); }
-.hf-3 { background: var(--t-ice); color: var(--t-ice-ink); }
-.hf-4 { background: var(--t-mist); color: var(--t-mist-ink); }
-.hero3d-front  { transform: translateZ(calc(var(--s) / 2)); }
-.hero3d-back   { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
-.hero3d-right  { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
-.hero3d-left   { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
-.hero3d-top    { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
-.hero3d-bottom { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
-.hero3d-scene canvas { position: absolute; inset: -14px -8px; width: calc(100% + 16px); height: calc(100% + 28px); }
-.hero3d-shadow { position: absolute; bottom: 8px; left: 50%; width: 70px; height: 10px; margin-left: -35px; border-radius: 50%; background: rgba(0, 0, 0, .18); }
-@media (prefers-reduced-motion: no-preference) {
-  .hero3d-cube { animation: hero3d-spin 14s linear infinite; }
-  .hero3d-scene:active .hero3d-cube, .hero3d-scene:hover .hero3d-cube { animation-play-state: paused; }
-  .hero3d-shadow { animation: hero3d-breathe 7s ease-in-out infinite; }
-  .hero3d-text > * { animation: hero3d-rise .5s ease-out both; }
-  .hero3d-text > :nth-child(2) { animation-delay: .08s; }
-  .hero3d-text > :nth-child(3) { animation-delay: .16s; }
-}
-@keyframes hero3d-spin {
-  from { transform: rotateX(-24deg) rotateY(0deg); }
-  50% { transform: rotateX(-38deg) rotateY(180deg); }
-  to { transform: rotateX(-24deg) rotateY(360deg); }
-}
-@keyframes hero3d-breathe { 50% { transform: scaleX(.8); opacity: .7; } }
-@keyframes hero3d-rise { from { opacity: 0; transform: translateY(8px); } }
-@media (max-width: 380px) { .hero3d { grid-template-columns: 1fr 132px; } .hero3d-scene { width: 132px; height: 170px; } }
-@media (max-width: 359px) { .hero3d { grid-template-columns: 1fr 112px; } .hero3d-scene { width: 112px; height: 140px; } .hero3d-cube { --s: 56px; } }
 
 /* header «Тіркелу» for a signed-out student on the root screens */
 .top-signin { min-height: 36px; padding: 6px 14px; border-radius: 999px; font-size: .88rem; flex: none; margin-left: auto; }
@@ -1368,12 +1336,11 @@ main.quiz-host-main { max-width: 1200px; }
 .pts-red .row-title { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
 /* ---------- pastel palette: colour-only overrides (tokens at the top of this file; no layout here) ---------- */
-/* home hero and banner: a pale lavender card with a 1px line instead of a saturated block */
-.hero3d, .promo { background: var(--p-violet); color: var(--text); border: 1px solid var(--line); }
-.hero3d p, .promo p { color: var(--muted); opacity: 1; }
-.hero3d-btn, .promo-btn { background: var(--primary); color: var(--on-primary); }
+/* banner: a pale lavender card with a 1px line instead of a saturated block */
+.promo { background: var(--p-violet); color: var(--text); border: 1px solid var(--line); }
+.promo p { color: var(--muted); opacity: 1; }
+.promo-btn { background: var(--primary); color: var(--on-primary); }
 .promo-btn:active { background: var(--primary-press); }
-.hero3d-face { border-color: var(--line); }
 .promo-art i { border-color: var(--p-violet-ink) !important; }
 .promo-art i:nth-child(1) { background: var(--sw-sage); }
 .promo-art i:nth-child(2) { background: var(--sw-mauve); }

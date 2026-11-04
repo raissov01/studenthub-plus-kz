@@ -2,7 +2,6 @@
 /* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
-import { Hero3D } from '@/components/views/hero3d';
 import { NewsCarousel } from '@/components/views/news-carousel';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
@@ -12,7 +11,6 @@ import { PointsChip } from '@/components/views/points';
 import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
-import { useTelegram } from '@/lib/telegram';
 import { classWhere, nextClass } from '@/lib/campus';
 import { SCHEDULE } from '@/lib/data/static';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
@@ -22,7 +20,6 @@ import type { IconName } from '@/lib/types';
 import { HomeReviewDue } from '@/components/views/review';
 import { subjectId } from '@/lib/subjects';
 
-const firstName = (name: string, fb: string) => (name || '').trim().split(/\s+/)[0] || fb;
 const Mark = ({ id, label }: { id: string; label: string }) => (
   <span className={`mk mk-${hue(id)}`} aria-hidden="true">{plainOrg(label).charAt(0).toUpperCase()}</span>
 );
@@ -81,8 +78,6 @@ function ScheduleIcsButton() {
 
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
-  const tg = useTelegram();
-  const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const news = [
     ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, kind: tt('Іс-шара', 'Мероприятие'), title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
@@ -113,8 +108,6 @@ export function Home() {
           onChange={e => setUi({ sq: e.target.value })} />
       </form>
 
-      <Hero3D who={who} />
-      <PointsChip />
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
@@ -142,6 +135,8 @@ export function Home() {
           <p className="note">{tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
         </details>
       </section>
+
+      <PointsChip />
     </>
   );
 }
