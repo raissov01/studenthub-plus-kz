@@ -1,0 +1,7 @@
+# local build output
+/bin/
+/studenthub-api
+/studenthub-migrate
+
+# market photos and quiz media written by the API in local dev (UPLOAD_DIR default ./uploads)
+/uploads/
