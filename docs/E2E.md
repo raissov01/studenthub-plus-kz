@@ -4,19 +4,19 @@
 
 ```bash
 # Postgres: postgres://postgres:dev@127.0.0.1:54329/postgres
-npm run e2e:real
+cd frontend && npm run e2e:real
 # Бір тіл / экран:
 npm run e2e:real -- --project=kk-390
 ```
 
-`playwright.real.config.ts` — бөлек жиынтық: kk/390 px және ru/360 px.
+`frontend/playwright.real.config.ts` — бөлек жиынтық: kk/390 px және ru/360 px.
 Әр іске қосу `studenthub_browser_<pid>_<random>` уақытша базасын жасайды,
-`cmd/migrate` миграцияларын қолданады, нақты Go HTTP handler мен `next dev --webpack`
+`backend/cmd/migrate` миграцияларын қолданады, нақты Go HTTP handler мен `next dev --webpack`
 серверлерін ашады. Соңында серверлер тоқтап, база мен жүктелген фотолар өшіріледі.
 Порттар: 4320 (Next), 4321 (Go); `E2E_REAL_PORT` / `E2E_REAL_API_PORT` арқылы өзгертуге болады.
 `DATABASE_URL` еленбейді: бұл runner тек жергілікті Postgres-ке қосылады.
 
-`e2e/real-api/` ішінде API жауаптары ауыстырылмайды. Telegram widget callback-іне
+`frontend/e2e/real-api/` ішінде API жауаптары ауыстырылмайды. Telegram widget callback-іне
 тест BOT_TOKEN арқылы HMAC-пен қол қойылған деректер беріледі; кәдімгі кіру,
 келісім, cookie және рөл тексерістері орындалады. Сыртқы Telegram скрипті ғана
 оқшауланған; хабарлама жеткізу жабық жергілікті портқа бағытталады. Сайт ішіндегі
@@ -26,7 +26,7 @@ npm run e2e:real -- --project=kk-390
 Бұл жиынтықты production build немесе басқа Next серверімен қатар іске қоспаңыз.
 Төмендегі жылдам mocked жиынтықтың конфигурациясы өзгермейді.
 
-| PARITY | Браузердегі ағын (`e2e/real-api/`) |
+| PARITY | Браузердегі ағын (`frontend/e2e/real-api/`) |
 | --- | --- |
 | 11-008 | `account.spec.ts`: Telegram кіруі, келісім, құрылғы профилін синхрондау, өшіру, ескі cookie жарамсыздығы. |
 | 11-009 | `events.spec.ts`: іс-шара жасау, екі студентті тіркеу, нақты минуттық QR ауысуы, ескі QR-ды қабылдамау, жаңа QR арқылы келу, ұйымдастырушының билет кодымен белгілеуі, қонаққа ашық `/p/<slug>` ішіндегі расталған жазба. |
@@ -45,12 +45,15 @@ Telegram-ның нақты серверіне кіру/хабар жеткізу
 QR автоматты ауысуын тексеру бір минутқа дейін күтеді; API-ге fake clock берілмейді.
 
 Төмендегі mocked тесттер Chromium-да **production Next.js** арқылы жүреді: `next dev` қолданылмайды.
-`@playwright/test` нұсқасы `package.json` және lock-файлда нақты бекітілген.
+`@playwright/test` нұсқасы `frontend/package.json` және lock-файлда нақты бекітілген.
 Go сервері, Postgres, Telegram аккаунты немесе AI кілті қажет емес.
 
 ## Іске қосу
 
+Барлық команда `frontend/` ішінен.
+
 ```bash
+cd frontend
 npm ci
 npx playwright install chromium
 # Linux-та браузер кітапханалары жетіспесе: npx playwright install --with-deps chromium
@@ -67,12 +70,13 @@ TypeScript-тің `PageProps` / `LayoutProps` типтерін build жасай�
 
 `npm run e2e` екі жергілікті серверді өзі іске қосып, соңында тоқтатады:
 
-- `127.0.0.1:4311`: `e2e/server.ts` — тек SSR-ге арналған `/api/content` жасанды жауабы.
+- `127.0.0.1:4311`: `frontend/e2e/server.ts` — `/api/content` жасанды жауабы (серверде рендерленетін job/opportunity беттері үшін; браузердегі API сұраныстарын `frontend/e2e/fixtures.ts` ұстайды).
 - `127.0.0.1:4310`: `npx next start` — дайын `.next` жинағы.
 
 `API_ORIGIN` build кезінде rewrite/CSP-ға, start кезінде серверлік контент сұраныстарына қолданылады.
 Сондықтан build және start үшін бірдей origin керек. Build кезінде fixture серверінің жұмыс істеуі міндетті емес:
-контент беттері `connection()` арқылы сұраныс кезінде рендерленеді.
+қабық пен табтар фидсіз жасалады (фид браузерде жүктеледі), job/opportunity беттері сұраныс кезінде рендерленеді.
+`output: 'standalone'` болғанда `next start` ескерту жазады, бірақ тесттерге жарайды.
 Портты ауыстыру: `E2E_PORT`, `E2E_API_PORT`; build-тағы `API_ORIGIN` портын да сәйкестендіріңіз.
 Бар сервер автоматты түрде қайта қолданылмайды — бөтен процесті тестке қосып алмау үшін.
 
@@ -103,7 +107,7 @@ npx playwright show-trace test-results/ҚАПШЫҚ/trace.zip
 320 px суреттері, сәтсіз тест суреті мен trace `test-results/` ішінде, HTML есебі `playwright-report/` ішінде.
 Бұл каталогтар git пен ESLint-тен шығарылған.
 
-`e2e/fixtures.ts` браузердегі API сұраныстарын `page.route()` арқылы ұстайды; күтпеген endpoint тестті құлатады.
+`frontend/e2e/fixtures.ts` браузердегі API сұраныстарын `page.route()` арқылы ұстайды; күтпеген endpoint тестті құлатады.
 Сервер компонентінің fetch-ін Playwright ұстай алмайтындықтан, SSR бөлек жергілікті fixture серверін қолданады.
 Қолданбада тест үшін жасанды `initData`, авторизация айналма жолы немесе production тест режимі қосылмаған.
 Google Fonts пен Telegram әдеттегі тестте жергілікті жауаппен ауыстырылады; жергілікті woff2 нақты жүктеледі.
