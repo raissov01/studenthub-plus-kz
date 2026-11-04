@@ -11,6 +11,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/mail"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/webpush"
 )
 
 // Names lists every switch in display order.
@@ -63,6 +64,8 @@ func Routes(mux httpx.Router) {
 			"emailAuth": mail.Enabled(),
 			// null unless MARKET_SEASON is set and the range is current or upcoming
 			"marketSeason": MarketSeason(time.Now()),
+			// {"enabled":false} unless FEATURE_WEBPUSH and the VAPID keys are set
+			"webPush": webpush.PublicConfig(),
 		})
 	})
 }

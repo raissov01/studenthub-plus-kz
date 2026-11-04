@@ -13,6 +13,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/webpush"
 )
 
 var Now = time.Now
@@ -135,11 +136,11 @@ func (d *Dispatcher) accept(ctx context.Context, userID int64, c Category, text,
 		if err != nil {
 			return err
 		}
-		canDM, err := HasTelegram(ctx, tx, userID)
+		ok, err := d.reachable(ctx, tx, userID)
 		if err != nil {
 			return err
 		}
-		if !prefs.Allows(c) || !canDM {
+		if !prefs.Allows(c) || !ok {
 			state = "dropped"
 		}
 		at := now
@@ -217,6 +218,7 @@ type queued struct {
 	attempts       int
 	notificationID *int64
 	createdAt      time.Time
+	link           *string
 }
 
 // ensureInbox repairs pre-dispatcher rows (and a receipt whose old read inbox row was
@@ -264,7 +266,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 		if err != nil {
 			return err
 		}
-		rows, err := tx.Query(ctx, `select id,category,text,reply_markup,attempts,notification_id,created_at from notify_outbox
+		rows, err := tx.Query(ctx, `select id,category,text,reply_markup,attempts,notification_id,created_at,
+   (select link from notifications n where n.id=notify_outbox.notification_id) from notify_outbox
    where user_id=$1 and kind=$2 and state='pending' and not_before<=$3 and ($4::bigint=0 or id=$4)
    order by case when $2='digest' then case category when 'deadlines' then 0 when 'events' then 1 else 2 end else 0 end,id limit $5 for update`, userID, kind, now, onlyID, flushBatch)
 		if err != nil {
@@ -272,7 +275,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 		}
 		list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (queued, error) {
 			var q queued
-			err := r.Scan(&q.id, &q.category, &q.text, &q.markup, &q.attempts, &q.notificationID, &q.createdAt)
+			err := r.Scan(&q.id, &q.category, &q.text, &q.markup, &q.attempts, &q.notificationID, &q.createdAt, &q.link)
 			return q, err
 		})
 		if err != nil || len(list) == 0 {
@@ -282,6 +285,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 		if err != nil {
 			return err
 		}
+		// Push is preferred when this account has a browser subscription; the bot is the
+		// fallback (docs/PUSH.md). Both share the categories, quiet hours and daily budget.
+		if m.push = d.pushSender(); m.push != nil {
+			if m.subs, err = webpush.List(ctx, tx, userID); err != nil {
+				return err
+			}
+		}
+		reachable := canDM || len(m.subs) > 0
 		var eligible []queued
 		for _, q := range list {
 			if q.notificationID == nil {
@@ -289,7 +300,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 					return err
 				}
 			}
-			if !prefs.Allows(q.category) || !canDM {
+			if !prefs.Allows(q.category) || !reachable {
 				if _, err := tx.Exec(ctx, `update notify_outbox set state='dropped',done_at=$2 where id=$1`, q.id, now); err != nil {
 					return err
 				}
@@ -307,13 +318,16 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 		}
 		deferUntil := prefs.QuietEnds(now)
 		var pause *time.Time
-		if err := tx.QueryRow(ctx, `select telegram_id,paused_until from users where id=$1`, userID).Scan(&m.chatID, &pause); err != nil {
+		if err := tx.QueryRow(ctx, `select coalesce(telegram_id,0),paused_until from users where id=$1`, userID).Scan(&m.chatID, &pause); err != nil {
 			return err
+		}
+		if !canDM || d.Token == "" {
+			m.chatID = 0 // no bot fallback
 		}
 		if kind == "digest" && pause != nil && pause.After(deferUntil) {
 			deferUntil = prefs.QuietEnds(*pause)
 		}
-		if d.Token == "" {
+		if d.Token == "" && len(m.subs) == 0 {
 			deferUntil = now.Add(retryBackoff)
 		}
 		if !deferUntil.After(now) {
@@ -356,6 +370,9 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 				break
 			}
 			m.ids = append(m.ids, q.id)
+			if m.link == "" && q.link != nil {
+				m.link = *q.link
+			}
 			parts = append(parts, text)
 			size += partSize
 			if kind == "direct" {
@@ -389,7 +406,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 	if err != nil || len(m.ids) == 0 {
 		return res, false, err
 	}
-	outcome := d.transmit(ctx, m)
+	outcome, channel := d.deliver(ctx, m)
 	// Finish even if the HTTP request was cancelled; otherwise stale claims become uncertain.
 	finishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
@@ -423,7 +440,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 		} else {
 			res.Uncertain++
 		}
-		_, err := tx.Exec(finishCtx, `update notify_outbox set state=$2,done_at=$3 where id=any($1)`, m.ids, state, now)
+		_, err := tx.Exec(finishCtx, `update notify_outbox set state=$2,done_at=$3,channel=nullif($4,'') where id=any($1)`, m.ids, state, now, channel)
 		return err
 	})
 	if outcome.err != nil {

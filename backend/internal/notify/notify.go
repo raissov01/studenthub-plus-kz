@@ -8,14 +8,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/webpush"
 )
 
 var client = &http.Client{Timeout: 10 * time.Second}
@@ -26,6 +29,26 @@ type Dispatcher struct {
 	Pool           *pgxpool.Pool
 	Token, APIBase string
 	Client         *http.Client
+	// Push overrides the Web Push sender (tests); nil means webpush.Default(), which is
+	// nil unless FEATURE_WEBPUSH is on and the VAPID keys are set.
+	Push *webpush.Sender
+}
+
+func (d *Dispatcher) pushSender() *webpush.Sender {
+	if d.Push != nil {
+		return d.Push
+	}
+	return webpush.Default()
+}
+
+// reachable: the account can get a delivery on some channel (bot chat or browser push).
+// Unreachable accounts still get the inbox row.
+func (d *Dispatcher) reachable(ctx context.Context, tx pgx.Tx, userID int64) (bool, error) {
+	ok, err := HasTelegram(ctx, tx, userID)
+	if err != nil || ok || d.pushSender() == nil {
+		return ok, err
+	}
+	return webpush.Has(ctx, tx, userID)
 }
 
 func dispatcher(ctx context.Context) (*Dispatcher, error) {
@@ -52,6 +75,9 @@ func HasTelegram(ctx context.Context, q Querier, userID int64) (bool, error) {
 
 type delivery struct {
 	text        string
+	link        string // site path of the first item, opened by a click on the push
+	push        *webpush.Sender
+	subs        []webpush.Subscription
 	markup      json.RawMessage
 	chatID      int64
 	ids         []int64
@@ -62,6 +88,35 @@ type delivery struct {
 type telegramResult struct {
 	sent, rejected, blocked bool
 	err                     error
+}
+
+// deliver tries Web Push first when the account has subscriptions, then the bot. A push is
+// sent when at least one browser's push service accepted it. Retrying a push is harmless:
+// the notification tag ("notify-<outbox id>") replaces an earlier copy on the device.
+func (d *Dispatcher) deliver(ctx context.Context, m delivery) (telegramResult, string) {
+	if len(m.subs) > 0 && m.push != nil {
+		url := m.link
+		if url == "" {
+			url = "/notifications"
+		}
+		payload, err := webpush.Message{Title: "Student Hub", Body: PlainText(m.text), URL: url, Tag: fmt.Sprintf("notify-%d", m.ids[0])}.Payload()
+		if err == nil {
+			res := m.push.SendAll(ctx, d.Pool, m.subs, payload, "normal")
+			if res.Delivered > 0 {
+				return telegramResult{sent: true}, "push"
+			}
+			err = fmt.Errorf("push: %d gone, %d failed", res.Gone, res.Failed)
+		}
+		if m.chatID == 0 {
+			// Known failure, nothing accepted it: retry later (or drop once no channel is left).
+			return telegramResult{rejected: true, err: err}, ""
+		}
+		log.Printf("notify: %v; falling back to the bot", err)
+	}
+	if m.chatID == 0 {
+		return telegramResult{rejected: true, err: errors.New("notify: no delivery channel")}, ""
+	}
+	return d.transmit(ctx, m), "telegram"
 }
 
 // transmit never retries an ambiguous outcome: Telegram has no idempotency token.

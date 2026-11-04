@@ -233,4 +233,8 @@ var routePolicies = map[string]RoutePolicy{
 	"POST /api/admin/points/redemptions/{id}/reject":       {"admin", "yes", "yes", "points"},
 	"GET /api/admin/points/users/{userId}":                 {"admin", "no", "yes", "points"},
 	"POST /api/admin/points/users/{userId}/adjust":         {"admin", "yes", "yes", "points"},
+	// Web Push (internal/webpush, docs/PUSH.md)
+	"POST /api/me/push":      {"signed-in", "yes", "yes (https endpoint, P-256 p256dh, 16-byte auth)", "webpush"},
+	"DELETE /api/me/push":    {"signed-in (own rows only, RLS)", "yes", "yes", "webpush"},
+	"POST /api/me/push/test": {"signed-in (own subscriptions)", "yes (+ 5 per user per 10 min)", "no (no input)", "webpush"},
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/features"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/webpush"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
 
@@ -26,6 +27,12 @@ func allFeatures(t *testing.T) {
 	t.Setenv("ALLOWED_HOSTS", "localhost")
 	t.Setenv("SESSION_SECRET", strings.Repeat("launch-test-secret", 3))
 	t.Setenv("RATE_WRITE_PER_MIN", "10000")
+	// Web Push is a switch outside features.Names: it also needs a VAPID key pair.
+	pub, priv, _ := webpush.GenerateVAPID()
+	t.Setenv("FEATURE_WEBPUSH", "true")
+	t.Setenv("VAPID_PUBLIC_KEY", pub)
+	t.Setenv("VAPID_PRIVATE_KEY", priv)
+	t.Setenv("VAPID_SUBJECT", "mailto:test@example.com")
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)
@@ -116,6 +123,7 @@ func TestRouterAuthenticationAndSwitches(t *testing.T) {
 	for _, f := range features.Names {
 		t.Setenv("FEATURE_"+strings.ToUpper(f), "false")
 	}
+	t.Setenv("FEATURE_WEBPUSH", "false")
 	for _, route := range Inventory() {
 		if route.Policy.Feature == "—" {
 			continue

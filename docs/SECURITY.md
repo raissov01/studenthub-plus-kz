@@ -56,6 +56,7 @@ the API takes only an action id, a reward id and an idempotency key.
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
+| DELETE | `/api/me/push` | signed-in (own rows only, RLS) | yes | yes | webpush |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
@@ -243,6 +244,8 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/me/email/confirm` | signed-in | yes (+ per-user code throttle, 5 tries per code) | yes | — |
 | POST | `/api/me/inbox/read` | signed-in (own rows only, RLS) | yes | yes | — |
 | POST | `/api/me/password` | signed-in | yes (+ per-user throttle) | yes | — |
+| POST | `/api/me/push` | signed-in | yes | yes (https endpoint, P-256 p256dh, 16-byte auth) | webpush |
+| POST | `/api/me/push/test` | signed-in (own subscriptions) | yes (+ 5 per user per 10 min) | no (no input) | webpush |
 | POST | `/api/mentors/apply` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/pairs/{id}/checkin` | signed-in | yes | yes | mentors |
 | POST | `/api/mentors/pairs/{id}/end` | signed-in | yes | yes | mentors |
