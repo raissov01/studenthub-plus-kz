@@ -74,7 +74,6 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/admin/points/users/{userId}` | admin | no | yes | points |
 | GET | `/api/admin/queue` | admin | no | yes | — |
 | GET | `/api/admin/reports` | admin | no | yes | — |
-| GET | `/api/admin/settings` | admin | no | no (no input) | — |
 | GET | `/api/admin/summary` | admin | no | no (no input) | — |
 | GET | `/api/admin/university-staff` | admin | no | no (no input) | b2b |
 | GET | `/api/admin/users` | admin | no | yes | — |
@@ -274,7 +273,6 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
-| PUT | `/api/admin/settings` | admin | yes | yes | — |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |

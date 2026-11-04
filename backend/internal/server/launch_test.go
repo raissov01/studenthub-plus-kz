@@ -16,7 +16,6 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/content"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/cronrun"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
-	"github.com/raissov01/studenthub-plus-kz/backend/internal/settings"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
 
@@ -36,7 +35,7 @@ func launchCount(t *testing.T, query string, args ...any) int {
 	}
 	return n
 }
-func TestLaunchSettingsAndAllDemoSections(t *testing.T) {
+func TestContentNeverServesDemoRecords(t *testing.T) {
 	allFeatures(t)
 	testdb.Need(t)
 	// Exercise every content kind with both bundled data and an extra-source contribution.
@@ -44,18 +43,16 @@ func TestLaunchSettingsAndAllDemoSections(t *testing.T) {
 	t.Setenv("FEATURE_B2B", "false")
 	t.Setenv("FEATURE_AMBASSADOR", "false")
 	admin := launchUser(t, "admin")
-	if w := launchRequest(t, "GET", "/api/admin/settings", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"showDemo":true`) {
-		t.Fatalf("default: %d %s", w.Code, w.Body)
-	}
-	for _, body := range []string{`{}`, `{"showDemo":null}`, `{"showDemo":"false"}`, `{"showDemo":true,"unknown":1}`, `{"showDemo":true} {}`, strings.Repeat("x", 9000)} {
-		if w := launchRequest(t, "PUT", "/api/admin/settings", body, admin); w.Code != 400 {
-			t.Errorf("invalid settings: %d", w.Code)
+	// the old «show demo» switch is gone
+	for _, method := range []string{"GET", "PUT"} {
+		if w := launchRequest(t, method, "/api/admin/settings", `{"showDemo":true}`, admin); w.Code != 404 && w.Code != 405 {
+			t.Errorf("%s /api/admin/settings: %d", method, w.Code)
 		}
 	}
 	dir := t.TempDir()
 	for _, kind := range []string{"jobs", "opportunities", "discounts"} {
 		rows := []map[string]any{{"id": "demo", "is_demo": true}}
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 2; i++ {
 			rows = append(rows, map[string]any{"id": fmt.Sprintf("real-%d", i)})
 		}
 		b, _ := json.Marshal(rows)
@@ -63,27 +60,16 @@ func TestLaunchSettingsAndAllDemoSections(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	base := []content.Record{content.RawRecord(json.RawMessage(`{"id":"demo","is_demo":true}`), "")}
-	for i := 0; i < 5; i++ {
-		base = append(base, content.RawRecord(json.RawMessage(fmt.Sprintf(`{"id":"real-%d"}`, i)), ""))
-	}
-	sixth := false
 	content.RegisterExtra("launch-test", func(context.Context) (map[string][]content.Record, error) {
-		out := map[string][]content.Record{"events": append([]content.Record{}, base...)}
-		if sixth {
-			for _, kind := range []string{"jobs", "opportunities", "discounts", "events"} {
-				out[kind] = append(out[kind], content.RawRecord(json.RawMessage(`{"id":"sixth","is_demo":false}`), ""))
-			}
-		}
-		return out, nil
+		return map[string][]content.Record{"events": {
+			content.RawRecord(json.RawMessage(`{"id":"demo","is_demo":true}`), ""),
+			content.RawRecord(json.RawMessage(`{"id":"real-0"}`), ""),
+			content.RawRecord(json.RawMessage(`{"id":"real-1","is_demo":false}`), ""),
+		}}, nil
 	})
-	t.Cleanup(func() {
-		content.RegisterExtra("launch-test", nil)
-		_ = settings.SetShowDemo(context.Background(), true)
-	})
+	t.Cleanup(func() { content.RegisterExtra("launch-test", nil) })
 	l := &content.Loader{DataDir: dir, Env: func(string) string { return "" }}
-	check := func(wantDemo bool, wantLen int) {
-		t.Helper()
+	for range 2 { // the second pass reads the cached source slices: they were not mutated
 		w := httptest.NewRecorder()
 		content.Handler(l)(w, httptest.NewRequest("GET", "/api/content", nil))
 		if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" {
@@ -95,69 +81,39 @@ func TestLaunchSettingsAndAllDemoSections(t *testing.T) {
 		}
 		for _, kind := range []string{"jobs", "opportunities", "discounts", "events"} {
 			var recs []struct {
-				Demo bool `json:"is_demo"`
+				ID   string `json:"id"`
+				Demo bool   `json:"is_demo"`
 			}
 			if err := json.Unmarshal(got[kind], &recs); err != nil {
 				t.Fatal(err)
 			}
-			demo := false
-			for _, r := range recs {
-				demo = demo || r.Demo
-			}
-			if demo != wantDemo || len(recs) != wantLen {
-				t.Errorf("%s demo=%v len=%d", kind, demo, len(recs))
+			if len(recs) != 2 || recs[0].Demo || recs[1].Demo || recs[0].ID != "real-0" {
+				t.Errorf("%s: %+v", kind, recs)
 			}
 		}
 	}
-	check(true, 6) // exactly five real records retain demos
-	sixth = true
-	check(false, 6) // six real records hide only the demos
-	sixth = false
-	check(true, 6) // cached source slices were not mutated
-	if w := launchRequest(t, "PUT", "/api/admin/settings", `{"showDemo":false}`, admin); w.Code != 200 {
-		t.Fatal(w.Code, w.Body)
-	}
-	check(false, 5)
-	if w := launchRequest(t, "GET", "/api/admin/settings", "", admin); !strings.Contains(w.Body.String(), `"showDemo":false`) {
-		t.Fatal(w.Body)
-	}
-	// A configured but unavailable settings table must hide demos, never serve stale policy.
-	if err := settings.SetShowDemo(context.Background(), true); err != nil {
-		t.Fatal(err)
-	}
-	launchExec(t, `alter table app_settings rename to launch_settings_unavailable`)
-	func() {
-		defer launchExec(t, `alter table launch_settings_unavailable rename to app_settings`)
-		check(false, 5)
-	}()
-
 }
 
 func TestRealEventsContentSource(t *testing.T) {
 	allFeatures(t)
 	testdb.Need(t)
-	var id int64
+	var real, demo int64
 	err := db.Tx(context.Background(), func(tx pgx.Tx) error {
-		return tx.QueryRow(context.Background(), `insert into events
-  (title_kk,cat,starts_at,ends_at,university,status,is_demo,checkin_key) values ('Launch demo','other',now()+interval '1 day',now()+interval '2 days','LAUNCH','published',true,'secret-checkin') returning id`).Scan(&id)
+		const q = `insert into events (title_kk,cat,starts_at,ends_at,university,status,is_demo,checkin_key)
+  values ($1,'other',now()+interval '1 day',now()+interval '2 days','LAUNCH','published',$2,'secret-checkin') returning id`
+		if err := tx.QueryRow(context.Background(), q, "Launch real", false).Scan(&real); err != nil {
+			return err
+		}
+		return tx.QueryRow(context.Background(), q, "Launch demo", true).Scan(&demo)
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		launchExec(t, `delete from events where id=$1`, id)
-		_ = settings.SetShowDemo(context.Background(), true)
-	})
+	t.Cleanup(func() { launchExec(t, `delete from events where id = any($1)`, []int64{real, demo}) })
 	l := &content.Loader{DataDir: t.TempDir(), Env: func(string) string { return "" }, Warn: func(string) {}}
-	_ = settings.SetShowDemo(context.Background(), true)
 	b, _ := json.Marshal(l.Load(context.Background(), time.Now()))
-	if !strings.Contains(string(b), "Launch demo") || strings.Contains(string(b), "secret-checkin") {
+	if !strings.Contains(string(b), "Launch real") || strings.Contains(string(b), "Launch demo") || strings.Contains(string(b), "secret-checkin") {
 		t.Fatalf("event feed: %s", b)
-	}
-	_ = settings.SetShowDemo(context.Background(), false)
-	b, _ = json.Marshal(l.Load(context.Background(), time.Now()))
-	if strings.Contains(string(b), "Launch demo") {
-		t.Fatal("demo event survived toggle")
 	}
 }
 

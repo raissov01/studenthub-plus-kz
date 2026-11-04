@@ -360,6 +360,6 @@ func (l *Loader) Load(ctx context.Context, now time.Time) Content {
 		out.Jobs = l.dedupe("jobs", out.Jobs)
 		out.Discounts = l.dedupe("discounts", out.Discounts)
 	}
-	l.filterDemo(ctx, &out)
+	filterDemo(&out)
 	return out
 }

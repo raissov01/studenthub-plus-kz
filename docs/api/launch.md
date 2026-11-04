@@ -5,38 +5,20 @@ migration command before starting this version of the API. This work does not de
 change the frontend. The new routes are always available; their authorization does not
 rely on a feature switch.
 
-## Settings
+## Demo records
 
-`GET /api/admin/settings` and `PUT /api/admin/settings` require a current admin session.
-Anonymous callers receive 401; all other roles receive 403. PUT also requires an allowed
-Origin/Referer and passes through the shared write limiter. The only accepted JSON field is
-a required boolean `showDemo`; unknown fields, null, trailing JSON and invalid types return 400.
-
-Request and response:
-
-```json
-{"showDemo": false}
-```
-
-The singleton `app_settings` row defaults to `true`. Reads and writes go directly to the
-database, so changes apply across instances without a restart. Database failures return 503.
-No role acting as `app_user`, including an administrator, can read or write this table directly.
-
-`GET /api/content` applies the following independently to jobs, opportunities, events and
-discounts, after merging sources and filtering expired records:
-
-- `showDemo=false`: remove all records with `is_demo=true`.
-- `showDemo=true`: retain demos while that section has at most five real records;
-  hide its demos once it has **six or more** real records.
-- Missing `is_demo` means real. Hiding demos never removes the underlying records.
-- Changing one section's real-record count does not hide another section's demos.
+There is no demo switch any more (the former `GET/PUT /api/admin/settings` routes and their
+`app_settings.show_demo` flag were removed; the table stays, unused). `GET /api/content` always
+drops records with `is_demo=true` from jobs, opportunities, events and discounts, whatever their
+source, after merging sources and filtering expired records. Missing `is_demo` means real.
+`backend/data/*.json` holds only real records (it may be empty: the site then shows its empty states).
 
 The existing keys and record shapes are preserved. An optional `events` array is now populated
 from published, unexpired database events when `FEATURE_EVENTS=true`; it is omitted when empty.
 Each event contains `id`, `title_kk`, `title_ru`, `desc_kk`, `desc_ru`, `cat`, `starts_at`,
 `ends_at`, `university`, `place_text`, `building_id` and `is_demo`. It contains no registrations,
 check-in secrets or private attendee information. `events.is_demo` defaults to false and is
-set only by server-side demo imports, not organizer inputs. Other sections still combine
+set only by server-side imports, not organizer inputs; such events are left out of the feed and of `GET /api/events`. Other sections still combine
 Sheets/bundled records with the existing database sources. Places are unaffected.
 
 The content response uses `Cache-Control: no-store` so a CDN cannot serve demos after the

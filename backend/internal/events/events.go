@@ -121,7 +121,7 @@ type Event struct {
 	CheckinStarted *time.Time `json:"checkin_started_at"`
 	FinishedAt     *time.Time `json:"finished_at"`
 	CreatedAt      time.Time  `json:"created_at"`
-	IsDemo         bool       `json:"is_demo"` // a sample event: the site marks it «үлгі» (11-025)
+	IsDemo         bool       `json:"is_demo"` // a sample event: kept out of the public list and the content feed
 
 	Registered int    `json:"registered"`
 	Waitlist   int    `json:"waitlist"`
@@ -303,6 +303,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
 		return
 	}
+	where = "not e.is_demo and " + where // sample events are never listed
 	limit, err := strconv.Atoi(q.Get("limit"))
 	if err != nil || limit < 1 || limit > 200 {
 		limit = 100

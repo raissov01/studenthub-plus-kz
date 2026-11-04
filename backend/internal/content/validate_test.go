@@ -114,7 +114,7 @@ func TestSheetRowsCannotUseAdminPrefix(t *testing.T) {
 // An extra source can neither replace nor duplicate a sheet / data/*.json id.
 func TestExtraIDsDeduplicated(t *testing.T) {
 	now := time.Date(2026, 10, 28, 6, 0, 0, 0, time.UTC)
-	l := &Loader{Env: func(string) string { return "" }, DataDir: "../../data", Warn: func(string) {}}
+	l := &Loader{Env: func(string) string { return "" }, DataDir: "testdata/data", Warn: func(string) {}}
 	RegisterExtra("test-dup", func(ctx context.Context) (map[string][]Record, error) {
 		return map[string][]Record{
 			"opportunities": {RawRecord(json.RawMessage(`{"id":"o1","source":"admin"}`), "")},

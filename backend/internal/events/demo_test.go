@@ -1,14 +1,16 @@
 package events
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
 
-// 11-025: the API says which events are samples, so every card can mark them «үлгі».
-func TestEventAPIMarksDemo(t *testing.T) {
+// Sample events never reach students: the public list skips them; the detail still says which one it is.
+func TestEventAPIHidesDemo(t *testing.T) {
 	testdb.Need(t)
 	real := newEvent(t, evOpts{startsIn: 48 * time.Hour})
 	demo := newEvent(t, evOpts{startsIn: 48 * time.Hour})
@@ -19,5 +21,9 @@ func TestEventAPIMarksDemo(t *testing.T) {
 		if w.Code != 200 || ev["is_demo"] != want {
 			t.Fatalf("event %d: %d %s", id, w.Code, w.Body)
 		}
+	}
+	w := do(t, "GET", "/api/events", 0, nil)
+	if w.Code != 200 || strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d,`, demo)) || !strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d,`, real)) {
+		t.Fatalf("list: %d %s", w.Code, w.Body)
 	}
 }
