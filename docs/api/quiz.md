@@ -234,9 +234,8 @@ card (`prompt: card.q, answers: [card.a]`) or `mcq` built by the client. For fil
 
 ## Live games (Kahoot-style)
 
-Vercel rewrites do not proxy WebSockets, so the browser connects **directly** to the API origin:
-`wss://studenthub.85-137-91-47.sslip.io/api/quiz/live/ws?token=…` (the response's `wsUrl`;
-set `QUIZ_LIVE_WS_URL` in prod). Cookies are not sent there, so the socket uses a **join token**: a signed,
+The socket is same-origin: the host nginx proxies `wss://studenthub.studywithraissov.com/api/quiz/live/ws?token=…`
+straight to the API (the response's `wsUrl`, derived from the request host; leave `QUIZ_LIVE_WS_URL` unset). Cookies are not sent there, so the socket uses a **join token**: a signed,
 2-minute token from the HTTPS endpoints below (fetch a new one for each (re)connect). The handshake also
 requires an `Origin` from `ALLOWED_HOSTS` (`403 bad_origin`), an unexpired token (`401 bad_token`) and an
 open game (`404 live_not_found`).
@@ -301,11 +300,10 @@ in the API process memory: a server restart ends them (the rows become `abandone
 `GET /api/quiz/live/history` → `{sessions: [{id, quizId, quizTitle, status, players, questionStats:
 [{position, answered, correct}], createdAt, finishedAt, results: [{rank, nickname, score, correct}]}]}`.
 
-Deploy: `archive/deploy-systemd/studenthub.nginx.conf` has the ws location (HTTP/1.1, `Upgrade`/`Connection`, 1 h
-timeouts) and a 52 MB body limit for `/api/quiz/generate/`. Because the server's nginx file is only
-written when absent, `archive/deploy-systemd/deploy-vps.sh` runs `archive/deploy-systemd/nginx-quiz-patch.sh`, which inserts both blocks
-if missing (idempotent, `nginx -t` or rollback). Uploads >4.5 MB may hit Vercel's proxy body limit:
-downscale photos in the browser (canvas → JPEG ≤1600 px) before sending.
+Deploy: `docker/nginx.host.conf` has the ws location (HTTP/1.1, `Upgrade`/`Connection`, 1 h timeouts) and a
+52 MB body limit for `/api/quiz/generate/`, for both the site and the old sslip API host; `docker/vps-apply.sh`
+installs it (`nginx -t` or rollback). The pre-compose patch script is kept in `archive/deploy-systemd/`.
+Downscale photos in the browser (canvas → JPEG ≤1600 px) before sending.
 
 ## Analytics
 
@@ -331,7 +329,7 @@ by the student end.
 | `QUIZ_AI_DAILY_UNITS` | 12 | AI budget per Almaty day |
 | `QUIZ_AI_VISION_UNITS` | 2 | extra units per photo |
 | `OPENAI_VISION_MODEL` | `OPENAI_MODEL` | model for photo transcription |
-| `QUIZ_LIVE_WS_URL` | derived from Host | `wss://studenthub.85-137-91-47.sslip.io/api/quiz/live/ws` in prod |
+| `QUIZ_LIVE_WS_URL` | derived from Host | unset in prod (same origin: `wss://studenthub.studywithraissov.com/api/quiz/live/ws`) |
 | `QUIZ_LIVE_MAX_PLAYERS` | 100 | per game |
 | `QUIZ_LIVE_MAX_SESSIONS` | 50 | open games per process |
 | `QUIZ_LIVE_JOINS_PER_MIN` / `QUIZ_LIVE_WS_PER_MIN` | 20 / 30 | per IP |

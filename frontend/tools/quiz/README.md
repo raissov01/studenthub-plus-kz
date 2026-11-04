@@ -47,7 +47,7 @@ before the first standalone `tsc` invocation. `node_modules` may be a symlink; u
 
 Production requires `/api/config.features.quiz = true`. HTTP uses the existing same-origin API
 rewrite and account transport. Set `NEXT_PUBLIC_API_WS_ORIGIN` at build time for a non-default API
-socket origin; the production default is `wss://studenthub.85-137-91-47.sslip.io`, development defaults
-to `ws://localhost:8080`. Live connections refresh their short-lived tickets over HTTP on reconnect.
+socket origin; in production the socket is same-origin (`window.location`, nginx proxies it to the API),
+development defaults to `ws://localhost:8080`. Live connections refresh their short-lived tickets over HTTP on reconnect.
 Uploads are capped at 4 MiB total after local photo compression to fit the frontend proxy; large
 images are converted to JPEG at up to 2000 px and 800 KiB. Large documents must be split first.
