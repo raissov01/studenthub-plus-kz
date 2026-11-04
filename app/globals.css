@@ -1429,3 +1429,10 @@ main.quiz-host-main { max-width: 1200px; }
 .np-health circle { fill: var(--map-rose); } .np-post circle { fill: var(--map-study); } .np-sport circle { fill: var(--map-other); }
 .ent line { stroke: var(--map-ent); } .ent polygon { fill: var(--map-ent); } .ent-key { background: var(--map-ent); }
 
+
+/* loading state of a screen (app/[[...slug]]/loading.tsx): flat blocks, a slow opacity pulse */
+.screen-loading { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.sk { display: block; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); }
+.sk-title { height: 28px; width: 55%; } .sk-line { height: 16px; width: 80%; } .sk-card { height: 84px; }
+@media (prefers-reduced-motion: no-preference) { .sk { animation: sk-pulse 1.2s ease-in-out infinite; } }
+@keyframes sk-pulse { 50% { opacity: .55; } }

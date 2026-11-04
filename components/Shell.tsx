@@ -2,7 +2,7 @@
 /* Page frame: sticky header (back / title / bell or gear), the screen, the four-tab bar, the bottom sheet and the toast.
    Screens render only after hydration: they depend on the device's data, date and clock, which the server cannot know. */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Boot } from '@/components/Boot';
@@ -43,6 +43,14 @@ export function Shell({ children }: { children: ReactNode }) {
   const fixed = searchScreen ? 'search' : root ? name : (meta.tab === 'profile' || meta.tab === 'home') ? meta.tab : '';
   const tabRoot = fixed || (ROOTS.includes(from) && from) || TAB_OF[meta.tab] || meta.tab || TAB_OF[name] || '';
   useEffect(() => { setActiveTab(tabRoot); }, [tabRoot, setActiveTab]);
+
+  // the four tabs are fetched ahead, so a tap shows the next screen (or its loading state) at once
+  const router = useRouter();
+  useEffect(() => {
+    if (!hydrated) return;
+    const id = setTimeout(() => { ['/', '/search', '/calendar', '/profile'].forEach(h => router.prefetch(h)); }, 1500);
+    return () => clearTimeout(id);
+  }, [hydrated, router]);
 
   // old #/job/j1 links land on the real path (on load, and if such a link is followed inside the page)
   useEffect(() => {
