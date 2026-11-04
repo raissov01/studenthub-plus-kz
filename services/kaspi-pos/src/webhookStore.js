@@ -38,18 +38,35 @@ export const filterValidWebhooks = (hooks, allowedHttpHosts = allowedHttpHostsFr
  * Читает webhooks.json и возвращает массив валидных вебхуков.
  * При ошибке чтения/парсинга возвращает [].
  */
+export const ALL_EVENTS = ['payment.success', 'payment.failed', 'payment.expired', 'payment.lost'];
+
+/**
+ * Student Hub patch: one hook straight from the environment (WEBHOOK_URL + WEBHOOK_SECRET, optional
+ * comma-separated WEBHOOK_EVENTS), so a compose deployment needs no hand-written webhooks.json.
+ */
+export const envWebhook = (env = process.env) => {
+  const url = (env.WEBHOOK_URL || '').trim();
+  if (!url) return [];
+  const events = (env.WEBHOOK_EVENTS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [{ url, secret: env.WEBHOOK_SECRET || '', events: events.length ? events : ALL_EVENTS }];
+};
+
 export const loadWebhooks = () => {
+  const fromEnv = envWebhook();
+  let fromFile = [];
   try {
     const raw = fs.readFileSync(WEBHOOKS_FILE, 'utf8');
     const hooks = JSON.parse(raw);
-    if (!Array.isArray(hooks)) return [];
-    return filterValidWebhooks(hooks);
+    if (Array.isArray(hooks)) fromFile = hooks;
   } catch (err) {
     if (err.code !== 'ENOENT') {
       warnOnce('read', `Error reading webhooks.json: ${err.message}`);
     }
-    return [];
   }
+  return filterValidWebhooks([...fromEnv, ...fromFile]);
 };
 
 /**

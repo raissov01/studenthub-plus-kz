@@ -261,62 +261,8 @@ async function doFinish(session) {
       }
     }
 
-    // Fetch org context
-    const orgUrl = `${KASPI_MTOKEN_URL}/v08/organizations/org-context-otp`;
-    const piValue = session.profileId != null ? String(session.profileId) : '';
-    const orgHeaders = {
-      'Content-Type': 'application/json',
-      Accept: '*/*',
-      'Accept-Language': 'ru',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'User-Agent': UA_NATIVE,
-      'X-Kb-TokenSn': session.tokenSN,
-      'X-Kb-TokenSnMac': computeTokenSnMac(session.tokenSN, rawSecret),
-      'X-Install-ID': DEVICE.installId,
-      'X-App-Ver': APP.version,
-      'X-App-Bld': APP.build,
-      'X-Locale': APP.locale,
-      'X-Call': 'notConnected',
-      'X-Time': nowISO(),
-      'X-S': 'R:0|E:0|RH:0|N:0',
-      'X-SV': '2',
-      'X-Kb-Client-Ip': '192.168.1.96',
-      'X-PkTag': DEVICE.pkTag,
-      'X-SU': computeXSU(orgUrl),
-      'X-SH':
-        'url,X-Kb-Client-Ip,X-Time,X-App-Ver,X-SV,X-Locale,X-App-Bld,X-Install-ID,X-Kb-TokenSn,X-S,X-Kb-TokenSnMac,X-Call',
-      'X-Request-ID': generateUUID(),
-    };
-    const orgPayload = JSON.stringify({
-      DeviceInformation: {
-        SdkVersion: 'AOTP service',
-        DeviceId: DEVICE.deviceId,
-        ApplicationId: 'kz.kaspi.business',
-        ScreenWidth: APP.screenW,
-        Model: APP.model,
-        ScreenHeight: APP.screenH,
-        DeviceName: APP.deviceName,
-        VersionName: APP.version,
-        BuildRelease: `${APP.platform} ${APP.platformVer}`,
-        Brand: APP.brand,
-        Board: APP.platformVer,
-        Platform: APP.platform,
-        Product: 'Kaspi Pay',
-        frontCameraAvailable: true,
-        VersionCode: APP.build,
-        InstallId: DEVICE.installId,
-      },
-      OrganizationId: 0,
-    });
-    orgHeaders['X-Sign'] = computeXSign(orgUrl, orgHeaders, orgHeaders['X-SH'], orgPayload);
-
-    const orgResp = await loggedFetch(orgUrl, {
-      method: 'POST',
-      headers: orgHeaders,
-      body: orgPayload,
-    });
-
-    const orgBody = await orgResp.json();
+    // Fetch org context (the cashier's default business: OrganizationId 0)
+    const orgBody = await fetchOrgContext(session.tokenSN, rawSecret, 0);
 
     if (orgBody.Data?.Current?.ProfileId) {
       applyOrgContext(session, orgBody.Data);
@@ -335,6 +281,67 @@ async function doFinish(session) {
     discardECDH(session.processId);
     throw new Error('Finish failed: ' + JSON.stringify(body));
   }
+}
+
+// ─── Org context ───
+// One cashier number can be added to several businesses in Kaspi Pay. The signed payment calls choose the
+// business by X-PI (profileId); org-context-otp answers the profile of the requested OrganizationId
+// (0 = the cashier's current/default business). Student Hub patch: shared by finish and /api/session/org-context.
+
+export async function fetchOrgContext(tokenSN, rawSecret, organizationId = 0) {
+  const orgUrl = `${KASPI_MTOKEN_URL}/v08/organizations/org-context-otp`;
+  const orgHeaders = {
+    'Content-Type': 'application/json',
+    Accept: '*/*',
+    'Accept-Language': 'ru',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'User-Agent': UA_NATIVE,
+    'X-Kb-TokenSn': tokenSN,
+    'X-Kb-TokenSnMac': computeTokenSnMac(tokenSN, rawSecret),
+    'X-Install-ID': DEVICE.installId,
+    'X-App-Ver': APP.version,
+    'X-App-Bld': APP.build,
+    'X-Locale': APP.locale,
+    'X-Call': 'notConnected',
+    'X-Time': nowISO(),
+    'X-S': 'R:0|E:0|RH:0|N:0',
+    'X-SV': '2',
+    'X-Kb-Client-Ip': '192.168.1.96',
+    'X-PkTag': DEVICE.pkTag,
+    'X-SU': computeXSU(orgUrl),
+    'X-SH':
+      'url,X-Kb-Client-Ip,X-Time,X-App-Ver,X-SV,X-Locale,X-App-Bld,X-Install-ID,X-Kb-TokenSn,X-S,X-Kb-TokenSnMac,X-Call',
+    'X-Request-ID': generateUUID(),
+  };
+  const orgPayload = JSON.stringify({
+    DeviceInformation: {
+      SdkVersion: 'AOTP service',
+      DeviceId: DEVICE.deviceId,
+      ApplicationId: 'kz.kaspi.business',
+      ScreenWidth: APP.screenW,
+      Model: APP.model,
+      ScreenHeight: APP.screenH,
+      DeviceName: APP.deviceName,
+      VersionName: APP.version,
+      BuildRelease: `${APP.platform} ${APP.platformVer}`,
+      Brand: APP.brand,
+      Board: APP.platformVer,
+      Platform: APP.platform,
+      Product: 'Kaspi Pay',
+      frontCameraAvailable: true,
+      VersionCode: APP.build,
+      InstallId: DEVICE.installId,
+    },
+    OrganizationId: Number(organizationId) || 0,
+  });
+  orgHeaders['X-Sign'] = computeXSign(orgUrl, orgHeaders, orgHeaders['X-SH'], orgPayload);
+
+  const orgResp = await loggedFetch(orgUrl, {
+    method: 'POST',
+    headers: orgHeaders,
+    body: orgPayload,
+  });
+  return orgResp.json();
 }
 
 // ─── Session status (client sends tokenSN) ───

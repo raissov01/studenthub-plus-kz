@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { KASPI_QRPAY_URL } from '../config.js';
 import { loggedFetch, signedQrPayHeaders } from '../helpers.js';
 import { decryptSecret } from '../crypto.js';
+import { fetchOrgContext } from './auth.js';
 
 const router = Router();
 
@@ -58,6 +59,47 @@ router.get('/check', async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ active: false, error: err.message });
+  }
+});
+
+// ─── Switch business (Student Hub patch, experimental) ───
+// A cashier number added to several businesses has ONE session; each business is a different profileId
+// (X-PI). Returns the profile of `organizationId` so the caller can store it per merchant. Nothing is
+// stored here. Kaspi's behaviour for this call is not documented; verify with a test payment.
+
+router.post('/org-context', async (req, res) => {
+  const session = extractSession(req);
+  if (!session.tokenSN || !session.vtokenSecret) return res.status(401).json({ error: 'Missing session headers.' });
+  const raw = req.body?.organizationId;
+  const organizationId = typeof raw === 'number' || (typeof raw === 'string' && /^\d+$/.test(raw)) ? Number(raw) : NaN;
+  if (!Number.isSafeInteger(organizationId) || organizationId < 0) {
+    return res.status(400).json({ error: 'organizationId must be a non-negative integer' });
+  }
+  let rawSecret;
+  try {
+    rawSecret = decryptSecret(session.vtokenSecret);
+  } catch {
+    return res.status(401).json({ active: false, error: 'Invalid or expired vtokenSecret. Re-authenticate.' });
+  }
+  try {
+    const body = await fetchOrgContext(session.tokenSN, rawSecret, organizationId);
+    const cur = body?.Data?.Current;
+    if (!cur?.ProfileId) {
+      return res.status(502).json({ error: body?.Message || 'Kaspi returned no profile for this organization.', code: body?.StatusCode });
+    }
+    const organizations = Array.isArray(body.Data.Organizations)
+      ? body.Data.Organizations.map((o) => ({ organizationId: o.OrganizationId ?? o.Id ?? null, name: o.OrganizationName ?? o.Name ?? null }))
+      : [];
+    return res.json({
+      profileId: cur.ProfileId,
+      organizationId: cur.OrganizationId ?? organizationId,
+      orgName: cur.OrganizationName ?? null,
+      isCashier: cur.IsCashier ?? null,
+      accessLevelType: cur.AccessLevelType ?? null,
+      organizations,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

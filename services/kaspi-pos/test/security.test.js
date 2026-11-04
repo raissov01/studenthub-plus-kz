@@ -147,3 +147,52 @@ describe('HTTP API', () => {
     assert.equal((await post('/api/refund/create', { qrOperationId: '1', returnAmount: -1 }, h)).status, 400);
   });
 });
+
+describe('webhook from the environment (Student Hub patch)', () => {
+  it('builds one hook from WEBHOOK_URL/WEBHOOK_SECRET with every event by default', async () => {
+    const { envWebhook, ALL_EVENTS } = await import('../src/webhookStore.js');
+    assert.deepEqual(envWebhook({}), []);
+    assert.deepEqual(envWebhook({ WEBHOOK_URL: 'http://api:8110/api/cafe/kaspi/webhook', WEBHOOK_SECRET: 's' }), [
+      { url: 'http://api:8110/api/cafe/kaspi/webhook', secret: 's', events: ALL_EVENTS },
+    ]);
+    assert.deepEqual(envWebhook({ WEBHOOK_URL: 'https://x.kz/h', WEBHOOK_SECRET: 's', WEBHOOK_EVENTS: 'payment.success, payment.failed' })[0].events, [
+      'payment.success',
+      'payment.failed',
+    ]);
+  });
+  it('drops an env hook without a secret or with a plain-http host that is not allowed', () => {
+    const hooks = filterValidWebhooks(
+      [
+        { url: 'http://api:8110/h', secret: '', events: ['payment.success'] },
+        { url: 'http://evil.kz/h', secret: 's', events: ['payment.success'] },
+        { url: 'http://api:8110/h', secret: 's', events: ['payment.success'] },
+      ],
+      ['api'],
+    );
+    assert.deepEqual(hooks.map((h) => h.url), ['http://api:8110/h']);
+  });
+});
+
+describe('org-context route (Student Hub patch)', () => {
+  const KEY = 'o'.repeat(64);
+  let server;
+  let base;
+  before(async () => {
+    server = createApp({ apiKey: KEY }).listen(0, '127.0.0.1');
+    await new Promise((r) => server.once('listening', r));
+    base = `http://127.0.0.1:${server.address().port}`;
+  });
+  after(() => server.close());
+  it('requires the internal key, the session and a valid organizationId', async () => {
+    const { encryptSecret } = await import('../src/crypto.js');
+    const call = (headers, body) =>
+      fetch(base + '/api/session/org-context', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
+    assert.equal((await call({}, { organizationId: 1 })).status, 401);
+    assert.equal((await call({ 'X-Internal-Api-Key': KEY }, { organizationId: 1 })).status, 401);
+    const h = { 'X-Internal-Api-Key': KEY, 'X-Token-SN': 'T', 'X-Vtoken-Secret': encryptSecret(Buffer.from('s')) };
+    for (const organizationId of [-1, 'x', 1.5, null]) {
+      assert.equal((await call(h, { organizationId })).status, 400, `org ${organizationId}`);
+    }
+    assert.equal((await call({ ...h, 'X-Vtoken-Secret': 'garbage' }, { organizationId: 1 })).status, 401);
+  });
+});
