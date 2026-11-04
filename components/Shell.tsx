@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Boot } from '@/components/Boot';
 import { NavDrawer, OPEN_MENU } from '@/components/NavDrawer';
+import { ConsentSheet, SignInSheet } from '@/components/views/account';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
 import { hasAccount } from '@/components/views/common';
@@ -132,6 +133,11 @@ export function Shell({ children }: { children: ReactNode }) {
               ? <span className="brand"><i className="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>
               : searchScreen ? screenMeta('search', { I, S, ui }).title : meta.title}
           </div>
+          {hydrated && acc.loaded && !hasAccount(acc) && root ? (
+            <button className="btn top-signin" id="signin-btn" type="button" onClick={() => openSheet(acc.user ? <ConsentSheet /> : <SignInSheet />)}>
+              {tt('Тіркелу', 'Вход')}
+            </button>
+          ) : null}
           <button className="icon-btn" id="mine-btn" type="button" hidden={!(name === 'home' || onProfile)}
             onClick={() => go(onProfile ? 'settings' : 'notif')}
             aria-label={onProfile ? tt('Параметрлер', 'Параметры') : tt('Хабарламалар', 'Уведомления')}>

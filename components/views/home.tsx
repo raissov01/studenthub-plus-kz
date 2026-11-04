@@ -2,7 +2,6 @@
 /* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
-import { openMenu } from '@/components/NavDrawer';
 import { Hero3D } from '@/components/views/hero3d';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
@@ -84,14 +83,6 @@ export function Home() {
   const tg = useTelegram();
   const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
-  // five sections on the home screen; everything else is one tap away in the menu («Барлығы» or ☰)
-  const tiles: [string, IconName, string][] = [
-    ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
-    ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
-    ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')],
-    ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
-    ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
-  ];
   const news = [
     ...(content.events ?? []).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
     ...content.opportunities.slice(0, 2).map(o => {
@@ -122,13 +113,6 @@ export function Home() {
           }}
           onChange={e => setUi({ sq: e.target.value })} />
       </form>
-
-      <div className="tiles">
-        {tiles.map(([g, i, l], n) => (
-          <button key={g} className={`tile tile-${n % 5}`} type="button" onClick={() => go(g)}><span className="tile-ico"><Icon n={i} s={26} /></span><span>{l}</span></button>
-        ))}
-        <button className="tile tile-all" type="button" onClick={openMenu} aria-haspopup="dialog"><span className="tile-ico"><Icon n="menu" s={26} /></span><span>{tt('Барлығы', 'Все разделы')}</span></button>
-      </div>
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />

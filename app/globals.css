@@ -1211,3 +1211,6 @@ main.quiz-host-main { max-width: 1200px; }
 @keyframes hero3d-rise { from { opacity: 0; transform: translateY(8px); } }
 @media (max-width: 380px) { .hero3d { grid-template-columns: 1fr 132px; } .hero3d-scene { width: 132px; height: 170px; } }
 @media (max-width: 359px) { .hero3d { grid-template-columns: 1fr 112px; } .hero3d-scene { width: 112px; height: 140px; } .hero3d-cube { --s: 56px; } }
+
+/* header «Тіркелу» for a signed-out student on the root screens */
+.top-signin { min-height: 36px; padding: 6px 14px; border-radius: 999px; font-size: .88rem; flex: none; margin-left: auto; }
