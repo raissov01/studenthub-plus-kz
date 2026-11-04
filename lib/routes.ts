@@ -11,7 +11,7 @@ export const PLAIN = [
   'quiz', 'search', 'notif', 'profile', 'services', 'materials', 'saved', 'mine', 'ai', 'chat', 'resume', 'interview',
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
-  'employer', 'university', 'announcements', 'suggest', 'suggestions',
+  'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;

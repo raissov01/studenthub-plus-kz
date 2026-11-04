@@ -1,4 +1,5 @@
 import type { RoadmapState } from '@/features/roadmap/logic';
+import type { OwnDeadline } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
 
 export type { IconName };
@@ -180,4 +181,6 @@ export interface AppState {
   photo?: string;
   /** «Даму жоспары» (features/roadmap); added later, so load() fills it in for older stored data */
   roadmap: RoadmapState;
+  /** «Күнтізбе»: the student's own deadlines (lib/calendar.ts); added later, so load() fills it in for older stored data */
+  deadlines: OwnDeadline[];
 }

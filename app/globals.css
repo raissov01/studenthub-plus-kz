@@ -1211,3 +1211,44 @@ main.quiz-host-main { max-width: 1200px; }
 @keyframes hero3d-rise { from { opacity: 0; transform: translateY(8px); } }
 @media (max-width: 380px) { .hero3d { grid-template-columns: 1fr 132px; } .hero3d-scene { width: 132px; height: 170px; } }
 @media (max-width: 359px) { .hero3d { grid-template-columns: 1fr 112px; } .hero3d-scene { width: 112px; height: 140px; } .hero3d-cube { --s: 56px; } }
+
+/* ---------- «Күнтізбе» (components/views/calendar.tsx): month grid, week list, own deadlines ---------- */
+.cal-top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cal-top .seg { flex: 1 1 160px; }
+.cal-add { flex: 1 1 160px; }
+.cal-nav { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.cal-title { flex: 1; min-width: 0; text-align: center; font-size: 1.1rem; overflow-wrap: anywhere; }
+.cal-nav .chip { margin-left: 4px; }
+.cal-grid { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 4px; }
+.cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.cal-wd { text-align: center; font-size: .74rem; font-weight: 600; color: var(--muted); padding: 2px 0 4px; }
+.cal-cell { display: block; min-width: 0; }
+.cal-day-btn {
+  width: 100%; min-height: 48px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; padding: 5px 0 4px;
+}
+.cal-day-btn.out { color: var(--muted); opacity: .6; }
+.cal-day-btn:active { background: var(--surface-2); }
+.cal-num { font-weight: 600; font-size: .92rem; line-height: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; }
+.cal-day-btn[aria-current="date"] .cal-num { background: var(--primary); color: var(--on-primary); }
+.cal-day-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.cal-dots { display: flex; gap: 3px; height: 6px; }
+.cal-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.cal-k-opp { --k: var(--c0); }
+.cal-k-job { --k: var(--c2); }
+.cal-k-event { --k: var(--c1); }
+.cal-k-own { --k: var(--c3); }
+.cal-dot[class*="cal-k-"] { background: var(--k); }
+:root[data-theme="dark"] .cal-k-opp { --k: var(--primary); }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-ico { width: 40px; height: 40px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--surface-2); color: var(--k, var(--primary)); border: 1px solid var(--line); }
+.cal-item .sr-end { justify-content: center; padding: 4px 4px 4px 0; }
+.cal-day h2, .cal-day-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cal-day-h { font-size: .95rem; }
+.cal-today-badge { font-family: var(--font-body); }
+.cal-none { padding: 2px 2px 0; }
+.cal-week { display: flex; flex-direction: column; gap: 16px; }
+.cal-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.cal-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; align-items: end; }
+#homeDeadlines .tag { max-width: 132px; }

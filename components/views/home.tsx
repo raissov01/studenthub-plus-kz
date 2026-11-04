@@ -8,6 +8,7 @@ import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/compone
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
+import { saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
@@ -62,14 +63,7 @@ function ScheduleIcsButton() {
       summary: `${L(c.name)} (${L(c.kind)})`, location: classWhere(c, I),
       description: tt('Student Hub сабақ кестесі (үлгі).', 'Расписание из Student Hub (пример).'),
     })), { now: new Date(), calName: tt('Сабақ кестесі — Student Hub', 'Расписание — Student Hub'), lang });
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/calendar;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'studenthub-schedule.ics';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveFile(text, 'studenthub-schedule.ics');
     toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
   };
   return (
@@ -141,6 +135,8 @@ export function Home() {
           ))}
         </div>
       </section>
+
+      <UpcomingDeadlines />
 
       <section className="section">
         <SectionHead title={tt('Бүгінгі сабақтар', 'Пары сегодня')} more={<span className="tiny muted">{wd[now.getDay()]}</span>} />

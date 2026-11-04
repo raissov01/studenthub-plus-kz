@@ -88,6 +88,19 @@ const ymd = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(
 const local = (d: Date, hm: string) => `${ymd(d)}T${hm.replace(':', '')}00`;
 const utcStamp = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
 
+const VTIMEZONE = [
+  'BEGIN:VTIMEZONE',
+  `TZID:${ICS_TZID}`,
+  `X-LIC-LOCATION:${ICS_TZID}`,
+  'BEGIN:STANDARD',
+  'TZOFFSETFROM:+0500',
+  'TZOFFSETTO:+0500',
+  'TZNAME:+05',
+  'DTSTART:19700101T000000',
+  'END:STANDARD',
+  'END:VTIMEZONE',
+];
+
 export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: string; lang: 'kk' | 'ru' }): string {
   const { from, until } = semesterRange(o.now);
   const first = firstClassDay(from);
@@ -102,16 +115,7 @@ export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: s
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escText(o.calName)}`,
     `X-WR-TIMEZONE:${ICS_TZID}`,
-    'BEGIN:VTIMEZONE',
-    `TZID:${ICS_TZID}`,
-    `X-LIC-LOCATION:${ICS_TZID}`,
-    'BEGIN:STANDARD',
-    'TZOFFSETFROM:+0500',
-    'TZOFFSETTO:+0500',
-    'TZNAME:+05',
-    'DTSTART:19700101T000000',
-    'END:STANDARD',
-    'END:VTIMEZONE',
+    ...VTIMEZONE,
   ];
   for (const c of classes) {
     lines.push(
@@ -129,5 +133,46 @@ export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: s
     );
   }
   lines.push('END:VCALENDAR');
+  return lines.map(foldLine).join('\r\n') + '\r\n';
+}
+
+export interface IcsOne {
+  /** stable key (an item id), used for the UID so a second import updates the event */
+  key: string;
+  /** 'YYYY-MM-DD' Almaty day */
+  date: string;
+  /** 'HH:MM' Almaty wall clock; empty = all-day */
+  time?: string;
+  summary: string;
+  description?: string;
+  /** minutes, for a timed event (default 60) */
+  minutes?: number;
+}
+
+/** One deadline or event as an .ics file (the calendar screen's «.ics жүктеу»): all-day (DATE) or timed in Asia/Almaty,
+    with a reminder one day before. */
+export function buildOneIcs(e: IcsOne, o: { now: Date; lang: 'kk' | 'ru' }): string {
+  const d = new Date(e.date.slice(0, 10) + 'T00:00:00Z');
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    `PRODID:-//Student Hub//Calendar//${o.lang.toUpperCase()}`,
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+  const ev: string[] = ['BEGIN:VEVENT', `UID:cal-${stableHash(e.key)}@studenthub`, `DTSTAMP:${utcStamp(o.now)}`];
+  if (e.time && /^\d{2}:\d{2}$/.test(e.time)) {
+    lines.push(...VTIMEZONE);
+    const start = new Date(d.getTime() + (+e.time.slice(0, 2) * 60 + +e.time.slice(3, 5)) * 60_000);
+    const end = new Date(start.getTime() + (e.minutes ?? 60) * 60_000);
+    const wall = (x: Date) => `${ymd(x)}T${pad(x.getUTCHours())}${pad(x.getUTCMinutes())}00`;
+    ev.push(`DTSTART;TZID=${ICS_TZID}:${wall(start)}`, `DTEND;TZID=${ICS_TZID}:${wall(end)}`);
+  } else {
+    ev.push(`DTSTART;VALUE=DATE:${ymd(d)}`, `DTEND;VALUE=DATE:${ymd(new Date(d.getTime() + 24 * 3600_000))}`, 'TRANSP:TRANSPARENT');
+  }
+  ev.push(`SUMMARY:${escText(e.summary)}`);
+  if (e.description) ev.push(`DESCRIPTION:${escText(e.description)}`);
+  ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escText(e.summary)}`, 'TRIGGER:-P1D', 'END:VALARM', 'END:VEVENT');
+  lines.push(...ev, 'END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';
 }

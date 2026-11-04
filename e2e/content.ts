@@ -15,8 +15,10 @@ export const job: AnyJob = {
   employer: { name: 'Campus', website: 'https://example.org', about: '', verified: true, verified_at: '2026-01-02', verification_meaning: { kk: 'Байланыс тексерілген', ru: 'Контакты проверены' } },
 };
 export const experiencedJob: AnyJob = { ...job, id: 'job-102', tags: [], title: { kk: 'Тәжірибелі кітапханашы', ru: 'Опытный библиотекарь' } };
+/** the opportunity's deadline: 25 Almaty days ahead (past the 21-day «deadline soon» notice, so other specs stay unchanged) */
+export const OPP_DEADLINE = new Date(Date.now() + 5 * 3600_000 + 25 * 86400_000).toISOString().slice(0, 10);
 export const opportunity: Opportunity = {
-  ...provenance, id: 'e2e-intern', type: 'company', funded: true,
+  ...provenance, id: 'e2e-intern', deadline: OPP_DEADLINE, type: 'company', funded: true,
   title: { kk: 'Зерттеу тағылымдамасы', ru: 'Исследовательская стажировка' },
   org: { kk: 'Кампус зертханасы', ru: 'Лаборатория кампуса' }, req: { course: 1, gpa: 3 }, spec: ['all'],
   desc: { kk: 'Студенттерге арналған зерттеу бағдарламасы.', ru: 'Исследовательская программа для студентов.' },
