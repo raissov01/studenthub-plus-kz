@@ -46,8 +46,11 @@ export function registerServiceWorker(): void {
   let reloading = false;
   let accepted = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // the very first install (clients.claim): the build files this page loaded before the worker existed are kept
+    // too, in case the install's own fetch of the pages timed out (a cold server) and missed them
+    if (!accepted) { keepLoadedAssets(); return; }
     // only after the student accepted the update; the very first install (clients.claim) must not reload
-    if (!accepted || reloading) return;
+    if (reloading) return;
     reloading = true;
     window.location.reload();
   });
@@ -70,6 +73,15 @@ export function registerServiceWorker(): void {
     document.addEventListener('visibilitychange', poll);
     setInterval(poll, 30 * 60_000);
   }).catch(() => { /* no worker: the site works as before, only without offline pages */ });
+}
+
+function keepLoadedAssets(): void {
+  try {
+    const c = navigator.serviceWorker.controller;
+    const urls = performance.getEntriesByType('resource').map(e => e.name)
+      .filter(u => u.startsWith(window.location.origin + '/_next/static/')).map(u => new URL(u).pathname);
+    if (c && urls.length) c.postMessage({ type: 'CACHE_ASSETS', urls });
+  } catch { /* ignore */ }
 }
 
 let applyUpdate = () => {};

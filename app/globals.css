@@ -1142,3 +1142,26 @@ main.quiz-host-main { max-width: 1200px; }
   .quiz .btn { padding-inline: 12px; }
   .quiz-nav { align-items: start; }
 }
+
+/* ---------- hamburger menu (components/NavDrawer.tsx) ---------- */
+.drawer-back { position: fixed; inset: 0; z-index: 45; background: rgba(34, 37, 42, .4); display: flex; }
+.drawer {
+  width: min(320px, 86vw); height: 100%; overflow-y: auto; background: var(--bg); color: var(--text);
+  border-right: 1px solid var(--line); padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 24px;
+}
+.drawer-head { display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding-left: 6px; }
+.drawer-group { margin-top: 14px; }
+.drawer-title { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px 8px; }
+.drawer-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 10px; border: 0; border-radius: 12px;
+  background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.drawer-item:active, .drawer-item:hover { background: var(--surface-2); }
+.drawer-item svg { flex: none; color: var(--primary); }
+.tile-all { background: var(--surface); border: 1px solid var(--line); }
+.day-more { margin-top: 10px; }
+.day-more > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.day-more > summary::-webkit-details-marker { display: none; }
+.day-more[open] > summary { margin-bottom: 8px; }
+@media (prefers-reduced-motion: no-preference) { .drawer { animation: drawer-in .18s ease-out; } }
+@keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }

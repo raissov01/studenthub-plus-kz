@@ -1,10 +1,9 @@
 'use client';
 /* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
-import { useConfig } from '@/lib/config';
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
+import { openMenu } from '@/components/NavDrawer';
 import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
-import { RoadmapBoard } from '@/components/views/roadmap';
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
@@ -82,18 +81,16 @@ function ScheduleIcsButton() {
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
   const tg = useTelegram();
-  const cfg = useConfig();
   const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
+  // five sections on the home screen; everything else is one tap away in the menu («Барлығы» or ☰)
   const tiles: [string, IconName, string][] = [
     ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
     ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
     ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')],
     ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
-    ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
     ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
   ];
-  if (cfg.features.quiz) tiles.push(['quiz', 'cards', tt('Квиздер', 'Квизы')]);
   const news = [
     ...(content.events ?? []).slice(0, 2).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
     ...content.opportunities.slice(0, 2).map(o => {
@@ -128,22 +125,12 @@ export function Home() {
           onChange={e => setUi({ sq: e.target.value })} />
       </form>
 
-      <section className="promo">
-        <div className="promo-text">
-          <h2>{tt('Жаңа мүмкіндіктер сені күтеді!', 'Новые возможности ждут тебя!')}</h2>
-          <p>{tt('Жұмыс, тағылымдама, жеңілдіктер және тағы басқалары!', 'Работа, стажировки, скидки и многое другое!')}</p>
-          <button className="btn promo-btn" type="button" onClick={() => go('search:all')}>{tt('Мүмкіндіктерді қарау', 'Смотреть возможности')}</button>
-        </div>
-        <div className="promo-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-      </section>
-
       <div className="tiles">
         {tiles.map(([g, i, l], n) => (
           <button key={g} className={`tile tile-${n % 5}`} type="button" onClick={() => go(g)}><span className="tile-ico"><Icon n={i} s={26} /></span><span>{l}</span></button>
         ))}
+        <button className="tile tile-all" type="button" onClick={openMenu} aria-haspopup="dialog"><span className="tile-ico"><Icon n="menu" s={26} /></span><span>{tt('Барлығы', 'Все разделы')}</span></button>
       </div>
-
-      <RoadmapBoard />
 
       <section className="section">
         <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
@@ -160,17 +147,20 @@ export function Home() {
       <section className="section">
         <SectionHead title={tt('Бүгінгі сабақтар', 'Пары сегодня')} more={<span className="tiny muted">{wd[now.getDay()]}</span>} />
         <NextClassCard />
-        <div className="group">
-          {SCHEDULE.map(c => (
-            <button key={c.t} className="row" type="button" onClick={() => { setUi({ mapQ: c.room }); go('map:campus'); }}>
-              <span className="up-when"><b className="num">{c.t}</b><span className="num">{c.end}</span></span>
-              <span className="row-main"><span className="row-title">{L(c.name)}</span><span className="row-sub">{L(c.kind)}, {tt('аудитория', 'аудитория')} {c.room}</span></span>
-              <span className="chev"><Icon n="pin" s={18} /></span>
-            </button>
-          ))}
-        </div>
-        <ScheduleIcsButton />
-        <p className="note">{tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
+        <details className="day-more">
+          <summary className="link-btn">{tt(`Бүгінгі барлық сабақ (${SCHEDULE.length})`, `Все пары сегодня (${SCHEDULE.length})`)}</summary>
+          <div className="group">
+            {SCHEDULE.map(c => (
+              <button key={c.t} className="row" type="button" onClick={() => { setUi({ mapQ: c.room }); go('map:campus'); }}>
+                <span className="up-when"><b className="num">{c.t}</b><span className="num">{c.end}</span></span>
+                <span className="row-main"><span className="row-title">{L(c.name)}</span><span className="row-sub">{L(c.kind)}, {tt('аудитория', 'аудитория')} {c.room}</span></span>
+                <span className="chev"><Icon n="pin" s={18} /></span>
+              </button>
+            ))}
+          </div>
+          <ScheduleIcsButton />
+          <p className="note">{tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
+        </details>
       </section>
     </>
   );

@@ -1,10 +1,11 @@
 'use client';
 /* Page frame: sticky header (back / title / bell or gear), the screen, the four-tab bar, the bottom sheet and the toast.
    Screens render only after hydration: they depend on the device's data, date and clock, which the server cannot know. */
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Boot } from '@/components/Boot';
+import { NavDrawer, OPEN_MENU } from '@/components/NavDrawer';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
 import { hasAccount } from '@/components/views/common';
@@ -78,6 +79,15 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('scroll', on);
   }, []);
 
+  // the hamburger menu (also opened by the home «Барлығы» tile)
+  const [menu, setMenu] = useState(false);
+  const closeMenu = useCallback(() => setMenu(false), []);
+  useEffect(() => {
+    const on = () => setMenu(true);
+    window.addEventListener(OPEN_MENU, on);
+    return () => window.removeEventListener(OPEN_MENU, on);
+  }, []);
+
   // first visit: onboarding sheet
   useEffect(() => {
     if (!hydrated || S.onboarded) return;
@@ -113,6 +123,10 @@ export function Shell({ children }: { children: ReactNode }) {
           <button className="icon-btn" id="back" type="button" onClick={back} aria-label={tt('Артқа', 'Назад')} hidden={root || !!tg.app}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
           </button>
+          <button className="icon-btn" id="menu-btn" type="button" hidden={!root} onClick={() => setMenu(true)}
+            aria-label={tt('Мәзір', 'Меню')} aria-haspopup="dialog" aria-expanded={menu} aria-controls="nav-drawer">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
           <div className="top-title" id="title">
             {name === 'home'
               ? <span className="brand"><i className="mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i>Student Hub</span>
@@ -144,6 +158,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="sheet" role="dialog" aria-modal="true"><div className="grab"></div>{sheet}</div>
         </div>
       ) : null}
+      <NavDrawer open={menu} onClose={closeMenu} />
       <UpdateBar />
       {toastMsg ? <div className="toast" role="status" key={toastMsg.key}>{toastMsg.text}</div> : null}
     </>

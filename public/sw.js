@@ -67,6 +67,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('message', event => {
   const d = event.data || {};
   if (d.type === 'SKIP_WAITING') { self.skipWaiting(); return; }
+  if (d.type === 'CACHE_ASSETS' && Array.isArray(d.urls)) {
+    const urls = d.urls.filter(u => typeof u === 'string' && u.startsWith('/_next/static/')).slice(0, 200);
+    event.waitUntil(storeAssets(new Set(urls)));
+    return;
+  }
   if (d.type === 'CACHE_PAGES' && Array.isArray(d.urls)) {
     event.waitUntil((async () => {
       const assets = new Set();
