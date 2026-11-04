@@ -1,10 +1,10 @@
 /* Campus map logic: room search, GPS projection onto the illustrated plan, entrances, next class. */
-import { BUILDINGS, ENTR, GEO, KIND_L, NEARBY } from '@/lib/data/campus';
+import { BUILDINGS, CITY_SITES, ENTR, GEO, KIND_L, NEARBY } from '@/lib/data/campus';
 import { SCHEDULE } from '@/lib/data/static';
 import type { I18n } from '@/lib/format';
-import type { Building, ClassItem } from '@/lib/types';
+import type { Building, CitySite, ClassItem } from '@/lib/types';
 
-export type MapSearch = null | { room: true; corp: number; floor: number; num: string; b?: Building } | { room?: false; list: Building[] };
+export type MapSearch = null | { room: true; corp: number; floor: number; num: string; b?: Building } | { room?: false; list: Building[]; sites: CitySite[] };
 
 export function mapSearch(q: string, I: I18n): MapSearch {
   q = q.trim();
@@ -15,7 +15,27 @@ export function mapSearch(q: string, I: I18n): MapSearch {
     return { room: true, corp, floor, num: `${m[1]}-${m[2]}${m[3]}`, b };
   }
   const ql = q.toLowerCase();
-  return { list: BUILDINGS.filter(b => (b.n + ' ' + I.L(b.name) + ' ' + I.L(b.has) + ' ' + I.tp(KIND_L[b.kind])).toLowerCase().includes(ql)) };
+  return {
+    list: BUILDINGS.filter(b => (b.n + ' ' + I.L(b.name) + ' ' + I.L(b.has) + ' ' + I.tp(KIND_L[b.kind])).toLowerCase().includes(ql)),
+    sites: CITY_SITES.filter(s => [s.name.kk, s.name.ru, s.a.kk, s.a.ru, I.L(s.has), I.tp(KIND_L[s.kind])].join(' ').toLowerCase().includes(ql))
+  };
+}
+
+/** centre of the main campus (Жеңіс даңғылы, 62) */
+export const CAMPUS_LL: [number, number] = [51.18692, 71.41178];
+/** map links for a city site: by coordinates when known, otherwise by address */
+export function siteLinks(s: CitySite, I: Pick<I18n, 'L'>) {
+  if (s.lat != null && s.lon != null) {
+    return {
+      gis: `https://2gis.kz/astana/geo/${s.lon},${s.lat}?m=${s.lon},${s.lat}/17`,
+      google: `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`
+    };
+  }
+  const q = `${I.L(s.a)}, Астана`;
+  return {
+    gis: `https://2gis.kz/astana/search/${encodeURIComponent(q)}`,
+    google: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+  };
 }
 
 /** GPS on the illustrated map: affine fit of 14 OSM building centres to image pixels (mean error ~11 m) */
