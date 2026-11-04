@@ -23,6 +23,12 @@ export interface OwnDeadline {
   prio: Priority;
   /** when it was checked off; 0 = open */
   done: number;
+  /** an own event's end 'HH:MM' (after `time`), '' = no end; older stored data gets '' */
+  end: string;
+  /** where it happens (an own event), '' = not set */
+  place: string;
+  /** 0 = a deadline or a to-do task (the «Менікі» colour); 1–8 = an own event in colour --ev-N (lib/calview.ts) */
+  color: number;
 }
 
 /** what can be pinned into the student's own calendar from a page or a list row */
@@ -134,10 +140,14 @@ export function cleanDeadlines(raw: unknown): OwnDeadline[] {
     if (!r || typeof r !== 'object') continue;
     const x = r as Partial<OwnDeadline>;
     if (typeof x.id !== 'string' || !x.id || typeof x.title !== 'string' || !x.title.trim() || !(isYmd(x.date) || x.date === '')) continue;
+    const time = x.date && isHm(x.time) ? x.time : '';
+    const color = Number.isInteger(x.color) && x.color! >= 1 && x.color! <= 8 && x.date ? x.color! : 0;
     out.push({
-      id: x.id, title: x.title.slice(0, 200), date: x.date, time: x.date && isHm(x.time) ? x.time : '',
+      id: x.id, title: x.title.slice(0, 200), date: x.date, time,
       note: typeof x.note === 'string' ? x.note.slice(0, 2000) : '', created: typeof x.created === 'number' ? x.created : 0,
       prio: isPriority(x.prio) ? x.prio : 'mid', done: typeof x.done === 'number' && x.done > 0 ? x.done : 0,
+      end: time && isHm(x.end) && x.end > time ? x.end : '',
+      place: typeof x.place === 'string' ? x.place.slice(0, 200) : '', color,
     });
   }
   return out;
@@ -167,7 +177,7 @@ export function cleanPins(raw: unknown): CalPin[] {
 }
 
 /* ---------- export to other calendars ---------- */
-export interface CalExport { title: string; date: Ymd; time?: string; details?: string }
+export interface CalExport { title: string; date: Ymd; time?: string; /** 'HH:MM' end on the same day; else one hour */ end?: string; details?: string; location?: string }
 
 const compact = (d: Ymd) => d.replace(/-/g, '');
 /** Google Calendar «add event» link: an all-day event, or one hour from `time` in Almaty */
@@ -175,7 +185,7 @@ export function googleCalendarUrl(e: CalExport): string {
   let dates: string, tz = '';
   if (e.time && isHm(e.time)) {
     const [h, mi] = e.time.split(':').map(Number);
-    const endMin = h * 60 + mi + 60;
+    const endMin = e.end && isHm(e.end) && e.end > e.time ? +e.end.slice(0, 2) * 60 + +e.end.slice(3, 5) : h * 60 + mi + 60;
     const endDay = endMin >= 1440 ? addDays(e.date, 1) : e.date;
     const em = endMin % 1440;
     dates = `${compact(e.date)}T${pad(h)}${pad(mi)}00/${compact(endDay)}T${pad(Math.floor(em / 60))}${pad(em % 60)}00`;
@@ -187,5 +197,6 @@ export function googleCalendarUrl(e: CalExport): string {
     + '&text=' + encodeURIComponent(e.title)
     + '&dates=' + dates
     + (e.details ? '&details=' + encodeURIComponent(e.details) : '')
+    + (e.location ? '&location=' + encodeURIComponent(e.location) : '')
     + tz;
 }

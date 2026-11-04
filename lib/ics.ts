@@ -147,6 +147,7 @@ export interface IcsOne {
   description?: string;
   /** minutes, for a timed event (default 60) */
   minutes?: number;
+  location?: string;
 }
 
 /** One deadline or event as an .ics file (the calendar screen's «.ics жүктеу»): all-day (DATE) or timed in Asia/Almaty,
@@ -172,6 +173,7 @@ export function buildOneIcs(e: IcsOne, o: { now: Date; lang: 'kk' | 'ru' }): str
   }
   ev.push(`SUMMARY:${escText(e.summary)}`);
   if (e.description) ev.push(`DESCRIPTION:${escText(e.description)}`);
+  if (e.location) ev.push(`LOCATION:${escText(e.location)}`);
   ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escText(e.summary)}`, 'TRIGGER:-P1D', 'END:VALARM', 'END:VEVENT');
   lines.push(...ev, 'END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';

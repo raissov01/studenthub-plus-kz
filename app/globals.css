@@ -1246,9 +1246,6 @@ main.quiz-host-main { max-width: 1200px; }
 /* header «Тіркелу» for a signed-out student on the root screens */
 .top-signin { min-height: 36px; padding: 6px 14px; border-radius: 999px; font-size: .88rem; flex: none; margin-left: auto; }
 /* ---------- «Күнтізбе» (components/views/calendar.tsx): month grid, week list, own deadlines ---------- */
-.cal-top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.cal-top .seg { flex: 1 1 160px; }
-.cal-add { flex: 1 1 160px; }
 .cal-nav { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .cal-title { flex: 1; min-width: 0; text-align: center; font-size: 1.1rem; overflow-wrap: anywhere; }
 .cal-nav .chip { margin-left: 4px; }
@@ -1265,15 +1262,12 @@ main.quiz-host-main { max-width: 1200px; }
 .cal-num { font-weight: 600; font-size: .92rem; line-height: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; }
 .cal-day-btn[aria-current="date"] .cal-num { background: var(--primary); color: var(--on-primary); }
 .cal-day-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
-.cal-dots { display: flex; gap: 3px; height: 6px; }
-.cal-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
 .cal-k-class { --k: var(--cal-class); }
 .cal-k-opp { --k: var(--cal-opp); }
 .cal-k-job { --k: var(--cal-job); }
 .cal-k-event { --k: var(--cal-event); }
 .cal-k-exam { --k: var(--cal-exam); }
 .cal-k-own { --k: var(--cal-own); }
-.cal-dot[class*="cal-k-"] { background: var(--k); }
 .cal-ico { width: 40px; height: 40px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--surface-2); color: var(--k, var(--primary)); border: 1px solid var(--line); }
 .cal-item .sr-end { justify-content: center; padding: 4px 4px 4px 0; }
 .cal-day h2, .cal-day-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1292,10 +1286,8 @@ main.quiz-host-main { max-width: 1200px; }
 /* ---------- «Күнтізбе»: kind colours (solid, ≥4.5:1 on surfaces in both themes), priority, pins, «Тапсырмалар» ---------- */
 :root { --cal-class: #5A6385; --cal-opp: #2F57E8; --cal-job: #0B7A6E; --cal-event: #7A45E8; --cal-exam: #B4236B; --cal-own: #C2410C; }
 :root[data-theme="dark"] { --cal-class: #A3AAC6; --cal-opp: #8EA6FF; --cal-job: #4FD1C1; --cal-event: #B99CFF; --cal-exam: #F48FBA; --cal-own: #FFA36E; }
-.cal-dots { height: 10px; align-items: center; }
-.cal-dot.hi { width: 9px; height: 9px; border-radius: 2px; box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--k); }
-.cal-item, .task, .cal-home-row { box-shadow: inset 3px 0 0 var(--k, transparent); }
-.cal-item.prio-high, .task.prio-high, .cal-home-row.prio-high { box-shadow: inset 6px 0 0 var(--k, transparent); }
+.task, .cal-home-row { box-shadow: inset 3px 0 0 var(--k, transparent); }
+.task.prio-high, .cal-home-row.prio-high { box-shadow: inset 6px 0 0 var(--k, transparent); }
 .prio-high .row-title, .prio-high .task-title { font-weight: 700; }
 .prio-low .row-title, .prio-low .task-title { color: var(--muted); font-weight: 500; }
 .is-done .row-title, .is-done .task-title { text-decoration: line-through; color: var(--muted); font-weight: 500; }
@@ -1429,3 +1421,135 @@ main.quiz-host-main { max-width: 1200px; }
 .np-health circle { fill: var(--map-rose); } .np-post circle { fill: var(--map-study); } .np-sport circle { fill: var(--map-other); }
 .ent line { stroke: var(--map-ent); } .ent polygon { fill: var(--map-ent); } .ent-key { background: var(--map-ent); }
 
+
+/* ---------- «Күнтізбе» v3: titled chips in the month cells, year view, month/year picker, day timeline, own events ---------- */
+/* own-event colours (lib/calview.ts EV_COLORS): --ev-N solid (stripe, swatch), --ev-N-soft chip background,
+   --ev-N-ink chip text (WCAG AA on -soft, checked by lib/calview.test.ts) */
+:root {
+  --ev-1: #3B6FE0; --ev-1-soft: #E3ECFD; --ev-1-ink: #173A8A;
+  --ev-2: #7C4DDB; --ev-2-soft: #EEE6FD; --ev-2-ink: #42227F;
+  --ev-3: #D0457F; --ev-3-soft: #FCE4EE; --ev-3-ink: #7D1B47;
+  --ev-4: #D64545; --ev-4-soft: #FCE3E1; --ev-4-ink: #7F1D1D;
+  --ev-5: #D06A12; --ev-5-soft: #FDEBD9; --ev-5-ink: #7A3A07;
+  --ev-6: #A67C00; --ev-6-soft: #FBF1CC; --ev-6-ink: #6B4E00;
+  --ev-7: #2F9E58; --ev-7-soft: #DDF3E4; --ev-7-ink: #155B30;
+  --ev-8: #1A9AA8; --ev-8-soft: #D9F2F4; --ev-8-ink: #0E5560;
+}
+:root[data-theme="dark"] {
+  --ev-1: #7EA2FF; --ev-1-soft: #22305A; --ev-1-ink: #DCE6FF;
+  --ev-2: #B39BFF; --ev-2-soft: #2F2752; --ev-2-ink: #E9E1FF;
+  --ev-3: #F28DB8; --ev-3-soft: #45223A; --ev-3-ink: #FFDDEB;
+  --ev-4: #F38B85; --ev-4-soft: #46221F; --ev-4-ink: #FFDEDB;
+  --ev-5: #F6A866; --ev-5-soft: #47301C; --ev-5-ink: #FFE6CF;
+  --ev-6: #E8C65A; --ev-6-soft: #40361A; --ev-6-ink: #FBEFC4;
+  --ev-7: #6FD199; --ev-7-soft: #1C3B2A; --ev-7-ink: #D3F5E0;
+  --ev-8: #5CCBD6; --ev-8-soft: #183A3F; --ev-8-ink: #CDF3F6;
+}
+.cal-screen { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.cal-views button { padding-inline: 4px; }
+.cal-filters { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cal-filters .chips { flex-wrap: wrap; overflow: visible; }
+.cal-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.cal-pick-l { font-size: .86rem; font-weight: 600; color: var(--muted); }
+.cal-pick select.input { width: auto; min-height: 44px; padding: 8px 10px; flex: 1 1 120px; min-width: 0; }
+.cal-pick select.cal-pick-y { flex: 0 0 96px; }
+.cal-nav { gap: 2px; }
+.cal-today-chip { margin-left: 4px; }
+
+/* month grid: each cell is one button with the day number and up to three titled chips */
+.cal-grid { padding: 4px 3px; gap: 2px; }
+.cal-row { gap: 2px; }
+.cal-day-btn { min-height: 76px; align-items: stretch; gap: 2px; padding: 3px 2px 4px; border: 0; position: relative; }
+.cal-day-btn .cal-num { align-self: center; width: 24px; height: 24px; font-size: .84rem; flex: none; }
+.cal-day-btn.out { opacity: 1; color: var(--muted); }
+.cal-day-btn.out .cal-num { font-weight: 500; opacity: .7; }
+.cal-day-btn.out .cal-chips { opacity: .55; }
+.cal-day-btn[aria-pressed="true"] { border: 0; background: var(--primary-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+.cal-day-btn[aria-current="date"] .cal-num { font-weight: 700; }
+.cal-chips { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cal-chip {
+  display: block; min-width: 0; height: 15px; line-height: 15px; font-size: 10px; font-weight: 600; text-align: left;
+  padding: 0 3px 0 4px; border-radius: 3px; border-left: 2px solid var(--k);
+  background: var(--kbg, color-mix(in srgb, var(--k) 16%, var(--surface))); color: var(--kink, var(--text));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-chip.prio-high { font-weight: 800; border-left-width: 4px; }
+.cal-chip.is-done { text-decoration: line-through; opacity: .7; }
+.cal-more { font-size: 10px; line-height: 13px; font-weight: 700; color: var(--muted); text-align: center; }
+@media (min-width: 480px) {
+  .cal-chip { font-size: 11px; height: 17px; line-height: 17px; }
+  .cal-day-btn { min-height: 86px; }
+}
+
+/* the add button and the selected day's timeline */
+.cal-add { min-height: 52px; }
+.cal-day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cal-tl { list-style: none; margin: 0; padding: 0; }
+.cal-tl .cal-item { display: flex; align-items: stretch; min-height: 64px; box-shadow: none; }
+.cal-tl .cal-item + .cal-item { border-top: 1px solid var(--line); }
+.cal-time { flex: none; width: 58px; padding: 13px 0 12px 12px; display: flex; flex-direction: column; gap: 1px; font-size: .84rem; line-height: 1.25; }
+.cal-time b { font-weight: 700; color: var(--text); }
+.cal-time span { color: var(--muted); }
+.cal-time .cal-allday { font-size: .74rem; font-weight: 600; }
+.cal-tl-main {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; border: 0; background: transparent;
+  color: inherit; padding: 2px 6px 2px 12px; margin: 10px 0; border-left: 3px solid var(--k); border-radius: 0;
+}
+.cal-tl-main:active { background: var(--surface-2); }
+.cal-item.prio-high .cal-tl-main { border-left-width: 6px; }
+.cal-tl-main .row-title { overflow-wrap: anywhere; }
+.cal-tl-main .row-sub { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.cal-tl-main .badges { margin-top: 2px; }
+.cal-tl-act { flex: none; display: flex; align-items: center; padding-right: 2px; color: var(--muted); }
+.cal-tl-act .icon-btn:active { color: var(--text); }
+.cal-sw-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--k); flex: none; }
+.is-own-ev .cal-kind-tag, .cal-eyebrow.cal-k-own { color: var(--kink, var(--k)); }
+.cal-kind-tag .cal-sw-dot { width: 8px; height: 8px; }
+.cal-place { display: flex; align-items: center; gap: 6px; color: var(--muted); overflow-wrap: anywhere; }
+.cal-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 16px;
+}
+.cal-empty p { max-width: 34ch; line-height: 1.45; }
+.cal-legend summary { min-height: 44px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; list-style: none; }
+.cal-legend summary::-webkit-details-marker { display: none; }
+.cal-legend summary svg { transform: rotate(90deg); transition: transform .15s; }
+.cal-legend[open] summary svg { transform: rotate(-90deg); }
+.cal-legend[open] summary { margin-bottom: 4px; }
+.cal-legend ul + ul { margin-top: 8px; }
+.cal-sw-own { background: var(--ev-2); }
+
+/* «Жыл»: 12 mini months, each one button that opens the month */
+.cal-year { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 480px) { .cal-year { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cal-mini-wrap { min-width: 0; }
+.cal-mini {
+  width: 100%; min-height: 44px; display: flex; flex-direction: column; gap: 6px; padding: 10px 8px; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text);
+}
+.cal-mini:active { background: var(--surface-2); }
+.cal-mini.cur { border-color: var(--primary); }
+.cal-mini-name { font-size: .9rem; font-weight: 700; padding-left: 2px; }
+.cal-mini.cur .cal-mini-name { color: var(--primary); }
+.cal-mini-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 1px; }
+.cal-mini-d { font-size: 10.5px; line-height: 18px; text-align: center; color: var(--muted); border-radius: 3px; }
+.cal-mini-d.has { background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+.cal-mini-d.today { background: var(--primary); color: var(--on-primary); font-weight: 800; border-radius: 50%; }
+
+
+/* «Іс-шара қосу» sheet: times side by side, the colour swatches as real radio buttons */
+.cal-opt { font-weight: 400; color: var(--muted); font-size: .8rem; }
+.cal-time-row { grid-template-columns: 1fr 1fr; }
+.ev-colors { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ev-colors legend { font-size: .86rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; padding: 0; }
+.ev-swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ev-sw { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; min-height: 64px; border-radius: var(--r-sm); cursor: pointer; }
+.ev-sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.ev-sw-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--sw); display: grid; place-items: center; color: var(--surface); }
+.ev-sw-dot svg { visibility: hidden; stroke-width: 3; }
+.ev-sw-name { font-size: .74rem; color: var(--muted); text-align: center; line-height: 1.2; overflow-wrap: anywhere; }
+.ev-sw:has(input:checked) { background: var(--surface-2); }
+.ev-sw input:checked + .ev-sw-dot { outline: 2px solid var(--text); outline-offset: 2px; }
+.ev-sw input:checked + .ev-sw-dot svg { visibility: visible; }
+.ev-sw input:checked ~ .ev-sw-name { color: var(--text); font-weight: 700; }
+.ev-sw input:focus-visible + .ev-sw-dot { outline: 2px solid var(--primary); outline-offset: 4px; }

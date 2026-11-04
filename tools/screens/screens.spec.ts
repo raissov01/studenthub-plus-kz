@@ -24,7 +24,7 @@ for (const theme of ['light', 'dark'] as const) {
     await shot('map', '/map');
     await shot('profile', '/profile');
     await page.goto('/calendar');
-    await page.getByRole('button', { name: 'Дедлайн қосу' }).click();
+    await page.getByRole('button', { name: 'Іс-шара қосу', exact: true }).click();
     await expect(page.locator('.sheet')).toBeVisible();
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${dir}/${tag}-${theme}-sheet.png` });
