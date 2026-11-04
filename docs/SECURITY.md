@@ -14,7 +14,7 @@ per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute bud
 
 The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
 constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
-signature over the raw body) replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+signature over the raw body) replaces browser origin/rate checks. All GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -50,6 +50,12 @@ name through the café's cashier session (kaspi-pos sidecar, internal network, X
 the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
 from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
 their café's orders through RLS; every order change is an append-only cafe_order_events row.
+University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
+answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
+keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
+under 5 hidden (complementary suppression in breakdowns). Anonymous feedback tickets have no author
+(CHECK); the sender keeps a 256-bit device token whose SHA-256 is stored, so the token-holding
+routes are callable without a session. Flagged (threat/profanity) tickets are held for admins.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
@@ -66,6 +72,7 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | DELETE | `/api/me` | signed-in | yes | yes | — |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
+| DELETE | `/api/staff/surveys/{id}` | university_staff (bound university), admin; draft or closed | yes | yes | surveys |
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
@@ -75,6 +82,7 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | GET | `/api/admin/content` | admin | no | yes | — |
 | GET | `/api/admin/content/{id}` | admin | no | yes | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
+| GET | `/api/admin/feedback/recipients` | admin | no | yes | feedback |
 | GET | `/api/admin/health` | admin | no | no (no input) | — |
 | GET | `/api/admin/market/items` | admin | no | yes | market |
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
@@ -109,6 +117,7 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | GET | `/api/cron/ambassador` | cron (CRON_SECRET) | no | yes | ambassador |
 | GET | `/api/cron/b2b` | cron (CRON_SECRET) | no | yes | b2b |
 | GET | `/api/cron/events` | cron (CRON_SECRET) | no | yes | events |
+| GET | `/api/cron/feedback` | cron (CRON_SECRET) | no | yes | feedback |
 | GET | `/api/cron/market` | cron (CRON_SECRET) | no | yes | market |
 | GET | `/api/cron/mentors` | cron (CRON_SECRET) | no | yes | mentors |
 | GET | `/api/cron/notify` | cron (CRON_SECRET) | no | yes | — |
@@ -128,6 +137,9 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university; university_staff: distribution from 5 answers, no comments), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/ics` | anonymous | no | yes | events |
 | GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, 1–4 as "< 5", empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/feedback/mine` | signed-in (own signed tickets) | no | no (no input) | feedback |
+| GET | `/api/feedback/photos/{name}` | university_staff (assigned recipient), admin | no | yes | feedback |
+| GET | `/api/feedback/recipients` | signed-in (own university's active recipients) | no | no (no input) | feedback |
 | GET | `/api/health` | anonymous | no | no (no input) | — |
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
@@ -165,12 +177,23 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | GET | `/api/quiz/quizzes/{id}/stats` | signed-in (owner only; aggregates, no player identities) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}` | anonymous (share link: published public/unlisted quizzes by 10-char code, no answer keys) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}/meta` | anonymous (share preview for generateMetadata: title, description, counts, cover; no author, no questions) | no | yes | quiz |
+| GET | `/api/staff/feedback` | university_staff (assigned recipients), admin; never an anonymous sender | no | yes | feedback |
+| GET | `/api/staff/feedback/{id}` | university_staff (assigned recipient), admin | no | yes | feedback |
+| GET | `/api/staff/surveys` | university_staff (bound university), admin | no | no (no input) | surveys |
+| GET | `/api/staff/surveys/{id}` | university_staff (bound university), admin | no | yes | surveys |
+| GET | `/api/staff/surveys/{id}/results` | university_staff (bound university), admin; aggregates only, groups under 5 hidden | no | yes | surveys |
+| GET | `/api/staff/surveys/{id}/results.csv` | university_staff (bound university), admin; aggregate CSV only, no texts, under 5 hidden | no | yes | surveys |
+| GET | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | no | yes | wellbeing |
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
+| GET | `/api/surveys` | student, ambassador (consented; only surveys whose university/audience match) | no | no (no input) | surveys |
+| GET | `/api/surveys/{id}` | student, ambassador (consented; eligible surveys only, else 404) | no | yes | surveys |
 | GET | `/api/university/me` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/posts` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/stats` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
 | GET | `/api/university/stats.csv` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
+| GET | `/api/wellbeing/contacts` | anonymous | no | yes | wellbeing |
 | PATCH | `/api/admin/ambassadors/{id}` | admin | yes | yes | ambassador |
+| PATCH | `/api/admin/feedback/recipients/{id}` | admin | yes | yes | feedback |
 | PATCH | `/api/admin/queue/{id}` | admin | yes | yes | — |
 | PATCH | `/api/employer/jobs/{id}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | PATCH | `/api/employer/me` | signed-in | yes | yes | b2b |
@@ -195,6 +218,7 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | POST | `/api/admin/content/{id}/unhide` | admin | yes | yes | — |
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
+| POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
 | POST | `/api/admin/market/bans` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/hide` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/restore` | admin | yes | yes | market |
@@ -264,6 +288,10 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | POST | `/api/events/{id}/finish` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | POST | `/api/events/{id}/teams` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/feedback/lookup` | anonymous (ticket token is the credential) | yes | yes | feedback |
+| POST | `/api/feedback/tickets` | student, ambassador (consented); 5/day per account; threats need ack and are held | yes | yes | feedback |
+| POST | `/api/feedback/tickets/{id}/messages` | anonymous (ticket token) or signed author | yes | yes | feedback |
+| POST | `/api/feedback/tickets/{id}/read` | anonymous (ticket token) or signed author | yes | yes | feedback |
 | POST | `/api/jobs/{id}/apply` | signed-in | yes | yes | b2b |
 | POST | `/api/jobs/{id}/report` | signed-in | yes | yes | b2b |
 | POST | `/api/market/items` | signed-in | yes | yes | market |
@@ -303,14 +331,23 @@ their café's orders through RLS; every order change is an append-only cafe_orde
 | POST | `/api/quiz/quizzes/{id}/share/reset` | signed-in (owner only) | yes | yes | quiz |
 | POST | `/api/quiz/s/{code}/clone` | signed-in (consented; share code grants read) | yes | yes | quiz |
 | POST | `/api/reports` | signed-in | yes | yes | — |
+| POST | `/api/staff/feedback/{id}/reply` | university_staff (assigned recipient), admin | yes | yes | feedback |
+| POST | `/api/staff/feedback/{id}/status` | university_staff (assigned recipient), admin | yes | yes | feedback |
+| POST | `/api/staff/surveys` | university_staff (bound university), admin | yes | yes | surveys |
+| POST | `/api/staff/surveys/{id}/close` | university_staff (bound university), admin | yes | yes | surveys |
+| POST | `/api/staff/surveys/{id}/publish` | university_staff (bound university), admin | yes | yes | surveys |
 | POST | `/api/submissions` | signed-in | yes | yes | — |
+| POST | `/api/surveys/{id}/responses` | student, ambassador (consented; once per survey via HMAC marker, 409 after) | yes | yes | surveys |
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
 | PUT | `/api/admin/cafes/{id}` | admin | yes | yes | cafe |
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
+| PUT | `/api/admin/feedback/recipients/{id}/staff` | admin | yes | yes | feedback |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
 | PUT | `/api/cafe/staff/menu/categories/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/cafe/staff/menu/items/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
+| PUT | `/api/staff/surveys/{id}` | university_staff (bound university), admin; drafts only (published: closing date) | yes | yes | surveys |
+| PUT | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | yes | yes | wellbeing |

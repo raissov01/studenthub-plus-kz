@@ -76,7 +76,7 @@ per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute bud
 
 The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
 constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
-signature over the raw body) replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+signature over the raw body) replaces browser origin/rate checks. All GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -112,6 +112,12 @@ name through the café's cashier session (kaspi-pos sidecar, internal network, X
 the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
 from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
 their café's orders through RLS; every order change is an append-only cafe_order_events row.
+University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
+answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
+keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
+under 5 hidden (complementary suppression in breakdowns). Anonymous feedback tickets have no author
+(CHECK); the sender keeps a 256-bit device token whose SHA-256 is stored, so the token-holding
+routes are callable without a session. Flagged (threat/profanity) tickets are held for admins.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |

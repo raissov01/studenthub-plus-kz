@@ -6,6 +6,7 @@ import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Icon } from '@/components/ui';
 import { useConfig } from '@/lib/config';
+import { useAccount } from '@/lib/account';
 import type { IconName } from '@/lib/types';
 
 export const OPEN_MENU = 'studenthub:menu';
@@ -16,6 +17,7 @@ type Item = [string, IconName, string];
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tt, go } = useApp();
   const cfg = useConfig();
+  const role = useAccount().user?.role;
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -54,12 +56,17 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
       ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
+      ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
+      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
+      ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
       ...(cfg.features.points ? [['points', 'trophy', tt('Ұпайлар', 'Баллы')] as Item] : []),
       ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
+      ...((role === 'admin' || role === 'university_staff') && (cfg.features.surveys || cfg.features.feedback || cfg.features.wellbeing)
+        ? [['voice', 'shield', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
     ]],
   ];
   return (

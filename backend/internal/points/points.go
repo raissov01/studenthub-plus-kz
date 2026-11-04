@@ -35,6 +35,7 @@ const (
 	ReasonQuiz         = "quiz"
 	ReasonEventCheckin = "event_checkin"
 	ReasonRoadmapStep  = "roadmap_step"
+	ReasonSurvey       = "survey" // a completed university survey (internal/surveys), once per survey
 
 	ReasonFreeze      = "freeze_purchase" // coins only, negative
 	ReasonRedeem      = "redeem"          // coins only, negative
@@ -58,6 +59,7 @@ var Rules = map[string]Rule{
 	ReasonQuiz:         {XP: 10, Coins: 2, PerDay: 5}, // +5 XP at 80 %+; coins only at 50 %+
 	ReasonEventCheckin: {XP: 30, Coins: 15, PerDay: 3},
 	ReasonRoadmapStep:  {XP: 5, PerDay: 1, PerWeek: 3, Device: true},
+	ReasonSurvey:       {XP: 15, Coins: 5, PerDay: 3},
 }
 
 // TaskOrder is the order of «Бүгінгі тапсырмалар».

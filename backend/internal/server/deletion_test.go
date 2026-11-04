@@ -183,6 +183,15 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
     values ($1,$2,'[{"itemId":1}]',50000,now(),'123','pickup','deletefixture1') returning id`, cafe, uid)
 		exec(`insert into cafe_order_events(order_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, order, uid)
 		exec(`insert into cafe_kaspi_sessions(cafe_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, cafe, uid)
+		// university voice: surveys, feedback tickets, wellbeing contacts
+		survey := id(`insert into surveys(university,title,questions,marker_salt,created_by,anonymous) values ('LAUNCH','Fixture survey','[]',decode(repeat('ab',32),'hex'),$1,false) returning id`, uid)
+		exec(`with r as (insert into survey_responses(survey_id,answers) values ($1,'{}') returning id) insert into survey_response_owners(response_id,user_id) select id,$2 from r`, survey, uid)
+		rec := id(`insert into feedback_recipients(university,key,name_kk,name_ru) values ('LAUNCH','dean','Деканат','Деканат') returning id`)
+		exec(`insert into feedback_recipient_staff(recipient_id,user_id) values ($1,$2)`, rec, uid)
+		exec(`insert into feedback_tickets(recipient_id,category,body,anonymous,author_id,sla_due_at,created_at,updated_at) values ($1,'question','Fixture signed ticket',false,$2,now(),now(),now())`, rec, uid)
+		anon := id(`insert into feedback_tickets(recipient_id,category,body,anonymous,token_hash,sla_due_at,created_at,updated_at) values ($1,'question','Fixture anonymous ticket',true,decode(repeat('cd',32),'hex'),now(),now(),now()) returning id`, rec)
+		exec(`insert into feedback_messages(ticket_id,from_staff,staff_id,body,created_at) values ($1,true,$2,'Fixture reply',now())`, anon, uid)
+		exec(`insert into wellbeing_contacts(university,name,place,updated_by) values ('LAUNCH','Fixture psychologist','Room 1',$1)`, uid)
 		return nil
 	})
 	if err != nil {

@@ -245,7 +245,7 @@ func TestCronMonitoringHealthAndRetention(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &health); err != nil {
 		t.Fatal(err)
 	}
-	if !health.DB || len(health.Errors) != 1 || health.Errors[0].Count != 2 || health.Queue == nil || len(health.Cron) != 6 || !health.Telegram.Reachable || !health.Telegram.Installed || health.Telegram.Pending != 3 {
+	if !health.DB || len(health.Errors) != 1 || health.Errors[0].Count != 2 || health.Queue == nil || len(health.Cron) != len(cronrun.Endpoints) || !health.Telegram.Reachable || !health.Telegram.Installed || health.Telegram.Pending != 3 {
 		t.Fatal(w.Body)
 	}
 	for _, c := range health.Cron {
