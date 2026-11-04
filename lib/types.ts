@@ -121,6 +121,16 @@ export interface Building {
   name: LText;
   has: LText;
 }
+/** a university building in Astana outside the campus plan; lat/lon from OSM (by address), absent when the spot is not confirmed */
+export interface CitySite {
+  id: string;
+  kind: 'study' | 'dorm' | 'other';
+  name: LText;
+  has: LText;
+  a: LText;
+  lat?: number;
+  lon?: number;
+}
 export interface NearPlace {
   c: string;
   n: string;

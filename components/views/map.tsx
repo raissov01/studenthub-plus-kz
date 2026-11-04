@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Icon, Note, Seg } from '@/components/ui';
-import { BUILDINGS, DIR_L, ENTR, GEO, KIND_L, NEAR_CATS, NEARBY, PINS, UNI_SITES } from '@/lib/data/campus';
-import { distTxt, entrPx, geoToPx, inPlan, mapSearch, metresBetween, nearOnMapCount, onCampus, walkMin, type Me } from '@/lib/campus';
+import { BUILDINGS, CITY_SITES, DIR_L, ENTR, GEO, KIND_L, NEAR_CATS, NEARBY, PINS } from '@/lib/data/campus';
+import { CAMPUS_LL, distTxt, entrPx, geoToPx, inPlan, mapSearch, metresBetween, nearOnMapCount, onCampus, siteLinks, walkMin, type Me } from '@/lib/campus';
 import { IC } from '@/lib/icons';
 import { CommunityReport } from '@/components/views/ambassador';
 import { useFeature } from '@/components/views/common';
-import type { Building, NearPlace } from '@/lib/types';
+import type { Building, CitySite, NearPlace } from '@/lib/types';
 
 /* viewBox lives outside React so pinch/drag can move it every frame without re-rendering the plan */
 let vb: [number, number, number, number] | null = null;
@@ -90,7 +90,7 @@ function NearRow({ p }: { p: NearPlace }) {
   );
 }
 function Near() {
-  const { ui, tt, L, setUi } = useApp();
+  const { ui, tt, setUi } = useApp();
   const cats: [string, string][] = [['all', tt('Барлығы', 'Все')], ...Object.entries(NEAR_CATS).map(([k, c]): [string, string] => [k, tt(c[0], c[1])])];
   const list = NEARBY.filter(p => ui.nearCat === 'all' || p.c === ui.nearCat);
   return (
@@ -99,11 +99,41 @@ function Near() {
       <div id="nearList" className="section"><div className="group">{list.map((p, i) => <NearRow key={i} p={p} />)}</div></div>
       <CommunityPlaces />
       <Note>{tt('Қашықтық кампус ортасынан түзу сызықпен есептелген. Басқанда 2GIS ашылады. Дереккөз: OpenStreetMap және 2GIS.', 'Расстояние — по прямой от центра кампуса. Нажмите, чтобы открыть 2GIS. Источники: OpenStreetMap и 2GIS.')}</Note>
-      <section className="section"><h2>{tt('Университеттің басқа ғимараттары', 'Другие здания университета')}</h2>
-        <div className="group">{UNI_SITES.map((u, i) => (
-          <a key={i} className="row" href={twoGis('Сейфуллин ' + L(u.a))} target="_blank" rel="noopener"><span className="bnum bnum-other"><Icon n="pin" s={16} /></span><span className="row-main"><span className="row-title">{L(u.n)}</span><span className="row-sub">{L(u.a)}</span></span><span className="chev"><Icon n="ext" s={18} /></span></a>
-        ))}</div></section>
+      <CitySites list={CITY_SITES} me={null} />
     </>
+  );
+}
+
+/* ---------- university buildings elsewhere in Astana ---------- */
+function SiteCard({ s, me }: { s: CitySite; me: Me | null }) {
+  const { tt, tp, L, I } = useApp();
+  const name = L(s.name), links = siteLinks(s, I);
+  let dist: string;
+  if (s.lat == null || s.lon == null) dist = tt('Картадағы нақты орны әлі белгісіз, сілтеме мекенжай бойынша іздейді.', 'Точное место на карте пока не отмечено, ссылка ищет по адресу.');
+  else if (me) dist = tt(`Сізден ${distTxt(metresBetween(me.lat, me.lon, s.lat, s.lon))} (түзу сызықпен)`, `От вас ${distTxt(metresBetween(me.lat, me.lon, s.lat, s.lon))} (по прямой)`);
+  else dist = tt(`Бас кампустан ${distTxt(metresBetween(CAMPUS_LL[0], CAMPUS_LL[1], s.lat, s.lon))} (түзу сызықпен)`, `${distTxt(metresBetween(CAMPUS_LL[0], CAMPUS_LL[1], s.lat, s.lon))} от главного кампуса (по прямой)`);
+  return (
+    <article className="card site-card" data-site={s.id} aria-label={name}>
+      <div className="card-row" style={{ alignItems: 'center' }}><span className={`bnum bnum-${s.kind}`}><Icon n="pin" s={16} /></span>
+        <div className="row-main"><h3 className="row-title">{name}</h3><span className="row-sub">{tp(KIND_L[s.kind])}</span></div></div>
+      <p className="small">{L(s.has)}</p>
+      <p className="small"><Icon n="pin" s={14} /> {L(s.a)}</p>
+      <p className="tiny muted">{dist}</p>
+      <div className="btn-row">
+        <a className="btn ghost" href={links.gis} target="_blank" rel="noopener" aria-label={`${tt('2GIS-те ашу', 'Открыть в 2GIS')}: ${name}`}><Icon n="ext" s={16} /> {tt('2GIS-те ашу', 'Открыть в 2GIS')}</a>
+        <a className="btn ghost" href={links.google} target="_blank" rel="noopener" aria-label={`${tt('Google Maps-та ашу', 'Открыть в Google Maps')}: ${name}`}><Icon n="ext" s={16} /> {tt('Google Maps-та ашу', 'Открыть в Google Maps')}</a>
+      </div>
+    </article>
+  );
+}
+function CitySites({ list, me }: { list: CitySite[]; me: Me | null }) {
+  const { tt } = useApp();
+  if (!list.length) return null;
+  return (
+    <section className="section" id="citySites" aria-labelledby="citySitesH"><h2 id="citySitesH">{tt('Қаладағы басқа ғимараттар', 'Другие здания в городе')}</h2>
+      <p className="tiny muted">{tt('Бас кампустан тыс университет ғимараттары: Учхоз, жатақханалар. Мекенжайлар kazatu.edu.kz сайтынан.', 'Здания университета вне главного кампуса: учхоз, общежития. Адреса — с сайта kazatu.edu.kz.')}</p>
+      <div className="list">{list.map(s => <SiteCard key={s.id} s={s} me={me} />)}</div>
+    </section>
   );
 }
 
@@ -287,7 +317,12 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
       </div>
     ) : <div className="empty">{tt(`${r.corp}-корпустың нөмірі картаға әлі енгізілмеген. Әзірге белгілісі: 4-корпус (техникалық факультеттің жаңа корпусы).`, `Номер ${r.corp}-го корпуса ещё не внесён. Пока известен 4-й корпус (новый корпус технического факультета).`)}</div>;
   } else if (r) {
-    results = r.list.length ? <div className="list">{r.list.map(b => <BCard key={b.id} b={b} />)}</div> : <div className="empty">{tt('Ештеңе табылмады.', 'Ничего не найдено.')}</div>;
+    results = r.list.length || r.sites.length ? (
+      <>
+        {r.list.length ? <div className="list">{r.list.map(b => <BCard key={b.id} b={b} />)}</div> : null}
+        <CitySites list={r.sites} me={me} />
+      </>
+    ) : <div className="empty">{tt('Ештеңе табылмады.', 'Ничего не найдено.')}</div>;
   } else {
     const sel = BUILDINGS.find(b => b.id === ui.mapSel);
     results = (
@@ -296,6 +331,7 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
         <section className="section"><h2>{tt('Барлық нысандар', 'Все здания')}</h2><div className="group">{BUILDINGS.map(b => (
           <button key={b.id} className="row" type="button" onClick={() => pick(b.id)}><span className={`bnum bnum-${b.kind}`}>{b.n}</span><span className="row-main"><span className="row-title">{L(b.name)}</span><span className="row-sub">{L(b.has)}</span></span></button>
         ))}</div></section>
+        <CitySites list={CITY_SITES} me={me} />
       </>
     );
   }
@@ -304,7 +340,7 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
   return (
     <>
       {tabs}
-      <div className="search"><Icon n="search" s={18} /><input className="input" id="mapQ" type="search" placeholder={tt('Аудитория (4-214) не нысан атауы', 'Аудитория (4-214) или название здания')} value={ui.mapQ} onChange={e => setUi({ mapQ: e.target.value, mapSel: null })} autoComplete="off" /></div>
+      <div className="search"><Icon n="search" s={18} /><input className="input" id="mapQ" type="search" placeholder={tt('Аудитория (4-214), нысан не мекенжай', 'Аудитория (4-214), здание или адрес')} value={ui.mapQ} onChange={e => setUi({ mapQ: e.target.value, mapSel: null })} autoComplete="off" /></div>
       <div className="chips">{([['study', tt('Оқу корпустары', 'Учебные корпуса')], ['dorm', tt('Жатақханалар', 'Общежития')], ['other', tt('Басқа', 'Другое')]] as const).map(([k, l]) => (
         <button key={k} className={`chip legend lg-${k}`} type="button" onClick={() => setUi({ mapQ: tp(KIND_L[k]), mapSel: null })}><i></i>{l}</button>
       ))}</div>
