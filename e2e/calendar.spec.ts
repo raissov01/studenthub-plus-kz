@@ -183,7 +183,7 @@ test('pin an event into the calendar from its page: toast «Ашу», kind colou
   const row = page.locator('.cal-day .cal-item', { hasText: evTitle });
   await expect(row).toHaveAttribute('data-kind', 'event');
   await expect(row.locator('.cal-kind-tag')).toHaveText(t('Іс-шара', 'Мероприятие'));
-  await expect(row.locator('.cal-ico')).toHaveCSS('color', 'rgb(122, 69, 232)');
+  await expect(row.locator('.cal-ico')).toHaveCSS('color', 'rgb(90, 63, 192)') // --cal-event = --p-violet-ink #5A3FC0;
   await expect(row).toContainText(t('Күнтізбеде', 'В календаре'));
   await expect(page.locator('.cal-legend')).toContainText(t('Іс-шара', 'Мероприятие'));
   // a pinned item stays when only saved items are shown

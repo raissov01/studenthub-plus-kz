@@ -44,7 +44,7 @@ export function HeroScene({ fallback }: { fallback: ReactNode }) {
       world.add(ring);
 
       // the five sections, each a shape of its own colour on its own tilted orbit
-      const colours = [css('--c2', '#12A594'), css('--c3', '#EF5A4C'), css('--c4', '#F2A516'), css('--t-mist-ink', '#3A2DB0'), css('--t-taupe-ink', '#23983A')];
+      const colours = [css('--c0', '#6A52D4'), css('--c1', '#C6457E'), css('--c2', '#1D8A66'), css('--c3', '#C2652A'), css('--c4', '#2F79BF')];
       const shapes = [
         new T.BoxGeometry(.5, .5, .5), new T.TorusGeometry(.26, .11, 10, 24), new T.ConeGeometry(.3, .55, 6),
         new T.OctahedronGeometry(.34, 0), new T.DodecahedronGeometry(.3, 0),

@@ -98,35 +98,50 @@
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 [hidden] { display: none !important; }
-/* Theme tokens: the single palette (light blue page, royal-blue actions, tinted tiles per service).
-   Earlier sage/mauve layers were merged away; every colour is defined only here. */
+/* Theme tokens: one pastel palette (docs/design/palette-research.md). A lavender page, deep-violet actions and five soft
+   families, each a pale background + a deep ink: violet, rose, mint (emerald), peach, sky. Flat: solid fills, 1px lines.
+   Every text pair is checked by tools/contrast.mjs (WCAG AA) for light and dark. Token names are the old ones:
+   --t-sage = violet, --t-mauve = rose, --t-taupe = mint, --t-ice = sky, --t-mist = peach (kept for the components). */
 :root {
   --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --nav-h: 66px;
   --ink: var(--text); --sky: var(--primary); --on-sky: var(--on-primary); --sky-soft: var(--primary-soft);
   --sun: var(--accent); --on-sun: var(--text); --sun-soft: var(--accent-soft); --ok: var(--primary);
   --ok-soft: var(--primary-soft); --warn: var(--danger); --warn-soft: var(--danger-soft);
   --bad: var(--danger); --bad-soft: var(--danger-soft); --head-bg: var(--deep); --head-fg: var(--on-deep);
-  --head-muted: var(--on-deep-muted); --sw-sage: #E8EEFE; --sw-mauve: #EFEDFE; --sw-taupe: #FFF7DC;
-  --sw-mist: #E3E8F3; --sw-ice: #EAF2FE; --sw-ink: #141A33; --r: 14px; --r-sm: 10px; --r-sw: 6px;
-  --font-display: "Geologica", "Golos Text", system-ui, sans-serif; --c0: #2F57E8; --c1: #8B5CF6;
-  --c2: #12A594; --c3: #EF5A4C; --c4: #F2A516; --heart: #E5484D; --t-sage: #EEF1FE; --t-sage-ink: #3558DB;
-  --t-mauve: #E4F7F5; --t-mauve-ink: #0E9F9C; --t-taupe: #FFF7DC; --t-taupe-ink: #23983A; --t-ice: #EAF2FE;
-  --t-ice-ink: #2E6FE0; --t-mist: #EFEDFE; --t-mist-ink: #3A2DB0;
+  --head-muted: var(--on-deep-muted); --r: 14px; --r-sm: 10px; --r-sw: 6px;
+  --font-display: "Geologica", "Golos Text", system-ui, sans-serif;
+  /* the five families (pale background / deep ink); the dark theme redefines them below */
+  --p-violet: #EEE9FD; --p-violet-ink: #5A3FC0; --p-rose: #FCE7EF; --p-rose-ink: #A3285A;
+  --p-mint: #DCF3E9; --p-mint-ink: #0E6B4D; --p-peach: #FDEADC; --p-peach-ink: #964212;
+  --p-sky: #E1EEFB; --p-sky-ink: #225E9B;
+  /* tiles, tags, hero faces */
+  --t-sage: var(--p-violet); --t-sage-ink: var(--p-violet-ink); --t-mauve: var(--p-rose); --t-mauve-ink: var(--p-rose-ink);
+  --t-taupe: var(--p-mint); --t-taupe-ink: var(--p-mint-ink); --t-ice: var(--p-sky); --t-ice-ink: var(--p-sky-ink);
+  --t-mist: var(--p-peach); --t-mist-ink: var(--p-peach-ink);
+  /* legacy swatches: fixed pale fills read with the fixed --sw-ink in both themes */
+  --sw-sage: #EEE9FD; --sw-mauve: #FCE7EF; --sw-taupe: #DCF3E9; --sw-mist: #FDEADC; --sw-ice: #E1EEFB; --sw-ink: #1D1930;
+  /* category colours (calendar dots, hero shapes): violet, rose, emerald, peach, sky */
+  --c0: #6A52D4; --c1: #C6457E; --c2: #1D8A66; --c3: #C2652A; --c4: #2F79BF; --heart: #C2386E; --on-heart: #FFFFFF;
+  /* campus map: drawn over the same photo in both themes, so fixed deep inks with white; the hues follow the photo's
+     buildings (blue study blocks, violet dorms, orange other) */
+  --map-study: #2D5CB8; --map-dorm: #5A3FC0; --map-other: #964212; --map-ent: #0E6B4D; --map-rose: #A3285A;
+  --map-ink: #1D1930; --map-street: #4E4868;
 }
 :root:not([data-theme="dark"]) {
-  color-scheme: light; --bg: #F5F8FE; --surface: #FFFFFF; --surface-2: #EEF2FB; --tint: #E8EEFE;
-  --line: #E3E8F3; --text: #141A33; --muted: #646C8A; --primary: #2F57E8; --primary-press: #2446C9;
-  --on-primary: #FFFFFF; --primary-soft: #E8EEFE; --accent: #EFE8FF; --accent-soft: #F5F1FF; --deep: #FFFFFF;
-  --on-deep: #141A33; --on-deep-muted: #646C8A; --danger: #D03A30; --danger-soft: #FFE6E3;
+  color-scheme: light; --bg: #F7F5FC; --surface: #FFFFFF; --surface-2: #F1EEF9; --tint: #EEE9FD;
+  --line: #E3DEF0; --text: #1D1930; --muted: #615B78; --primary: #5B45C9; --primary-press: #4A35AE;
+  --on-primary: #FFFFFF; --primary-soft: #EEE9FD; --accent: #FCE7EF; --accent-soft: #FDF2F6; --deep: #FFFFFF;
+  --on-deep: #1D1930; --on-deep-muted: #615B78; --danger: #B92D4E; --danger-soft: #FCE6EB;
 }
 :root[data-theme="dark"] {
-  --accent: #6A5464; --accent-soft: #3A2F38; --danger: #F2B8B5; --danger-soft: #3D1A18; color-scheme: dark;
-  --t-sage: #2A3528; --t-sage-ink: #B7CDB3; --t-mauve: #372D35; --t-mauve-ink: #DCC6D6; --t-taupe: #36312A;
-  --t-taupe-ink: #D8CBB2; --t-ice: #263034; --t-ice-ink: #BFD0D6; --t-mist: #2E2C2F; --t-mist-ink: #D2CDD2;
-  --heart: #E3A6CC; --bg: #0E1324; --surface: #161C31; --surface-2: #1D2440; --tint: #1E2A52;
-  --line: #283152; --text: #E9ECF8; --muted: #A3AAC6; --primary: #8EA6FF; --primary-press: #A8BAFF;
-  --on-primary: #0B1430; --primary-soft: #1E2A52; --deep: #161C31; --on-deep: #E9ECF8;
-  --on-deep-muted: #A3AAC6;
+  color-scheme: dark; --bg: #14111D; --surface: #1C1828; --surface-2: #252036; --tint: #2B2443;
+  --line: #372F4D; --text: #EDE9F7; --muted: #ABA4C2; --primary: #BBA9FF; --primary-press: #CDBFFF;
+  --on-primary: #1B1238; --primary-soft: #2B2443; --accent: #3A2231; --accent-soft: #2A1D26; --deep: #1C1828;
+  --on-deep: #EDE9F7; --on-deep-muted: #ABA4C2; --danger: #F3A6B8; --danger-soft: #3E1D27; --heart: #F18DB3; --on-heart: #2A0F1C;
+  --p-violet: #2B2443; --p-violet-ink: #CDBFFF; --p-rose: #3A2231; --p-rose-ink: #F6B7CF;
+  --p-mint: #17302A; --p-mint-ink: #97DDBF; --p-peach: #382819; --p-peach-ink: #F4C19E;
+  --p-sky: #1A2A3C; --p-sky-ink: #A8CDF2;
+  --c0: #A996FF; --c1: #EE8FB6; --c2: #5FCB9F; --c3: #EDA374; --c4: #7FB6EC;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -1359,3 +1374,58 @@ main.quiz-host-main { max-width: 1200px; }
 .pts-code { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .pts-code .code { padding: 4px 10px; border: 1px dashed var(--primary); border-radius: var(--r-sm); background: var(--surface); overflow-wrap: anywhere; user-select: all; }
 .pts-red .row-title { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* ---------- pastel palette: colour-only overrides (tokens at the top of this file; no layout here) ---------- */
+/* home hero and banner: a pale lavender card with a 1px line instead of a saturated block */
+.hero3d, .promo { background: var(--p-violet); color: var(--text); border: 1px solid var(--line); }
+.hero3d p, .promo p { color: var(--muted); opacity: 1; }
+.hero3d-btn, .promo-btn { background: var(--primary); color: var(--on-primary); }
+.promo-btn:active { background: var(--primary-press); }
+.hero3d-face { border-color: var(--line); }
+.promo-art i { border-color: var(--p-violet-ink) !important; }
+.promo-art i:nth-child(1) { background: var(--sw-sage); }
+.promo-art i:nth-child(2) { background: var(--sw-mauve); }
+.promo-art i:nth-child(3) { background: var(--sw-taupe); }
+.promo-art i:nth-child(4) { background: var(--sw-mist); }
+.promo-art i:nth-child(5) { background: #FFFFFF; }
+/* calendar kinds (≥4.5:1 on surfaces): the family inks, same hues as before (opportunity blue, event violet) */
+:root { --cal-class: var(--muted); --cal-opp: var(--p-sky-ink); --cal-job: var(--p-mint-ink); --cal-event: var(--p-violet-ink); --cal-exam: var(--p-rose-ink); --cal-own: var(--p-peach-ink); }
+:root[data-theme="dark"] { --cal-class: var(--muted); --cal-opp: var(--p-sky-ink); --cal-job: var(--p-mint-ink); --cal-event: var(--p-violet-ink); --cal-exam: var(--p-rose-ink); --cal-own: var(--p-peach-ink); }
+/* list marks: a pale square with a deep letter or glyph */
+.thumb-0, .mk-0, .nico-0 { background: var(--p-violet); color: var(--p-violet-ink); }
+.thumb-1, .mk-1, .nico-1 { background: var(--p-rose); color: var(--p-rose-ink); }
+.thumb-2, .mk-2, .nico-2 { background: var(--p-mint); color: var(--p-mint-ink); }
+.thumb-3, .mk-3, .nico-3 { background: var(--p-peach); color: var(--p-peach-ink); }
+.thumb-4, .mk-4, .nico-4 { background: var(--p-sky); color: var(--p-sky-ink); }
+/* tags */
+.tag-new { background: var(--p-mint); color: var(--p-mint-ink); }
+.tag-pick { background: var(--p-violet); color: var(--p-violet-ink); }
+.tag-warn { background: var(--p-rose); color: var(--p-rose-ink); }
+.tag-deal { background: var(--p-peach); color: var(--p-peach-ink); }
+/* counters */
+#mine-btn .count, .tab .pill .tab-count { background: var(--heart); color: var(--on-heart); }
+/* dimmers */
+.sheet-back { background: rgba(29, 25, 48, .4); }
+.quiz-dialog::backdrop { background: rgba(29, 25, 48, .47); }
+/* campus map: sky-blue study, violet dorms, peach other, emerald entrances (as the photo) */
+.pb-study rect, .pb-study polygon { fill: var(--map-study); }
+.pb-dorm rect, .pb-dorm polygon { fill: var(--map-dorm); }
+.pb-other rect, .pb-other polygon { fill: var(--map-other); }
+.bnum-study { background: var(--p-sky); color: var(--p-sky-ink); }
+.bnum-dorm { background: var(--p-violet); color: var(--p-violet-ink); }
+.bnum-other { background: var(--p-peach); color: var(--p-peach-ink); }
+.lg-study i { background: var(--c4); } .lg-dorm i { background: var(--c0); } .lg-other i { background: var(--c3); }
+.pl-street { stroke: var(--map-street); }
+.pin-study circle { stroke: var(--map-study); } .pin-dorm circle { stroke: var(--map-dorm); } .pin-other circle { stroke: var(--map-other); }
+.pin text { fill: var(--map-ink); }
+.pin.on circle { fill: var(--map-ink); }
+.pin .pin-halo { stroke: var(--map-ink); }
+.pin:focus-visible circle { stroke: var(--map-ink); }
+.me-acc { fill: rgba(45, 92, 184, .16); stroke: rgba(45, 92, 184, .5); }
+.me-dot { fill: var(--map-study); }
+.me-route { stroke: var(--map-ink); }
+.np-stop circle { fill: var(--map-study); } .np-food circle { fill: var(--map-rose); } .np-shop circle { fill: var(--map-ent); }
+.np-pharm circle { fill: var(--map-ent); } .np-print circle { fill: var(--map-dorm); } .np-money circle { fill: var(--map-other); }
+.np-health circle { fill: var(--map-rose); } .np-post circle { fill: var(--map-study); } .np-sport circle { fill: var(--map-other); }
+.ent line { stroke: var(--map-ent); } .ent polygon { fill: var(--map-ent); } .ent-key { background: var(--map-ent); }
+
