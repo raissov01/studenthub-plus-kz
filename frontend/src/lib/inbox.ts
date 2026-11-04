@@ -43,6 +43,8 @@ const CATS: Record<InboxCategory, { kk: string; ru: string; icon: IconName; tone
 };
 /** label, icon and colour of a category; an unknown one (a newer server) reads as a plain notice */
 export function inboxCategory(c: string, tt: TT): { label: string; icon: IconName; tone: number } {
+  // café order updates (transactional, not a switchable category)
+  if (c === 'cafe') return { label: tt('Кофейня', 'Кофейня'), icon: 'cup', tone: 3 };
   const x = (CATS as Record<string, (typeof CATS)[InboxCategory] | undefined>)[c];
   return x ? { label: tt(x.kk, x.ru), icon: x.icon, tone: x.tone } : { label: tt('Хабарлама', 'Уведомление'), icon: 'bell', tone: 4 };
 }

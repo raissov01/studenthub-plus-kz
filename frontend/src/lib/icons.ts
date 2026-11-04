@@ -47,7 +47,8 @@ export const IC = {
   doc: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
   coin: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>',
   trophy: '<path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H4v1a3 3 0 003 3M16 6h4v1a3 3 0 01-3 3"/><path d="M12 13v4M8 21h8M9 17h6v4H9z"/>',
-  streak: '<path d="M4 18l5-5 4 3 7-8"/><path d="M15 8h5v5"/>'
+  streak: '<path d="M4 18l5-5 4 3 7-8"/><path d="M15 8h5v5"/>',
+  cup: '<path d="M4 9h12v5a5 5 0 01-5 5H9a5 5 0 01-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 010 5H16"/><path d="M8 3.5v2.5M12 3.5v2.5"/>'
 } as const;
 
 export type IconName = keyof typeof IC;

@@ -1606,3 +1606,68 @@ textarea.input.nb-text { flex: 1; min-width: 0; resize: none; overflow: hidden; 
 .ev-sw input:checked + .ev-sw-dot svg { visibility: visible; }
 .ev-sw input:checked ~ .ev-sw-name { color: var(--text); font-weight: 700; }
 .ev-sw input:focus-visible + .ev-sw-dot { outline: 2px solid var(--primary); outline-offset: 4px; }
+
+/* ---------- «Кофе / Кофейня» (components/views/cafe.tsx): flat — solid fills and 1px borders, fits 360px ---------- */
+.cafe { display: flex; flex-direction: column; gap: 14px; padding-bottom: 72px; }
+.cafe-short { margin: 0 0 12px; }
+.cafe-short .row { padding-top: 10px; padding-bottom: 10px; }
+.cafe-short .row-title, .cafe-short .row-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cafe-code-inline { font-weight: 700; letter-spacing: .04em; }
+.cafe-item { align-items: center; }
+.cafe-add { flex: none; min-width: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; }
+.cafe-cartbar { position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 8px); z-index: 20; display: flex; justify-content: center; padding: 0 12px; pointer-events: none; }
+.cafe-cartbar .btn { pointer-events: auto; max-width: 560px; min-height: 52px; border: 1px solid var(--primary-press); }
+.cafe-opt { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cafe-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.cafe-choices .chip { min-height: 40px; }
+.cafe-qty { display: flex; align-items: center; gap: 10px; flex: none; }
+.cafe-qty .btn { min-width: 40px; min-height: 40px; padding: 0 10px; flex: none; }
+.cafe-qty b { min-width: 1.6em; text-align: center; }
+.cafe-qty.small .btn { min-width: 36px; min-height: 36px; }
+.cafe-pay { border: 0; margin: 0; padding: 0; gap: 8px; }
+.cafe-radio { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; }
+.cafe-radio input { margin-top: 3px; accent-color: var(--primary); width: 18px; height: 18px; flex: none; }
+.cafe-radio span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cafe-radio:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+.cafe-codecard { align-items: center; text-align: center; gap: 6px; }
+.cafe-codecard.is-ready { background: var(--p-mint); border-color: var(--p-mint-ink); }
+.cafe-code { font-family: var(--font-display); font-size: clamp(3.4rem, 18vw, 5.5rem); line-height: 1; letter-spacing: .08em; color: var(--text); }
+.cafe-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cafe-steps li { font-size: .78rem; text-align: center; padding: 8px 2px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); color: var(--muted); overflow-wrap: anywhere; }
+.cafe-steps li.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+.cafe-paycard .qr { align-self: center; }
+.cafe-kaspi { display: flex; flex-direction: column; gap: 10px; }
+.cafe-kaspi a.btn { text-decoration: none; text-align: center; }
+.cafe-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; font-size: 1.05rem; }
+.cafe-lines .row-end { white-space: nowrap; }
+.cafe-staff-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+.cafe-staff-head h2 { margin: 0; }
+.cafe-staff-head select { flex: 1 1 200px; }
+.cafe-board { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.cafe-col { display: none; flex-direction: column; gap: 10px; min-width: 0; }
+.cafe-col.cur { display: flex; }
+.cafe-col-h { margin: 0; display: flex; align-items: center; gap: 8px; }
+.cafe-ticket { gap: 8px; }
+.cafe-ticket[data-status="new"] { border-color: var(--primary); }
+.cafe-ticket[data-status="ready"] { background: var(--p-mint); border-color: var(--p-mint-ink); }
+.cafe-ticket-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cafe-ticket-code { font-family: var(--font-display); font-size: 2rem; line-height: 1; }
+.cafe-ticket-time { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.cafe-ticket-items { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.cafe-note { padding: 6px 8px; border: 1px dashed var(--line); border-radius: var(--r-sm); }
+.cafe-ticket-btns .btn { min-height: 52px; font-size: 1.05rem; }
+.cafe-alert { border-color: var(--danger); background: var(--danger-soft); }
+.cafe-switch { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: .86rem; cursor: pointer; }
+.cafe-switch input { width: 20px; height: 20px; accent-color: var(--primary); }
+.cafe-kpanel { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.cafe-kpanel .pts-inline select { flex: none; width: auto; }
+.cafe-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cafe-audit { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.cafe-audit code { display: block; color: var(--muted); }
+textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+/* a tablet at the counter: the three columns side by side, the column picker hidden */
+@media (min-width: 900px) {
+  .cafe-colpick { display: none; }
+  .cafe-board { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .cafe-col { display: flex; }
+}
