@@ -1,6 +1,7 @@
 /* Public portfolio (prompt 09) on the client and the server: API shapes (docs/api/portfolio.md, the Go code in
    backend/internal/portfolio wins), labels and the builder of the self-declared items the student may sync. Free of React. */
 import { COURSES, SKILLS } from '@/lib/data/static';
+import type { PublicCertFile } from '@/lib/certfiles';
 import type { AppState, LText } from '@/lib/types';
 
 export interface PortfolioSettings {
@@ -22,7 +23,8 @@ export interface PortfolioPage {
     certificates: { kind: 'event' | 'ambassador'; title: Bi; issuer: string; issuedAt: string; verifyUrl: string; verified: true }[];
     badges: PfBadge[];
   };
-  selfReported: { certificates: PfSelfItem[]; experience: PfSelfItem[]; skills: PfSelfItem[]; badges: PfBadge[] };
+  /** files: certificate files the student made public (absent from an older API) */
+  selfReported: { certificates: PfSelfItem[]; files?: PublicCertFile[]; experience: PfSelfItem[]; skills: PfSelfItem[]; badges: PfBadge[] };
   contact: { telegramUrl: string } | null;
   og: { title: string; description: string | null; image: string; url: string };
   site: string;

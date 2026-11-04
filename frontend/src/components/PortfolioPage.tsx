@@ -1,8 +1,10 @@
 /* The public portfolio page body (prompt 09). No hooks and no client APIs: the server page /p/<slug> renders it into
    the HTML, and the student's settings screen reuses it for the live preview. Everything shown is the student's raw
    text rendered as text (React escapes it). «Расталған» appears only where the API says verified: true. */
+import './views/cert-files.css';
 import type { ReactNode } from 'react';
-import { i18n } from '@/lib/format';
+import { categoryLabel, fmtBytes, type PublicCertFile } from '@/lib/certfiles';
+import { i18n, parseYmd } from '@/lib/format';
 import { IC, type IconName } from '@/lib/icons';
 import { BADGES, type PfBadge, type PfSelfItem, type PortfolioPage as Page } from '@/lib/portfolio';
 
@@ -55,11 +57,34 @@ function SelfList({ items, icon }: { items: PfSelfItem[]; icon: IconName }) {
   );
 }
 
+/** public certificate files: a photo thumbnail or a PDF tile; the file opens in a new tab (served sandboxed by the API) */
+function FileList({ files, lang }: { files: PublicCertFile[]; lang: Lang }) {
+  const { tt, L, fDateY } = i18n(lang);
+  return (
+    <ul className="pf-files">
+      {files.map((f, i) => (
+        <li key={i} className="pf-file">
+          <a className="pf-file-thumb" href={f.url} target="_blank" rel="noopener" aria-label={tt(`Ашу: ${f.title}`, `Открыть: ${f.title}`)}>
+            {f.kind === 'image'
+              // eslint-disable-next-line @next/next/no-img-element -- an API file, not optimised by next/image (images: unoptimized)
+              ? <img src={f.url} alt="" loading="lazy" />
+              : <><Ico n="file" s={24} /><b>PDF</b><span className="pf-file-meta">{fmtBytes(f.bytes)}</span></>}
+          </a>
+          <span className="pf-file-title">{f.title}</span>
+          <span className="pf-file-meta">{[f.issuer, f.issuedOn ? fDateY(parseYmd(f.issuedOn)) : '', L(categoryLabel(f.category))].filter(Boolean).join(' · ')}</span>
+          {f.credentialUrl ? <a className="pf-verify" href={f.credentialUrl} target="_blank" rel="noopener nofollow">{hostPath(f.credentialUrl)}</a> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function PortfolioPage({ page, lang, preview }: { page: Page; lang: Lang; preview?: boolean }) {
   const { tt, L } = i18n(lang);
   const p = page.profile, v = page.verified, s = page.selfReported;
   const hasVerified = v.events.length + v.certificates.length + v.badges.length > 0;
-  const hasSelf = s.certificates.length + s.experience.length + s.skills.length + s.badges.length > 0;
+  const files = s.files ?? [];
+  const hasSelf = s.certificates.length + files.length + s.experience.length + s.skills.length + s.badges.length > 0;
   const where = [p.university, p.course ? tt(`${p.course}-курс`, `${p.course} курс`) : ''].filter(Boolean).join(' · ');
   return (
     <article className={`pf${preview ? ' pf-preview' : ''}`} lang={lang}>
@@ -103,7 +128,9 @@ export function PortfolioPage({ page, lang, preview }: { page: Page; lang: Lang;
       {hasSelf ? (
         <section className="pf-sec">
           <h2>{tt('Өзі көрсеткен', 'Указано самим студентом')}</h2>
-          {s.certificates.length ? <><h3>{tt('Сертификаттар', 'Сертификаты')}</h3><SelfList items={s.certificates} icon="award" /></> : null}
+          {s.certificates.length || files.length ? <h3>{tt('Сертификаттар', 'Сертификаты')}</h3> : null}
+          {files.length ? <FileList files={files} lang={lang} /> : null}
+          {s.certificates.length ? <SelfList items={s.certificates} icon="award" /> : null}
           {s.experience.length ? <><h3>{tt('Тәжірибе', 'Опыт')}</h3><SelfList items={s.experience} icon="briefcase" /></> : null}
           {s.skills.length ? <><h3>{tt('Дағдылар', 'Навыки')}</h3><p className="pf-skills">{s.skills.map((k, i) => <span key={i} className="badge b-line">{k.title}</span>)}</p></> : null}
           {s.badges.length ? <><h3>{tt('Қауымдастық белгілері', 'Значки сообщества')}</h3><p className="pf-skills">{s.badges.map((b, i) => <span key={i} className="badge b-line">{badgeName(b, lang)}</span>)}</p></> : null}
