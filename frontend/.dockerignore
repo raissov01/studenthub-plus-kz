@@ -1,0 +1,10 @@
+# context = frontend/ (docker/frontend.Dockerfile)
+node_modules
+.next
+.fe-deps
+test-results
+playwright-report
+*.tsbuildinfo
+next-env.d.ts
+.env*
+# e2e/ and tools/ stay: next build type-checks them (tsconfig includes **/*.ts)

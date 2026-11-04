@@ -1,0 +1,93 @@
+# Student Hub — the whole stack on a laptop, built from source.
+#
+#   cp docker/local.env.example docker/local.env      # once; fill BOT_TOKEN etc. only if you need them
+#   docker compose -f docker/docker-compose.local.yml up -d --build
+#   open http://localhost:8112  (web)   http://localhost:8110/api/health  (api)
+#   docker compose -f docker/docker-compose.local.yml run --rm api /app/migrate
+#   docker compose -f docker/docker-compose.local.yml down          # -v also drops the local database
+#
+# Add docker-compose.override.yml for one origin like production (an nginx container on :8088 in front of both).
+# Uses its own volume and ports; it never touches the production volume name.
+
+name: studenthub-local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "shared_buffers=24MB", "-c", "max_connections=20"]
+    environment:
+      POSTGRES_USER: studenthub
+      POSTGRES_PASSWORD: studenthub
+      POSTGRES_DB: studenthub
+    volumes:
+      - pg-local:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 160m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studenthub -d studenthub -q"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    # applies backend/migrations once before the API starts
+    image: studenthub-api:${API_TAG:-local}
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+      args:
+        BUILD_ID: ${BUILD_ID:-local}
+    command: ["/app/migrate"]
+    environment:
+      DATABASE_URL: postgres://studenthub:studenthub@postgres:5432/studenthub?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: studenthub-api:${API_TAG:-local}
+    # built by the migrate service above (same image)
+    pull_policy: never
+    env_file:
+      - path: ./local.env
+        required: false
+    environment:
+      API_ADDR: ":8110"
+      DATABASE_URL: postgres://studenthub:studenthub@postgres:5432/studenthub?sslmode=disable
+      SITE_URL: ${SITE_URL:-http://localhost:8112}
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      CONTENT_URL: http://127.0.0.1:8110
+      SESSION_SECRET: ${SESSION_SECRET:-local-docker-session-secret-at-least-32-chars}
+    ports:
+      - "127.0.0.1:8110:8110"
+    volumes:
+      - uploads-local:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    mem_limit: 150m
+
+  web:
+    image: studenthub-web:${WEB_TAG:-local}
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:8112}
+        API_ORIGIN: http://api:8110
+        BUILD_ID: ${BUILD_ID:-local}
+    environment:
+      API_ORIGIN: http://api:8110
+    ports:
+      - "127.0.0.1:8112:8112"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 300m
+
+volumes:
+  pg-local:
+  uploads-local:

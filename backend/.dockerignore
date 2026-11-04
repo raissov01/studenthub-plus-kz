@@ -1,0 +1,9 @@
+# context = backend/ (docker/backend.Dockerfile); keep the image to code, migrations and data
+.git
+bin/
+uploads/
+studenthub-api
+studenthub-migrate
+**/*_test.go
+templates/
+.env*
