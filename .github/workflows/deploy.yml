@@ -1,0 +1,101 @@
+# Smart deploy from GitHub Actions — OPTIONAL, manual only for now (secrets not configured yet).
+# Same decision and server step as docker/smart-deploy.sh on a laptop: detect what changed since the sha deployed on
+# the server, build only those images HERE on the runner (the VPS never builds), stream them over ssh
+# (docker save | docker load), then run docker/vps-apply.sh on the server.
+#
+# Needs repository secrets: VPS_HOST (85.137.91.47), VPS_USER (root), VPS_SSH_KEY (a deploy key whose public half is
+# in the server's authorized_keys). docs/deployment/overview.md.
+name: Deploy To VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Full deploy (ignore the change detection)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://studenthub.studywithraissov.com
+  APP_ROOT: /opt/studenthub
+
+jobs:
+  deploy:
+    name: Detect, build, ship, apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Secrets present?
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "::error::VPS_HOST / VPS_SSH_KEY are not configured; deploy from a laptop with bash docker/smart-deploy.sh"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SSH key
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n' "$VPS_HOST" "${{ secrets.VPS_USER || 'root' }}" > ~/.ssh/config
+
+      - name: Detect changed runtime areas
+        id: detect
+        run: |
+          if [ "${{ inputs.full }}" = "true" ]; then BASE=""; else BASE="$(ssh vps "cat $APP_ROOT/docker/DEPLOYED_SHA 2>/dev/null" || true)"; fi
+          bash scripts/detect-smart-deploy.sh --base "$BASE" --head "$GITHUB_SHA" --github-output "$GITHUB_OUTPUT"
+
+      - name: Deploy summary
+        run: |
+          {
+            echo "## Smart deploy decision"
+            echo '```text'
+            printf '%s' '${{ steps.detect.outputs.summary_b64 }}' | base64 -d
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build and ship api
+        if: steps.detect.outputs.deploy_backend == 'true'
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build --build-arg BUILD_ID="$TAG" -f docker/backend.Dockerfile -t "studenthub-api:$TAG" backend/
+          ssh vps "docker image inspect studenthub-api:$TAG >/dev/null 2>&1" || docker save "studenthub-api:$TAG" | gzip -1 | ssh vps 'gunzip | docker load'
+          echo "API_TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Build and ship web
+        if: steps.detect.outputs.deploy_frontend == 'true'
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build --build-arg BUILD_ID="$TAG" --build-arg NEXT_PUBLIC_SITE_URL="$SITE_URL" --build-arg API_ORIGIN=http://api:8110 \
+            -f docker/frontend.Dockerfile -t "studenthub-web:$TAG" frontend/
+          ssh vps "docker image inspect studenthub-web:$TAG >/dev/null 2>&1" || docker save "studenthub-web:$TAG" | gzip -1 | ssh vps 'gunzip | docker load'
+          echo "WEB_TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Apply on the server
+        if: steps.detect.outputs.skip_deploy != 'true'
+        run: |
+          ssh vps "mkdir -p $APP_ROOT/docker/systemd"
+          scp -q docker/docker-compose.yml docker/stack.yml docker/nginx.host.conf docker/nginx.conf docker/vps-apply.sh "vps:$APP_ROOT/docker/"
+          scp -q docker/systemd/* "vps:$APP_ROOT/docker/systemd/"
+          ssh vps "cd $APP_ROOT/docker && MODE=compose HEAD_SHA=${GITHUB_SHA::12} API_TAG=${API_TAG:-} WEB_TAG=${WEB_TAG:-} \
+            DEPLOY_FRONTEND=${{ steps.detect.outputs.deploy_frontend }} DEPLOY_BACKEND=${{ steps.detect.outputs.deploy_backend }} \
+            RUN_MIGRATIONS=${{ steps.detect.outputs.run_migrations }} APPLY_STACK=${{ steps.detect.outputs.apply_stack }} \
+            DEPLOY_NGINX=${{ steps.detect.outputs.deploy_nginx }} DEPLOY_TIMERS=${{ steps.detect.outputs.deploy_timers }} \
+            bash vps-apply.sh"
+
+      - name: Public health check
+        if: steps.detect.outputs.skip_deploy != 'true'
+        run: curl -fsS -m 20 "$SITE_URL/api/health"

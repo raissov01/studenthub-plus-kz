@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Go vet + test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: studenthub
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: go vet ./...
+      # each package creates and drops its own throwaway database on this server (internal/testdb)
+      - run: go test ./...
+        env:
+          TEST_DATABASE_URL: postgres://postgres:dev@localhost:54329/studenthub
+
+  frontend:
+    name: tsc, eslint, unit tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      # next build writes the PageProps/LayoutProps types tsc needs
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: npm run test:ts
+      - run: npm run build
+        env:
+          BUILD_ID: ${{ github.sha }}
+      - name: Tabs must stay static
+        run: |
+          node -e '
+            const m = require("./.next/prerender-manifest.json").routes;
+            const bad = ["/", "/search", "/calendar", "/profile"].filter(r => !m[r] || m[r].initialRevalidateSeconds !== false);
+            if (bad.length) { console.error("not prerendered:", bad.join(" ")); process.exit(1); }
+            console.log("static:", Object.keys(m).length, "routes");'
