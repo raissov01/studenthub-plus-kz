@@ -1,15 +1,15 @@
 'use client';
-/* Rows and cards of the search lists (vacancy, opportunity, event), the «Ұсын» link, and «Менің тізімім». */
+/* Rows and cards of the search lists (vacancy, opportunity), the «Ұсын» link, and «Менің тізімім». */
 import { useApp } from '@/components/app';
 import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
-import { DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
+import { Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { PinButton } from '@/components/views/calendar';
-import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
+import { CITIES, JOB_TAGS } from '@/lib/data/static';
 import { deadlineText, jobApplyText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
-import { dOff, diffDays } from '@/lib/format';
-import type { EventItem, Job, Opportunity, Plan } from '@/lib/types';
+import { diffDays } from '@/lib/format';
+import type { Job, Opportunity, Plan } from '@/lib/types';
 
 /** a vacancy row; `heart` = the search list's variant with ♥ in place of the chevron */
 export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
@@ -23,7 +23,7 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
       <span className="row-main">
         <span className="row-title">{L(j.title)}</span>
         <span className="row-sub">{L(j.org)}, {L(CITIES[j.city])}</span>
-        <span className="job-pay"><b className="pay">{pt.main}</b> <span className="tiny muted">{pt.sub}</span><DemoBadge show={j.is_demo} /></span>
+        <span className="job-pay"><b className="pay">{pt.main}</b> <span className="tiny muted">{pt.sub}</span></span>
         <EmployerJobBits j={j} />
         <span className="row-sub card-detail">{tt("Өтінім: ", "Отклик: ")}{jobApplyText(j, I)}</span>
         {tags.length || applied ? (
@@ -37,28 +37,6 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
     </button>
   );
   return heart ? <div className="sr">{row}<span className="sr-end sr-heart"><Heart id={j.id} opp={false} /><PinButton item={'job:' + j.id} /></span></div> : row;
-}
-
-export function EventCard({ e, demo }: { e: EventItem; demo?: boolean }) {
-  const { S, tt, L, monS, wd, go } = useApp();
-  const d = dOff(e.day), reg = S.events[e.id];
-  return (
-    <button className="card" type="button" onClick={() => go('event:' + e.id)}>
-      <div className="card-row">
-        <div className="date"><small>{monS[d.getMonth()]}</small><b>{d.getDate()}</b></div>
-        <div className="row-main">
-          <span className="row-title">{L(e.title)}</span>
-          <span className="row-sub">{wd[d.getDay()]}, {e.time}. {L(e.place)}</span>
-          <span className="badges" style={{ marginTop: 6 }}>
-            <span className="badge b-line">{L(EVENT_CATS[e.cat])}</span>
-            {e.cert ? <span className="badge b-sun">{tt('Сертификат', 'Сертификат')}</span> : null}
-            {reg ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Тіркелдіңіз', 'Вы записаны')}</span> : null}
-            <DemoBadge show={!!demo} />
-          </span>
-        </div>
-      </div>
-    </button>
-  );
 }
 
 /** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists: the site's form, whatever the switches say */
@@ -78,7 +56,6 @@ export function OppCard({ o }: { o: Opportunity }) {
           {o.funded ? <span className="badge b-line">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
           <OfficialBadge o={o} />
           {S.saved[o.id] ? <span className="badge b-sun">{tt('Сақталған', 'Сохранено')}</span> : null}
-          <DemoBadge show={o.is_demo} />
         </div>
         <h3>{L(o.title)}</h3>
         <span className="row-sub">{L(o.org)}</span>
@@ -97,7 +74,6 @@ export function Mine() {
   const { S, tt, I, content } = useApp();
   const jobs = content.jobs.filter(j => S.applied[j.id]);
   const opps = content.opportunities.filter(o => S.saved[o.id]).sort((a, b) => oppLeft(a) - oppLeft(b));
-  const evs = EVENTS.filter(e => !e.past && S.events[e.id]).sort((a, b) => a.day - b.day);
   const plans = S.plans;
   const empty = (msg: string, go: string, label: string) => <div className="group"><EmptyGo msg={msg} go={go} label={label} /></div>;
   return (
@@ -109,9 +85,8 @@ export function Mine() {
         {opps.length
           ? <div className="group">{opps.map(o => <Row key={o.id} go={'opp:' + o.id} icon="globe" title={I.L(o.title)} sub={<span className={oppLeft(o) <= 14 ? 'urgent' : ''}>{deadlineText(o, I)}</span>} />)}</div>
           : empty(tt('Ұнаған тағылымдаманы сақтасаңыз, мерзімі осында көрінеді.', 'Сохраните стажировку, и её срок будет виден здесь.'), 'opps:intern', tt('Тағылымдамаларды қарау', 'Смотреть стажировки'))}</section>
-      <section className="section"><SectionHead title={tt('Іс-шараларым', 'Мои мероприятия')} more={<span className="tiny muted num">{evs.length}</span>} />
-        <MyDbEvents />
-        {evs.length ? <div className="list">{evs.map(e => <EventCard key={e.id} e={e} />)}</div> : empty(tt('Әзірге тіркелген іс-шара жоқ.', 'Вы пока никуда не записаны.'), 'opps:events', tt('Іс-шараларды қарау', 'Смотреть события'))}</section>
+      <section className="section"><SectionHead title={tt('Іс-шараларым', 'Мои мероприятия')} />
+        <MyDbEvents empty={empty(tt('Әзірге тіркелген іс-шара жоқ.', 'Вы пока никуда не записаны.'), 'opps:events', tt('Іс-шараларды қарау', 'Смотреть события'))} /></section>
       <section className="section"><SectionHead title={tt('Емтихан жоспарлары', 'Планы к экзаменам')} more={<span className="tiny muted num">{plans.length}</span>} />
         {plans.length ? <div className="group">{plans.map(pl => <PlanRow key={pl.id} pl={pl} sep="," />)}</div>
           : empty(tt('Емтиханға дайындық жоспары әлі жоқ.', 'Плана подготовки пока нет.'), 'exam', tt('Жоспар құру', 'Составить план'))}</section>

@@ -277,7 +277,7 @@ export function PlanView({ id }: { id: string }) {
           </label>
         );
       })}</div>
-      <p className="tiny muted">{tt('Бұл үлгі жоспар: оны өз қарқыныңызға қарай бейімдеңіз. Тест күндері үшін «Карточкалар» құралын қолданыңыз.', 'Это примерный план: подстройте его под свой темп. Для дней проверки используйте «Карточки».')}</p>
+      <p className="tiny muted">{tt('Жоспар автоматты құрылды: оны өз қарқыныңызға қарай бейімдеңіз. Тест күндері үшін «Карточкалар» құралын қолданыңыз.', 'План составлен автоматически: подстройте его под свой темп. Для дней проверки используйте «Карточки».')}</p>
       <div className="btn-row">
         <button className="btn secondary" type="button" onClick={() => go('cards')}><Icon n="cards" s={18} /> {tt('Карточкалар', 'Карточки')}</button>
         <button className="btn danger" type="button" onClick={() => openSheet(<ConfirmSheet msg={tt('Жоспарды жою керек пе?', 'Удалить план?')} yes={() => { update(s => { s.plans = s.plans.filter(x => x.id !== pl.id); }); go('exam', { replace: true }); }} />)}>
@@ -292,9 +292,9 @@ export function PlanView({ id }: { id: string }) {
 export function Cards() {
   const router = useRouter();
   const app = useApp();
-  const { S, I, tt, go, toast } = app;
+  const { S, tt, go, toast } = app;
   const cfg = useConfig();
-  const decks = allDecks(S, I);
+  const decks = allDecks(S);
   return (
     <>
       {cfg.features.quiz && <Row onClick={() => router.push('/quiz/new?notes=1')} icon="cards" title={tt('Квиз жасау', 'Создать квиз')} sub={tt('Конспект жүктеу немесе мәтінді қою', 'Загрузить конспект или вставить текст')} />}
@@ -326,7 +326,7 @@ export function Cards() {
 }
 
 function startStudy(app: App, id: string, mode: string) {
-  const d = allDecks(app.S, app.I).find(x => x.id === id);
+  const d = allDecks(app.S).find(x => x.id === id);
   if (!d) return;
   const cards = d.cards.slice();
   if (mode === 'exam') cards.sort(() => Math.random() - 0.5);
@@ -335,8 +335,8 @@ function startStudy(app: App, id: string, mode: string) {
 
 export function DeckView({ id }: { id: string }) {
   const app = useApp();
-  const { S, I, tt, go, toast, openSheet } = app;
-  const d = allDecks(S, I).find(x => x.id === id);
+  const { S, tt, go, toast, openSheet } = app;
+  const d = allDecks(S).find(x => x.id === id);
   if (!d) return <Cards />;
   return (
     <>
@@ -346,35 +346,26 @@ export function DeckView({ id }: { id: string }) {
       </div>
       <div className="group">{d.cards.length ? d.cards.map((c, i) => (
         <div key={i} className="row"><span className="row-main"><span className="row-title">{c.q}</span><span className="row-sub">{c.a}</span></span>
-          {d.demo ? null : <button className="icon-btn" type="button" aria-label={tt('Жою', 'Удалить')} style={{ color: 'var(--muted)' }}
-            onClick={() => update(s => { s.decks.find(x => x.id === d.id)?.cards.splice(i, 1); })}><Icon n="trash" s={18} /></button>}</div>
+          <button className="icon-btn" type="button" aria-label={tt('Жою', 'Удалить')} style={{ color: 'var(--muted)' }}
+            onClick={() => update(s => { s.decks.find(x => x.id === d.id)?.cards.splice(i, 1); })}><Icon n="trash" s={18} /></button></div>
       )) : <div className="empty">{tt('Карточка жоқ. Төменнен қосыңыз.', 'Карточек нет. Добавьте ниже.')}</div>}</div>
-      {d.demo ? (
-        <>
-          <p className="tiny muted">{tt('Бұл үлгі жиын. Өз жиыныңызды «Карточкалар» бетінде құрыңыз.', 'Это пример. Создайте свой набор на странице «Карточки».')}</p>
-          <button className="btn ghost" type="button" onClick={() => { update(s => { s.hideDemoDeck = true; }); go('cards', { replace: true }); }}>{tt('Үлгі жиынды жасыру', 'Скрыть пример')}</button>
-        </>
-      ) : (
-        <>
-          <form className="card form" id="cardForm" onSubmit={e => {
-            e.preventDefault();
-            const f = e.currentTarget;
-            const q = f.querySelector<HTMLInputElement>('#cQ'), a = f.querySelector<HTMLTextAreaElement>('#cA');
-            const card = { q: (q?.value || '').trim(), a: (a?.value || '').trim() };
-            update(s => { s.decks.find(x => x.id === d.id)?.cards.push(card); });
-            f.reset();
-            toast(tt('Қосылды', 'Добавлено'));
-          }}>
-            <h3>{tt('Карточка қосу', 'Добавить карточку')}</h3>
-            <div className="field"><label htmlFor="cQ">{tt('Сұрақ / термин', 'Вопрос / термин')}</label><input className="input" id="cQ" required /></div>
-            <div className="field"><label htmlFor="cA">{tt('Жауап', 'Ответ')}</label><textarea className="input" id="cA" required style={{ minHeight: 70 }}></textarea></div>
-            <button className="btn" type="submit"><Icon n="plus" s={18} /> {tt('Қосу', 'Добавить')}</button>
-          </form>
-          <button className="btn danger" type="button" onClick={() => openSheet(<ConfirmSheet msg={tt('Жиынды жою керек пе?', 'Удалить набор?')} yes={() => { update(s => { s.decks = s.decks.filter(x => x.id !== d.id); }); go('cards', { replace: true }); }} />)}>
-            <Icon n="trash" s={18} /> {tt('Жиынды жою', 'Удалить набор')}
-          </button>
-        </>
-      )}
+      <form className="card form" id="cardForm" onSubmit={e => {
+        e.preventDefault();
+        const f = e.currentTarget;
+        const q = f.querySelector<HTMLInputElement>('#cQ'), a = f.querySelector<HTMLTextAreaElement>('#cA');
+        const card = { q: (q?.value || '').trim(), a: (a?.value || '').trim() };
+        update(s => { s.decks.find(x => x.id === d.id)?.cards.push(card); });
+        f.reset();
+        toast(tt('Қосылды', 'Добавлено'));
+      }}>
+        <h3>{tt('Карточка қосу', 'Добавить карточку')}</h3>
+        <div className="field"><label htmlFor="cQ">{tt('Сұрақ / термин', 'Вопрос / термин')}</label><input className="input" id="cQ" required /></div>
+        <div className="field"><label htmlFor="cA">{tt('Жауап', 'Ответ')}</label><textarea className="input" id="cA" required style={{ minHeight: 70 }}></textarea></div>
+        <button className="btn" type="submit"><Icon n="plus" s={18} /> {tt('Қосу', 'Добавить')}</button>
+      </form>
+      <button className="btn danger" type="button" onClick={() => openSheet(<ConfirmSheet msg={tt('Жиынды жою керек пе?', 'Удалить набор?')} yes={() => { update(s => { s.decks = s.decks.filter(x => x.id !== d.id); }); go('cards', { replace: true }); }} />)}>
+        <Icon n="trash" s={18} /> {tt('Жиынды жою', 'Удалить набор')}
+      </button>
     </>
   );
 }

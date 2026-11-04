@@ -45,7 +45,7 @@
 - `cat`: `career, youth, volunteer, sport, training, conf, holiday, mentoring, other`.
 - `status`: `draft` (тек ұйымдастырушыға көрінеді) → `published` → `finished` | `cancelled`.
 - `capacity: null` = шексіз; `spots_left: null` = шексіз.
-- `is_demo: true` — үлгі іс-шара; сайт оны барлық жерде «үлгі» / «пример» белгісімен көрсетеді (11-025).
+- `is_demo: true` — үлгі іс-шара; ол `GET /api/events` тізіміне және `/api/content` фидіне шықпайды.
 - `my` тек кірген адам тіркелген болса; `ticket` — электрондық билеттің коды (QR-ға салу үшін).
 - `building_id` — фронттағы `BUILDINGS` картасының id-і (`b1`, `b2` …) → «Кампус картасынан көру».
 
@@ -182,7 +182,7 @@ checkin_revoked, ratings, avg_rating, `checked_in_faculty:<факультет>`;
 
 ## Frontend checklist (05)
 
-- [ ] `VIEWS.opps('events')`: `GET /api/events` — бос болса не студент кірмеген болса демо `EVENTS` «үлгі» белгісімен.
+- [ ] `VIEWS.opps('events')`: `GET /api/events` — бос болса «Әзірге іс-шара жоқ» бос күйі (демо тізім жоқ).
 - [ ] `VIEWS.event`: бет, «Кампус картасынан көру» (`building_id`), «Кім барады» (сан / тіркелгенге аттар).
 - [ ] «Тіркелу» → кірмеген болса кіру ұсынысы; `waitlist` → «Орын жоқ — күту тізіміндесіз».
 - [ ] Электрондық билет (`my.ticket` QR), «Тіркеуден бас тарту», «Күнтізбеге қосу» (`/ics`).

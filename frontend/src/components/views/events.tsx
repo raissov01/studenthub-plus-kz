@@ -2,9 +2,9 @@
 /* Events from the database (prompt 05): list cards, the event page with registration and e-ticket, QR check-in
    for students (/checkin), and the organizer screens (/organize, /organize/new, /organize/<id>) with the live
    rotating QR, a ticket scanner, the fallback list, teams, finish, CSV and feedback. */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, DemoBadge, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
+import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
   toLocalInput, useFeature, useLoad, useNeedAccount,
@@ -33,7 +33,6 @@ export function DbEventCard({ e }: { e: DbEvent }) {
           <span className="row-sub">{wd[d.getDay()]}, {hhmm(e.starts_at)}{e.place_text ? `. ${e.place_text}` : ''}</span>
           <span className="badges" style={{ marginTop: 6 }}>
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
-            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun">{tt('Сертификат', 'Сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'cancelled' ? <span className="badge b-bad">{tt('Өтпейді', 'Отменено')}</span> : null}
@@ -104,7 +103,6 @@ function DbEvent_({ id }: { id: string }) {
         <div className="detail-head" style={{ minWidth: 0 }}><h1>{evTitle(e, lang)}</h1>
           <div className="badges">
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
-            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}
@@ -280,12 +278,12 @@ function Checkin_() {
 }
 
 /* ---------- portfolio: verified attendance ---------- */
-export function VerifiedAttendance() {
+export function VerifiedAttendance({ empty = null }: { empty?: ReactNode } = {}) {
   const { tt, lang, I } = useApp();
   const acc = useAccount();
   const on = useFeature('events');
   const { data } = useLoad<{ attendance: Attendance[] }>(on && acc.user ? '/api/events/my/attendance' : null);
-  if (!on || !acc.user || !data?.attendance.length) return null;
+  if (!on || !acc.user || !data?.attendance.length) return <>{empty}</>;
   return (
     <div className="group">
       {data.attendance.map(a => (
@@ -297,7 +295,7 @@ export function VerifiedAttendance() {
 }
 
 /** «Менің тізімім» → my DB registrations */
-export function MyDbEvents() {
+export function MyDbEvents({ empty = null }: { empty?: ReactNode } = {}) {
   const acc = useAccount();
   const on = useFeature('events');
   const online = useOnline();
@@ -312,7 +310,7 @@ export function MyDbEvents() {
   // without network (or before /api/me answers offline): the tickets kept on this device
   const fromCache = !fetched && on && (!online || code === 'offline' || code === 'network');
   const list = (fetched ?? (fromCache ? savedTickets().map(t => t.event) : [])).filter(e => e.status !== 'finished' && !isPast(e.ends_at));
-  if (!list.length) return null;
+  if (!list.length) return <>{empty}</>;
   return (
     <div className="list">
       {list.map(e => (

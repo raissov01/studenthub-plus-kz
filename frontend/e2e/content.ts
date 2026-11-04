@@ -1,4 +1,4 @@
-import type { Content, Discount, Opportunity } from '../src/lib/types';
+import type { Content, ContentEvent, Discount, Opportunity } from '../src/lib/types';
 import type { AnyJob } from '../src/lib/b2b';
 
 // Fixed bilingual fixtures, deliberately independent of production and data/*.json.
@@ -31,6 +31,12 @@ export const discount: Discount = {
     kk: 'Студенттік куәлікті кассада көрсетіңіз. Жеңілдік тек жұмыс күндері сағат 14:00–16:00 аралығында беріледі.',
     ru: 'Покажите студенческий билет на кассе. Скидка действует только в рабочие дни с 14:00 до 16:00.',
   },
+};
+/** a published event (not in the default feed; tests that need it serve it with withContent): 3 Almaty days ahead, 11:00 */
+export const EVENT_DAY = new Date(Date.now() + 5 * 3600_000 + 3 * 86400_000).toISOString().slice(0, 10);
+export const event: ContentEvent = {
+  id: 501, title_kk: 'Мансап күні', title_ru: 'День карьеры', desc_kk: 'Жұмыс берушілермен кездесу', desc_ru: 'Встреча с работодателями',
+  cat: 'career', starts_at: `${EVENT_DAY}T06:00:00Z`, ends_at: `${EVENT_DAY}T08:00:00Z`, university: 'E2E', place_text: 'Акт залы', building_id: null,
 };
 export const content: Content = { jobs: [job, experiencedJob], opportunities: [opportunity], discounts: [discount], events: [], places: [], source: 'e2e', updated_at: '2026-01-02' };
 export const config = { botUsername: 'StudentHubTestBot', emailAuth: true, features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: true } };

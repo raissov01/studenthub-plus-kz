@@ -1,10 +1,9 @@
 /* «Пәндер»: the subject list and what belongs to a subject. Pure (no DOM, no storage).
-   Subjects come from the class timetable automatically (the student builds nothing); «Пән қосу» adds own ones.
+   Subjects come from the student's own class timetable («Сабақ кестесі», lib/timetable.ts); «Пән қосу» adds others.
    Everything else links to a subject by its id, or — for data that predates subjects (decks, deadlines, exam plans,
    the GPA list) — by the subject's name appearing in its title. */
 
-type Tr = { kk: string; ru: string };
-type L2 = 'kk' | 'ru';
+import type { TimetableEntry } from '@/lib/types';
 
 export interface SubjectMeta {
   id: string;
@@ -17,19 +16,20 @@ export interface SubjectMeta {
   hidden?: boolean;
 }
 
-export interface ClassSlot { t: string; end: string; room: string; kind: Tr }
+/** wd: weekday, Monday = 0 … Sunday = 6 */
+export interface ClassSlot { t: string; end: string; room: string; kind: string; wd: number }
 export interface Subject {
   id: string;
   name: string;
-  /** both names, so links match whichever language the data was written in */
+  /** the names links are matched by (a timetable subject: its one name) */
   names: string[];
   custom: boolean;
   exam: string;
-  /** weekday classes of this subject (the sample timetable repeats Monday–Friday) */
+  /** the weekly classes of this subject */
   slots: ClassSlot[];
 }
 
-/** a stable ASCII id from a timetable subject's Kazakh name */
+/** a stable ASCII id from a timetable subject's name */
 export function subjectId(nameKk: string): string {
   let h = 5381;
   for (const ch of nameKk.trim().toLowerCase()) h = (Math.imul(h, 33) ^ ch.codePointAt(0)!) >>> 0;
@@ -37,27 +37,28 @@ export function subjectId(nameKk: string): string {
 }
 
 export function subjectsFrom(
-  schedule: { t: string; end: string; name: Tr; room: string; kind: Tr }[],
+  schedule: Pick<TimetableEntry, 't' | 'end' | 'name' | 'room' | 'kind' | 'wd'>[],
   meta: SubjectMeta[],
-  lang: L2,
 ): Subject[] {
   const byId = new Map(meta.map(m => [m.id, m]));
   const out: Subject[] = [];
   const seen = new Map<string, Subject>();
   for (const c of schedule) {
-    const id = subjectId(c.name.kk);
+    const name = c.name.trim();
+    if (!name) continue;
+    const id = subjectId(name);
     let s = seen.get(id);
     if (!s) {
       const m = byId.get(id);
       if (m?.hidden) continue;
-      s = { id, name: c.name[lang], names: [c.name.kk, c.name.ru], custom: false, exam: m?.exam ?? '', slots: [] };
+      s = { id, name, names: [name], custom: false, exam: m?.exam ?? '', slots: [] };
       seen.set(id, s);
       out.push(s);
     }
-    s.slots.push({ t: c.t, end: c.end, room: c.room, kind: c.kind });
+    s.slots.push({ t: c.t, end: c.end, room: c.room, kind: c.kind, wd: c.wd });
   }
   for (const m of meta) {
-    if (!m.custom || m.hidden || !m.name.trim()) continue;
+    if (!m.custom || m.hidden || !m.name.trim() || seen.has(m.id)) continue;
     out.push({ id: m.id, name: m.name.trim(), names: [m.name.trim()], custom: true, exam: m.exam, slots: [] });
   }
   return out;
@@ -79,16 +80,15 @@ export function belongs(s: Pick<Subject, 'id' | 'names'>, item: { courseId?: unk
 
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
-/** the subject's next class from `now` (local clock, the sample timetable runs Monday–Friday) */
+/** the subject's next class from `now` (local clock), each slot on its own weekday */
 export function nextSlot(s: Pick<Subject, 'slots'>, now: Date): { slot: ClassSlot; at: Date; today: boolean } | null {
   if (!s.slots.length) return null;
   const sorted = s.slots.slice().sort((a, b) => toMin(a.t) - toMin(b.t));
   for (let d = 0; d < 8; d++) {
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
-    const wd = day.getDay();
-    if (wd === 0 || wd === 6) continue;
+    const wd = (day.getDay() + 6) % 7;
     const mins = d === 0 ? now.getHours() * 60 + now.getMinutes() : -1;
-    const slot = sorted.find(x => toMin(x.end) > mins);
+    const slot = sorted.find(x => x.wd === wd && toMin(x.end) > mins);
     if (!slot) continue;
     const [h, m] = slot.t.split(':').map(Number);
     return { slot, at: new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m), today: d === 0 };

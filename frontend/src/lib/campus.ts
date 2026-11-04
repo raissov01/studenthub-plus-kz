@@ -1,6 +1,5 @@
-/* Campus map logic: room search, GPS projection onto the illustrated plan, entrances, next class. */
+/* Campus map logic: room search, GPS projection onto the illustrated plan, entrances, where a class is. */
 import { BUILDINGS, CITY_SITES, ENTR, GEO, KIND_L, NEARBY } from '@/lib/data/campus';
-import { SCHEDULE } from '@/lib/data/static';
 import type { I18n } from '@/lib/format';
 import type { Building, CitySite, ClassItem } from '@/lib/types';
 
@@ -56,13 +55,9 @@ export const entrPx = (id: string) => (ENTR[id] ? geoToPx(ENTR[id][0], ENTR[id][
 export const inPlan = ([x, y]: [number, number]) => x >= 24 && x <= GEO.w - 24 && y >= 24 && y <= GEO.h - 24;
 export const nearOnMapCount = () => NEARBY.filter(p => p.lat != null && p.lon != null && inPlan(geoToPx(p.lat, p.lon))).length;
 
-/* next class on home */
-const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-export function nextClass(now = new Date()): ClassItem | null {
-  const mins = now.getHours() * 60 + now.getMinutes();
-  return SCHEDULE.find(c => toMin(c.end) > mins) || null;
-}
-export function classWhere(c: ClassItem, I: I18n) {
+/** where a class of the student's timetable is: building and floor when the room number is a campus one ('4-214') */
+export function classWhere(c: Pick<ClassItem, 'room'>, I: I18n) {
+  if (!c.room) return '';
   const r = mapSearch(c.room, I);
   if (!r || !r.room || !r.b) return I.tt(`${c.room} аудитория`, `аудитория ${c.room}`);
   return I.tt(`${r.b.corp}-корпус, ${r.floor}-қабат, ${c.room} аудитория`, `${r.b.corp}-й корпус, ${r.floor} этаж, ауд. ${c.room}`);

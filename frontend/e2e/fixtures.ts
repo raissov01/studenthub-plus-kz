@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import { config, content } from './content';
+import type { Content } from '../src/lib/types';
 import type { Lang } from '../src/lib/types';
 
 export const test = base.extend<{ lang: Lang }>({
@@ -68,7 +69,8 @@ export async function onboard(page: Page, lang: Lang, course = '2') {
   await expect(dialog.locator('#fGpa')).not.toHaveAttribute('required');
   await dialog.getByRole('button', { name: label(lang, 'Бастау', 'Начать'), exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  expect(await deviceState(page)).toMatchObject({ onboarded: true, lang, profile: { name: 'Аружан Тест', gpa: null, phone: '', demo: false, skills: [] } });
+  expect(await deviceState(page)).toMatchObject({ onboarded: true, lang, profile: { name: 'Аружан Тест', gpa: null, phone: '', skills: [] } });
+  expect((await deviceState(page)).profile).not.toHaveProperty('demo');
 }
 export async function deviceState(page: Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem('studenthub.v1') || '{}'));
@@ -77,3 +79,27 @@ export async function fits(page: Page) {
   const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
   expect(overflow.scroll).toBeLessThanOrEqual(overflow.width);
 }
+
+/** this page's /api/content answers with `over` merged into the fixture (a later route wins over the default one) */
+export async function withContent(page: Page, over: Partial<Content>) {
+  await page.route('**/api/content', route => route.fulfill({ json: { ...content, ...over } }));
+}
+
+/** a student's own timetable (the «Сабақ кестесі» screen's data) on the given weekdays, Monday = 0 */
+export const timetable = (days: number[] = [0, 1, 2, 3, 4]) => days.flatMap(wd => [
+  { id: `m${wd}`, name: 'Микроэкономика', wd, t: '09:00', end: '09:50', room: '4-214', kind: 'Дәріс' },
+  { id: `e${wd}`, name: 'Ағылшын тілі', wd, t: '10:50', end: '11:40', room: '4-305', kind: 'Практика' },
+  { id: `s${wd}`, name: 'Статистика', wd, t: '13:00', end: '13:50', room: '4-108', kind: 'Семинар' },
+]);
+/** store that timetable on the device (after onboarding) and reload */
+export async function seedTimetable(page: Page, days?: number[]) {
+  await page.evaluate(tt => {
+    const s = JSON.parse(localStorage.getItem('studenthub.v1') || '{}');
+    s.timetable = tt;
+    localStorage.setItem('studenthub.v1', JSON.stringify(s));
+  }, timetable(days));
+  await page.reload();
+}
+
+/** sample-content markers that must not appear anywhere for a real student: «үлгі», a standalone «пример», «demo» */
+export const DEMO_TEXT = /үлгі|(?<![а-яё])пример(?![а-яё])|demo/i;

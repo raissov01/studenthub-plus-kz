@@ -1,36 +1,66 @@
 /* Default device state and transient UI state. No React here, so server code can use it too. */
 import { emptyRoadmap } from '@/features/roadmap/logic';
-import type { AppState, Lang, Profile } from '@/lib/types';
+import { cleanTimetable } from '@/lib/timetable';
+import type { AppState, Lang } from '@/lib/types';
 
 export function defaults(lang?: Lang): AppState {
   return {
     v: 1, lang: lang ?? 'kk', onboarded: false, theme: 'light', noteSeen: false,
     profile: {
       name: '', spec: '', course: 0, gpa: null, credits: 0, en: '', city: '', skills: [],
-      exp: '', about: '', phone: '', email: '', demo: false,
+      exp: '', about: '', phone: '', email: '',
     },
     applied: {}, saved: {}, oppDocs: {}, fav: {}, read: {},
-    events: {},
     remind: {}, done: {}, certs: [],
-    plans: [], decks: [], hideDemoDeck: false,
+    plans: [], decks: [],
     chat: [],
     gpaPlan: [],
     roadmap: emptyRoadmap(),
     deadlines: [],
     calendarPins: [],
+    timetable: [],
   };
 }
 
-/** Only the explicit onboarding action may create this example profile. */
-export function demoProfile(lang: Lang): Profile {
-  return {
-    name: lang === 'ru' ? 'Куралай' : 'Құралай', spec: 'econ', course: 2, gpa: 3.13,
-    credits: 60, en: 'B1', city: 'astana', skills: ['excel', 'comm', 'service', 'kz', 'ru', 'econ'],
-    exp: lang === 'ru' ? 'Официант в кафе «Дала», 3 месяца (лето 2026)\nВолонтёр на городском молодёжном форуме'
-      : '«Дала» кафесінде даяшы, 3 ай (2026 жылдың жазы)\nҚалалық жастар форумында ерікті',
-    about: '', phone: '', email: '', demo: true,
-  };
+/** Device state saved by older versions may still hold the removed sample content: the «Құралай» example profile,
+    registrations for the sample events (e1…, p1…), the sample flashcard deck switch, pins of sample events. Drop it
+    so nothing invented survives; the student's own data stays. Pure, so it is unit-tested (lib/profile.test.ts). */
+export function dropDemo(s: AppState & { events?: unknown; hideDemoDeck?: unknown }): AppState {
+  if (s.profile?.demo) {
+    s.profile = defaults(s.lang).profile;
+    s.onboarded = false; // they never entered their own profile
+  }
+  delete s.profile.demo;
+  delete s.events;
+  delete s.hideDemoDeck;
+  s.decks = (Array.isArray(s.decks) ? s.decks : []).filter(d => d && d.id !== 'deck-demo');
+  // sample events had ids like 'e1' / 'p2' (database events are numeric); the bundled sample vacancies and
+  // opportunities were j1…j9 and o1…o9: their pinned copies carried invented titles
+  s.calendarPins = (s.calendarPins ?? []).filter(p => !/^event:\D/.test(p.ref) && !/^(job:j|opp:o)[1-9]$/.test(p.ref));
+  s.timetable = cleanTimetable(s.timetable);
+  // courses that left the list: a «done» mark is the student's own record, so it becomes an own certificate
+  for (const [id, at] of Object.entries(s.done ?? {})) {
+    const c = OLD_COURSES[id];
+    if (!c) continue;
+    s.certs = [...(s.certs ?? []), { title: c[s.lang === 'ru' ? 1 : 0], org: c[2], date: new Date(at).toISOString() }];
+    delete s.done[id];
+  }
+  return s;
 }
+
+/** the courses removed from lib/data/static COURSES (generic links, unverified titles): id -> [kk, ru, platform] */
+const OLD_COURSES: Record<string, [string, string, string]> = {
+  c1: ['Excel: деректерді талдау негіздері', 'Excel: основы анализа данных', 'Microsoft Learn'],
+  c2: ['Power BI негіздері', 'Основы Power BI', 'Microsoft Learn'],
+  c3: ['Қаржылық модельдеу', 'Финансовое моделирование', 'Coursera'],
+  c4: ['Бизнеске арналған ағылшын тілі', 'Английский для бизнеса', 'Coursera'],
+  c5: ['Корей тілі: алғашқы қадам', 'Корейский язык: первый шаг', 'Coursera'],
+  c6: ['Қаржылық сауаттылық', 'Финансовая грамотность', 'Stepik'],
+  c7: ['Бухгалтерлік есеп негіздері', 'Основы бухгалтерского учёта', 'Stepik'],
+  c10: ['Маркетинг негіздері', 'Основы маркетинга', 'Coursera'],
+  c11: ['Жобаларды басқару', 'Управление проектами', 'Coursera'],
+  c12: ['Python-мен деректерді талдау', 'Анализ данных на Python', 'Stepik'],
+};
 
 export interface UiState {
   oppTab: string; q: string; jf: Record<string, boolean>; city: string; sortPay: boolean; oppType: string;
@@ -48,6 +78,6 @@ export const UI_INIT: UiState = {
   oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, oppType: 'all', evCat: 'all', courseMine: false,
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, chatBusy: false, chatErr: '', chatDraft: '',
   mapSel: null, mapNear: false, geoAuto: false, nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false,
-  matchId: 'j8', oppCheck: {}, target: 3.5, nextCr: 60, study: null,
+  matchId: '', oppCheck: {}, target: 3.5, nextCr: 60, study: null,
   calSel: '', calMonth: '', calView: 'month', calSaved: false, calClasses: 'auto',
 };

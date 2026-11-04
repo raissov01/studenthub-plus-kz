@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 	for _, k := range []string{"SHEET_OPPORTUNITIES_CSV", "SHEET_JOBS_CSV", "SHEET_DISCOUNTS_CSV"} {
 		os.Unsetenv(k) // data/discounts.json: d1, d2, ...
 	}
-	content.Default.DataDir = filepath.Join("..", "..", "data") // tests run in internal/discounts
+	content.Default.DataDir = filepath.Join("..", "content", "testdata", "data") // fixtures; tests run in internal/discounts
 	os.Exit(testdb.Main(m, "discounts"))
 }
 

@@ -1,7 +1,7 @@
 'use client';
 /* Renders the screen for a view id ('home', 'opps:jobs', 'job:j1', ...). */
 import { Ai, Cards, Chat, DeckView, Exam, Interview, Match, PlanView, Resume, Study } from '@/components/views/ai';
-import { EventView, JobView, OppView } from '@/components/views/detail';
+import { JobView, OppView } from '@/components/views/detail';
 import { Home, Materials, Notifications, Saved, Services } from '@/components/views/home';
 import { Search } from '@/components/views/search';
 import { MapView } from '@/components/views/map';
@@ -25,6 +25,7 @@ import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
 import { AdminPoints, Points } from '@/components/views/points';
 import { SubjectsScreen } from '@/components/views/subjects';
+import { TimetableScreen } from '@/components/views/timetable';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
 import { parseView } from '@/lib/routes';
@@ -44,7 +45,7 @@ export function Screen({ v }: { v: string }) {
     case 'mine': return <Mine />;
     case 'job': return <JobView id={prm} />;
     case 'opp': return <OppView id={prm} />;
-    case 'event': return /^\d+$/.test(prm) ? <DbEventView id={prm} /> : <EventView id={prm} />;
+    case 'event': return /^\d+$/.test(prm) ? <DbEventView id={prm} /> : <NotFound />;
     case 'ai': return <Ai />;
     case 'chat': return <Chat />;
     case 'resume': return <Resume />;
@@ -93,6 +94,7 @@ export function Screen({ v }: { v: string }) {
     case 'calendar': return <CalendarView />;
     case 'points': return <Points />;
     case 'subjects': return <SubjectsScreen />;
+    case 'timetable': return <TimetableScreen />;
     case 'notes': return <NotesScreen />;
     case 'review': return <ReviewScreen />;
     default: return <Home />;

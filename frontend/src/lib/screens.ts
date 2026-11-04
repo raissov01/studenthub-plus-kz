@@ -1,6 +1,5 @@
 /* Header title and owning tab of every screen (the legacy view's {title, tab}). Pure, so the server can use it
    for <title> and the client for the header. */
-import { EVENTS, EVENT_CATS } from '@/lib/data/static';
 import { allDecks } from '@/lib/domain';
 import type { I18n } from '@/lib/format';
 import { parseView } from '@/lib/routes';
@@ -29,10 +28,7 @@ const META: Record<string, Meta> = {
   mine: { title: (_, x) => t('Менің тізімім', 'Мой список')(x) },
   job: { title: (_, x) => t('Вакансия', 'Вакансия')(x), tab: 'opps' },
   opp: { title: (_, x) => t('Мүмкіндік', 'Возможность')(x), tab: 'opps' },
-  event: {
-    title: (id, x) => { const e = EVENTS.find(v => v.id === id); return e ? x.I.L(EVENT_CATS[e.cat]) : t('Іс-шара', 'Мероприятие')(x); },
-    tab: 'opps',
-  },
+  event: { title: (_, x) => t('Іс-шара', 'Мероприятие')(x), tab: 'opps' },
   ai: { title: (_, x) => t('AI-көмекші', 'AI-помощник')(x) },
   chat: { title: (_, x) => t('AI чат', 'AI-чат')(x), tab: 'ai' },
   resume: { title: (_, x) => t('Түйіндеме', 'Резюме')(x), tab: 'ai' },
@@ -40,7 +36,7 @@ const META: Record<string, Meta> = {
   exam: { title: (_, x) => t('Емтиханға дайындық', 'Подготовка к экзамену')(x), tab: 'ai' },
   plan: { title: (id, x) => x.S.plans.find(p => p.id === id)?.subject ?? t('Емтиханға дайындық', 'Подготовка к экзамену')(x), tab: 'ai' },
   cards: { title: (_, x) => t('Карточкалар', 'Карточки')(x), tab: 'ai' },
-  deck: { title: (id, x) => allDecks(x.S, x.I).find(d => d.id === id)?.name ?? t('Карточкалар', 'Карточки')(x), tab: 'ai' },
+  deck: { title: (id, x) => allDecks(x.S).find(d => d.id === id)?.name ?? t('Карточкалар', 'Карточки')(x), tab: 'ai' },
   study: {
     title: (_, x) => {
       const s = x.ui.study;
@@ -102,6 +98,7 @@ const META: Record<string, Meta> = {
   calendar: { title: (_, x) => t('Күнтізбе', 'Календарь')(x) },
   points: { title: (_, x) => t('Ұпайлар', 'Баллы')(x), tab: 'profile' },
   subjects: { title: (_, x) => t('Пәндер', 'Предметы')(x), tab: 'home' },
+  timetable: { title: (_, x) => t('Сабақ кестесі', 'Расписание занятий')(x), tab: 'home' },
   notes: { title: (_, x) => t('Конспектілер', 'Конспекты')(x), tab: 'home' },
   review: { title: (_, x) => t('Қайталау', 'Повторение')(x), tab: 'home' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },

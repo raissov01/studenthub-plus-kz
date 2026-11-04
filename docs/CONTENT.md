@@ -6,7 +6,7 @@ Google Sheets пен Google Forms міндетті емес. Sheets тек **қ�
 
 Деректерді `/api/content` береді. Тізімдер мына ретпен құралады:
 
-1. `backend/data/*.json` (демо) немесе, `SHEET_*_CSV` берілсе, Google Sheets (оқылмаса — жадтағы соңғы нұсқа, ол да жоқ болса `backend/data/*.json`);
+1. `backend/data/*.json` (тек нақты жазбалар; бос болуы мүмкін) немесе, `SHEET_*_CSV` берілсе, Google Sheets (оқылмаса — жадтағы соңғы нұсқа, ол да жоқ болса `backend/data/*.json`);
 2. соңына дерекқордағы жазбалар қосылады: админ-панельден қосылғандар (`"source": "admin"`, `id = adm-<n>`),
    бекітілген студент / амбассадор ұсыныстары (`"source": "student"` / `"ambassador"`, `id = amb-<n>`),
    университет пен жұмыс берушілердің жазбалары (`uni-<n>`, `job-<n>`).
@@ -36,8 +36,8 @@ API толық сипаттамасы: `docs/api/admin-content.md`.
 
 ## Қосымша жол: Google Sheets арқылы көптеп енгізу
 
-Sheets қосылмаса (айнымалылар бос), сайт `backend/data/*.json` демо жазбалары мен админ-панель жазбаларын көрсетеді — бұл
-қалыпты жағдай. Sheets қосылса, кесте `backend/data/*.json`-ның орнын басады, ал админ-панель жазбалары бұрынғыдай соңына
+Sheets қосылмаса (айнымалылар бос), сайт `backend/data/*.json` жазбалары мен админ-панель жазбаларын көрсетеді — бұл
+қалыпты жағдай. Тізім бос болса, сайт «Әзірге … жоқ» деген бос күйді көрсетеді. Sheets қосылса, кесте `backend/data/*.json`-ның орнын басады, ал админ-панель жазбалары бұрынғыдай соңына
 қосылады. Sheets-тегі `id` `adm-` деп басталмауы керек (бұл префикс админ-панельге берілген; ондай жол алынып тасталады).
 
 Деректер ағыны: кесте қолжетімсіз болса, сайт соңғы сәтті оқылған нұсқаны, ал ол да жоқ болса репозиторийдегі
@@ -137,7 +137,7 @@ Sheets парақтарына ортақ ережелер:
 | `contact_phone` | жоқ | Телефон |
 | `contact_email` | жоқ | Email |
 | `contact_site` | жоқ | Сайт, `https://` деп басталады |
-| `is_demo` | жоқ | Демо жазба болса `TRUE`. Нақты жазбаларда бос қалдырыңыз |
+| `is_demo` | жоқ | `TRUE` болса, жазба сайтқа **ешқашан** шықпайды (демо жазбалар көрсетілмейді). Нақты жазбаларда бос қалдырыңыз |
 
 ### `opportunities` — мүмкіндіктер
 
@@ -188,6 +188,7 @@ Sheets парақтарына ортақ ережелер:
 - Тексеру ережелері бір жерде: `backend/internal/content/schema.go` (Sheets жолы) және `backend/internal/content/validate.go`
   (`ValidateRecord` — жазбаны үлгі жолына айналдырып, сол builder-мен тексереді). Ереже өзгерсе, екі жол да бірге өзгереді.
 - Админ-редактор: `backend/internal/admincontent`, кесте `admin_content` (`backend/migrations/20261028000017_admin_content.sql`).
-- Үлгі CSV файлдары `backend/data/*.json` файлдарынан жасалады: `cd backend && go run ./cmd/json-to-csv`.
+- CSV шаблондары `backend/data/*.json` файлдарынан жасалады: `cd backend && go run ./cmd/json-to-csv`.
+- Тесттер өндірістік `backend/data/*.json`-ға сүйенбейді: олардың тұрақты жазбалары `backend/internal/content/testdata/data/`-да.
 - Тесттер: `cd backend && go test ./internal/content ./internal/admincontent` (дерекқор тесттері `postgres://postgres:dev@localhost:54329/studenthub` керек етеді).
 - `type`, `city`, `cat` мәндерінің тізімі `backend/internal/content/schema.go`-да; фронттағы тізімдермен сәйкес болуы керек.

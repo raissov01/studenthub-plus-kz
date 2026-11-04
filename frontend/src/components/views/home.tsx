@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useApp } from '@/components/app';
 import { Hero3D } from '@/components/views/hero3d';
 import { NewsCarousel } from '@/components/views/news-carousel';
-import { Chip, DemoBadge, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
+import { Chip, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
@@ -13,12 +13,12 @@ import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calen
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useTelegram } from '@/lib/telegram';
-import { classWhere, nextClass } from '@/lib/campus';
-import { SCHEDULE } from '@/lib/data/static';
+import { classWhere } from '@/lib/campus';
+import { classesOn, nextClass, weekdayOf } from '@/lib/timetable';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
 import { dOff } from '@/lib/format';
 import { buildScheduleIcs } from '@/lib/ics';
-import type { IconName } from '@/lib/types';
+import type { ClassItem, IconName } from '@/lib/types';
 import { HomeReviewDue } from '@/components/views/review';
 
 const firstName = (name: string, fb: string) => (name || '').trim().split(/\s+/)[0] || fb;
@@ -29,41 +29,57 @@ const agoTxt = (h: number, tt: (a: string, b: string) => string) =>
   (h < 24 ? tt(`${h} сағ бұрын`, `${h} ч назад`) : tt(`${Math.round(h / 24)} күн бұрын`, `${Math.round(h / 24)} дн. назад`));
 
 /* ---------- home ---------- */
-function NextClassCard() {
-  const { tt, L, I, go, setUi } = useApp();
-  const c = nextClass();
+/** no timetable yet: the one next step instead of a placeholder schedule */
+function AddTimetableCard() {
+  const { tt, go } = useApp();
+  return (
+    <div className="card next-class" id="addTimetable">
+      <span className="row-title">{tt('Кестеңізді қосыңыз', 'Добавьте своё расписание')}</span>
+      <span className="row-sub">{tt('Сабақтарыңызды бір рет енгізіңіз: мұнда келесі сабақ, күнтізбеде апталық кесте, «Пәндер» бөлімінде әр пәннің беті шығады. Кесте тек осы құрылғыда сақталады.', 'Внесите пары один раз: здесь появится следующая пара, в календаре — недельное расписание, в «Предметах» — страница каждого предмета. Расписание хранится только на этом устройстве.')}</span>
+      <button className="btn" type="button" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>
+    </div>
+  );
+}
+
+function NextClassCard({ c }: { c: ClassItem | null }) {
+  const { tt, I, go, setUi } = useApp();
   if (!c) {
     return (
       <div className="card next-class">
-        <span className="row-title">{tt('Бүгінгі сабақтар бітті', 'Пары на сегодня закончились')}</span>
-        <span className="row-sub">{tt('Ертеңгі кесте осында шығады.', 'Завтрашнее расписание появится здесь.')}</span>
+        <span className="row-title">{tt('Бүгін басқа сабақ жоқ', 'Сегодня больше нет пар')}</span>
+        <span className="row-sub">{tt('Аптаның кестесі күнтізбеде.', 'Расписание недели — в календаре.')}</span>
+        <button className="link-btn" type="button" onClick={() => go('calendar')}>{tt('Күнтізбені ашу', 'Открыть календарь')}</button>
       </div>
     );
   }
   const now = new Date(), [h, m] = c.t.split(':').map(Number), start = new Date(now);
   start.setHours(h, m, 0, 0);
   const left = Math.round((start.getTime() - now.getTime()) / 60000);
-  const when = tt(`${left} минуттан кейін`, `через ${left} мин`);
+  const when = left >= 60 ? tt(`${Math.floor(left / 60)} сағ ${left % 60} мин кейін`, `через ${Math.floor(left / 60)} ч ${left % 60} мин`) : tt(`${left} минуттан кейін`, `через ${left} мин`);
+  const where = classWhere(c, I);
   return (
-    <div className="card next-class">
+    <div className="card next-class" id="nextClass">
       <span className="nc-top"><span className="tiny muted">{left > 0 ? tt('Келесі сабақ', 'Следующая пара') + ', ' + when : tt('Қазір жүріп жатыр', 'Идёт сейчас')}</span><b className="num">{c.t}</b></span>
-      <span className="row-title">{L(c.name)}</span>
-      <span className="row-sub">{L(c.kind)}, {classWhere(c, I)}</span>
-      <button className="btn" type="button" onClick={() => { setUi({ mapQ: c.room, mapSel: null, geoAuto: true }); go('map:campus'); }}>
-        <Icon n="pin" s={18} /> {tt('Картадан жолды көру', 'Показать путь на карте')}
-      </button>
+      <span className="row-title">{c.name}</span>
+      {c.kind || where ? <span className="row-sub">{[c.kind, where].filter(Boolean).join(', ')}</span> : null}
+      {c.room ? (
+        <button className="btn" type="button" onClick={() => { setUi({ mapQ: c.room, mapSel: null, geoAuto: true }); go('map:campus'); }}>
+          <Icon n="pin" s={18} /> {tt('Картадан жолды көру', 'Показать путь на карте')}
+        </button>
+      ) : null}
     </div>
   );
 }
 
-/** F5 «Кестені күнтізбеге қосу»: the timetable as an .ics file, made on the device (lib/ics.ts) */
-function ScheduleIcsButton() {
-  const { tt, L, I, lang, toast } = useApp();
+/** F5 «Кестені күнтізбеге қосу»: the student's own timetable as an .ics file, made on the device (lib/ics.ts) */
+export function ScheduleIcsButton() {
+  const { S, tt, I, lang, toast } = useApp();
+  if (!S.timetable.length) return null;
   const save = () => {
-    const text = buildScheduleIcs(SCHEDULE.map(c => ({
-      key: `${c.name.kk}|${c.t}|${c.room}`, start: c.t, end: c.end,
-      summary: `${L(c.name)} (${L(c.kind)})`, location: classWhere(c, I),
-      description: tt('Student Hub сабақ кестесі (үлгі).', 'Расписание из Student Hub (пример).'),
+    const text = buildScheduleIcs(S.timetable.map(c => ({
+      key: `${c.id}|${c.wd}|${c.t}|${c.room}`, start: c.t, end: c.end, days: [c.wd],
+      summary: c.kind ? `${c.name} (${c.kind})` : c.name, location: classWhere(c, I),
+      description: tt('Student Hub: менің сабақ кестем.', 'Student Hub: моё расписание.'),
     })), { now: new Date(), calName: tt('Сабақ кестесі — Student Hub', 'Расписание — Student Hub'), lang });
     saveFile(text, 'studenthub-schedule.ics');
     toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
@@ -77,15 +93,16 @@ function ScheduleIcsButton() {
 
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
+  const today = classesOn(S.timetable, weekdayOf(new Date()));
   const tg = useTelegram();
   const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const news = [
-    ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), demo: !!e.is_demo, kind: tt('Іс-шара', 'Мероприятие'), title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
+    ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), kind: tt('Іс-шара', 'Мероприятие'), title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
     ...content.opportunities.slice(0, 3).map(o => {
       const left = oppLeft(o);
       const sub = Number.isFinite(left) ? tt(`Өтінім мерзімі: ${I.fDate(dOff(left))}`, `Приём заявок до ${I.fDate(dOff(left))}`) : tt('Мерзімі шектелмеген', 'Без срока');
-      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, demo: !!o.is_demo, kind: tt('Мүмкіндік', 'Возможность'), title: L(o.title), sub };
+      return { go: 'opp:' + o.id, icon: 'globe' as IconName, id: o.id, kind: tt('Мүмкіндік', 'Возможность'), title: L(o.title), sub };
     }),
   ];
   const focused = useRef(false);
@@ -112,31 +129,36 @@ export function Home() {
       <Hero3D who={who} />
       <PointsChip />
 
-      <section className="section">
-        <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
-        <NewsCarousel items={news} />
-      </section>
+      {news.length ? (
+        <section className="section" id="homeNews">
+          <SectionHead title={tt('Жаңалықтар', 'Новости')} more={<button className="link-btn" type="button" onClick={() => go('opps:events')}>{tt('Барлығын қарау', 'Смотреть все')}</button>} />
+          <NewsCarousel items={news} />
+        </section>
+      ) : null}
 
       <UpcomingDeadlines />
       <HomeReviewDue />
 
-      <section className="section">
-        <SectionHead title={tt('Бүгінгі сабақтар', 'Пары сегодня')} more={<span className="tiny muted">{wd[now.getDay()]}</span>} />
-        <NextClassCard />
-        <details className="day-more">
-          <summary className="link-btn">{tt(`Бүгінгі барлық сабақ (${SCHEDULE.length})`, `Все пары сегодня (${SCHEDULE.length})`)}</summary>
-          <div className="group">
-            {SCHEDULE.map(c => (
-              <button key={c.t} className="row" type="button" onClick={() => { setUi({ mapQ: c.room }); go('map:campus'); }}>
-                <span className="up-when"><b className="num">{c.t}</b><span className="num">{c.end}</span></span>
-                <span className="row-main"><span className="row-title">{L(c.name)}</span><span className="row-sub">{L(c.kind)}, {tt('аудитория', 'аудитория')} {c.room}</span></span>
-                <span className="chev"><Icon n="pin" s={18} /></span>
-              </button>
-            ))}
-          </div>
-          <ScheduleIcsButton />
-          <p className="note">{tt('Кесте — үлгі. Сабақты бассаңыз, аудитория картада көрсетіледі.', 'Расписание — пример. Нажмите на пару, чтобы найти аудиторию на карте.')}</p>
-        </details>
+      <section className="section" id="homeClasses">
+        <SectionHead title={tt('Бүгінгі сабақтар', 'Пары сегодня')} more={S.timetable.length
+          ? <button className="link-btn" type="button" onClick={() => go('timetable')}>{tt('Кестені өзгерту', 'Изменить расписание')}</button>
+          : <span className="tiny muted">{wd[now.getDay()]}</span>} />
+        {S.timetable.length ? <NextClassCard c={nextClass(S.timetable, now)} /> : <AddTimetableCard />}
+        {today.length ? (
+          <details className="day-more">
+            <summary className="link-btn">{tt(`Бүгінгі барлық сабақ (${today.length})`, `Все пары сегодня (${today.length})`)}</summary>
+            <div className="group">
+              {today.map(c => (
+                <button key={c.t + c.name} className="row" type="button" onClick={() => { if (c.room) { setUi({ mapQ: c.room, mapSel: null }); go('map:campus'); } }}>
+                  <span className="up-when"><b className="num">{c.t}</b><span className="num">{c.end}</span></span>
+                  <span className="row-main"><span className="row-title">{c.name}</span><span className="row-sub">{[c.kind, c.room ? tt('аудитория', 'аудитория') + ' ' + c.room : ''].filter(Boolean).join(', ')}</span></span>
+                  {c.room ? <span className="chev"><Icon n="pin" s={18} /></span> : null}
+                </button>
+              ))}
+            </div>
+            <ScheduleIcsButton />
+          </details>
+        ) : null}
       </section>
     </>
   );
@@ -153,7 +175,7 @@ export function SearchRow({ it }: { it: SearchItem }) {
         <span className="row-main">
           <span className="row-title">{it.org}</span>
           <span className="sr-role">{it.title}</span>
-          <span className="row-sub">{it.meta}{it.demo ? <> <DemoBadge show /></> : null}</span>
+          <span className="row-sub">{it.meta}</span>
           {it.detail ? <span className={`row-sub card-detail${it.truncateDetail ? " card-detail-truncate" : ""}`} title={it.detail}>{it.detail}</span> : null}
           {it.badge ? <span className={`tag tag-${it.badge[1]} tag-inline`}>{it.badge[0]}</span> : null}
         </span>
@@ -178,7 +200,7 @@ function NotifRow({ n }: { n: Notif }) {
   return (
     <button className={`nrow ${read ? '' : 'unread'}`} type="button" onClick={open}>
       <span className={`nico nico-${n.tone}`}><Icon n={n.icon} s={22} /></span>
-      <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.text}{n.demo ? <> <DemoBadge show /></> : null}</span><span className="tiny muted">{agoTxt(n.h, tt)}</span></span>
+      <span className="row-main"><span className="row-title">{n.title}</span><span className="row-sub">{n.text}</span><span className="tiny muted">{agoTxt(n.h, tt)}</span></span>
       <span className="ndot" aria-label={read ? '' : tt('Оқылмаған', 'Непрочитано')}></span>
     </button>
   );
@@ -207,7 +229,8 @@ function LocalNotices({ heading = false }: { heading?: boolean }) {
       <div className="chips">{kinds.map(([v, l]) => <Chip key={v} pressed={ui.nk === v} onClick={() => setUi({ nk: v })}>{l}</Chip>)}</div>
       {list.length
         ? <div className="group">{list.map(n => <NotifRow key={n.id} n={n} />)}</div>
-        : <Empty icon="bell">{tt('Бұл санатта хабарлама жоқ.', 'В этой категории уведомлений нет.')}</Empty>}
+        : <Empty icon="bell">{all.length ? tt('Бұл санатта хабарлама жоқ.', 'В этой категории уведомлений нет.')
+          : tt('Әзірге хабарлама жоқ. Сізге сәйкес вакансия, жақын мерзім немесе жаңа жеңілдік пайда болғанда осында шығады.', 'Уведомлений пока нет. Здесь появятся подходящие вакансии, близкие сроки и новые скидки.')}</Empty>}
       {unread ? (
         <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }}
           onClick={() => update(s => { all.forEach(n => { s.read[n.id] = s.read[n.id] || Date.now(); }); })}>
@@ -234,7 +257,7 @@ export function Services() {
       <Row go="map:near" icon="pin" title={tt('Жақын маңда', 'Рядом с кампусом')} sub={tt('Аялдама, асхана, дәріхана, басып шығару, банкомат', 'Остановки, столовые, аптеки, печать, банкоматы')} />
       <Row go="docs" icon="file" title={tt('Анықтамалар мен құжаттар', 'Справки и документы')} sub={tt('Оқу орнынан анықтама, транскрипт, 073/у', 'Справка с места учёбы, транскрипт, 073/у')} />
       <Row go="gpa" icon="chart" title={tt('GPA және шәкіртақы', 'GPA и стипендия')} sub={tt('Калькулятор, мақсатты GPA', 'Калькулятор, целевой GPA')} />
-      <Row go="pay" icon="tenge" title={tt('Оқу ақысы', 'Оплата обучения')} sub={tt('Мерзімдер мен төлем тарихы', 'Сроки и история платежей')} />
+      <Row go="pay" icon="tenge" title={tt('Оқу ақысы', 'Оплата обучения')} sub={tt('Қайдан тексеру, төлем мерзімін еске салу', 'Где проверить, напоминание о сроке оплаты')} />
       <Row go="opps:events" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} sub={tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы')} />
       <Row go="admission" icon="cap" title={tt('Түсу', 'Поступление')} sub={tt('Бакалавриат, магистратура, докторантура', 'Бакалавриат, магистратура, докторантура')} />
       <ServicesCommunity />

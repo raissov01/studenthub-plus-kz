@@ -32,9 +32,7 @@ export function DealBody({ d }: { d: Discount }) {
       <p style={{ textAlign: 'center' }}><span className="code">{code}</span></p>
       <div className="group"><Row icon="check" tone="ok" title={tt('Шарттары', 'Условия')} sub={L(d.cond)} chev={false} /></div>
       <DealCheck id={d.id} />
-      <p className="tiny muted">{d.is_demo
-        ? tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз. Серіктес — үлгі.', 'Покажите QR-код или студенческий статус на кассе. Партнёр — пример.')
-        : tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз.', 'Покажите QR-код или студенческий статус на кассе.')}</p>
+      <p className="tiny muted">{tt('Кассада QR-кодты немесе студенттік мәртебеңізді көрсетіңіз.', 'Покажите QR-код или студенческий статус на кассе.')}</p>
     </>
   );
 }
@@ -122,12 +120,10 @@ export function VerifiedSheet({ item, kind, id, path }: { item: Provenance; kind
       <h2>{tt('Біз нені тексердік', 'Что мы проверили')}</h2>
       <div>
         <div className="res">
-          <span className={`dot ${item.is_demo ? 'mid' : 'ok'}`}>{item.is_demo ? '!' : '✓'}</span>
+          <span className="dot ok">✓</span>
           <div className="row-main">
             <span className="row-title">{tt('Дереккөз', 'Источник')}</span>
-            <span className="row-sub">{item.is_demo
-              ? tt('Үлгі жазба — ресми дереккөз әлі жоқ.', 'Пример — официального источника пока нет.')
-              : tt('Жарияланым ресми дереккөзде бар екені расталды.', 'Подтверждено, что публикация есть в официальном источнике.')}</span>
+            <span className="row-sub">{tt('Жарияланым ресми дереккөзде бар екені расталды.', 'Подтверждено, что публикация есть в официальном источнике.')}</span>
           </div>
         </div>
         <div className="res">
