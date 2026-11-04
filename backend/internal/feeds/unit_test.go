@@ -147,6 +147,9 @@ func TestPrefilter(t *testing.T) {
 			t.Errorf("Prefilter(%q) = %v (%s)", c.text, ok, why)
 		}
 	}
+	if ok, why := Prefilter(post("Грант для студентов, дедлайн 1 декабря.\nhttps://studenthub.studywithraissov.com/opportunity/feed-12"), s); ok || why != "own feed post" {
+		t.Error("our own channel post must not come back")
+	}
 	if ok, _ := Prefilter(post("A long enough post without any of the words at all, really."), Source{Relevant: true}); !ok {
 		t.Error("relevant source skips keywords")
 	}

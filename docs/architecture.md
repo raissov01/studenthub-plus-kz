@@ -16,7 +16,7 @@ flowchart LR
       PG[("postgres:16-alpine<br/>studenthub-postgres<br/>127.0.0.1:5442, 160M<br/>том studenthub-pg")]
     end
     UP[/"/opt/studenthub/uploads<br/>маркет фотолары, квиз медиасы"/]
-    TIM["systemd timer-лер (хостта)<br/>studenthub-cron 10:00, studenthub-notify сағат сайын"]
+    TIM["systemd timer-лер (хостта)<br/>studenthub-cron 10:00, studenthub-notify сағат сайын,<br/>studenthub-feeds 30 мин (FEATURE_FEEDS)"]
     BAK["/root/backup-dbs.sh 03:30<br/>pg_dump → /root/backups"]
   end
 

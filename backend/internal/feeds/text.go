@@ -45,6 +45,10 @@ var strong = []string{"грант", "стипенд", "scholarship", "fellowship
 // Prefilter decides whether a post is worth an AI call; reason explains a rejection.
 func Prefilter(p Post, s Source) (ok bool, reason string) {
 	text := strings.ToLower(p.Text)
+	// our own channel posts (FEEDS_PUBLISH_CHANNEL) link back to /opportunity/feed-<n>: never re-collect them
+	if strings.Contains(text, "/opportunity/"+IDPrefix) {
+		return false, "own feed post"
+	}
 	if utf8.RuneCountInString(strings.TrimSpace(p.Text)) < 40 {
 		return false, "too short"
 	}
