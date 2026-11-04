@@ -177,6 +177,12 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
     values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
 		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
 		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
+		cafe := id(`insert into cafes(name_kk,name_ru,created_by) values ('Fixture café','Fixture café',$1) returning id`, uid)
+		exec(`insert into cafe_staff(cafe_id,user_id,role,added_by) values ($1,$2,'manager',$2),($1,$3,'barista',$2)`, cafe, uid, other)
+		order := id(`insert into cafe_orders(cafe_id,user_id,items,total,pickup_at,pickup_code,payment_method,idem_key)
+    values ($1,$2,'[{"itemId":1}]',50000,now(),'123','pickup','deletefixture1') returning id`, cafe, uid)
+		exec(`insert into cafe_order_events(order_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, order, uid)
+		exec(`insert into cafe_kaspi_sessions(cafe_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, cafe, uid)
 		return nil
 	})
 	if err != nil {
