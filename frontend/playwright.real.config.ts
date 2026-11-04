@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 import { randomBytes } from 'node:crypto';
-import { botToken, adminTelegramID } from './e2e/real-api/settings';
+import { botToken, adminTelegramID, kaspiApiKey, kaspiPort, kaspiSessionKey } from './e2e/real-api/settings';
 
 // Shared by the API process and SQL fixtures; always a fresh local database.
 process.env.E2E_DB_NAME ||= `studenthub_browser_${process.pid}_${randomBytes(6).toString('hex')}`;
@@ -24,6 +24,10 @@ export default defineConfig({
   ],
   webServer: [
     {
+      // the café's Kaspi sidecar replaced by a fake with the same contract (no Kaspi in tests)
+      command: 'npx tsx e2e/real-api/fake-kaspi.ts', url: `http://127.0.0.1:${kaspiPort}/health`, reuseExistingServer: false,
+    },
+    {
       command: 'mkdir -p .fe-deps && (cd ../backend && go build -o ../frontend/.fe-deps/real-api ./cmd/e2etest) && exec .fe-deps/real-api',
       url: `http://127.0.0.1:${apiPort}/api/health`, reuseExistingServer: false,
       timeout: 120_000, gracefulShutdown: { signal: 'SIGTERM', timeout: 15_000 },
@@ -34,7 +38,9 @@ export default defineConfig({
         RATE_WRITE_PER_MIN: '2000',
         TELEGRAM_API_BASE: 'http://127.0.0.1:1',
         FEATURE_EVENTS: 'true', FEATURE_AMBASSADOR: 'true', FEATURE_MENTORS: 'true',
-        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true',
+        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true', FEATURE_CAFE: 'true',
+        CAFE_KASPI_URL: `http://127.0.0.1:${kaspiPort}`, CAFE_KASPI_API_KEY: kaspiApiKey, CAFE_KASPI_SESSION_KEY: kaspiSessionKey,
+        CAFE_KASPI_WEBHOOK_SECRET: 'local-playwright-kaspi-webhook-secret', CAFE_ORDERS_PER_HOUR: '1000',
       },
     },
     {
