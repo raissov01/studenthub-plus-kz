@@ -51,9 +51,18 @@
 - `docker/systemd/**`
 - Әрекет: unit-тер `/etc/systemd/system/`-ке, `daemon-reload`, `enable --now` екі timer.
 
+### Кофейня Kaspi sidecar (`kaspi-pos`)
+
+- `services/kaspi-pos/**` (тесттер, `docs/`, `*.md`, `UPSTREAM`, `.env.example`, `webhooks*.example.json`,
+  линтер баптаулары — деплойсыз); `backend/cmd/cafe-seed/**` — тек dev құралы, деплойсыз.
+- Әрекет: `studenthub-kaspi-pos:<sha>` жиналады, жіберіледі (`KASPI_TAG`), тек `kaspi-pos` қайта қосылады
+  (`docker compose up -d --no-deps kaspi-pos`). Серверде `/opt/studenthub/docker/.env` ішінде
+  `COMPOSE_PROFILES=cafe-kaspi` жоқ болса, sidecar мүлде іске қосылмайды (image жіберіледі, бірақ тоқтап тұрады).
+  Толығырақ: [`docs/cafe.md`](../cafe.md).
+
 ### Белгісіз файл → қауіпсіз толық деплой
 
-Ешбір ережеге сай келмейтін файл (мысалы, түбірге жаңа бума) болса: web + api + stack + nginx + timers. Маңызды
+Ешбір ережеге сай келмейтін файл (мысалы, түбірге жаңа бума) болса: web + api + stack + nginx + timers + kaspi-pos. Маңызды
 runtime өзгерісін үнсіз өткізіп алмау үшін.
 
 ## Қолмен басқару

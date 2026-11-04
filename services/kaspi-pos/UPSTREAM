@@ -1,0 +1,11 @@
+Upstream: https://github.com/tapter-dev/kaspi-pos-automation
+Commit:   175577ee1b34437dba46fb9bb0c8706f57f3b311 (2026-10-03)
+License:  MIT (LICENSE in this directory, kept unchanged)
+
+Vendored here from balu-fit (services/kaspi-pos at balu-fit 9959702), which carries the security
+patches on top of upstream: X-Internal-Api-Key on every /api/* route, amount limits, 0600/0700
+data files under DATA_DIR, https-only webhooks with a required secret, no token/OTP logging,
+demo UI off by default, QR amount fix. Student Hub patches: see `git log -- services/kaspi-pos`.
+
+Never commit runtime state: keypair.json, device.json, ecdh-keypair.json, tracked-payments.json,
+webhook-retries.json, webhooks.json, logs/, .env (all are in .gitignore / .dockerignore).

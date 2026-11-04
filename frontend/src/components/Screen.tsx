@@ -24,6 +24,8 @@ import { AdminContent } from '@/components/views/admin-content';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
 import { AdminPoints, Points } from '@/components/views/points';
+import { CafeScreen } from '@/components/views/cafe';
+import { AdminCafe } from '@/components/views/cafe-admin';
 import { SubjectsScreen } from '@/components/views/subjects';
 import { TimetableScreen } from '@/components/views/timetable';
 import { NotesScreen } from '@/components/views/notes';
@@ -78,6 +80,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
       if (prm === 'points') return <AdminPoints />;
+      if (prm === 'cafe' || prm.startsWith('cafe?')) return <AdminCafe />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
@@ -93,6 +96,7 @@ export function Screen({ v }: { v: string }) {
     case 'suggestions': return <MySuggestionsPage />;
     case 'calendar': return <CalendarView />;
     case 'points': return <Points />;
+    case 'cafe': return <CafeScreen prm={prm} />;
     case 'subjects': return <SubjectsScreen />;
     case 'timetable': return <TimetableScreen />;
     case 'notes': return <NotesScreen />;

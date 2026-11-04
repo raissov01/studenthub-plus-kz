@@ -6,6 +6,10 @@
 #   docker compose -f docker/docker-compose.local.yml run --rm api /app/migrate
 #   docker compose -f docker/docker-compose.local.yml down          # -v also drops the local database
 #
+# Café Kaspi sidecar (docs/cafe.md), off unless asked for:
+#   create docker/kaspi-pos.env (INTERNAL_API_KEY, TOKEN_SECRET_KEY, WEBHOOK_SECRET; see docker/.env.example)
+#   docker compose -f docker/docker-compose.local.yml --profile cafe-kaspi up -d --build
+#
 # Add docker-compose.override.yml for one origin like production (an nginx container on :8088 in front of both).
 # Uses its own volume and ports; it never touches the production volume name.
 
@@ -88,6 +92,31 @@ services:
     restart: unless-stopped
     mem_limit: 300m
 
+  kaspi-pos:
+    # café Kaspi Pay sidecar; only with --profile cafe-kaspi; no published port (api -> http://kaspi-pos:3000)
+    profiles: ["cafe-kaspi"]
+    image: studenthub-kaspi-pos:${KASPI_TAG:-local}
+    build:
+      context: ../services/kaspi-pos
+    env_file:
+      - path: ./kaspi-pos.env
+        required: false
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DATA_DIR: /data
+      ENABLE_DEMO_UI: "false"
+      WEBHOOK_URL: http://api:8110/api/cafe/kaspi/webhook
+      WEBHOOK_ALLOWED_HTTP_HOSTS: api
+      NODE_OPTIONS: --max-old-space-size=96
+    expose:
+      - "3000"
+    volumes:
+      - kaspi-pos-local:/data
+    restart: unless-stopped
+    mem_limit: 150m
+
 volumes:
   pg-local:
   uploads-local:
+  kaspi-pos-local:

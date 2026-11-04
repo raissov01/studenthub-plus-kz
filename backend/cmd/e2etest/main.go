@@ -112,6 +112,7 @@ func run() error {
 	if err := migrate.Run(); err != nil {
 		return err
 	}
+	server.StartBackground(stop)
 	srv := &http.Server{Addr: os.Getenv("API_ADDR"), Handler: server.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	done := make(chan error, 1)
 	go func() { done <- srv.ListenAndServe() }()

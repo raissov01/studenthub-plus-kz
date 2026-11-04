@@ -1,0 +1,7 @@
+[
+  {
+    "url": "http://api:3001/webhooks/kaspi",
+    "events": ["payment.success", "payment.failed", "payment.expired", "payment.lost"],
+    "secret": "<KASPI_WEBHOOK_SECRET>"
+  }
+]

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -12,5 +13,6 @@ import (
 func main() {
 	addr := config.Str("API_ADDR", ":8080")
 	log.Printf("api listening on %s", addr)
+	server.StartBackground(context.Background())
 	log.Fatal(http.ListenAndServe(addr, server.Handler()))
 }

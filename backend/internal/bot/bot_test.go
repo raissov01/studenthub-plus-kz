@@ -1032,3 +1032,36 @@ func TestStopKeepsEmailLinkedAccount(t *testing.T) {
 	eq(t, u.Email.String, "linked411@example.kz")
 	eq(t, u.BotStartedAt.Valid, false, "bot state cleared")
 }
+
+// Café staff buttons: «cafe:a<id>» goes to CafeAction with the pressing account; the keyboard becomes the
+// next step (Ready) and the toast is answered.
+func TestCafeStaffButtons(t *testing.T) {
+	h := newHarness(t)
+	var gotUser int64
+	var gotValue string
+	prev := CafeAction
+	CafeAction = func(_ context.Context, userID int64, value string) (string, string, string, string, string, error) {
+		gotUser, gotValue = userID, value
+		return "№123 қабылданды", "Дайын", "cafe:r42", "Тақта", "https://example.kz/cafe/staff", nil
+	}
+	t.Cleanup(func() { CafeAction = prev })
+	u := h.user(990042, "kk")
+	h.reset()
+	h.press(990042, "cafe:a42", nil)
+	if gotUser != u.ID || gotValue != "a42" {
+		t.Fatalf("hook got %d %q", gotUser, gotValue)
+	}
+	var edited, answered bool
+	for _, c := range h.calls() {
+		switch c.Method {
+		case "editMessageReplyMarkup":
+			raw, _ := json.Marshal(c.Body["reply_markup"])
+			edited = strings.Contains(string(raw), "cafe:r42") && strings.Contains(string(raw), "https://example.kz/cafe/staff")
+		case "answerCallbackQuery":
+			answered = c.Body["text"] == "№123 қабылданды"
+		}
+	}
+	if !edited || !answered {
+		t.Fatalf("calls: %+v", h.calls())
+	}
+}

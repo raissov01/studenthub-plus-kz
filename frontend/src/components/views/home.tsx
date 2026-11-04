@@ -9,6 +9,7 @@ import { ServicesCommunity } from '@/components/views/entries';
 import { hasAccount } from '@/components/views/common';
 import { InboxSection } from '@/components/views/inbox';
 import { PointsChip } from '@/components/views/points';
+import { CafeShortcut } from '@/components/views/cafe';
 import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
@@ -128,6 +129,7 @@ export function Home() {
 
       <Hero3D who={who} />
       <PointsChip />
+      <CafeShortcut />
 
       {news.length ? (
         <section className="section" id="homeNews">

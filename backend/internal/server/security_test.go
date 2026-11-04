@@ -56,7 +56,7 @@ func TestSecurityDocumentMatchesRouter(t *testing.T) {
 func TestEveryMutationHasWriteGuard(t *testing.T) {
 	allFeatures(t)
 	t.Setenv("RATE_WRITE_PER_MIN", "0")
-	exceptions := map[string]bool{"POST /api/telegram": true}
+	exceptions := map[string]bool{"POST /api/telegram": true, "POST /api/cafe/kaspi/webhook": true}
 	seen := map[string]bool{}
 	for i, route := range Inventory() {
 		method, _, explicit := strings.Cut(route.Pattern, " ")

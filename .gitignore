@@ -6,6 +6,8 @@
 .env*
 !.env.example
 !**/.env.example
+# docker/local.env, docker/kaspi-pos.env (café Kaspi sidecar secrets)
+docker/*.env
 .secrets
 .vercel
 

@@ -12,8 +12,9 @@ is listed separately. Rate limits are shared Postgres counters, with an in-memor
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
 
-The only write-guard exception is POST /api/telegram: Telegram's constant-time webhook
-secret check replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
+constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
+signature over the raw body) replaces browser origin/rate checks. All six GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -44,10 +45,17 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
+Café (FEATURE_CAFE): money never passes through Student Hub. A Kaspi QR is issued in the café's own
+name through the café's cashier session (kaspi-pos sidecar, internal network, X-Internal-Api-Key);
+the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
+from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
+their café's orders through RLS; every order change is an append-only cafe_order_events row.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
 | ANY | `/api/` | anonymous (404 only) | no | no (fallback) | — |
+| DELETE | `/api/admin/cafes/{id}/kaspi` | admin | yes | yes | cafe |
+| DELETE | `/api/admin/cafes/{id}/staff/{userId}` | admin | yes | yes | cafe |
 | DELETE | `/api/admin/content/{id}` | admin | yes | yes | — |
 | DELETE | `/api/admin/market/bans/{userId}` | admin | yes | yes | market |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
@@ -61,6 +69,9 @@ the API takes only an action id, a reward id and an idempotency key.
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
+| GET | `/api/admin/cafe/orders` | admin | no | yes | cafe |
+| GET | `/api/admin/cafe/orders/{id}` | admin | no | yes | cafe |
+| GET | `/api/admin/cafes` | admin | no | no (no input) | cafe |
 | GET | `/api/admin/content` | admin | no | yes | — |
 | GET | `/api/admin/content/{id}` | admin | no | yes | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
@@ -85,6 +96,12 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/ambassador/stats` | ambassador (active term); admin (any university) | no | yes | ambassador |
 | GET | `/api/announcements` | anonymous | no | yes | b2b |
 | GET | `/api/applications/my` | signed-in | no | no (no input) | b2b |
+| GET | `/api/cafe/orders/mine` | signed-in (own orders, RLS) | no | no (no input) | cafe |
+| GET | `/api/cafe/orders/{id}` | signed-in (own order or staff of its café, RLS) | no | yes | cafe |
+| GET | `/api/cafe/staff/menu` | signed-in (staff of the café, admin) | no | yes | cafe |
+| GET | `/api/cafe/staff/orders` | signed-in (café staff; own café only, RLS) | no | yes | cafe |
+| GET | `/api/cafes` | anonymous | no | yes | cafe |
+| GET | `/api/cafes/{id}/menu` | anonymous | no | yes | cafe |
 | GET | `/api/certificates/{code}` | anonymous | no | yes | ambassador |
 | GET | `/api/config` | anonymous | no | no (no input) | — |
 | GET | `/api/content` | anonymous | no | no (no input) | — |
@@ -167,6 +184,11 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/admin/ambassadors/expire` | admin | yes | no (no input) | ambassador |
 | POST | `/api/admin/ambassadors/{id}/certificate` | admin | yes | yes | ambassador |
 | POST | `/api/admin/ambassadors/{id}/end` | admin | yes | yes | ambassador |
+| POST | `/api/admin/cafes` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/check` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/login/start` | admin | yes (+ 6/admin/hour) | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/login/verify` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/staff` | admin | yes | yes | cafe |
 | POST | `/api/admin/content` | admin | yes | yes | — |
 | POST | `/api/admin/content/validate` | admin | yes | yes | — |
 | POST | `/api/admin/content/{id}/hide` | admin | yes | yes | — |
@@ -204,6 +226,19 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/auth/logout` | anonymous | yes | no (no input) | — |
 | POST | `/api/auth/telegram/webapp` | anonymous | yes | yes | — |
 | POST | `/api/auth/telegram/widget` | anonymous | yes | yes | — |
+| POST | `/api/cafe/kaspi/webhook` | kaspi-pos sidecar (HMAC-SHA256 secret CAFE_KASPI_WEBHOOK_SECRET; each delivery stored once) | no | yes | cafe |
+| POST | `/api/cafe/orders` | signed-in (consented; prices recomputed from the menu, client totals ignored; idempotency key; max 2 active orders, daily cap, pay-ahead after no-shows) | yes (+ per-user order limit) | yes | cafe |
+| POST | `/api/cafe/orders/{id}/cancel` | signed-in (own order, only before the café accepts it) | yes | yes | cafe |
+| POST | `/api/cafe/orders/{id}/pay` | signed-in (own unpaid Kaspi order; idempotent: a live QR is returned, one invoice request at a time) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/categories` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/items` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/items/{id}/availability` | signed-in (staff of the item's café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/accept` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/decline` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/no-show` | signed-in (staff of the order's café; after pickup time + grace) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/picked-up` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/ready` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/refunded` | signed-in (manager of the order's café, admin) | yes | yes | cafe |
 | POST | `/api/chat` | anonymous | yes | yes | — |
 | POST | `/api/client-errors` | anonymous | yes | yes | — |
 | POST | `/api/discounts/{id}/check` | signed-in (consented) | yes | yes | — |
@@ -271,8 +306,11 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/submissions` | signed-in | yes | yes | — |
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
+| PUT | `/api/admin/cafes/{id}` | admin | yes | yes | cafe |
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
+| PUT | `/api/cafe/staff/menu/categories/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| PUT | `/api/cafe/staff/menu/items/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
 | PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |

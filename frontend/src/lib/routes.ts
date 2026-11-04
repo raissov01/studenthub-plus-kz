@@ -12,15 +12,15 @@ export const PLAIN = [
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
-  'subjects', 'notes', 'review', 'timetable',
+  'subjects', 'notes', 'review', 'timetable', 'cafe',
 ] as const;
 /** screens that need an id */
-export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
+export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer', 'cafe'] as const;
 /** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff', 'admin:content', 'admin:points',
+  'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:cafe', 'cafe:staff', 'cafe:orders',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
@@ -58,6 +58,9 @@ export function pathOf(v: string): string {
   const [n, prm] = parseView(v);
   if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
   if (n === 'opps') return FIXED['opps:jobs'];
+  // café: a menu is /cafe?id=<café>, an order /cafe/orders?id=<order> ('cafe:o12'): static pages, the id rides in the query
+  if (n === 'cafe' && /^\d+$/.test(prm)) return '/cafe?id=' + prm;
+  if (n === 'cafe' && /^o\d+$/.test(prm)) return '/cafe/orders?id=' + prm.slice(1);
   if ((QUERY_ID as readonly string[]).includes(n) && prm) return '/' + n + '?id=' + encodeURIComponent(prm);
   if ((MULTI_SEGMENT as readonly string[]).includes(n) && prm) {
     const q = prm.indexOf('?');

@@ -74,8 +74,9 @@ is listed separately. Rate limits are shared Postgres counters, with an in-memor
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
 
-The only write-guard exception is POST /api/telegram: Telegram's constant-time webhook
-secret check replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
+constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
+signature over the raw body) replaces browser origin/rate checks. All six GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -106,6 +107,11 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
+Café (FEATURE_CAFE): money never passes through Student Hub. A Kaspi QR is issued in the café's own
+name through the café's cashier session (kaspi-pos sidecar, internal network, X-Internal-Api-Key);
+the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
+from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
+their café's orders through RLS; every order change is an append-only cafe_order_events row.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
