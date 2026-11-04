@@ -27,6 +27,8 @@ import { AdminPoints, Points } from '@/components/views/points';
 import { SubjectsScreen } from '@/components/views/subjects';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
+import { GradesScreen } from '@/components/views/grades';
+import { ApplicationsScreen } from '@/components/views/applications';
 import { parseView } from '@/lib/routes';
 import { catOfView } from '@/lib/search';
 
@@ -95,6 +97,8 @@ export function Screen({ v }: { v: string }) {
     case 'subjects': return <SubjectsScreen />;
     case 'notes': return <NotesScreen />;
     case 'review': return <ReviewScreen />;
+    case 'grades': return <GradesScreen />;
+    case 'applications': return <ApplicationsScreen />;
     default: return <Home />;
   }
 }

@@ -19,6 +19,7 @@ import { VerifiedAttendance } from '@/components/views/events';
 import { PublicPortfolioSection } from '@/components/views/portfolio';
 import type { Profile as ProfileT } from '@/lib/types';
 import { useFeature } from '@/components/views/common';
+import { FillGpaButton } from '@/components/views/grades';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
 function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean }) {
@@ -162,6 +163,8 @@ export function Profile() {
       <div className="group">
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
         <Row go="gpa" icon="cap" title={tt('Білім туралы', 'Об учёбе')} />
+        <Row go="grades" icon="chart" title={tt('Бағалар', 'Оценки')} sub={tt('АБ, емтихан, сабақтан қалу', 'РК, экзамен, пропуски')} />
+        <Row go="applications" icon="briefcase" title={tt('Менің өтінімдерім', 'Мои отклики')} sub={tt('Сатысы, еске салу, жазба', 'Стадия, напоминание, заметка')} />
         <Row go="portfolio" icon="award" title={tt('Жетістіктер', 'Достижения')} />
         {points ? <Row go="points" icon="trophy" title={tt('Ұпайлар', 'Баллы')} sub={tt('Деңгей, серия, монеталар және сыйлықтар', 'Уровень, серия, монеты и награды')} /> : null}
         <Row go="mine" icon="clock" title={tt('Іс-әрекет тарихы', 'История действий')} />
@@ -254,6 +257,7 @@ export function Gpa() {
           </div>
         ))}</div>
         <p className="tiny muted">{tt('Атау · кредит · күтілетін баға', 'Название · кредиты · ожидаемая оценка')}</p>
+        <FillGpaButton />
       </section>
       {risk.length ? (
         <div className="demo-note" style={{ background: 'var(--warn-soft)' }}><Icon n="bell" s={18} /><span>{tt(

@@ -18,6 +18,8 @@ export function defaults(lang?: Lang): AppState {
     roadmap: emptyRoadmap(),
     deadlines: [],
     calendarPins: [],
+    scores: [],
+    applications: [],
   };
 }
 
