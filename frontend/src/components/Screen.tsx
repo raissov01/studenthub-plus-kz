@@ -21,6 +21,7 @@ import { Announcements } from '@/components/views/jobs-b2b';
 import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/employer';
 import { UniversityCabinet } from '@/components/views/university';
 import { AdminContent } from '@/components/views/admin-content';
+import { AdminFeeds } from '@/components/views/feeds';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
 import { AdminPoints, Points } from '@/components/views/points';
@@ -77,6 +78,7 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
       if (prm === 'points') return <AdminPoints />;
+      if (prm === 'feeds') return <AdminFeeds />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;

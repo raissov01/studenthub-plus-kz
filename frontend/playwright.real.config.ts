@@ -34,7 +34,7 @@ export default defineConfig({
         RATE_WRITE_PER_MIN: '2000',
         TELEGRAM_API_BASE: 'http://127.0.0.1:1',
         FEATURE_EVENTS: 'true', FEATURE_AMBASSADOR: 'true', FEATURE_MENTORS: 'true',
-        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true',
+        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true', FEATURE_FEEDS: 'true',
       },
     },
     {

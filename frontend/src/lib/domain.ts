@@ -231,7 +231,7 @@ export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
   openOpps(C.opportunities).forEach(o => {
     const left = oppLeft(o);
     items.push({
-      k: oppKind(o), id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title), meta: typeLabel(o.type, I),
+      k: oppKind(o), id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title), meta: o.feed ? `${typeLabel(o.type, I)} · ${tt('ИИ', 'ИИ')}: ${o.feed.source_name}` : typeLabel(o.type, I),
       badge: left <= 14 ? [I.daysLeftTxt(left), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null, fav: !!S.saved[o.id], demo: o.is_demo,
     });
   });

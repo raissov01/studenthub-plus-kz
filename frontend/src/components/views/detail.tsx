@@ -19,6 +19,7 @@ import { dOff, money, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
 import type { Job, Opportunity, Provenance } from '@/lib/types';
 import { ScreenLoading } from '@/components/ScreenLoading';
+import { FeedBadge, FeedNote, isFeed } from '@/components/views/feeds';
 
 /** one view event per screen opening (effects may run twice for the same mount in development) */
 let lastView = { key: '', at: 0 };
@@ -160,18 +161,20 @@ export function OppBody({ o }: { o: Opportunity }) {
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-ok">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
           <OfficialBadge o={o} />
+          <FeedBadge o={o} />
           <DemoBadge show={o.is_demo} />
         </div>
         <h1>{L(o.title)}</h1>
         <ShareRow path={pathOf('opp:' + o.id)} title={L(o.title)} kind="opp" id={o.id} />
         {o.id.startsWith('amb-') && ambOn ? <CommunityReport kind="opportunity" id={o.id} /> : null}
-        <p className="muted">{L(o.org)} <VerifiedBadge item={o} kind="opp" id={o.id} /></p>
+        <p className="muted">{L(o.org)} {isFeed(o) ? null : <VerifiedBadge item={o} kind="opp" id={o.id} />}</p>
         <p className={`small ${left <= 14 ? 'urgent' : ''}`}><Icon n="clock" s={14} /> {Number.isFinite(left)
           ? <>{tt('Қабылдау', 'Приём до')}: {I.fDate(dOff(left))} · {I.daysLeftTxt(left)}</>
           : tt('Өтінім мерзімі шектелмеген', 'Приём заявок без срока')}</p>
       </div>
       <CalendarActions item={'opp:' + o.id} target={deadlinePinTarget('opp', o)} />
       <p>{L(o.desc)}</p>
+      <FeedNote o={o} />
       <section className="card">
         <div className="card-row" style={{ alignItems: 'center' }}>
           <span className={`ico ${showCheck ? (q.ok ? 'ok' : 'bad') : ''}`}><Icon n="target" /></span>
@@ -186,7 +189,7 @@ export function OppBody({ o }: { o: Opportunity }) {
           </>
         ) : <button className="btn" type="button" onClick={() => setUi(u => ({ oppCheck: { ...u.oppCheck, [id]: true } }))}>{tt('Тексеру', 'Проверить')}</button>}
       </section>
-      <section className="section">
+      {o.docs.length ? <section className="section">
         <SectionHead title={tt('Құжаттар', 'Документы')} more={<span className="tiny muted num">{ready}/{o.docs.length} {tt('дайын', 'готово')}</span>} />
         <div className="group">
           {o.docs.map((d, i) => (
@@ -196,8 +199,8 @@ export function OppBody({ o }: { o: Opportunity }) {
             </label>
           ))}
         </div>
-      </section>
-      <section className="section"><h2>{tt('Қалай рәсімдеу керек', 'Как оформить')}</h2><ol className="steps">{o.steps.map((s, i) => <li key={i}><span>{L(s)}</span></li>)}</ol></section>
+      </section> : null}
+      {o.steps.length ? <section className="section"><h2>{tt('Қалай рәсімдеу керек', 'Как оформить')}</h2><ol className="steps">{o.steps.map((s, i) => <li key={i}><span>{L(s)}</span></li>)}</ol></section> : null}
       <TrustBlock item={o} kind="opp" id={o.id} />
       <div className="sticky-cta">
         <button className={`btn ${saved ? 'secondary' : ''} block`} type="button" onClick={() => {

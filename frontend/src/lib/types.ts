@@ -39,7 +39,30 @@ export interface Job extends Provenance {
   req: LText[];
 }
 export type OppType = 'mobility' | 'intl' | 'company' | 'grant';
+/** AI-structured item of the opportunity feed (GET /api/content, source 'feed', id 'feed-<n>'; docs/feeds.md) */
+export interface FeedMeta {
+  category: string;
+  source_id: string;
+  source_name: string;
+  /** the post the item was read from: always shown, the AI text is only a summary of it */
+  original_url: string;
+  apply_url: string;
+  event_date: string;
+  online: boolean;
+  eligibility: string;
+  funding: 'fully' | 'partly' | 'none' | 'unknown';
+  country: string;
+  /** an admin approved it; false = published automatically from a trusted source */
+  reviewed: boolean;
+  note: LText;
+  extra_sources: { name: string; url: string }[];
+  confidence: number;
+}
 export interface Opportunity extends Provenance {
+  /** 'admin' | 'student' | 'ambassador' | 'feed' ...; absent on sheet / data/*.json records */
+  source?: string;
+  /** present only on opportunity-feed records */
+  feed?: FeedMeta;
   id: string;
   type: OppType;
   funded: boolean;
