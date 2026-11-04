@@ -25,7 +25,8 @@ export const SUB_SCREENS = [
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
     and the quiz routes */
 export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
-export const ROOTS = ['home', 'search', 'notif', 'profile'];
+/** the four tabs: no back button, the hamburger menu instead. Notifications open from the header bell (with a back button). */
+export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 
 const FIXED: Record<string, string> = {
   home: '/',

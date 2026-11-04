@@ -116,3 +116,41 @@ test('calendar: menu entry, month navigation, a seeded deadline, own deadline su
   await expect(day(mine)).toHaveAttribute('aria-label', new RegExp(t('жазба жоқ', 'нет записей')));
   expect((await deviceState(page)).deadlines).toEqual([]);
 });
+
+test('tab bar: «Күнтізбе» replaces notifications, which open from the header bell on every root screen', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await onboard(page, lang);
+  const tabs = page.getByRole('navigation', { name: 'Student Hub' });
+  await expect(tabs.getByRole('button')).toHaveCount(4);
+  await expect(tabs.getByRole('button', { name: t('Хабарлар', 'Уведомления') })).toHaveCount(0);
+  const bell = page.locator('#mine-btn');
+
+  await tabs.getByRole('button', { name: t('Күнтізбе', 'Календарь'), exact: true }).click();
+  await expect(page).toHaveURL(/\/calendar$/);
+  await expect(tabs.getByRole('button', { name: t('Күнтізбе', 'Календарь'), exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#back')).toBeHidden();
+  await expect(page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true })).toBeVisible();
+  await expect(bell).toBeVisible();
+  await expect(bell).toHaveAccessibleName(new RegExp('^' + t('Хабарламалар', 'Уведомления')));
+  await expect(page.locator('#mine-count')).toBeVisible();
+  await fits(page);
+
+  await tabs.getByRole('button', { name: t('Іздеу', 'Поиск'), exact: true }).click();
+  await expect(page).toHaveURL(/\/search$/);
+  await expect(bell).toBeVisible();
+
+  await tabs.getByRole('button', { name: t('Профиль', 'Профиль'), exact: true }).click();
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(bell).toHaveAccessibleName(t('Параметрлер', 'Параметры'));
+
+  await tabs.getByRole('button', { name: t('Басты бет', 'Главная'), exact: true }).click();
+  await bell.click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(page.locator('#back')).toBeVisible();
+  await page.locator('#back').click();
+  await expect(page).toHaveURL(/\/$/);
+
+  // links from the Telegram bot and elsewhere still land on /notifications
+  await page.goto('/notifications');
+  await expect(page.locator('#title')).toHaveText(t('Хабарламалар', 'Уведомления'));
+});
