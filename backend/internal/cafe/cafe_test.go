@@ -42,6 +42,15 @@ func TestMain(m *testing.M) {
 	n := time.Now().In(almaty)
 	noon := time.Date(n.Year(), n.Month(), n.Day(), 12, 0, 0, 0, almaty)
 	Now = func() time.Time { return noon }
+	// installed once: notification goroutines of one test may still run while the next test starts
+	current.Store(&fakeKaspi{})
+	Provider = func() payments.Provider { return current.Load() }
+	Send = func(_ context.Context, uid int64, text string, opts notify.Opts) (notify.Result, error) {
+		sentMu.Lock()
+		defer sentMu.Unlock()
+		messages = append(messages, sent{uid, text, opts.Key})
+		return notify.Sent, nil
+	}
 	os.Exit(testdb.Main(m, "cafe"))
 }
 
@@ -64,9 +73,9 @@ func (f *fakeKaspi) CreateInvoice(_ context.Context, m payments.Merchant, _ int6
 	}
 	f.mu.Lock()
 	f.invoices++
-	n := f.invoices
+	n, delay := f.invoices, f.delay
 	f.mu.Unlock()
-	time.Sleep(f.delay)
+	time.Sleep(delay)
 	op := fmt.Sprintf("77%06d%03d", time.Now().UnixNano()%1000000, n)
 	exp := Now().Add(3 * time.Minute)
 	return &payments.Invoice{OperationID: op, PayURL: "https://pay.kaspi.kz/pay/" + op, QR: "https://qr.kaspi.kz/" + op, Amount: amount, ExpiresAt: &exp}, nil
@@ -104,19 +113,20 @@ var (
 	messages []sent
 )
 
+var current atomic.Pointer[fakeKaspi]
+
+// useFakes gives the test a fresh fake Kaspi (Send and Provider themselves are installed once in TestMain).
 func useFakes(t *testing.T) *fakeKaspi {
 	t.Helper()
 	f := &fakeKaspi{}
-	prevP, prevS := Provider, Send
-	Provider = func() payments.Provider { return f }
-	Send = func(_ context.Context, uid int64, text string, opts notify.Opts) (notify.Result, error) {
-		sentMu.Lock()
-		defer sentMu.Unlock()
-		messages = append(messages, sent{uid, text, opts.Key})
-		return notify.Sent, nil
-	}
-	t.Cleanup(func() { Provider, Send = prevP, prevS })
+	current.Store(f)
 	return f
+}
+
+func (f *fakeKaspi) set(fn func(f *fakeKaspi)) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	fn(f)
 }
 
 func sentTo(uid int64, keyPrefix string) int {
@@ -485,7 +495,7 @@ func TestCancelRules(t *testing.T) {
 		t.Fatal("not refunded:", st)
 	}
 	// the cashier may not refund: the café returns the money by hand
-	fk.refundErr = payments.ErrRefundNotAllowed
+	fk.set(func(f *fakeKaspi) { f.refundErr = payments.ErrRefundNotAllowed })
 	manual := place(t, f, student, "kaspi")
 	w = do(t, "POST", fmt.Sprintf("/api/cafe/orders/%d/pay", manual.ID), student, nil)
 	op = *decode[orderReply](t, w).Order.operationIDFromPay(t)
@@ -517,7 +527,7 @@ func (o Order) operationIDFromPay(t *testing.T) *string {
 
 func TestPayIsIdempotent(t *testing.T) {
 	fk := useFakes(t)
-	fk.delay = 50 * time.Millisecond
+	fk.set(func(f *fakeKaspi) { f.delay = 50 * time.Millisecond })
 	f := newCafe(t, "kaspi")
 	student := newUser(t, "student")
 	o := place(t, f, student, "kaspi")
@@ -573,9 +583,7 @@ func TestWebhookMarksPaidExactlyOnce(t *testing.T) {
 		t.Fatalf("forged: %d", rec.Code)
 	}
 	// webhooks, the poller and status reads race for the same payment
-	fk.mu.Lock()
-	fk.state = payments.StatePaid
-	fk.mu.Unlock()
+	fk.set(func(f *fakeKaspi) { f.state = payments.StatePaid })
 	var wg sync.WaitGroup
 	for i := range 12 {
 		wg.Add(1)
