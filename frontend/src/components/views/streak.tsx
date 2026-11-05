@@ -119,18 +119,20 @@ const SEEN_KEY = 'studenthub.milestone';
 
 /** opens the milestone sheet once per milestone and device, after the action that reached it */
 export function useMilestoneSheet(s: PointsSummary | null, uid: number) {
-  const { openSheet } = useApp();
+  const { openSheet, sheet, S } = useApp();
   const on = useFeature('streak');
   const last = s?.streak.lastMilestone;
+  // wait until onboarding and any other sheet are out of the way, so the celebration is not lost behind them
+  const free = S.onboarded && !sheet;
   useEffect(() => {
-    if (!on || !uid || !last) return;
+    if (!on || !uid || !last || !free) return;
     let seen = 0;
     try { seen = Number(localStorage.getItem(`${SEEN_KEY}.${uid}`) || 0); } catch { /* private mode */ }
     const n = milestoneToShow(last, seen);
     if (!n) return;
     try { localStorage.setItem(`${SEEN_KEY}.${uid}`, String(n)); } catch { /* ignore */ }
     openSheet(<MilestoneSheet n={n} />);
-  }, [on, uid, last, openSheet]);
+  }, [on, uid, last, free, openSheet]);
 }
 
 function MilestoneSheet({ n }: { n: number }) {

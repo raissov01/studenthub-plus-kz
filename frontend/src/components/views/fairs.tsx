@@ -204,7 +204,7 @@ function Booth_() {
   }
   if (state.st === 'error') {
     return (
-      <div className="card" role="alert">
+      <div className="card">
         <h1>{tt('Тіркелмеді', 'Не отмечено')}</h1>
         <ErrorLine err={state.err ?? ''} />
         <button className="btn secondary" type="button" onClick={() => go('home')}>{tt('Басты бетке', 'На главную')}</button>

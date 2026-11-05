@@ -160,7 +160,7 @@ function ScoreField({ id, label, value, onSave, disabled }: { id: string; label:
       <label htmlFor={id}>{label}</label>
       <input className="input num" id={id} inputMode="decimal" autoComplete="off" value={text} disabled={disabled} aria-invalid={bad}
         aria-describedby={bad ? id + 'Err' : undefined}
-        onChange={e => { setText(e.target.value); if (parseScore(e.target.value) !== 'invalid') commit(e.target.value); }} onBlur={e => commit(e.target.value)} />
+        onChange={e => { setText(e.target.value); commit(e.target.value); }} onBlur={e => commit(e.target.value)} />
       {bad ? <span className="tiny urgent" id={id + 'Err'} role="alert">{tt('0–100, бір ондық таңбаға дейін', 'От 0 до 100, не больше одного знака после запятой')}</span> : null}
     </div>
   );
