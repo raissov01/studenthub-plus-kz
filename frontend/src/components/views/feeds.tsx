@@ -1,11 +1,11 @@
 'use client';
 /* Opportunity feed (docs/feeds.md): the «ИИ» badge and the source block on feed opportunities, the admin page
    /admin/feeds (sources, pending, published, AI usage) and the editor of a pending feed item in the queue. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Icon, Row, Seg, SectionHead } from '@/components/ui';
-import { AdminOnly, ErrorLine, errText, Feature, Loading, ReasonSheet, useLoad, ymd } from '@/components/views/common';
-import { api, ApiError } from '@/lib/account';
+import { ErrorLine, ModeratorOnly, errText, Feature, Loading, ReasonSheet, useLoad, ymd } from '@/components/views/common';
+import { api, ApiError, useAccount } from '@/lib/account';
 import type { FeedMeta, LText, Opportunity } from '@/lib/types';
 
 export const FEED_CATS: Record<string, LText> = {
@@ -69,14 +69,14 @@ interface Overview {
   usage: { calls: number; tokens: number; failures: number; limit: number; autopublish_min_confidence: number; channel: boolean; ai: boolean };
 }
 interface ItemRow {
-  id: number; status: string; category: string; source: string; confidence: number; auto: boolean; submission_id: number | null;
+  id: number; status: string; category: string; source: string; source_id: string; confidence: number; auto: boolean; submission_id: number | null;
   deadline: string | null; created_at: string; published_at: string | null;
   data: { title_kk: string; title_ru: string; summary_kk: string; source_url: string; apply_url: string; validation_notes?: string[] };
   extra_sources: { source_id: string; url: string }[];
 }
 
 export function AdminFeeds() {
-  return <AdminOnly><Feature name="feeds"><Feeds /></Feature></AdminOnly>;
+  return <ModeratorOnly><Feature name="feeds"><Feeds /></Feature></ModeratorOnly>;
 }
 
 function Feeds() {
@@ -118,6 +118,8 @@ function Usage({ o }: { o: Overview }) {
 
 function Sources({ list, onDone }: { list: SourceRow[]; onDone: () => void }) {
   const { tt, lang, toast } = useApp();
+  // moderators see the sources; switching one on or off stays with admins (the server checks it too)
+  const admin = useAccount().user?.role === 'admin';
   const [busy, setBusy] = useState('');
   const toggle = async (s: SourceRow) => {
     setBusy(s.id);
@@ -140,8 +142,8 @@ function Sources({ list, onDone }: { list: SourceRow[]; onDone: () => void }) {
         <span className="small muted num">{tt('Соңғы жинау', 'Последний сбор')}: {s.last_run_at ? ymd(s.last_run_at) + ' ' + s.last_run_at.slice(11, 16) : '—'}
           {' · '}{tt('жаңа', 'новых')} {s.last_new} · {tt('барлығы', 'всего')} {s.posts} · {tt('жарияланған', 'опубликовано')} {s.published}</span>
         {s.last_error ? <p className="small urgent" role="alert">{s.last_error}</p> : null}
-        <button className="btn ghost" type="button" disabled={busy === s.id} onClick={() => toggle(s)}>
-          {s.enabled ? tt('Өшіру', 'Выключить') : tt('Қосу', 'Включить')}</button>
+        {admin ? <button className="btn ghost" type="button" disabled={busy === s.id} onClick={() => toggle(s)}>
+          {s.enabled ? tt('Өшіру', 'Выключить') : tt('Қосу', 'Включить')}</button> : null}
       </div>
     ))}</div>
   );
@@ -150,6 +152,10 @@ function Sources({ list, onDone }: { list: SourceRow[]; onDone: () => void }) {
 function Items({ status, onDone }: { status: string; onDone: () => void }) {
   const { tt, L, lang, toast, openSheet, closeSheet } = useApp();
   const q = useLoad<{ items: ItemRow[] }>(`/api/admin/feeds/items?status=${status}`);
+  const [minConf, setMinConf] = useState(0);
+  const [src, setSrc] = useState('');
+  const [cat, setCat] = useState('');
+  const [picked, setPicked] = useState<Set<number>>(() => new Set());
   const done = () => { q.reload(); onDone(); };
   const approve = async (it: ItemRow) => {
     try {
@@ -161,12 +167,49 @@ function Items({ status, onDone }: { status: string; onDone: () => void }) {
     onSubmit={async reason => { await api(`/api/admin/queue/${it.submission_id}/reject`, { method: 'POST', body: { reason }, lang }); closeSheet(); done(); }} />);
   const unpublish = (it: ItemRow) => openSheet(<ReasonSheet title={tt('Сайттан алу', 'Снять с сайта')} label={tt('Ескертпе (міндетті емес)', 'Комментарий (необязательно)')} required={false} min={0}
     action={tt('Алу', 'Снять')} danger onSubmit={async () => { await api(`/api/admin/feeds/items/${it.id}/unpublish`, { method: 'POST', body: {}, lang }); closeSheet(); done(); }} />);
+  const pending = status === 'pending';
+  const all = q.data?.items ?? [];
+  const shown = pending ? all.filter(it => it.confidence >= minConf && (!src || it.source_id === src) && (!cat || it.category === cat)) : all;
+  const sources = [...new Map(all.map(it => [it.source_id, it.source])).entries()];
+  const cats = [...new Set(all.map(it => it.category))];
+  const chosen = shown.filter(it => picked.has(it.id));
+  const bulk = (action: 'approve' | 'reject', filter: BulkFilter) => openSheet(<BulkSheet action={action} filter={filter} onDone={() => { setPicked(new Set()); done(); }} />);
+  const toggle = (id: number) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <>
       <ErrorLine err={q.err} />
-      {!q.data ? <Loading /> : q.data.items.length ? (
-        <div className="list">{q.data.items.map(it => (
-          <div key={it.id} className="card">
+      {pending && all.length ? (
+        <div className="card bulk-filters">
+          <div className="field"><span className="small muted" id="bfConf">{tt('ИИ сенімділігі кемінде', 'Уверенность ИИ не ниже')}</span>
+            <div className="chips wrap" role="group" aria-labelledby="bfConf">
+              {[0, 0.6, 0.8, 0.9].map(v => <Chip key={v} pressed={minConf === v} onClick={() => setMinConf(v)}>{v ? `${Math.round(v * 100)}%` : tt('Кез келген', 'Любая')}</Chip>)}
+            </div></div>
+          <div className="adm-filters">
+            <div className="field"><label htmlFor="bfSrc">{tt('Дереккөз', 'Источник')}</label>
+              <select className="input" id="bfSrc" value={src} onChange={e => setSrc(e.target.value)}>
+                <option value="">{tt('Барлығы', 'Все')}</option>{sources.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select></div>
+            <div className="field"><label htmlFor="bfCat">{tt('Санаты', 'Категория')}</label>
+              <select className="input" id="bfCat" value={cat} onChange={e => setCat(e.target.value)}>
+                <option value="">{tt('Барлығы', 'Все')}</option>{cats.map(c => <option key={c} value={c}>{L(FEED_CATS[c] ?? FEED_CATS.other)}</option>)}
+              </select></div>
+          </div>
+          <div className="btn-row">
+            <button className="btn secondary" type="button" disabled={!shown.length} onClick={() => bulk('approve', { all: true, minConfidence: minConf, source: src, category: cat })}>
+              {tt('Бәрін жариялау', 'Опубликовать всё')}</button>
+            <button className="link-btn" type="button" disabled={!shown.length} onClick={() => setPicked(chosen.length === shown.length ? new Set() : new Set(shown.map(it => it.id)))}>
+              {chosen.length === shown.length && shown.length ? tt('Белгіні алу', 'Снять выделение') : tt('Көрініп тұрғанның бәрін белгілеу', 'Выделить все видимые')}</button>
+          </div>
+          <p className="tiny muted">{tt('«Бәрін жариялау» сүзгіге сай барлық күтудегі жазбаны алады; алдымен нақты саны мен тізімі көрсетіледі. Мерзімі өткендері өткізіліп жіберіледі.',
+            '«Опубликовать всё» берёт все ожидающие записи под фильтр; сначала покажем точное число и список. Просроченные пропускаются.')}</p>
+        </div>
+      ) : null}
+      {!q.data ? <Loading /> : shown.length ? (
+        <div className="list">{shown.map(it => (
+          <div key={it.id} className={`card${picked.has(it.id) ? ' is-picked' : ''}`}>
+            {pending && it.submission_id ? (
+              <label className="check small"><input type="checkbox" checked={picked.has(it.id)} onChange={() => toggle(it.id)} /> {tt('Таңдау', 'Выбрать')}</label>
+            ) : null}
             <div className="badges">
               <span className="badge b-sky">{L(FEED_CATS[it.category] ?? FEED_CATS.other)}</span>
               <span className="badge b-line">{it.source}</span>
@@ -189,9 +232,98 @@ function Items({ status, onDone }: { status: string; onDone: () => void }) {
             </div>
           </div>
         ))}</div>
-      ) : <div className="group"><div className="empty">{tt('Бос', 'Пусто')}</div></div>}
+      ) : <div className="group"><div className="empty">{all.length ? tt('Бұл сүзгіге сай жазба жоқ', 'Под этот фильтр записей нет') : tt('Бос', 'Пусто')}</div></div>}
+      {pending && chosen.length ? (
+        <div className="bulk-bar" role="region" aria-label={tt('Таңдалғандар', 'Выбранные')}>
+          <span className="small num">{tt(`Таңдалды: ${chosen.length}`, `Выбрано: ${chosen.length}`)}</span>
+          <button className="btn danger" type="button" onClick={() => bulk('reject', { ids: chosen.map(it => it.id) })}>{tt('Таңдалғанды қабылдамау', 'Отклонить выбранные')}</button>
+          <button className="btn" type="button" onClick={() => bulk('approve', { ids: chosen.map(it => it.id) })}>{tt('Таңдалғанды жариялау', 'Опубликовать выбранные')}</button>
+        </div>
+      ) : null}
     </>
   );
+}
+
+type BulkFilter = { ids?: number[]; all?: boolean; minConfidence?: number; source?: string; category?: string };
+interface BulkPreview { count: number; max: number; items: { id: number; title: string; confidence: number; source: string; deadline: string | null }[] }
+interface BulkResult { published: number; rejected: number; skipped: { id: number; reason: string }[]; failed: { id: number; reason: string }[] }
+
+/** confirm a bulk decision: the server's exact count and list first, then the result (expired items are skipped) */
+function BulkSheet({ action, filter, onDone }: { action: 'approve' | 'reject'; filter: BulkFilter; onDone: () => void }) {
+  const { tt, lang, closeSheet, toast } = useApp();
+  const pre = useLoadPost<BulkPreview>('/api/admin/feeds/items/bulk', { action: 'preview', filter });
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [res, setRes] = useState<BulkResult | null>(null);
+  const ok = action === 'approve' || (reason.trim().length >= 3 && reason.trim().length <= 500);
+  const today = new Date().toISOString().slice(0, 10);
+  if (res) {
+    const expired = res.skipped.filter(x => x.reason === 'expired').length;
+    return (
+      <div className="form">
+        <h2>{tt('Дайын', 'Готово')}</h2>
+        <div className="stat-grid">
+          <div className="stat"><b className="num">{action === 'approve' ? res.published : res.rejected}</b><span>{action === 'approve' ? tt('жарияланды', 'опубликовано') : tt('қабылданбады', 'отклонено')}</span></div>
+          <div className="stat"><b className="num">{expired}</b><span>{tt('мерзімі өткен, өткізілді', 'просрочены, пропущены')}</span></div>
+          <div className="stat"><b className="num">{res.skipped.length - expired}</b><span>{tt('бұрын шешілген', 'уже рассмотрены')}</span></div>
+          <div className={`stat${res.failed.length ? ' stat-warn' : ''}`}><b className="num">{res.failed.length}</b><span>{tt('қате', 'ошибок')}</span></div>
+        </div>
+        {res.failed.length ? <p className="small urgent">{res.failed.map(f => `#${f.id}: ${f.reason}`).join(', ')}</p> : null}
+        <button className="btn" type="button" onClick={closeSheet}>{tt('Жабу', 'Закрыть')}</button>
+      </div>
+    );
+  }
+  return (
+    <form className="form" onSubmit={async e => {
+      e.preventDefault();
+      if (!ok || busy || !pre.data?.count) return;
+      setBusy(true); setErr('');
+      try {
+        const r = await api<BulkResult>('/api/admin/feeds/items/bulk', { method: 'POST', body: { action, filter, reason: reason.trim() }, lang });
+        setRes(r); onDone();
+        toast(action === 'approve' ? tt(`Жарияланды: ${r.published}`, `Опубликовано: ${r.published}`) : tt(`Қабылданбады: ${r.rejected}`, `Отклонено: ${r.rejected}`));
+      } catch (x) { setErr(errText(x)); } finally { setBusy(false); }
+    }}>
+      <h2>{action === 'approve' ? tt('Жаппай жариялау', 'Массовая публикация') : tt('Жаппай қабылдамау', 'Массовое отклонение')}</h2>
+      <ErrorLine err={pre.err} />
+      {!pre.data ? (pre.err ? null : <Loading />) : (
+        <>
+          <p className="small"><b className="num">{pre.data.count}</b> {tt('жазба', 'записей')}{pre.data.count >= pre.data.max ? tt(` (бір ретте ең көбі ${pre.data.max})`, ` (за раз не больше ${pre.data.max})`) : ''}</p>
+          <ol className="group adm-log bulk-preview">
+            {pre.data.items.slice(0, 30).map(it => (
+              <li key={it.id}><span className="small"><b>{it.title || '#' + it.id}</b></span>
+                <span className="tiny muted num">{it.source} · {Math.round(it.confidence * 100)}% · {it.deadline ? (it.deadline < today ? tt(`мерзімі өткен ${it.deadline}`, `просрочено ${it.deadline}`) : it.deadline) : tt('мерзімсіз', 'без срока')}</span></li>
+            ))}
+          </ol>
+          {pre.data.count > 30 ? <p className="tiny muted">{tt(`және тағы ${pre.data.count - 30}`, `и ещё ${pre.data.count - 30}`)}</p> : null}
+        </>
+      )}
+      {action === 'reject' ? (
+        <div className="field"><label htmlFor="bkReason">{tt('Себебі (міндетті, журналға жазылады)', 'Причина (обязательно, пишется в журнал)')}</label>
+          <textarea className="input" id="bkReason" maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></div>
+      ) : <p className="tiny muted">{tt('Әр жазба жеке жариялаудағыдай тексеріледі; мерзімі өткендер жарияланбайды.', 'Каждая запись проверяется как при обычной публикации; просроченные не публикуются.')}</p>}
+      <ErrorLine err={err} />
+      <div className="btn-row">
+        <button className="btn ghost" type="button" onClick={closeSheet}>{tt('Бас тарту', 'Отмена')}</button>
+        <button className={`btn${action === 'reject' ? ' danger' : ''}`} type="submit" disabled={!ok || busy || !pre.data?.count}>
+          {action === 'approve' ? tt(`Жариялау (${pre.data?.count ?? 0})`, `Опубликовать (${pre.data?.count ?? 0})`) : tt(`Қабылдамау (${pre.data?.count ?? 0})`, `Отклонить (${pre.data?.count ?? 0})`)}</button>
+      </div>
+    </form>
+  );
+}
+
+/** one POST whose answer the sheet shows (the bulk preview) */
+function useLoadPost<T>(path: string, body: unknown): { data: T | null; err: string } {
+  const { lang } = useApp();
+  const [state, setState] = useState<{ data: T | null; err: string }>({ data: null, err: '' });
+  const key = JSON.stringify(body);
+  useEffect(() => {
+    let live = true;
+    api<T>(path, { method: 'POST', body: JSON.parse(key), lang }).then(d => { if (live) setState({ data: d, err: '' }); }, e => { if (live) setState({ data: null, err: errText(e) }); });
+    return () => { live = false; };
+  }, [path, key, lang]);
+  return state;
 }
 
 const EDIT_FIELDS: [string, LText, 'text' | 'area' | 'date' | 'cat'][] = [
