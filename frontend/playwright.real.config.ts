@@ -38,9 +38,9 @@ export default defineConfig({
         RATE_WRITE_PER_MIN: '2000',
         TELEGRAM_API_BASE: 'http://127.0.0.1:1',
         FEATURE_EVENTS: 'true', FEATURE_AMBASSADOR: 'true', FEATURE_MENTORS: 'true',
-        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true', FEATURE_CAFE: 'true', FEATURE_FEEDS: 'true',
+        FEATURE_MARKET: 'true', FEATURE_PORTFOLIO: 'true', FEATURE_B2B: 'true', FEATURE_POINTS: 'true', FEATURE_CAFE: 'true', FEATURE_PRINT: 'true', FEATURE_FEEDS: 'true',
         CAFE_KASPI_URL: `http://127.0.0.1:${kaspiPort}`, CAFE_KASPI_API_KEY: kaspiApiKey, CAFE_KASPI_SESSION_KEY: kaspiSessionKey,
-        CAFE_KASPI_WEBHOOK_SECRET: 'local-playwright-kaspi-webhook-secret', CAFE_ORDERS_PER_HOUR: '1000',
+        CAFE_KASPI_WEBHOOK_SECRET: 'local-playwright-kaspi-webhook-secret', CAFE_ORDERS_PER_HOUR: '1000', PRINT_JOBS_PER_HOUR: '1000',
       },
     },
     {

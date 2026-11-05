@@ -58,7 +58,7 @@ var sessions = shopkit.Sessions{Table: "print_kaspi_sessions", Key: "shop_id", N
 func maxActive() int       { return config.Int("PRINT_MAX_ACTIVE_JOBS", 3) }
 func dailyJobs() int       { return config.Int("PRINT_DAILY_JOBS", 10) }
 func jobsPerHour() int     { return config.Int("PRINT_JOBS_PER_HOUR", 20) }
-func maxTotal() int64      { return int64(config.Int("PRINT_MAX_ORDER_TOTAL", 10000000)) } // tiyn: 100 000 ₸
+func maxTotal() int64      { return int64(config.Int("PRINT_MAX_ORDER_TOTAL", 3000000)) } // tiyn: 30 000 ₸ (the sidecar's MAX_PAYMENT_AMOUNT)
 func payTimeout() int      { return config.Int("PRINT_PAY_TIMEOUT_MIN", 10) }
 func unpaidCancelMin() int { return config.Int("PRINT_UNPAID_CANCEL_MIN", 60) }
 func noShowGrace() int     { return config.Int("PRINT_NO_SHOW_GRACE_MIN", 120) }

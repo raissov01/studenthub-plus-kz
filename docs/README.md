@@ -75,6 +75,7 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 | Аккаунттар, сессиялар, env | [ACCOUNTS.md](./ACCOUNTS.md) |
 | Telegram бот | [BOT.md](./BOT.md) |
 | Кофейня: алдын ала тапсырыс, Kaspi (кофейняның өз шоты), пилот runbook | [cafe.md](./cafe.md) |
+| Полиграфия: файл жүктеу, сервер бағасы, кезек, оператор тақтасы, пилот runbook және полиграфияға сұрақтар | [print.md](./print.md) |
 | Контент (Google Sheets, data/*.json) | [CONTENT.md](./CONTENT.md) |
 | Мүмкіндіктер ағыны (Telegram, сайттар, ИИ сүзгісі) | [feeds.md](./feeds.md) |
 | PWA, офлайн | [PWA.md](./PWA.md) |

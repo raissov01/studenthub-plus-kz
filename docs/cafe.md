@@ -7,6 +7,9 @@
 Код: `backend/internal/cafe` (API), `backend/internal/cafe/payments` (төлем провайдері), `services/kaspi-pos`
 (Kaspi sidecar), `frontend/src/components/views/cafe.tsx`, `cafe-admin.tsx`, `frontend/src/lib/cafe.ts`,
 миграция `backend/migrations/20261105000040_cafe.sql`.
+Полиграфиямен ортақ бөлігі (сағаттар мен слоттар, алу коды, аудит, Telegram батырмалары, кассир сессиясы мен
+әкімшінің Kaspi экрандары, бір sidecar webhook-ы) — `backend/internal/shopkit`, `frontend/src/components/views/shop-common.tsx`
+([print.md](./print.md)).
 
 ## Ақша қайда түседі (өзгермейтін шешім)
 
