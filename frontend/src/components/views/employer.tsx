@@ -176,7 +176,7 @@ function ContactSheet({ me, onDone }: { me: EmployerMe; onDone: () => void }) {
 }
 
 function JobCard({ j }: { j: EmployerJob }) {
-  const { tt, L, go } = useApp();
+  const { tt, L, go, lang } = useApp();
   const a = j.applications || {};
   const counts: [AppStatus, string][] = [['sent', tt('жаңа', 'новых')], ['viewed', tt('қаралды', 'просмотрено')], ['invited', tt('шақырылды', 'приглашено')], ['rejected', tt('бас тартылды', 'отказ')], ['no_response', tt('жауапсыз', 'без ответа')]];
   const shown = counts.filter(([k]) => a[k]);
@@ -188,7 +188,7 @@ function JobCard({ j }: { j: EmployerJob }) {
         {!j.minorOk ? <span className="badge b-line">18+</span> : null}
       </div>
       <h3 style={{ overflowWrap: 'anywhere' }}>{L({ kk: j.titleKk, ru: j.titleRu })}</h3>
-      <span className="small muted">{money(j.pay)} · {L(PER_LABEL[j.per]).toLowerCase()}{j.expiresAt && (j.status === 'published' || j.status === 'expired') ? ` · ${tt('мерзімі', 'до')} ${ymd(j.expiresAt)}` : ''}</span>
+      <span className="small muted">{money(j.pay, lang)} · {L(PER_LABEL[j.per]).toLowerCase()}{j.expiresAt && (j.status === 'published' || j.status === 'expired') ? ` · ${tt('мерзімі', 'до')} ${ymd(j.expiresAt)}` : ''}</span>
       <span className="small">{shown.length ? shown.map(([k, l]) => `${a[k]} ${l}`).join(' · ') : tt('Өтінім әлі жоқ', 'Откликов пока нет')}</span>
     </button>
   );
@@ -528,7 +528,7 @@ function JobApplications({ id }: { id: number }) {
           {!j.minorOk ? <span className="badge b-line">18+</span> : null}
         </div>
         <h2 style={{ overflowWrap: 'anywhere' }}>{L({ kk: j.titleKk, ru: j.titleRu })}</h2>
-        <span className="small muted">{money(j.pay)} · {L(PER_LABEL[j.per]).toLowerCase()}</span>
+        <span className="small muted">{money(j.pay, lang)} · {L(PER_LABEL[j.per]).toLowerCase()}</span>
         {j.status === 'pending' ? <p className="small">{tt('Әкімші тексеріп жатыр. Бекітілгенде студенттерге көрінеді.', 'Вакансию проверяет администратор. После одобрения её увидят студенты.')}</p> : null}
         {j.status === 'hidden' ? <p className="small">{j.hiddenReason === 'reports' ? tt('Шағымдар бойынша әкімші тексергенше жасырылды.', 'Скрыта по жалобам до проверки администратором.') : tt('Әкімші жасырды.', 'Скрыта администратором.')}</p> : null}
         {j.statusReason ? <p className="small"><b>{tt('Себебі', 'Причина')}:</b> <span style={{ overflowWrap: 'anywhere' }}>{j.statusReason}</span></p> : null}

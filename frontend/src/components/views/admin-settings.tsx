@@ -5,6 +5,7 @@ import { Row, SectionHead } from '@/components/ui';
 import { Loading, NotFound } from '@/components/views/common';
 import { api, ApiError } from '@/lib/account';
 import type { Content } from '@/lib/types';
+import { tr } from '@/lib/i18n';
 
 const SECTIONS = [['jobs', 'Жұмыс', 'Работа'], ['opportunities', 'Мүмкіндіктер', 'Возможности'], ['events', 'Іс-шаралар', 'Мероприятия'], ['discounts', 'Жеңілдіктер', 'Скидки']] as const;
 export function DemoSettings() {
@@ -20,7 +21,7 @@ export function DemoSettings() {
     let live = true;
     Promise.all([api<{ showDemo: boolean }>('/api/admin/settings', { lang, cache: 'no-store', signal: AbortSignal.timeout(12_000) }), refreshContent()])
       .then(([settings, data]) => { if (live) { setShow(settings.showDemo); setFeed(data); setErr(''); } })
-      .catch(e => { if (live) { setErr(lang === 'ru' ? 'Не удалось загрузить настройки. Повторите попытку.' : 'Баптаулар жүктелмеді. Қайта көріңіз.'); setDenied(e instanceof ApiError && [401, 403].includes(e.status)); } });
+      .catch(e => { if (live) { setErr(tr(lang, 'Баптаулар жүктелмеді. Қайта көріңіз.', 'Не удалось загрузить настройки. Повторите попытку.')); setDenied(e instanceof ApiError && [401, 403].includes(e.status)); } });
     return () => { live = false; };
   }, [lang, refreshContent, revision]);
   const save = async (value: boolean) => {

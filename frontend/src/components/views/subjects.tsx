@@ -16,6 +16,7 @@ import { dueQueue } from '@/lib/srs';
 import { saveSubject, useStudy, type StudySnap } from '@/lib/studydb';
 import { belongs, mentions, nextSlot, subjectsFrom, type Subject } from '@/lib/subjects';
 import type { AppState, Deck } from '@/lib/types';
+import { apiLang } from '@/lib/i18n';
 
 export const todayYmd = () => almatyYmd(Date.now());
 
@@ -32,7 +33,7 @@ export function useQueryId(): string | null {
 export function useSubjects(): { list: Subject[]; study: StudySnap } {
   const { S } = useApp();
   const study = useStudy();
-  return { list: subjectsFrom(SCHEDULE, study.subjects, S.lang === 'ru' ? 'ru' : 'kk'), study };
+  return { list: subjectsFrom(SCHEDULE, study.subjects, apiLang(S.lang)), study };
 }
 
 /** the student's own decks of a subject: made for it, or named after it (the demo deck is only a sample) */
@@ -168,7 +169,7 @@ function SubjectPage({ id }: { id: string }) {
           more={<button className="link-btn" type="button" onClick={() => openSheet(<NewNoteSheet subject={s.id} />)}>+ {tt('Конспект', 'Конспект')}</button>} />
         {notes.length ? (
           <div className="group">{notes.map(n => (
-            <Row key={n.id} go={'notes:' + n.id} icon="doc" title={noteTitle(n, S.lang === 'ru' ? 'ru' : 'kk')}
+            <Row key={n.id} go={'notes:' + n.id} icon="doc" title={noteTitle(n, apiLang(S.lang))}
               sub={[L(TEMPLATE_LABEL[n.template]), n.date ? ymdTxt(n.date, n.classT) : ''].filter(Boolean).join(' · ')} />
           ))}</div>
         ) : (

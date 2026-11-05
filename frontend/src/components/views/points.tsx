@@ -12,6 +12,7 @@ import {
   almatyToday, awardText, levelPct, newKey, plural, pointsChanged, POINTS_CHANGED,
   type Leaderboard, type PointsReply, type PointsSummary, type PointsTask, type Redemption, type Reward, type RewardKind,
 } from '@/lib/points';
+import { locale } from '@/lib/i18n';
 
 type TT = (kk: string, ru: string) => string;
 
@@ -159,7 +160,7 @@ function PointsHome() {
         <section className="section">
           <SectionHead title={tt('Монета тарихы', 'История монет')} />
           <div className="group">{s.recent.map((e, i) => (
-            <Row key={i} title={reasonLabel(e.reason, tt)} sub={new Date(e.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'kk-KZ', { timeZone: 'Asia/Almaty' })}
+            <Row key={i} title={reasonLabel(e.reason, tt)} sub={new Date(e.createdAt).toLocaleDateString(locale(lang), { timeZone: 'Asia/Almaty' })}
               end={<b className={`num ${e.delta < 0 ? 'urgent' : ''}`}>{e.delta > 0 ? '+' : ''}{e.delta}</b>} chev={false} />
           ))}</div>
         </section>
@@ -318,7 +319,7 @@ function Leaders({ s, onChange }: { s: PointsSummary; onChange: (v: PointsSummar
 function Shop({ s, onChange, onDone }: { s: PointsSummary; onChange: (v: PointsSummary) => void; onDone: () => void }) {
   const { tt, lang, openSheet } = useApp();
   const list = useLoad<{ rewards: Reward[] }>('/api/points/rewards');
-  const title = (r: Reward) => (lang === 'ru' ? r.titleRu : r.titleKk);
+  const title = (r: Reward) => (lang !== 'kk' ? r.titleRu : r.titleKk);
   if (!list.data) return list.err ? <ErrorLine err={list.err} /> : <Loading />;
   if (!list.data.rewards.length) return <p className="small muted">{tt('Әзірге сыйлық жоқ — жақында қосылады.', 'Наград пока нет — скоро появятся.')}</p>;
   return (
@@ -330,7 +331,7 @@ function Shop({ s, onChange, onDone }: { s: PointsSummary; onChange: (v: PointsS
           <article className="card pts-reward" key={r.id} aria-labelledby={`rw${r.id}`}>
             <span className="eyebrow">{kindLabel(r.kind, tt)}</span>
             <h3 id={`rw${r.id}`}>{title(r)}</h3>
-            {(lang === 'ru' ? r.descRu : r.descKk) ? <p className="small muted">{lang === 'ru' ? r.descRu : r.descKk}</p> : null}
+            {(lang !== 'kk' ? r.descRu : r.descKk) ? <p className="small muted">{lang !== 'kk' ? r.descRu : r.descKk}</p> : null}
             <div className="pts-reward-foot">
               <b className="num"><Icon n="coin" s={16} /> {r.cost}</b>
               {r.stock !== null ? <span className="tiny muted num">{tt(`қалды: ${r.stock}`, `осталось: ${r.stock}`)}</span> : null}
@@ -366,7 +367,7 @@ function RedeemSheet({ r, onDone }: { r: Reward; onDone: (me: PointsSummary) => 
   };
   return (
     <div className="form">
-      <h2>{lang === 'ru' ? r.titleRu : r.titleKk}</h2>
+      <h2>{lang !== 'kk' ? r.titleRu : r.titleKk}</h2>
       <p className="small">{tt(`${r.cost} монета ұсталады. Әкімші бекіткенде код не нұсқау осы бетте шығады және хабарлама келеді.`,
         `Спишется ${r.cost} ${coinsWord(r.cost, tt)}. Когда администратор одобрит, код или инструкция появятся на этой странице, придёт уведомление.`)}</p>
       <ErrorLine err={err} />
@@ -387,8 +388,8 @@ function MyRedemptions() {
     <div className="group pts-mine">{list.data.redemptions.map(m => (
       <div className="row pts-red" key={m.id}>
         <span className="row-main">
-          <span className="row-title">{lang === 'ru' ? m.titleRu : m.titleKk} {statusBadge(m.status, tt)}</span>
-          <span className="row-sub num">{m.cost} {coinsWord(m.cost, tt)} · {new Date(m.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'kk-KZ', { timeZone: 'Asia/Almaty' })}</span>
+          <span className="row-title">{lang !== 'kk' ? m.titleRu : m.titleKk} {statusBadge(m.status, tt)}</span>
+          <span className="row-sub num">{m.cost} {coinsWord(m.cost, tt)} · {new Date(m.createdAt).toLocaleDateString(locale(lang), { timeZone: 'Asia/Almaty' })}</span>
           {m.status === 'approved' && m.code ? (
             <span className="pts-code">
               <span className="code" aria-label={tt('Код', 'Код')}>{m.code}</span>
@@ -438,7 +439,7 @@ function AdminQueue() {
       <ErrorLine err={q.err} />
       {!q.data ? <Loading /> : !q.data.redemptions.length ? <p className="small muted">{tt('Бос.', 'Пусто.')}</p> : q.data.redemptions.map(m => (
         <article className="card" key={m.id}>
-          <h3>{lang === 'ru' ? m.titleRu : m.titleKk} {statusBadge(m.status, tt)}</h3>
+          <h3>{lang !== 'kk' ? m.titleRu : m.titleKk} {statusBadge(m.status, tt)}</h3>
           <p className="small muted num">{kindLabel(m.kind, tt)} · {m.cost} {coinsWord(m.cost, tt)} · #{m.id}</p>
           <p className="small num">{m.userName || tt('Аты жоқ', 'Без имени')} (id {m.userId}) · {tt(`балансы ${m.userBalance}`, `баланс ${m.userBalance}`)}</p>
           {m.code ? <p className="small">{tt('Код: ', 'Код: ')}<span className="code">{m.code}</span></p> : null}
@@ -501,7 +502,7 @@ function AdminRewards() {
       <ErrorLine err={list.err} />
       {!list.data ? <Loading /> : (
         <div className="group">{list.data.rewards.map(r => (
-          <Row key={r.id} icon="gift" title={<>{lang === 'ru' ? r.titleRu : r.titleKk} {r.active ? null : <span className="badge b-line">{tt('мұрағатта', 'в архиве')}</span>}</>}
+          <Row key={r.id} icon="gift" title={<>{lang !== 'kk' ? r.titleRu : r.titleKk} {r.active ? null : <span className="badge b-line">{tt('мұрағатта', 'в архиве')}</span>}</>}
             sub={<span className="num">{kindLabel(r.kind, tt)} · {r.cost} · {r.stock === null ? tt('шектеусіз', 'без лимита') : tt(`қалды ${r.stock}`, `осталось ${r.stock}`)} · {tt(`кодтар ${r.codesLeft ?? 0}`, `кодов ${r.codesLeft ?? 0}`)}</span>}
             onClick={() => openSheet(<RewardForm r={r} onDone={list.reload} />)} />
         ))}</div>
@@ -607,7 +608,7 @@ function AdminLedger() {
     setErr('');
     try { setView(await api<LedgerView>(`/api/admin/points/users/${encodeURIComponent(id)}`, { lang })); } catch (e) { setView(null); setErr(errText(e)); }
   };
-  const fmt = (iso: string) => new Date(iso).toLocaleString(lang === 'ru' ? 'ru-RU' : 'kk-KZ', { timeZone: 'Asia/Almaty', dateStyle: 'short', timeStyle: 'short' });
+  const fmt = (iso: string) => new Date(iso).toLocaleString(locale(lang), { timeZone: 'Asia/Almaty', dateStyle: 'short', timeStyle: 'short' });
   return (
     <section className="section">
       <form className="form" onSubmit={e => { e.preventDefault(); if (/^\d+$/.test(uid.trim())) void open(uid.trim()); }}>

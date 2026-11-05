@@ -13,6 +13,7 @@ import { CHECKIN_KEY } from '@/lib/events';
 import { getAccount, loadMe, signInWebApp } from '@/lib/account';
 import { loadConfig } from '@/lib/config';
 import { initTelegram, useTelegram } from '@/lib/telegram';
+import { tr } from '@/lib/i18n';
 
 function readFeedback(): FeedbackState {
   try {
@@ -88,7 +89,7 @@ export function FeedbackSheet() {
   const [score, setScore] = useState(0);
   const [missing, setMissing] = useState('');
   const [sent, setSent] = useState(false);
-  const T = (k: keyof typeof FEEDBACK_TEXT) => FEEDBACK_TEXT[k][lang];
+  const T = (k: keyof typeof FEEDBACK_TEXT) => tr(lang, FEEDBACK_TEXT[k].kk, FEEDBACK_TEXT[k].ru);
   if (sent) {
     return <><h2>{T('thanks')}</h2><button className="btn block" type="button" onClick={closeSheet}>{T('close')}</button></>;
   }
@@ -104,7 +105,7 @@ export function FeedbackSheet() {
       <div className="chips fb-score" role="radiogroup" aria-labelledby="fbQ">
         {[1, 2, 3, 4, 5].map(n => <Chip key={n} pressed={score === n} onClick={() => setScore(n)}>{n}</Chip>)}
       </div>
-      <p className="tiny muted">{lang === 'ru' ? '1 — бесполезен, 5 — очень полезен' : '1 — пайдасыз, 5 — өте пайдалы'}</p>
+      <p className="tiny muted">{tr(lang, '1 — пайдасыз, 5 — өте пайдалы', '1 — бесполезен, 5 — очень полезен')}</p>
       <div className="field">
         <label htmlFor="fbMissing">{T('missing')}</label>
         <textarea className="input" id="fbMissing" maxLength={MAX_MISSING_LEN} value={missing} onChange={e => setMissing(e.target.value)} />

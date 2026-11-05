@@ -25,6 +25,7 @@ import { buildOneIcs } from '@/lib/ics';
 import { pathOf } from '@/lib/routes';
 import { dOff, type I18n } from '@/lib/format';
 import type { AppState, Content } from '@/lib/types';
+import { apiLang } from '@/lib/i18n';
 
 export type { CalKind } from '@/lib/caltasks';
 export interface CalItem {
@@ -116,14 +117,14 @@ export function calItems(S: AppState, I: I18n, C: Content): CalItem[] {
     if (!e.starts_at || Number.isNaN(Date.parse(e.starts_at))) continue;
     add({
       key: 'event:' + e.id, kind: 'event', date: almatyYmd(e.starts_at), time: almatyHm(e.starts_at),
-      title: (S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk) || '', sub: [tt('Іс-шара', 'Мероприятие'), e.place_text].filter(Boolean).join(' · '),
+      title: (S.lang !== 'kk' ? e.title_ru || e.title_kk : e.title_kk) || '', sub: [tt('Іс-шара', 'Мероприятие'), e.place_text].filter(Boolean).join(' · '),
       go: 'event:' + e.id, saved: false, demo: !!e.is_demo,
     });
   }
   // pinned items that are not in the feed (a sample event, a closed vacancy): their saved copy
   for (const p of pins.values()) {
     out.push({
-      key: p.ref, kind: p.kind, date: p.date, time: p.time, title: p.title[S.lang === 'ru' ? 'ru' : 'kk'] || p.title.kk,
+      key: p.ref, kind: p.kind, date: p.date, time: p.time, title: p.title[apiLang(S.lang)] || p.title.kk,
       sub: kindLabel(p.kind, I), go: p.ref, saved: true, demo: false, pin: p, prio: p.prio, done: p.done,
     });
   }
@@ -203,12 +204,12 @@ function useOpenDay() {
 /** «Күнтізбеге қосу» ⇄ «Күнтізбеде»: pins an item into the student's own calendar; `full` = the detail-page button,
     otherwise an icon button for list rows. Renders nothing when the item has no date. */
 export function PinButton({ item, target, full }: { item: string; target?: PinTarget | null; full?: boolean }) {
-  const { S, content, tt, lang, update, toast } = useApp();
+  const { S, content, tt, L, update, toast } = useApp();
   const openDay = useOpenDay();
   const t = target === undefined ? pinTarget(item, content) : target;
   if (!t) return null;
   const pinned = (S.calendarPins ?? []).some(p => p.ref === t.ref);
-  const title = t.title[lang] || t.title.kk;
+  const title = L(t.title) || t.title.kk;
   const flip = () => {
     if (pinned) {
       update(s => { s.calendarPins = (s.calendarPins ?? []).filter(p => p.ref !== t.ref); });
@@ -235,10 +236,10 @@ export function PinButton({ item, target, full }: { item: string; target?: PinTa
 
 /** detail pages: «Күнтізбеге қосу» with the Google Calendar / .ics export next to it */
 export function CalendarActions({ item, target }: { item: string; target?: PinTarget | null }) {
-  const { content, I, lang, tt } = useApp();
+  const { content, I, L, tt } = useApp();
   const t = target === undefined ? pinTarget(item, content) : target;
   if (!t) return null;
-  const title = t.title[lang] || t.title.kk;
+  const title = L(t.title) || t.title.kk;
   const deadline = t.kind !== 'event';
   return (
     <section className="cal-actions" aria-label={tt('Күнтізбе', 'Календарь')}>
@@ -468,7 +469,7 @@ export function DeadlineSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }
 
 /** «Іс-шара қосу» / edit form: an own event with a date, an optional time span, place and note, and a colour */
 export function EventSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }) {
-  const { tt, lang, update, toast, closeSheet, setUi } = useApp();
+  const { tt, update, toast, closeSheet, setUi } = useApp();
   const [err, setErr] = useState('');
   return (
     <>
@@ -515,9 +516,9 @@ export function EventSheet({ edit, date }: { edit?: OwnDeadline; date?: Ymd }) {
           <div className="ev-swatches">
             {EV_COLORS.map(c => (
               <label key={c.n} className="ev-sw" style={{ '--sw': evColorVars(c.n).solid } as CSSProperties}>
-                <input type="radio" name="evColor" value={c.n} defaultChecked={(edit?.color || DEFAULT_EV_COLOR) === c.n} aria-label={c[lang]} />
+                <input type="radio" name="evColor" value={c.n} defaultChecked={(edit?.color || DEFAULT_EV_COLOR) === c.n} aria-label={tt(c.kk, c.ru)} />
                 <span className="ev-sw-dot" aria-hidden="true"><Icon n="check" s={16} /></span>
-                <span className="ev-sw-name" aria-hidden="true">{c[lang]}</span>
+                <span className="ev-sw-name" aria-hidden="true">{tt(c.kk, c.ru)}</span>
               </label>
             ))}
           </div>

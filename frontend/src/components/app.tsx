@@ -1,9 +1,10 @@
 'use client';
 /* App-wide client context: the feed (loaded in the browser, lib/content-client.ts), device state, navigation (legacy go/back semantics on top of
    the Next router), bottom sheets with history integration, and toasts. */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { i18n, type I18n } from '@/lib/format';
+import { dictVersion, loadEnglish, subscribeDict } from '@/lib/i18n';
 import { openOpps } from '@/lib/domain';
 import { useAccount } from '@/lib/account';
 import { jobsForViewer } from '@/lib/b2b';
@@ -155,7 +156,9 @@ export function useApp(): App {
   const S = useAppState();
   const transient = useUi();
   const ui = { ...transient, jf: { ...transient.jf, noexp: S.jobNoExperience ?? [1, 2].includes(S.profile.course) } };
-  const I = useMemo(() => i18n(S.lang), [S.lang]);
+  const dict = useSyncExternalStore(subscribeDict, dictVersion, () => 0);
+  useEffect(() => { if (S.lang === 'en') void loadEnglish(); }, [S.lang]);
+  const I = useMemo(() => i18n(S.lang, dict), [S.lang, dict]);
   return { ...ctx, ...I, I, S, ui, update, setUi };
 }
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { ApiError } from '@/lib/account';
+import { apiLang } from '@/lib/i18n';
 import { quizApi, type QuizInput, type QuestionType, type QuizLang } from '@/lib/quiz-api';
 import { ErrorText, Field, Loading, Select, TYPE_NAMES, useTask } from './common';
 import { emptyQuestion, QuestionEditor } from './question-editor';
@@ -37,7 +38,7 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
   const [count, setCount] = useState(5),
     [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium'),
     [types, setTypes] = useState<QuestionType[]>(['mcq']),
-    [outputLang, setOutputLang] = useState<QuizLang>(lang);
+    [outputLang, setOutputLang] = useState<QuizLang>(apiLang(lang));
   useEffect(() => {
     if (!id) return;
     let active = true;

@@ -101,7 +101,7 @@ const VTIMEZONE = [
   'END:VTIMEZONE',
 ];
 
-export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: string; lang: 'kk' | 'ru' }): string {
+export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: string; lang: 'kk' | 'ru' | 'en' }): string {
   const { from, until } = semesterRange(o.now);
   const first = firstClassDay(from);
   // UNTIL is in UTC when DTSTART has a TZID (RFC 5545 3.3.10): the semester's last day, 23:59:59 Almaty
@@ -152,7 +152,7 @@ export interface IcsOne {
 
 /** One deadline or event as an .ics file (the calendar screen's «.ics жүктеу»): all-day (DATE) or timed in Asia/Almaty,
     with a reminder one day before. */
-export function buildOneIcs(e: IcsOne, o: { now: Date; lang: 'kk' | 'ru' }): string {
+export function buildOneIcs(e: IcsOne, o: { now: Date; lang: 'kk' | 'ru' | 'en' }): string {
   const d = new Date(e.date.slice(0, 10) + 'T00:00:00Z');
   const lines: string[] = [
     'BEGIN:VCALENDAR',

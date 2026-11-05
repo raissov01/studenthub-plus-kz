@@ -56,7 +56,7 @@ function markStep(app: App, item: string, index: number, done: boolean) {
 /** this week's steps as checkable rows (shared by the screen and the home board) */
 function WeekSteps({ r, links = true }: { r: RoadmapState; links?: boolean }) {
   const app = useApp();
-  const { tt, lang } = app;
+  const { tt, L } = app;
   const steps = weeklySteps(r, new Date());
   if (!steps.length) {
     return <div className="group"><div className="empty">{isPaused(r, new Date())
@@ -71,7 +71,7 @@ function WeekSteps({ r, links = true }: { r: RoadmapState; links?: boolean }) {
           <div key={st.item} className="row rm-step">
             <label className="check rm-check">
               <input type="checkbox" checked={false} onChange={() => markStep(app, st.item, st.index, true)} />
-              <span className="row-main"><span className="row-title">{item.steps[st.index][lang]}</span><span className="row-sub">{item.title[lang]}</span></span>
+              <span className="row-main"><span className="row-title">{L(item.steps[st.index])}</span><span className="row-sub">{L(item.title)}</span></span>
             </label>
             {links && item.link ? (
               <button className="icon-btn" type="button" aria-label={tt('Бөлімге өту', 'Перейти в раздел')} onClick={() => openLink(app, item.link!)}><Icon n="chev" s={18} /></button>
@@ -99,19 +99,19 @@ function ProgressCard({ r }: { r: RoadmapState }) {
 /** one chosen item with all its steps */
 function ItemSheet({ k }: { k: string }) {
   const app = useApp();
-  const { S, tt, lang, closeSheetDom } = app;
+  const { S, tt, L, closeSheetDom } = app;
   const item = ITEM_BY_KEY[k];
   if (!item) return null;
   const done = S.roadmap.done[k] ?? [];
   return (
     <>
-      <span className="eyebrow">{CATEGORIES[item.cat][lang]}</span>
-      <h2>{item.title[lang]}</h2>
+      <span className="eyebrow">{L(CATEGORIES[item.cat])}</span>
+      <h2>{L(item.title)}</h2>
       <div className="group">
         {item.steps.map((st, i) => (
           <label key={i} className="row check">
             <input type="checkbox" checked={done.includes(i)} onChange={e => markStep(app, k, i, e.target.checked)} />
-            <span className="row-main"><span className="row-title">{st[lang]}</span></span>
+            <span className="row-main"><span className="row-title">{L(st)}</span></span>
           </label>
         ))}
       </div>
@@ -121,7 +121,7 @@ function ItemSheet({ k }: { k: string }) {
 }
 
 function Picker({ onDone }: { onDone: () => void }) {
-  const { S, tt, lang, update, toast } = useApp();
+  const { S, tt, L, update, toast } = useApp();
   const chosen = S.roadmap.chosen;
   const cats = Object.keys(CATEGORIES) as RoadmapCategory[];
   return (
@@ -134,13 +134,13 @@ function Picker({ onDone }: { onDone: () => void }) {
       </section>
       {cats.map(c => (
         <section key={c} className="section">
-          <h2>{CATEGORIES[c][lang]}</h2>
+          <h2>{L(CATEGORIES[c])}</h2>
           <div className="chips wrap">
             {ITEMS.filter(i => i.cat === c).map(i => (
               <Chip key={i.key} pressed={chosen.includes(i.key)} onClick={() => {
                 if (!chosen.includes(i.key) && chosen.length >= MAX_CHOSEN) { toast(tt(`Ең көбі ${MAX_CHOSEN} пункт`, `Не больше ${MAX_CHOSEN} пунктов`)); return; }
                 update(s => { s.roadmap = toggleChosen(s.roadmap, i.key); });
-              }}>{chosen.includes(i.key) ? <Icon n="check" s={15} /> : null}{i.title[lang]}</Chip>
+              }}>{chosen.includes(i.key) ? <Icon n="check" s={15} /> : null}{L(i.title)}</Chip>
             ))}
           </div>
         </section>
@@ -155,7 +155,7 @@ function Picker({ onDone }: { onDone: () => void }) {
 }
 
 export function Roadmap() {
-  const { S, tt, I, lang, update, toast, openSheet } = useApp();
+  const { S, tt, I, L, update, toast, openSheet } = useApp();
   const r = S.roadmap;
   const until = r.pausedUntil ? I.fDate(parseYmd(r.pausedUntil)) : '';
   const [editing, setEditing] = useState(r.chosen.length < MIN_CHOSEN);
@@ -176,7 +176,7 @@ export function Roadmap() {
             return (
               <button key={k} className="row" type="button" onClick={() => openSheet(<ItemSheet k={k} />)}>
                 <span className={`ico ${full ? 'ok' : ''}`}><Icon n={full ? 'check' : 'target'} /></span>
-                <span className="row-main"><span className="row-title">{item.title[lang]}</span><span className="row-sub num">{CATEGORIES[item.cat][lang]} · {d}/{item.steps.length} {tt('қадам', 'шаг.')}</span></span>
+                <span className="row-main"><span className="row-title">{L(item.title)}</span><span className="row-sub num">{L(CATEGORIES[item.cat])} · {d}/{item.steps.length} {tt('қадам', 'шаг.')}</span></span>
                 <span className="chev"><Icon n="chev" s={18} /></span>
               </button>
             );

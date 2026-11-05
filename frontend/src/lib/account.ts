@@ -6,6 +6,8 @@
 import { useSyncExternalStore } from 'react';
 import { isOnline } from '@/lib/pwa';
 import { clearTickets } from '@/lib/tickets';
+import { apiLang, tr } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 export type Role = 'student' | 'ambassador' | 'admin' | 'university_staff' | 'employer';
 export interface AccountUser {
@@ -17,7 +19,7 @@ export interface AccountUser {
   emailVerified: boolean;
   username: string | null;
   name: string | null;
-  lang: 'kk' | 'ru';
+  lang: Lang;
   university: string | null;
   faculty: string | null;
   course: number | null;
@@ -57,8 +59,8 @@ export class ApiError extends Error {
 }
 
 /** the device knows it has no network: fail at once with a clear reason instead of a long timeout */
-const offlineError = (lang?: 'kk' | 'ru') =>
-  new ApiError(0, 'offline', lang === 'ru' ? 'Нет интернета — для этого нужно подключение.' : 'Интернет жоқ — бұл әрекетке интернет керек.');
+const offlineError = (lang?: Lang) =>
+  new ApiError(0, 'offline', tr(lang ?? 'kk', 'Интернет жоқ — бұл әрекетке интернет керек.', 'Нет интернета — для этого нужно подключение.'));
 
 /** Mini App sessions slide: a Bearer request may come back with a fresh token in X-Session-Token (docs/ACCOUNTS.md).
     It replaces the in-memory token (never stored); cookie sessions are renewed by the server itself. */
@@ -69,24 +71,24 @@ function renew(r: Response) {
 }
 
 /** fetch against our API with the session (cookie, or the in-memory Mini App token) and the UI language */
-export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: 'kk' | 'ru'; cache?: RequestCache; signal?: AbortSignal } = {}): Promise<T> {
+export async function api<T = unknown>(path: string, opts: { method?: string; body?: unknown; lang?: Lang; cache?: RequestCache; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (token) headers.authorization = `Bearer ${token}`;
-  if (opts.lang) headers['accept-language'] = opts.lang;
+  if (opts.lang) headers['accept-language'] = apiLang(opts.lang);
   if (!isOnline()) throw offlineError(opts.lang);
   let r: Response;
   try {
     r = await fetch(path, { method: opts.method || 'GET', cache: opts.cache, signal: opts.signal, headers, credentials: 'same-origin', body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
   } catch {
-    throw new ApiError(0, 'network', opts.lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
+    throw new ApiError(0, 'network', tr(opts.lang ?? 'kk', 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.', 'Нет связи с сервером. Проверьте интернет.'));
   }
   renew(r);
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
-    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (opts.lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {}, j);
+    const err = new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (tr(opts.lang ?? 'kk', 'Болмады. Кейінірек қайталаңыз.', 'Не получилось. Попробуйте позже.')), e ?? {}, j);
     const ra = Number(r.headers.get('retry-after'));
     if (Number.isFinite(ra) && ra > 0) err.retryAfter = Math.ceil(ra);
     throw err;
@@ -95,47 +97,47 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
 }
 
 /** multipart upload (market photos) with the same session and error handling as api() */
-export async function apiUpload<T = unknown>(path: string, form: FormData, lang?: 'kk' | 'ru'): Promise<T> {
+export async function apiUpload<T = unknown>(path: string, form: FormData, lang?: Lang): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (token) headers.authorization = `Bearer ${token}`;
-  if (lang) headers['accept-language'] = lang;
+  if (lang) headers['accept-language'] = apiLang(lang);
   if (!isOnline()) throw offlineError(lang);
   let r: Response;
   try {
     r = await fetch(path, { method: 'POST', headers, credentials: 'same-origin', body: form });
   } catch {
-    throw new ApiError(0, 'network', lang === 'ru' ? 'Нет связи с сервером. Проверьте интернет.' : 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.');
+    throw new ApiError(0, 'network', tr(lang ?? 'kk', 'Серверге қосылу мүмкін болмады. Интернетті тексеріңіз.', 'Нет связи с сервером. Проверьте интернет.'));
   }
   renew(r);
   let j: unknown = null;
   try { j = await r.json(); } catch { /* empty body */ }
   if (!r.ok) {
     const e = (j as { error?: { code?: string; message?: string } & Record<string, unknown> } | null)?.error;
-    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (lang === 'ru' ? 'Не получилось. Попробуйте позже.' : 'Болмады. Кейінірек қайталаңыз.'), e ?? {}, j);
+    throw new ApiError(r.status, e?.code || 'http_' + r.status, e?.message || (tr(lang ?? 'kk', 'Болмады. Кейінірек қайталаңыз.', 'Не получилось. Попробуйте позже.')), e ?? {}, j);
   }
   return j as T;
 }
 
 /** Authenticated binary reads (private quiz media also needs the Mini App Bearer token). */
-export async function apiBlob(path: string, lang: 'kk' | 'ru'): Promise<Blob> {
-  const headers: Record<string, string> = { 'accept-language': lang };
+export async function apiBlob(path: string, lang: Lang): Promise<Blob> {
+  const headers: Record<string, string> = { 'accept-language': apiLang(lang) };
   if (token) headers.authorization = `Bearer ${token}`;
   let r: Response;
   try { r = await fetch(path, { headers, credentials: 'same-origin' }); }
-  catch { throw new ApiError(0, 'network', lang === 'ru' ? 'Нет связи с сервером.' : 'Серверге қосылу мүмкін болмады.'); }
-  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось загрузить медиа.' : 'Медиа жүктелмеді.');
+  catch { throw new ApiError(0, 'network', tr(lang ?? 'kk', 'Серверге қосылу мүмкін болмады.', 'Нет связи с сервером.')); }
+  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, tr(lang ?? 'kk', 'Медиа жүктелмеді.', 'Не удалось загрузить медиа.'));
   return r.blob();
 }
 
 /** a file the API serves only with the session (CSV export): fetched and saved through a blob link */
-export async function apiDownload(path: string, filename: string, lang?: 'kk' | 'ru'): Promise<void> {
+export async function apiDownload(path: string, filename: string, lang?: Lang): Promise<void> {
   const headers: Record<string, string> = {};
   if (token) headers.authorization = `Bearer ${token}`;
-  if (lang) headers['accept-language'] = lang;
+  if (lang) headers['accept-language'] = apiLang(lang);
   if (!isOnline()) throw offlineError(lang);
   const r = await fetch(path, { headers, credentials: 'same-origin' });
   renew(r);
-  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, lang === 'ru' ? 'Не удалось скачать файл.' : 'Файлды жүктеу мүмкін болмады.');
+  if (!r.ok) throw new ApiError(r.status, 'http_' + r.status, tr(lang ?? 'kk', 'Файлды жүктеу мүмкін болмады.', 'Не удалось скачать файл.'));
   const url = URL.createObjectURL(await r.blob());
   const a = document.createElement('a');
   a.href = url;
@@ -177,7 +179,7 @@ const refParam = () => {
 };
 
 /** Mini App: the initData Telegram signed. The referral the device came with goes along (server may record it). */
-export async function signInWebApp(initData: string, lang?: 'kk' | 'ru'): Promise<AccountState> {
+export async function signInWebApp(initData: string, lang?: Lang): Promise<AccountState> {
   const r = await api<MeResp>('/api/auth/telegram/webapp', { method: 'POST', body: { initData, ref: refParam() }, lang });
   if (r.token) token = r.token;
   apply(r);
@@ -186,7 +188,7 @@ export async function signInWebApp(initData: string, lang?: 'kk' | 'ru'): Promis
 
 /** Login Widget: the object Telegram passed to data-onauth. The server removes our extra `ref`
     field before checking Telegram's hash, so it can travel in the same body. */
-export async function signInWidget(user: Record<string, unknown>, lang: 'kk' | 'ru'): Promise<AccountState> {
+export async function signInWidget(user: Record<string, unknown>, lang: Lang): Promise<AccountState> {
   const ref = refParam();
   const r = await api<MeResp>('/api/auth/telegram/widget', { method: 'POST', body: ref ? { ...user, ref } : user, lang });
   apply(r);
@@ -196,7 +198,7 @@ export async function signInWidget(user: Record<string, unknown>, lang: 'kk' | '
 /* ---------- email + password (docs/api/email-auth.md) ----------
    Passwords, codes and the address live only in component state for the screen that needs them; nothing here is
    stored. Email sign-in answers with the cookie only (no bearer token). */
-export type Lang = 'kk' | 'ru';
+export type { Lang };
 export interface Sent { ok: true; resendAfter: number }
 export type CodePurpose = 'verify_email' | 'reset_password';
 
@@ -234,26 +236,26 @@ export const linkEmail = (email: string, pw: { password: string } | { currentPas
 export const confirmEmail = (code: string, lang: Lang) =>
   session('/api/me/email/confirm', { code }, lang, !!state.user?.email);
 
-export async function signOut(all: boolean, lang: 'kk' | 'ru'): Promise<void> {
+export async function signOut(all: boolean, lang: Lang): Promise<void> {
   await api('/api/auth/logout', { method: 'POST', body: { all }, lang });
   token = '';
   clearTickets();
   set({ user: null, needsConsent: false, inboxUnread: 0 });
 }
 
-export async function giveConsent(isAdult: boolean | null, lang: 'kk' | 'ru'): Promise<void> {
+export async function giveConsent(isAdult: boolean | null, lang: Lang): Promise<void> {
   apply(await api<MeResp>('/api/me/consent', { method: 'POST', body: isAdult === null ? {} : { isAdult }, lang }));
 }
 
 /** Only these fields ever leave the device; GPA and phone never do (the server refuses them anyway). */
-export interface SyncFields { name: string; lang: 'kk' | 'ru'; university: string; faculty: string; course: number; city: string }
-export async function syncProfile(f: SyncFields, lang: 'kk' | 'ru'): Promise<void> {
-  const body: SyncFields = { name: f.name, lang: f.lang, university: f.university, faculty: f.faculty, course: f.course, city: f.city };
+export interface SyncFields { name: string; lang: Lang; university: string; faculty: string; course: number; city: string }
+export async function syncProfile(f: SyncFields, lang: Lang): Promise<void> {
+  const body = { name: f.name, lang: apiLang(f.lang), university: f.university, faculty: f.faculty, course: f.course, city: f.city };
   apply(await api<MeResp>('/api/me', { method: 'PATCH', body, lang }));
 }
 
 /** GET /api/me/export saved as a JSON file */
-export async function downloadExport(lang: 'kk' | 'ru'): Promise<void> {
+export async function downloadExport(lang: Lang): Promise<void> {
   const data = await api('/api/me/export', { lang });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -266,7 +268,7 @@ export async function downloadExport(lang: 'kk' | 'ru'): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function deleteAccount(lang: 'kk' | 'ru'): Promise<void> {
+export async function deleteAccount(lang: Lang): Promise<void> {
   await api('/api/me', { method: 'DELETE', body: { confirm: 'DELETE' }, lang });
   token = '';
   clearTickets();

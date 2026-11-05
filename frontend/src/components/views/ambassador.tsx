@@ -198,7 +198,7 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
         ))}</div>
       </section>
       <section className="section"><SectionHead title={tt('Ресурстар', 'Ресурсы')} />
-        <div className="group">{c.resources.length ? c.resources.map((r, i) => <Row key={i} href={r.url} icon="file" title={lang === 'ru' ? r.title_ru || r.title_kk : r.title_kk} />)
+        <div className="group">{c.resources.length ? c.resources.map((r, i) => <Row key={i} href={r.url} icon="file" title={lang !== 'kk' ? r.title_ru || r.title_kk : r.title_kk} />)
           : <div className="empty">{tt('Нұсқаулық пен үлгілер жақында қосылады', 'Инструкции и шаблоны появятся скоро')}</div>}</div>
       </section>
       {t.cert_code ? <button className="btn ghost block" type="button" onClick={() => go('certificate:' + t.cert_code)}><Icon n="award" s={18} /> {tt('Менің сертификатым', 'Мой сертификат')}</button> : null}
@@ -217,7 +217,7 @@ export function MySubmissions({ list }: { list: Submission[] | null }) {
   if (!list.length) return <div className="group"><div className="empty">{tt('Әзірге ұсыныс жоқ', 'Предложений пока нет')}</div></div>;
   const title = (s: Submission) => {
     const p = s.payload as Record<string, string>;
-    return (lang === 'ru' && (p.title_ru || p.name_ru)) || p.title_kk || p.name_kk || p.title || kind[s.kind] || s.kind;
+    return (lang !== 'kk' && (p.title_ru || p.name_ru)) || p.title_kk || p.name_kk || p.title || kind[s.kind] || s.kind;
   };
   return (
     <div className="group">{list.map(s => (

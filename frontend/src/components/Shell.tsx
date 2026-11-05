@@ -71,13 +71,19 @@ export function Shell({ children }: { children: ReactNode }) {
   // inside Telegram the theme follows Telegram (features/telegram applies it)
   useEffect(() => {
     const r = document.documentElement;
-    r.lang = S.lang === 'ru' ? 'ru' : 'kk';
+    r.lang = S.lang;
     if (tg.app) return;
     if (S.theme === 'light' || S.theme === 'dark') r.setAttribute('data-theme', S.theme);
     else r.removeAttribute('data-theme');
   }, [S.lang, S.theme, tg.app]);
   useEffect(() => {
-    document.title = name === 'home' ? 'Student Hub' : `${meta.title} — Student Hub`;
+    // the prerendered <title> is Kazakh and Next may put it back after hydration (streamed metadata): keep ours
+    const want = name === 'home' ? 'Student Hub' : `${meta.title} — Student Hub`;
+    const apply = () => { if (document.title !== want) document.title = want; };
+    apply();
+    const watch = new MutationObserver(apply);
+    watch.observe(document.head, { subtree: true, childList: true, characterData: true });
+    return () => watch.disconnect();
   }, [name, meta.title]);
 
   // header border once the page scrolls

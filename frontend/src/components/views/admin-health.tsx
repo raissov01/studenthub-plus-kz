@@ -5,6 +5,7 @@ import { Row, SectionHead } from '@/components/ui';
 import { AdminOnly, Loading, NotFound } from '@/components/views/common';
 import { api, ApiError } from '@/lib/account';
 import type { Config, FeatureName } from '@/lib/config';
+import { locale } from '@/lib/i18n';
 
 interface Health {
   dbReachable: boolean;
@@ -61,7 +62,7 @@ function HealthDashboard() {
   if (state.denied) return <NotFound />;
   const { health: h, config, partial, failed, at } = state;
   const unknown = tt('Дерек қолжетімсіз', 'Данные недоступны');
-  const date = (v: string | number) => new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'kk-KZ', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Almaty' }).format(new Date(v));
+  const date = (v: string | number) => new Intl.DateTimeFormat(locale(lang), { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Almaty' }).format(new Date(v));
   const unavailable = partial || failed;
   return <div className="launch-admin">
     <p className="small muted">{tt('Әр 60 секунд сайын жаңарады. Уақыт — Алматы бойынша.', 'Обновляется каждые 60 секунд. Время — по Алматы.')}</p>

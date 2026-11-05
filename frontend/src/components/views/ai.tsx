@@ -16,13 +16,15 @@ import { withPortfolioLink } from '@/lib/portfolio';
 import { ResumePortfolioCheck, usePortfolioLink } from '@/components/views/portfolio';
 import type { IconName } from '@/lib/types';
 import { ScreenLoading } from '@/components/ScreenLoading';
+import { tr, apiLang } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 /* ---------- chat ---------- */
 /** send a message to /api/chat with the last 16 messages and a few profile fields; errors show the server's text */
-export async function sendChat(text: string, lang: 'kk' | 'ru') {
+export async function sendChat(text: string, lang: Lang) {
   text = (text || '').trim();
   if (!text || getUi().chatBusy) return;
-  const tt = (kk: string, ru: string) => (lang === 'ru' ? ru : kk);
+  const tt = (kk: string, ru: string) => tr(lang, kk, ru);
   update(s => { s.chat.push({ role: 'user', content: text }); });
   track('ai_message_sent'); // the count only, never the text
   setUi({ chatDraft: '', chatErr: '', chatBusy: true });
@@ -34,7 +36,7 @@ export async function sendChat(text: string, lang: 'kk' | 'ru') {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ lang, messages: msgs, profile: { spec: p.spec, course: p.course, gpa: p.gpa, en: p.en, skills: p.skills, exp: p.exp } }),
+      body: JSON.stringify({ lang: apiLang(lang), messages: msgs, profile: { spec: p.spec, course: p.course, gpa: p.gpa, en: p.en, skills: p.skills, exp: p.exp } }),
     });
     const data: { text?: string; error?: { code?: string; message?: string } } = await r.json().catch(() => ({}));
     if (!r.ok) {

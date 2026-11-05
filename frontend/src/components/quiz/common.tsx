@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/components/app';
 import { Empty } from '@/components/ui';
+import { LANG_NAMES } from '@/lib/i18n';
 import { useAccount } from '@/lib/account';
 import { useConfig, useConfigReady } from '@/lib/config';
 import { NotFound } from '@/components/views/common';
@@ -33,19 +34,20 @@ export function QuizGate({ children, account = false }: { children: ReactNode; a
       <nav className="quiz-nav" aria-label={tt('Квиз навигациясы', 'Навигация квиза')}>
         <Link href="/quiz">{tt('Квиздер', 'Квизы')}</Link>
         <div className="quiz-actions">
-          {(['kk', 'ru'] as const).map((l) => (
+          {(['kk', 'ru', 'en'] as const).map((l) => (
             <button
               type="button"
               className="chip"
               key={l}
               aria-pressed={lang === l}
+              lang={l}
               onClick={() =>
                 update((s) => {
                   s.lang = l;
                 })
               }
             >
-              {l === 'kk' ? 'Қазақша' : 'Русский'}
+              {LANG_NAMES[l]}
             </button>
           ))}
         </div>

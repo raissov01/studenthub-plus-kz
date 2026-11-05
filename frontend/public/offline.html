@@ -25,7 +25,7 @@
   .small { font-size: .85rem; }
 </style>
 <script>
-  try { var s = JSON.parse(localStorage.getItem('studenthub.v1') || 'null'); if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); if (s && s.lang === 'ru') document.documentElement.lang = 'ru'; } catch (e) {}
+  try { var s = JSON.parse(localStorage.getItem('studenthub.v1') || 'null'); if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); if (s && (s.lang === 'ru' || s.lang === 'en')) document.documentElement.lang = s.lang; } catch (e) {}
 </script>
 </head>
 <body>
@@ -33,24 +33,24 @@
   <div class="ico" aria-hidden="true">
     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.7M19 12.9a10 10 0 0 0-2.3-1.6M1.4 9a15 15 0 0 1 4.4-2.7M10.7 5.1A15 15 0 0 1 22.6 9M12 20h.01"/></svg>
   </div>
-  <h1 data-kk="Интернет жоқ" data-ru="Нет интернета">Интернет жоқ</h1>
-  <p data-kk="Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде." data-ru="Эта страница ещё не сохранена и без интернета не откроется. Сохранённые разделы — ниже.">Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде.</p>
-  <button class="btn" type="button" id="retry" data-kk="Қайталау" data-ru="Повторить">Қайталау</button>
+  <h1 data-kk="Интернет жоқ" data-ru="Нет интернета" data-en="No internet">Интернет жоқ</h1>
+  <p data-kk="Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде." data-ru="Эта страница ещё не сохранена и без интернета не откроется. Сохранённые разделы — ниже." data-en="This page has not been saved yet, so it does not open offline. Saved sections are below.">Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде.</p>
+  <button class="btn" type="button" id="retry" data-kk="Қайталау" data-ru="Повторить" data-en="Retry">Қайталау</button>
   <nav class="group" aria-label="Student Hub">
-    <a href="/" data-kk="Басты бет және сабақ кестесі" data-ru="Главная и расписание">Басты бет және сабақ кестесі</a>
-    <a href="/map" data-kk="Кампус картасы" data-ru="Карта кампуса">Кампус картасы</a>
-    <a href="/mine" data-kk="Менің тізімім және билеттер" data-ru="Мой список и билеты">Менің тізімім және билеттер</a>
-    <a href="/profile" data-kk="Профиль және студенттік QR" data-ru="Профиль и студенческий QR">Профиль және студенттік QR</a>
+    <a href="/" data-kk="Басты бет және сабақ кестесі" data-ru="Главная и расписание" data-en="Home and class schedule">Басты бет және сабақ кестесі</a>
+    <a href="/map" data-kk="Кампус картасы" data-ru="Карта кампуса" data-en="Campus map">Кампус картасы</a>
+    <a href="/mine" data-kk="Менің тізімім және билеттер" data-ru="Мой список и билеты" data-en="My list and tickets">Менің тізімім және билеттер</a>
+    <a href="/profile" data-kk="Профиль және студенттік QR" data-ru="Профиль и студенческий QR" data-en="Profile and student QR">Профиль және студенттік QR</a>
   </nav>
-  <p class="small" data-kk="Интернет қосылғанда бет өзі ашылады." data-ru="Когда появится интернет, страница откроется сама.">Интернет қосылғанда бет өзі ашылады.</p>
+  <p class="small" data-kk="Интернет қосылғанда бет өзі ашылады." data-ru="Когда появится интернет, страница откроется сама." data-en="The page opens by itself when the internet is back.">Интернет қосылғанда бет өзі ашылады.</p>
 </main>
 <script>
   (function () {
-    var ru = document.documentElement.lang === 'ru';
-    if (ru) {
-      document.title = 'Student Hub — нет интернета';
-      var els = document.querySelectorAll('[data-ru]');
-      for (var i = 0; i < els.length; i++) els[i].textContent = els[i].getAttribute('data-ru');
+    var lang = document.documentElement.lang;
+    if (lang === 'ru' || lang === 'en') {
+      document.title = lang === 'ru' ? 'Student Hub — нет интернета' : 'Student Hub — no internet';
+      var els = document.querySelectorAll('[data-' + lang + ']');
+      for (var i = 0; i < els.length; i++) els[i].textContent = els[i].getAttribute('data-' + lang);
     }
     document.getElementById('retry').addEventListener('click', function () { location.reload(); });
     window.addEventListener('online', function () { location.reload(); });

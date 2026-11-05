@@ -3,6 +3,7 @@
 import { EVENT_CATS } from '@/lib/data/static';
 import type { PointsAward } from '@/lib/points';
 import type { EventItem, LText } from '@/lib/types';
+import type { Lang } from '@/lib/types';
 
 export interface MyReg { status: 'registered' | 'waitlist'; ticket: string; checked_in_at: string | null; team_no: number | null; feedback_score: number | null }
 export interface DbEvent {
@@ -35,8 +36,8 @@ export const ALL_EVENT_CATS: Record<string, LText> = {
   other: { kk: 'Басқа', ru: 'Другое' },
 };
 
-export const evTitle = (e: Pick<DbEvent, 'title_kk' | 'title_ru'>, lang: 'kk' | 'ru') => (lang === 'ru' && e.title_ru ? e.title_ru : e.title_kk);
-export const evDesc = (e: Pick<DbEvent, 'desc_kk' | 'desc_ru'>, lang: 'kk' | 'ru') => (lang === 'ru' && e.desc_ru ? e.desc_ru : e.desc_kk || '');
+export const evTitle = (e: Pick<DbEvent, 'title_kk' | 'title_ru'>, lang: Lang) => (lang !== 'kk' && e.title_ru ? e.title_ru : e.title_kk);
+export const evDesc = (e: Pick<DbEvent, 'desc_kk' | 'desc_ru'>, lang: Lang) => (lang !== 'kk' && e.desc_ru ? e.desc_ru : e.desc_kk || '');
 
 export type EventListItem = { kind: 'db'; e: DbEvent } | { kind: 'demo'; e: EventItem };
 

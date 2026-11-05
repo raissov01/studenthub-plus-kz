@@ -1,6 +1,8 @@
 /* Runtime switches. These are the defaults; the client loads GET /api/config once on start and replaces them
    (loadConfig). Screens read them through useConfig() so they re-render when the server's values arrive. */
 import { useSyncExternalStore } from 'react';
+import { tr } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 export interface Config {
   /** where «Қате не алаяқтық туралы хабарлау» leads; a t.me link gets the item prefilled as ?text= */
@@ -11,6 +13,8 @@ export interface Config {
   marketSeason: { from: string; to: string; active: boolean } | null;
   /** email + password sign-in is offered (the server can deliver codes) */
   emailAuth: boolean;
+  /** Web Push (FEATURE_WEBPUSH + VAPID keys on the server): «Браузер хабарламалары» in settings, docs/PUSH.md */
+  webPush: { enabled: boolean; publicKey: string };
   features: {
     events: boolean;
     ambassador: boolean;
@@ -29,6 +33,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
+  webPush: { enabled: false, publicKey: '' },
   features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false },
 };
 
@@ -48,6 +53,11 @@ function season(v: unknown): Config['marketSeason'] {
   if (!v || typeof v !== 'object') return null;
   const s = v as Record<string, unknown>;
   return typeof s.from === 'string' && typeof s.to === 'string' ? { from: s.from, to: s.to, active: !!s.active } : null;
+}
+
+function webPush(v: unknown): Config['webPush'] {
+  const w = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  return w.enabled === true && typeof w.publicKey === 'string' && w.publicKey ? { enabled: true, publicKey: w.publicKey } : { enabled: false, publicKey: '' };
 }
 
 /** the last /api/config answer, so a page opened without internet keeps the switches it had (e.g. events → tickets) */
@@ -81,6 +91,7 @@ export async function loadConfig(): Promise<void> {
       botUsername: str(j.botUsername, CONFIG.botUsername).replace(/^@/, ''),
       marketSeason: season(j.marketSeason),
       emailAuth: j.emailAuth === true,
+      webPush: webPush(j.webPush),
       features,
     });
     snapshot = { ...CONFIG, features: { ...features } };
@@ -100,10 +111,8 @@ export function useConfigReady(): boolean {
 export const featureOn = (c: Config, f: FeatureName) => !!c.features[f];
 
 /** Report link with the item prefilled where the target supports it. */
-export function reportHref(itemId: string, kind: string, pageUrl: string, lang: 'kk' | 'ru'): string {
-  const text = lang === 'ru'
-    ? `Ошибка или мошенничество: ${kind} ${itemId}\n${pageUrl}\n`
-    : `Қате не алаяқтық: ${kind} ${itemId}\n${pageUrl}\n`;
+export function reportHref(itemId: string, kind: string, pageUrl: string, lang: Lang): string {
+  const text = tr(lang, `Қате не алаяқтық: ${kind} ${itemId}\n${pageUrl}\n`, `Ошибка или мошенничество: ${kind} ${itemId}\n${pageUrl}\n`);
   try {
     const u = new URL(CONFIG.reportUrl);
     if (u.hostname === 't.me') u.searchParams.set('text', text);

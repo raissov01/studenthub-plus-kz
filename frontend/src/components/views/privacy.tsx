@@ -4,6 +4,7 @@
    (backend/internal/analytics), the AI chat proxy (backend/internal/chat), sessions (backend/internal/auth), email (backend/internal/mail). Update this page together with those. */
 import { useApp } from '@/components/app';
 import { useConfig } from '@/lib/config';
+import { tr } from '@/lib/i18n';
 
 type T = [kk: string, ru: string];
 interface Sec { h: T; p?: T[]; list?: T[] }
@@ -86,7 +87,7 @@ const SECTIONS: Sec[] = [
 export function Privacy() {
   const { tt, lang } = useApp();
   const { reportUrl } = useConfig();
-  const pick = (t: T) => (lang === 'ru' ? t[1] : t[0]);
+  const pick = (t: T) => tr(lang, t[0], t[1]);
   return (
     <article className="legal">
       <p className="draft-banner" role="note">{tt('Жоба — заңгер тексеруі керек', 'Черновик — требует проверки юриста')}</p>

@@ -6,7 +6,8 @@ import { ConfirmSheet, Icon, Note, Row, SectionHead, Seg } from '@/components/ui
 import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
 import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
 import { certificates, profileFill, studentCode } from '@/lib/domain';
-import { dOff, money } from '@/lib/format';
+import { dOff } from '@/lib/format';
+import { LANG_NAMES, LANG_SHORT, LANGS } from '@/lib/i18n';
 import { demoProfile } from '@/lib/defaults';
 import { getState, resetState, update } from '@/lib/store';
 import { track } from '@/features/analytics/track';
@@ -95,11 +96,22 @@ export function Edit() {
   );
 }
 
+/** Қаз / Рус / Eng. Each button is marked with its own language (lang=…) and named in full for screen readers. */
+function LangSeg() {
+  const { S } = useApp();
+  return (
+    <div className="seg" role="tablist" id="langSwitch">
+      {/* eslint-disable-next-line jsx-a11y/role-supports-aria-props */}
+      {LANGS.map(l => <button key={l} type="button" role="tab" lang={l} aria-label={LANG_NAMES[l]} aria-pressed={S.lang === l} onClick={() => update(s => { s.lang = l; })}>{LANG_SHORT[l]}</button>)}
+    </div>
+  );
+}
+
 export function Onboarding() {
-  const { S, tt, closeSheet } = useApp();
+  const { tt, closeSheet } = useApp();
   return (
     <>
-      <Seg items={[['kk', 'Қазақша'], ['ru', 'Русский']]} cur={S.lang} onPick={v => update(s => { s.lang = v === 'ru' ? 'ru' : 'kk'; })} />
+      <LangSeg />
       <h1>{tt('Қош келдіңіз!', 'Добро пожаловать!')}</h1>
       <p className="small muted">{tt('Мамандығыңыз бен курсыңызды көрсетіңіз. Жұмыс, тағылымдама, курстар мен жеңілдіктерді соған қарай іріктейміз. Кейін профильден өзгертуге болады.', 'Укажите специальность и курс — подберём работу, стажировки, курсы и скидки под вас. Потом это можно изменить в профиле.')}</p>
       <form className="form" id="obForm" onSubmit={e => {
@@ -340,16 +352,16 @@ export function Pay() {
       <Note>{tt('Сомалар — үлгі. Нақты деректер университеттің қаржы жүйесімен келісілген қосылудан кейін көрсетіледі.', 'Суммы — пример. Реальные данные появятся после согласованного подключения к финансовой системе университета.')}</Note>
       <div className="card">
         <span className="eyebrow">{tt('2026–2027 оқу жылы', '2026–2027 учебный год')}</span>
-        <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num" style={{ fontSize: '1.7rem' }}>{money(y.paid)}</span><span className="muted small">/ {money(y.year)}</span></div>
+        <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num" style={{ fontSize: '1.7rem' }}>{I.money(y.paid)}</span><span className="muted small">/ {I.money(y.year)}</span></div>
         <div className="meter"><i style={{ width: `${pct}%` }}></i></div>
-        <dl className="kv"><dt>{tt('Қалдық', 'Остаток')}</dt><dd className="num">{money(rest)}</dd><dt>{tt('Берешек', 'Задолженность')}</dt><dd style={{ color: 'var(--ok)' }}>{tt('Жоқ', 'Нет')}</dd></dl>
+        <dl className="kv"><dt>{tt('Қалдық', 'Остаток')}</dt><dd className="num">{I.money(rest)}</dd><dt>{tt('Берешек', 'Задолженность')}</dt><dd style={{ color: 'var(--ok)' }}>{tt('Жоқ', 'Нет')}</dd></dl>
       </div>
-      <div className="group"><Row icon="bell" tone={y.nextDue <= 7 ? 'bad' : 'sun'} title={tt('Келесі төлем', 'Следующий платёж') + ': ' + money(y.nextAmount)} sub={`${I.fDate(due)} ${tt('дейін', 'до')} · ${I.daysLeftTxt(y.nextDue)}`} chev={false} /></div>
+      <div className="group"><Row icon="bell" tone={y.nextDue <= 7 ? 'bad' : 'sun'} title={tt('Келесі төлем', 'Следующий платёж') + ': ' + I.money(y.nextAmount)} sub={`${I.fDate(due)} ${tt('дейін', 'до')} · ${I.daysLeftTxt(y.nextDue)}`} chev={false} /></div>
       <section className="section"><h2>{tt('Төлемдер тарихы', 'История платежей')}</h2>
         <div className="group table-wrap"><table><thead><tr><th>{tt('Күні', 'Дата')}</th><th>{tt('Тәсілі', 'Способ')}</th><th className="r">{tt('Сома', 'Сумма')}</th></tr></thead>
-          <tbody>{y.history.map(h => <tr key={h.day}><td>{I.fDateY(dOff(h.day))}</td><td>{L(h.via)}</td><td className="r">{money(h.amount)}</td></tr>)}</tbody></table></div></section>
+          <tbody>{y.history.map(h => <tr key={h.day}><td>{I.fDateY(dOff(h.day))}</td><td>{L(h.via)}</td><td className="r">{I.money(h.amount)}</td></tr>)}</tbody></table></div></section>
       <section className="card"><h3>{tt('Құны неге өзгерді?', 'Почему изменилась стоимость?')}</h3>
-        <dl className="kv"><dt>{tt('Бұрын', 'Было')}</dt><dd className="num">{money(y.change.from)}</dd><dt>{tt('Қазір', 'Стало')}</dt><dd className="num">{money(y.change.to)}</dd>
+        <dl className="kv"><dt>{tt('Бұрын', 'Было')}</dt><dd className="num">{I.money(y.change.from)}</dd><dt>{tt('Қазір', 'Стало')}</dt><dd className="num">{I.money(y.change.to)}</dd>
           <dt>{tt('Күні', 'Дата')}</dt><dd>{I.fDateY(dOff(y.change.date))}</dd><dt>{tt('Негізі', 'Основание')}</dt><dd>{L(y.change.basis)}</dd></dl></section>
       <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>
     </>
@@ -386,7 +398,7 @@ export function Settings() {
   const tg = useTelegram();
   return (
     <>
-      <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><Seg items={[['kk', 'Қазақша'], ['ru', 'Русский']]} cur={S.lang} onPick={v => update(s => { s.lang = v === 'ru' ? 'ru' : 'kk'; })} /></section>
+      <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><LangSeg /></section>
       {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
       <AccountSection />
       <NotifySection />

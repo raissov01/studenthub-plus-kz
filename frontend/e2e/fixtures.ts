@@ -2,8 +2,10 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { config, content } from './content';
 import type { Lang } from '../src/lib/types';
 
-export const test = base.extend<{ lang: Lang }>({
-  lang: async ({}, run, info) => { await run(info.project.metadata.lang as Lang); },
+/** the projects run in Kazakh and Russian; English has its own spec (i18n-en.spec.ts) */
+export type E2ELang = Exclude<Lang, 'en'>;
+export const test = base.extend<{ lang: E2ELang }>({
+  lang: async ({}, run, info) => { await run(info.project.metadata.lang as E2ELang); },
   page: async ({ page }, run) => {
     const failures: string[] = [];
     page.on('pageerror', err => failures.push(err.message));

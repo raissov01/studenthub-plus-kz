@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 
 /* Runs before first paint: theme and language from the saved state (incl. the old studygo.v1 key), so a dark-theme
    or Russian user does not see a flash of the defaults. */
-const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru')d.lang='ru';}else{d.setAttribute('data-theme','light');}}catch(e){}`;
+const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru'||s.lang==='en')d.lang=s.lang;}else{d.setAttribute('data-theme','light');}}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (

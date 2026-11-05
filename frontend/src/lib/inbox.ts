@@ -2,6 +2,8 @@
    and the small pure helpers the screen and the header badge share. No imports with side effects: lib/inbox.test.ts
    runs this file under plain Node. */
 import type { IconName } from './icons';
+import { locale } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 export type InboxCategory = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface InboxItem {
@@ -59,7 +61,7 @@ export function badgeText(n: number): string {
 }
 
 /** «5 мин бұрын», «2 сағ бұрын», «3 күн бұрын», else the date */
-export function inboxAgo(iso: string, now: number, tt: TT, lang: 'kk' | 'ru'): string {
+export function inboxAgo(iso: string, now: number, tt: TT, lang: Lang): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return '';
   const min = Math.max(0, Math.floor((now - t) / 60000));
@@ -69,5 +71,5 @@ export function inboxAgo(iso: string, now: number, tt: TT, lang: 'kk' | 'ru'): s
   if (h < 24) return tt(`${h} сағ бұрын`, `${h} ч назад`);
   const d = Math.floor(h / 24);
   if (d < 7) return tt(`${d} күн бұрын`, `${d} дн. назад`);
-  return new Date(t).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'kk-KZ', { day: 'numeric', month: 'short', year: d > 300 ? 'numeric' : undefined });
+  return new Date(t).toLocaleDateString(locale(lang), { day: 'numeric', month: 'short', year: d > 300 ? 'numeric' : undefined });
 }

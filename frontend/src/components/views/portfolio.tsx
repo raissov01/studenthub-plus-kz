@@ -11,6 +11,8 @@ import { Icon, Qr, Row, SectionHead } from '@/components/ui';
 import { ErrorLine, errCode, errText, Loading, SignInCard, useFeature, useNeedAccount } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { localItems, PF_LIMITS, TOGGLES, type PortfolioMe, type PortfolioSettings, type ToggleKey } from '@/lib/portfolio';
+import type { Lang } from '@/lib/types';
+import { apiLang } from '@/lib/i18n';
 
 /* one shared copy of GET /api/portfolio/me (settings screen and résumé) */
 let cache: { uid: number; data: PortfolioMe | null; err: string } | null = null;
@@ -18,7 +20,7 @@ let loading = 0;
 const subs = new Set<() => void>();
 const sub = (l: () => void) => { subs.add(l); return () => { subs.delete(l); }; };
 const emit = () => subs.forEach(l => l());
-function fetchMe(uid: number, lang: 'kk' | 'ru') {
+function fetchMe(uid: number, lang: Lang) {
   if (loading === uid) return;
   loading = uid;
   api<PortfolioMe>('/api/portfolio/me', { lang }).then(
@@ -104,12 +106,12 @@ function Settings({ me, uid, reload }: { me: PortfolioMe; uid: number; reload: (
   const sync = async (consent: boolean) => {
     setBusy('sync'); setErr('');
     try {
-      await api('/api/portfolio/items', { method: 'PUT', body: { consent, items: localItems(S, lang) }, lang });
+      await api('/api/portfolio/items', { method: 'PUT', body: { consent, items: localItems(S, apiLang(lang)) }, lang });
       reload();
       return true;
     } catch (e) { setErr(errText(e)); return false; } finally { setBusy(''); }
   };
-  const local = localItems(S, lang);
+  const local = localItems(S, apiLang(lang));
   return (
     <>
       <div className="card">
@@ -164,7 +166,7 @@ function Settings({ me, uid, reload }: { me: PortfolioMe; uid: number; reload: (
 
 function SyncQuestion({ onAnswer }: { onAnswer: (yes: boolean) => Promise<void> }) {
   const { S, tt, lang, closeSheet } = useApp();
-  const items = localItems(S, lang);
+  const items = localItems(S, apiLang(lang));
   const n = (k: string) => items.filter(i => i.kind === k).length;
   const [busy, setBusy] = useState(false);
   const answer = async (yes: boolean) => { setBusy(true); closeSheet(); await onAnswer(yes); };
@@ -264,7 +266,7 @@ function PreviewSheet({ me }: { me: PortfolioMe }) {
   return (
     <>
       <p className="tiny muted">{me.settings.enabled ? tt('Жұмыс беруші осылай көреді.', 'Так страницу увидит работодатель.') : tt('Бет өшірулі. Қосқанда осылай көрінеді.', 'Страница выключена. Так она будет выглядеть после включения.')}</p>
-      <PortfolioPage page={me.preview} lang={lang} preview />
+      <PortfolioPage page={me.preview} lang={apiLang(lang)} preview />
       <Row onClick={closeSheet} icon="x" title={tt('Жабу', 'Закрыть')} chev={false} />
     </>
   );

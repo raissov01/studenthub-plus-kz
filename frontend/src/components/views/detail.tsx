@@ -15,7 +15,7 @@ import { isEmployerJob, jobDbId } from '@/lib/b2b';
 import { reportHref } from '@/lib/config';
 import { CITIES, EVENTS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
-import { dOff, money, parseYmd } from '@/lib/format';
+import { dOff, parseYmd } from '@/lib/format';
 import { pathOf } from '@/lib/routes';
 import type { Job, Opportunity, Provenance } from '@/lib/types';
 import { ScreenLoading } from '@/components/ScreenLoading';
@@ -105,7 +105,7 @@ export function JobBody({ j }: { j: Job }) {
       <div className="card">
         <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num">{pt.main}</span><span className="muted small">{pt.sub}</span></div>
         <dl className="kv">
-          {Number.isFinite(perHour) && perHour > 0 ? <><dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {money(perHour)}</dd></> : null}
+          {Number.isFinite(perHour) && perHour > 0 ? <><dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {I.money(perHour)}</dd></> : null}
           <dt>{tt('Кесте', 'График')}</dt><dd>{L(j.sched)}</dd>
           <dt>{tt('Қала', 'Город')}</dt><dd>{L(CITIES[j.city])}</dd>
         </dl>

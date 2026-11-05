@@ -72,6 +72,8 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 | Telegram бот | [BOT.md](./BOT.md) |
 | Контент (Google Sheets, data/*.json) | [CONTENT.md](./CONTENT.md) |
 | PWA, офлайн | [PWA.md](./PWA.md) |
+| Браузер хабарламалары (Web Push) | [PUSH.md](./PUSH.md) |
+| Тілдер (kk / ru / en), ағылшын сөздігі | [I18N.md](./I18N.md) |
 | Қауіпсіздік тақырыптары | [HEADERS.md](./HEADERS.md) |
 | API маршруттарының аудиті (генерацияланады) | [SECURITY.md](./SECURITY.md) |
 | Аналитика | [ANALYTICS.md](./ANALYTICS.md) |

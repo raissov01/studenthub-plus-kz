@@ -1,6 +1,8 @@
 /* Quiz HTTP contract. Keep wire types, paths and adaptation here. Source: backend/internal/quiz in the
    backend worktree (read-only). source_quote from the model is exposed as sourceQuote. */
 import { api, apiUpload, apiBlob } from './account';
+import { tr } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 import type { PointsAward } from '@/lib/points';
 import { apiOrigin } from './content';
 export type QuizLang = 'kk' | 'ru';
@@ -255,16 +257,14 @@ export type LiveMessage =
   | { type: 'error'; data: { code: string } };
 /** Keep uploads below the frontend proxy limit and the Go image limit. Camera originals
  * can be several MB; resize locally before sending them to generation or question media. */
-async function preparePhoto(file: File, lang: QuizLang): Promise<File> {
+async function preparePhoto(file: File, lang: Lang): Promise<File> {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size <= 800 * 1024) return file;
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
   } catch {
     throw new Error(
-      lang === 'ru'
-        ? 'Не удалось прочитать изображение. Выберите другое фото.'
-        : 'Суретті оқу мүмкін болмады. Басқа фото таңдаңыз.',
+      tr(lang, 'Суретті оқу мүмкін болмады. Басқа фото таңдаңыз.', 'Не удалось прочитать изображение. Выберите другое фото.'),
     );
   }
   try {
@@ -287,45 +287,43 @@ async function preparePhoto(file: File, lang: QuizLang): Promise<File> {
     bitmap.close();
   }
 }
-function uploadLimit(files: File[], lang: QuizLang) {
+function uploadLimit(files: File[], lang: Lang) {
   if (files.reduce((sum, f) => sum + f.size, 0) > 4 * 1024 * 1024) {
     throw new Error(
-      lang === 'ru'
-        ? 'Общий размер файлов должен быть не больше 4 МБ. Разделите конспект на части.'
-        : 'Файлдардың жалпы көлемі 4 МБ-тан аспауы керек. Конспектіні бөліктерге бөліңіз.',
+      tr(lang, 'Файлдардың жалпы көлемі 4 МБ-тан аспауы керек. Конспектіні бөліктерге бөліңіз.', 'Общий размер файлов должен быть не больше 4 МБ. Разделите конспект на части.'),
     );
   }
 }
 const root = '/api/quiz';
 const enc = encodeURIComponent;
 export const quizApi = {
-  browse: (lang: QuizLang, q = '', page = 0) =>
+  browse: (lang: Lang, q = '', page = 0) =>
     api<{ quizzes: QuizMeta[]; hasMore: boolean }>(`${root}/quizzes?q=${enc(q)}&page=${page}`, { lang }),
-  mine: (lang: QuizLang) => api<{ quizzes: QuizMeta[] }>(`${root}/mine`, { lang }),
-  edit: (id: string | number, lang: QuizLang) =>
+  mine: (lang: Lang) => api<{ quizzes: QuizMeta[] }>(`${root}/mine`, { lang }),
+  edit: (id: string | number, lang: Lang) =>
     api<QuizEdit>(`${root}/quizzes/${enc(String(id))}`, { lang }),
-  play: (id: string | number, lang: QuizLang, share = '') =>
+  play: (id: string | number, lang: Lang, share = '') =>
     api<QuizPlay>(share ? `${root}/s/${enc(share)}` : `${root}/quizzes/${enc(String(id))}/play`, { lang }),
-  save: (input: QuizInput, lang: QuizLang, id?: number, source = '') =>
+  save: (input: QuizInput, lang: Lang, id?: number, source = '') =>
     api<{ quiz: QuizMeta }>(id ? `${root}/quizzes/${id}` : `${root}/quizzes?source=${enc(source)}`, {
       method: id ? 'PUT' : 'POST',
       body: input,
       lang,
     }),
-  clone: (id: number, lang: QuizLang, share = '') =>
+  clone: (id: number, lang: Lang, share = '') =>
     api<{ id: number; quiz: QuizMeta }>(
       share ? `${root}/s/${enc(share)}/clone` : `${root}/quizzes/${id}/clone`,
       { method: 'POST', lang },
     ),
-  history: (lang: QuizLang, quizId = '') =>
+  history: (lang: Lang, quizId = '') =>
     api<{ attempts: AttemptSummary[] }>(`${root}/attempts?quizId=${enc(quizId)}`, { lang }),
-  result: (id: string | number, lang: QuizLang) =>
+  result: (id: string | number, lang: Lang) =>
     api<QuizResult>(`${root}/attempts/${enc(String(id))}`, { lang }),
-  retry: (id: number, lang: QuizLang) => api<QuizPlay>(`${root}/attempts/${id}/retry`, { lang }),
+  retry: (id: number, lang: Lang) => api<QuizPlay>(`${root}/attempts/${id}/retry`, { lang }),
   submit: (
     id: number,
     answers: AnswerInput[],
-    lang: QuizLang,
+    lang: Lang,
     questionIds: number[],
     retryOf?: number,
     share = '',
@@ -349,7 +347,7 @@ export const quizApi = {
     Object.entries(options).forEach(([k, v]) => form.append(k, Array.isArray(v) ? v.join(',') : String(v)));
     return apiUpload<GeneratedDraft>(`${root}/generate/from-files`, form, options.lang);
   },
-  importExcel: (file: File, lang: QuizLang) => {
+  importExcel: (file: File, lang: Lang) => {
     uploadLimit([file], lang);
     const form = new FormData();
     form.append('file', file);
@@ -360,27 +358,27 @@ export const quizApi = {
       skipped: number;
     }>(`${root}/import/xlsx`, form, lang);
   },
-  uploadImage: async (file: File, lang: QuizLang) => {
+  uploadImage: async (file: File, lang: Lang) => {
     const prepared = await preparePhoto(file, lang);
     if (prepared.size > 800 * 1024)
       throw new Error(
-        lang === 'ru' ? 'Уменьшите изображение до 800 КБ.' : 'Сурет көлемін 800 КБ-қа дейін азайтыңыз.',
+        tr(lang, 'Сурет көлемін 800 КБ-қа дейін азайтыңыз.', 'Уменьшите изображение до 800 КБ.'),
       );
     const form = new FormData();
     form.append('file', prepared);
     return apiUpload<{ name: string; url: string }>(`${root}/media?kind=image`, form, lang);
   },
-  media: (url: string, lang: QuizLang) => apiBlob(url, lang),
+  media: (url: string, lang: Lang) => apiBlob(url, lang),
   imageUrl: (name: string) => `${root}/media/${enc(name)}`,
   templateUrl: `${root}/import/template.xlsx`,
-  host: (quizId: number, lang: QuizLang) =>
+  host: (quizId: number, lang: Lang) =>
     api<HostTicket>(`${root}/live/sessions`, { method: 'POST', body: { quizId }, lang }),
-  hostToken: (code: string, lang: QuizLang) =>
+  hostToken: (code: string, lang: Lang) =>
     api<Pick<HostTicket, 'hostToken' | 'expiresAt' | 'wsUrl'>>(`${root}/live/sessions/${enc(code)}/host-token`, {
       method: 'POST',
       lang,
     }),
-  join: (code: string, nickname: string, lang: QuizLang, rejoinKey = '') =>
+  join: (code: string, nickname: string, lang: Lang, rejoinKey = '') =>
     api<LiveTicket>(`${root}/live/join`, { method: 'POST', body: { code, nickname, rejoinKey }, lang }),
 };
 // Server metadata deliberately never forwards credentials or reveals private/draft titles.

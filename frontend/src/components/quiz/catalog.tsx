@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Qr } from '@/components/ui';
 import { useAccount } from '@/lib/account';
+import { locale } from '@/lib/i18n';
 import { quizApi, type AttemptSummary, type QuizMeta } from '@/lib/quiz-api';
 import { AccountGate, ErrorText, Field, Loading, Modal, useTask } from './common';
 export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }) {
@@ -62,7 +63,7 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
                 <b>{a.quizTitle || tt('Квиз', 'Квиз')}</b>
                 <span>
                   {a.percentage}% ·{' '}
-                  {new Date(a.createdAt).toLocaleDateString(lang === 'kk' ? 'kk-KZ' : 'ru-RU')}
+                  {new Date(a.createdAt).toLocaleDateString(locale(lang))}
                 </span>
               </Link>
             ))

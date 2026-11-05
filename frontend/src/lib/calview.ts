@@ -2,6 +2,8 @@
    own-event colour palette. No DOM, no React. The colours live in app/globals.css as tokens --ev-N (solid: stripe and
    swatch), --ev-N-soft (chip background) and --ev-N-ink (text on the chip, WCAG AA on --ev-N-soft) in both themes. */
 import { monthGrid, type GridDay, type MonthRef, type Ymd } from './calendar';
+import { tr } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 /* ---------- own-event colours ---------- */
 export interface EvColor { n: number; kk: string; ru: string }
@@ -25,7 +27,7 @@ export function evColorVars(n: number): { solid: string; soft: string; ink: stri
   return { solid: `var(--ev-${k})`, soft: `var(--ev-${k}-soft)`, ink: `var(--ev-${k}-ink)` };
 }
 /** the colour's name in the UI language (the swatch's accessible name) */
-export const evColorName = (n: number, lang: 'kk' | 'ru') => (EV_COLORS.find(c => c.n === n) ?? EV_COLORS[0])[lang];
+export const evColorName = (n: number, lang: Lang) => { const c = EV_COLORS.find(c => c.n === n) ?? EV_COLORS[0]; return tr(lang, c.kk, c.ru); };
 
 /* ---------- agenda order ---------- */
 export interface Timed { time?: string; end?: string; title: string }

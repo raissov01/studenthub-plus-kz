@@ -2,7 +2,7 @@
    year since 2024-03-01), so the grid does not depend on the device's zone. Weeks start on Monday. No DOM, no imports. */
 
 export type Ymd = string;
-export type CalLang = 'kk' | 'ru';
+export type CalLang = 'kk' | 'ru' | 'en';
 
 /** how much an item matters to the student: set on own deadlines and pinned items */
 export type Priority = 'high' | 'mid' | 'low';
@@ -55,11 +55,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const MONTHS: Record<CalLang, string[]> = {
   kk: ['Қаңтар', 'Ақпан', 'Наурыз', 'Сәуір', 'Мамыр', 'Маусым', 'Шілде', 'Тамыз', 'Қыркүйек', 'Қазан', 'Қараша', 'Желтоқсан'],
   ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 };
 /** column heads, Monday first */
 export const WEEK_SHORT: Record<CalLang, string[]> = {
   kk: ['Дс', 'Сс', 'Ср', 'Бс', 'Жм', 'Сб', 'Жс'],
   ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
 };
 
 export const isYmd = (s: unknown): s is Ymd => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + 'T00:00:00Z'));

@@ -5,6 +5,8 @@
 // active weeks does not break the streak; paused weeks (exam session) are skipped entirely.
 
 import { ITEM_BY_KEY } from "./items";
+import { tr } from '@/lib/i18n';
+import type { Lang } from '@/lib/types';
 
 export type RoadmapState = {
   chosen: string[];                      // 3–5 item keys the student picked
@@ -133,11 +135,11 @@ export function streak(s: RoadmapState, now: Date): number {
 }
 
 /** Warm, guilt-free status line for the home board. */
-export function statusLine(s: RoadmapState, now: Date, lang: "kk" | "ru"): string {
-  if (isPaused(s, now)) return lang === "ru" ? "Пауза на время сессии. Удачи на экзаменах!" : "Емтихан кезеңіне кідіртілді. Емтихандарың сәтті өтсін!";
+export function statusLine(s: RoadmapState, now: Date, lang: Lang): string {
+  if (isPaused(s, now)) return tr(lang, "Емтихан кезеңіне кідіртілді. Емтихандарың сәтті өтсін!", "Пауза на время сессии. Удачи на экзаменах!");
   const n = streak(s, now);
   const thisWeek = s.activeWeeks.includes(weekKey(now));
-  if (n === 0) return lang === "ru" ? "Начните с одного небольшого шага на этой неделе." : "Осы аптада бір шағын қадамнан баста.";
-  if (thisWeek) return lang === "ru" ? `${n} нед. подряд с движением вперёд. Отлично!` : `${n} апта қатарынан алға жылжып келесің. Керемет!`;
-  return lang === "ru" ? `${n} нед. подряд. Один шаг на этой неделе — и серия продолжится.` : `${n} апта қатарынан. Осы аптада бір қадам жасасаң, жалғаса береді.`;
+  if (n === 0) return tr(lang, "Осы аптада бір шағын қадамнан баста.", "Начните с одного небольшого шага на этой неделе.");
+  if (thisWeek) return tr(lang, `${n} апта қатарынан алға жылжып келесің. Керемет!`, `${n} нед. подряд с движением вперёд. Отлично!`);
+  return tr(lang, `${n} апта қатарынан. Осы аптада бір қадам жасасаң, жалғаса береді.`, `${n} нед. подряд. Один шаг на этой неделе — и серия продолжится.`);
 }

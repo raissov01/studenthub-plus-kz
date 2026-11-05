@@ -3,7 +3,7 @@ import type { CalPin, OwnDeadline } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
 
 export type { IconName };
-export type Lang = 'kk' | 'ru';
+export type Lang = 'kk' | 'ru' | 'en';
 /** Bilingual text. `en` exists on a few dictionaries (specs, skills) used by the English résumé. */
 export type LText = { kk: string; ru: string; en?: string };
 /** [kk, ru] label pair, as in the legacy dictionaries. */

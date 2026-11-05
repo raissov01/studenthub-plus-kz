@@ -1,6 +1,7 @@
 /* Default device state and transient UI state. No React here, so server code can use it too. */
 import { emptyRoadmap } from '@/features/roadmap/logic';
 import type { AppState, Lang, Profile } from '@/lib/types';
+import { tr } from '@/lib/i18n';
 
 export function defaults(lang?: Lang): AppState {
   return {
@@ -24,10 +25,9 @@ export function defaults(lang?: Lang): AppState {
 /** Only the explicit onboarding action may create this example profile. */
 export function demoProfile(lang: Lang): Profile {
   return {
-    name: lang === 'ru' ? 'Куралай' : 'Құралай', spec: 'econ', course: 2, gpa: 3.13,
+    name: tr(lang, 'Құралай', 'Куралай'), spec: 'econ', course: 2, gpa: 3.13,
     credits: 60, en: 'B1', city: 'astana', skills: ['excel', 'comm', 'service', 'kz', 'ru', 'econ'],
-    exp: lang === 'ru' ? 'Официант в кафе «Дала», 3 месяца (лето 2026)\nВолонтёр на городском молодёжном форуме'
-      : '«Дала» кафесінде даяшы, 3 ай (2026 жылдың жазы)\nҚалалық жастар форумында ерікті',
+    exp: tr(lang, '«Дала» кафесінде даяшы, 3 ай (2026 жылдың жазы)\nҚалалық жастар форумында ерікті', 'Официант в кафе «Дала», 3 месяца (лето 2026)\nВолонтёр на городском молодёжном форуме'),
     about: '', phone: '', email: '', demo: true,
   };
 }

@@ -16,6 +16,7 @@ import {
 import { deleteImage, deleteNote, imageUrl, putImage, saveNote, useStudy, walPut } from '@/lib/studydb';
 import type { Subject } from '@/lib/subjects';
 import { getState } from '@/lib/store';
+import { apiLang } from '@/lib/i18n';
 
 type Tt = (kk: string, ru: string) => string;
 /** the clock, read in event handlers only */
@@ -32,7 +33,7 @@ function NotesList() {
   const { list } = useSubjects();
   const study = useStudy();
   const [q, setQ] = useState('');
-  const lang = S.lang === 'ru' ? 'ru' : 'kk';
+  const lang = apiLang(S.lang);
   const hits = searchNotes(study.notes, q);
   const subjName = (id: string) => list.find(s => s.id === id)?.name ?? '';
   return (
@@ -72,7 +73,7 @@ export function NewNoteSheet({ subject }: { subject?: string }) {
   const create = async (tpl: TemplateId) => {
     const s = list.find(x => x.id === subj);
     if (!s) return;
-    const n = newNote(tpl, s.id, S.lang === 'ru' ? 'ru' : 'kk', nowMs(), todayYmd(), classNow(s, new Date()));
+    const n = newNote(tpl, s.id, apiLang(S.lang), nowMs(), todayYmd(), classNow(s, new Date()));
     const ok = await saveNote(n);
     if (!ok) toast(tt('IndexedDB-ге жазылмады, көшірме сақталды', 'Не записалось в IndexedDB, копия сохранена'));
     go('notes:' + n.id);
@@ -157,7 +158,7 @@ const EDITABLE: BlockType[] = ['p', 'h', 'li', 'todo', 'callout'];
 function Editor({ initial, durable }: { initial: Note; durable: boolean }) {
   const app = useApp();
   const { S, tt, L, go, toast, openSheet } = app;
-  const lang = S.lang === 'ru' ? 'ru' : 'kk';
+  const lang = apiLang(S.lang);
   const { list } = useSubjects();
   const [note, setNote] = useState(initial);
   const noteRef = useRef(initial);
@@ -427,7 +428,7 @@ async function askAi(prompt: string, lang: 'kk' | 'ru', tt: Tt): Promise<{ text:
 function AiCards({ note, subjectName, onSummary }: { note: Note; subjectName: string; onSummary: (text: string) => void }) {
   const { S, tt, go, update, toast } = useApp();
   const online = useOnline();
-  const lang = S.lang === 'ru' ? 'ru' : 'kk';
+  const lang = apiLang(S.lang);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [draft, setDraft] = useState<Draft | null>(null);

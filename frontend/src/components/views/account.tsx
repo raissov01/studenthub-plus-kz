@@ -46,7 +46,7 @@ function LoginWidget({ bot, onUser }: { bot: string; onUser: (u: Record<string, 
     s.setAttribute('data-radius', '12');
     s.setAttribute('data-request-access', 'write');
     s.setAttribute('data-userpic', 'false');
-    if (S.lang === 'ru') s.setAttribute('data-lang', 'ru');
+    if (S.lang !== 'kk') s.setAttribute('data-lang', S.lang); // the widget has no Kazakh
     s.setAttribute('data-onauth', 'onTelegramAuth(user)');
     el.appendChild(s);
     return () => { el.innerHTML = ''; delete window.onTelegramAuth; };

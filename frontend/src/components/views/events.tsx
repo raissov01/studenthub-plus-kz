@@ -632,7 +632,7 @@ function LiveOverlay({ id, onClose }: { id: number; onClose: () => void }) {
         {v ? <Qr big text={v.deep_link || v.web_link} /> : <div className="qr qr-big" />}
         <p className="small">{tt('Телефон камерасымен сканерлеңіз', 'Отсканируйте камерой телефона')} · <span className="num">{tt(`QR ${left} с кейін жаңарады`, `QR обновится через ${left} с`)}</span></p>
         <ErrorLine err={err} />
-        <p className="tiny muted">{v ? (lang === 'ru' ? v.notice_ru : v.notice_kk) : ''}</p>
+        <p className="tiny muted">{v ? (lang !== 'kk' ? v.notice_ru : v.notice_kk) : ''}</p>
         <button className="btn block" type="button" onClick={onClose}>{tt('Жабу', 'Закрыть')}</button>
       </div>
     </div>

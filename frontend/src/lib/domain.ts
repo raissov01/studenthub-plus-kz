@@ -20,9 +20,9 @@ export function gradYear(p: Profile) {
 export const hourly = (j: Job) => (j.per === 'hour' ? j.pay : j.per === 'shift' ? (j.hours ? j.pay / j.hours : 0) : j.pay / ((j.hours || 8) * 22));
 export function payText(j: Job, I: I18n) {
   const { tt } = I;
-  if (j.per === 'month') return { main: money(j.pay), sub: tt('айына', 'в месяц') };
-  if (j.per === 'hour') return { main: money(j.pay), sub: tt('сағатына', 'в час') };
-  return { main: money(j.pay), sub: tt(`ауысымға · ${j.hours} сағ`, `за смену · ${j.hours} ч`) };
+  if (j.per === 'month') return { main: money(j.pay, I.lang), sub: tt('айына', 'в месяц') };
+  if (j.per === 'hour') return { main: money(j.pay, I.lang), sub: tt('сағатына', 'в час') };
+  return { main: money(j.pay, I.lang), sub: tt(`ауысымға · ${j.hours} сағ`, `за смену · ${j.hours} ч`) };
 }
 /** Prefer the publisher's instructions, then an actual contact method; never invent one. */
 export function jobApplyText(j: Job, I: I18n): string {
