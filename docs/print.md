@@ -108,6 +108,32 @@ kaspi-pos ──webhook──▶ /api/cafe/kaspi/webhook ──(shopkit.Register
 - **«Дайын» бағаны** кезек ретімен не код бойынша сұрыпталады (науадағы стекті кодпен реттеп ұстау үшін).
   Әр бағанда ≤ 150 тапсырыс көрсетіледі (`counts` — нақты саны); қалғаны кодпен ізделеді.
 
+## Зерттеуден қосылғандар
+
+- **Файлсыз бағаны есептеу** (`POST /api/print/estimate`, кіру керек емес, IP бойынша шек): студент бет санын,
+  данасын, өлшемін, түсін, екі жақтылығын, түптеуін таңдайды — сома `Quote`-тың өз ережелерімен серверде
+  есептеледі, ештеңе сақталмайды. Нақты баға — файл жүктелген соң.
+- **Беттерді алдын ала көру:** студент таңдаған PDF-тің (аралықтағы ≤ 8 бет) кішкентай суреттері студенттің өз
+  құрылғысында `pdf.js`-пен салынады («Беттерді көру» басылғанда ғана жүктеледі, бөлек worker файлы жоқ); көлденең
+  беттер белгіленеді. Серверге ештеңе жіберілмейді, API ештеңе рендерлемейді.
+- **Шамамен дайын болу уақыты:** тапсырыс бетінде «≈ 15 минутта дайын» — алдыңғы тапсырыстардың басылатын беттері
+  × `PRINT_SECONDS_PER_PAGE` (4 с) + тапсырыс саны × `PRINT_SECONDS_PER_JOB` (60 с), 5 минутқа дейін дөңгелектеледі;
+  полиграфия жабық болса көрсетілмейді.
+- **Бір еске салу:** «Дайын» тапсырыс no-show шегінің жартысында (`PRINT_NO_SHOW_GRACE_MIN`/2, дайын болған не алу
+  уақытынан) алынбаса, студентке бір рет хабар (`reminded` оқиғасы — қайталанбайды). Poller жібереді.
+- **Соңғы баптаулар:** студенттің осы полиграфиядағы соңғы тапсырысының өлшемі, түсі, екі жақтылығы, данасы,
+  түптеуі (тек осы құрылғыда, `localStorage`) жаңа файлға қойылады; беттер аралығы мен файл ешқашан есте
+  сақталмайды; полиграфия бағаламайтын опция түсіп қалады.
+- **Күндік есеп** (тақта → «Есеп», `GET /api/print/staff/report?shop=&day=`): келді, берілді, алынбады,
+  болдырылмады, ашық; сома Kaspi / касса бойынша (берілген тапсырыстар), қайтарылғаны; ақ-қара және түсті беттер,
+  парақ; кезектен дайынға дейінгі медиана.
+
+Қабылданбағандар (себебімен — [research/print-competitors.md](./research/print-competitors.md) §6): Telegram бот
+арқылы файл жүктеу (бот модулі ортақ, Bot API файл шегі 20 МБ — бөлек тапсырма); беттер бойынша түс таңдау
+(бағасы мен оператор жұмысы күрделенеді, бәсекелестерде жоқ; ескертпе өрісі жеткілікті); қайта тапсырыс (файлдар
+3 күнде өшеді — «соңғы баптаулар» оның арзан түрі); баға қою/рейтинг (бір оператор — жеке қысым, дәлел әлсіз);
+серверде Office конвертациясы (150 МБ шек); принтерде «hold-and-release» (кассадағы оператор моделіне келмейді).
+
 ## Прайс (менеджер не әкімші толтырады)
 
 Барлық сома — тиын, бүтін теңге (2000 = 20 ₸). Қызмет түрлері (`print_services.kind`, `pricing` JSON сервер
@@ -223,10 +249,10 @@ webhook арқылы бір рет `paid` болады (`cafe_kaspi_webhooks.out
 
 | Кім | Маршрут |
 | --- | --- |
-| Барлығы | `GET /api/print/shops`, `GET /api/print/shops/{id}` (прайс, тауарлар, бүгінгі алу уақыттары, лимиттер) |
+| Барлығы | `GET /api/print/shops`, `GET /api/print/shops/{id}` (прайс, тауарлар, бүгінгі алу уақыттары, лимиттер), `POST /api/print/estimate` |
 | Студент | `POST /api/print/uploads`, `DELETE /api/print/uploads/{id}`, `POST /api/print/quote`, `POST /api/print/jobs`, `GET /api/print/jobs/mine`, `GET /api/print/jobs/{id}`, `POST …/{id}/cancel`, `POST …/{id}/price` (`{"accept":true\|false}`), `POST …/{id}/pay` (`{"method":"pickup"}` — кассаға ауысу) |
 | Қол қойылған сілтеме | `GET /api/print/files/{id}?v=&e=&s=` |
-| Қызметкер | `GET /api/print/staff/jobs?shop=&status=`, `GET /api/print/staff/lookup?shop=&q=`, `POST /api/print/staff/jobs/bulk`, `POST /api/print/staff/jobs/{id}/printing\|ready\|picked-up\|no-show\|decline\|price\|refunded`, `GET /api/print/staff/catalog`, `POST/PUT /api/print/staff/services[/{id}]`, `POST/PUT /api/print/staff/goods[/{id}]` (менеджер), `POST …/goods/{id}/stock` |
+| Қызметкер | `GET /api/print/staff/jobs?shop=&status=`, `GET /api/print/staff/lookup?shop=&q=`, `POST /api/print/staff/jobs/bulk`, `GET /api/print/staff/report?shop=&day=`, `POST /api/print/staff/jobs/{id}/printing\|ready\|picked-up\|no-show\|decline\|price\|refunded`, `GET /api/print/staff/catalog`, `POST/PUT /api/print/staff/services[/{id}]`, `POST/PUT /api/print/staff/goods[/{id}]` (менеджер), `POST …/goods/{id}/stock` |
 | Әкімші | `GET/POST /api/admin/print/shops`, `PUT …/{id}`, қызметкерлер, `GET /api/admin/print/jobs[/{id}]`, Kaspi логин (`…/kaspi/login/start`, `…/verify`, `…/check`, `DELETE …/kaspi`) |
 | kaspi-pos | кофейняның `POST /api/cafe/kaspi/webhook` |
 

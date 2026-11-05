@@ -127,3 +127,33 @@ test('the counter: page ranges, print runs, what to check against the stack, sca
   assert.deepEqual(p.sortReady(q, 'queue').map(x => x.id), [1, 2, 3]);
   assert.deepEqual(p.sortReady(q, 'code').map(x => x.pickupCode), ['0450', '1200', '9001']);
 });
+
+test('remembered options: applied only where the shop still prices them; the ETA label', async () => {
+  const p = await import('./print');
+  const bind: Service = { ...print, id: 2, kind: 'binding', pricing: { tiers: [{ maxSheets: 50, price: 50000 }] } };
+  const base = p.fixOpts(p.defaultOpts(pdf, [print, bind, lam]), [print, bind, lam], 'pdf');
+  const saved = p.presetOf({ ...base, size: 'A4', duplex: true, copies: 3, bindingId: 2, laminationId: 3, range: '1-2', pages: 9 });
+  assert.equal(p.presetKey(4), 'print:preset:4');
+  assert.deepEqual(Object.keys(saved).sort(), ['bindingId', 'color', 'copies', 'duplex', 'laminationId', 'serviceId', 'size']);
+  const back = p.parsePreset(JSON.stringify(saved));
+  const o = p.withPreset(base, back, [print, bind, lam], 'pdf');
+  assert.equal(o.duplex, true);
+  assert.equal(o.copies, 3);
+  assert.equal(o.bindingId, 2);
+  assert.equal(o.range, '', 'a page range is never remembered');
+  assert.equal(o.pages, base.pages);
+  // an image takes no binding and no duplex; a size no longer priced falls back; a gone binding is dropped
+  const img = p.withPreset(p.defaultOpts(png, [print]), back, [print], 'png');
+  assert.equal(img.duplex, false);
+  assert.equal(img.bindingId, 0);
+  assert.equal(p.withPreset(base, { ...saved, size: 'A0' }, [print], 'pdf').size, 'A4');
+  assert.equal(p.withPreset(base, { ...saved, color: true, size: 'A3' }, [print], 'pdf').color, false);
+  // junk in storage is ignored
+  assert.equal(p.parsePreset('{oops'), null);
+  assert.equal(p.parsePreset(null), null);
+  assert.equal(p.parsePreset('{"size":5}'), null);
+  assert.equal(p.withPreset(base, null, [print], 'pdf'), base);
+  assert.equal(p.etaLabel(15, tt), '≈ 15 минутта дайын');
+  assert.equal(p.etaLabel(180, tt), '≈ 3 сағатта дайын');
+  assert.equal(p.etaLabel(undefined, tt), '');
+});

@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useLoad, useNeedAccount } from '@/components/views/common';
+import { DayReport, PriceCalc } from '@/components/views/print-extras';
+import { PagePreview } from '@/components/views/print-preview';
 import { CounterSearch, HandoverSheet, OffsetTip, PickupQr, PrintPlan } from '@/components/views/print-counter';
 import { KaspiPay, beep } from '@/components/views/shop-common';
 import { useQueryId } from '@/components/views/subjects';
@@ -16,7 +18,7 @@ import { hoursLabel, tengeToTiyn } from '@/lib/cafe';
 import { newKey } from '@/lib/points';
 import {
   acceptAttr, blocker, bytesLabel, checkFile, colorAt, defaultOpts, duplexAt, fileError, fixOpts, isActive, isImage, lineDetail, money,
-  newArrivals, paymentLabel, priceList, priceStateLabel, quoteBody, rangeOK, shouldPoll, sizesOf, sortReady, statusLabel, stepIndex, workable,
+  etaLabel, newArrivals, parsePreset, paymentLabel, presetKey, presetOf, priceList, priceStateLabel, quoteBody, rangeOK, shouldPoll, sizesOf, sortReady, statusLabel, stepIndex, withPreset, workable,
   type Catalog, type FileOpts, type Goods, type Job, type PaymentMethod, type Quote, type Service, type Shop, type Upload,
 } from '@/lib/print';
 
@@ -101,6 +103,7 @@ function ShopView({ id }: { id: number }) {
         {note ? <p className="small">{note}</p> : null}
       </div>
       <JobBuilder cat={c.data} />
+      <PriceCalc shopId={shop.id} services={c.data.services} />
       <PriceList services={c.data.services} goods={c.data.goods} minOrder={shop.minOrder} />
     </div>
   );
@@ -133,7 +136,15 @@ function PriceList({ services, goods, minOrder }: { services: Service[]; goods: 
   );
 }
 
-interface Picked { upload: Upload; opts: FileOpts }
+interface Picked { upload: Upload; opts: FileOpts; local?: File }
+
+/** the last order's options at this shop (this device only): size, colour, duplex, copies, binding */
+function readPreset(shopId: number) {
+  try { return parsePreset(localStorage.getItem(presetKey(shopId))); } catch { return null; }
+}
+function savePreset(shopId: number, o: FileOpts) {
+  try { localStorage.setItem(presetKey(shopId), JSON.stringify(presetOf(o))); } catch { /* private mode */ }
+}
 
 function Stepper({ value, set, min = 0, max, label }: { value: number; set: (n: number) => void; min?: number; max: number; label: string }) {
   const { tt } = useApp();
@@ -202,7 +213,7 @@ function JobBuilder({ cat }: { cat: Catalog }) {
         const form = new FormData();
         form.append('file', f, f.name);
         const r = await apiUpload<{ upload: Upload }>('/api/print/uploads', form, lang);
-        setFiles(cur => [...cur, { upload: r.upload, opts: fixOpts(defaultOpts(r.upload, services), services, r.upload.kind) }]);
+        setFiles(cur => [...cur, { upload: r.upload, local: f, opts: withPreset(fixOpts(defaultOpts(r.upload, services), services, r.upload.kind), readPreset(shop.id), services, r.upload.kind) }]);
       } catch (e) { setFerr(`${f.name}: ${errText(e)}`); have--; }
       finally { setUploading(n => n - 1); }
     }
@@ -220,6 +231,7 @@ function JobBuilder({ cat }: { cat: Catalog }) {
     setBusy(true); setErr('');
     try {
       const r = await api<{ job: Job }>('/api/print/jobs', { method: 'POST', lang, body: { ...body, pickupAt: pickup || null, payment: pay, note: note.trim(), key: key.current } });
+      if (files.length) savePreset(shop.id, files[0].opts);
       toast(tt('Тапсырыс кезекке қосылды', 'Заказ поставлен в очередь'));
       go(`print:j${r.job.id}`);
     } catch (e) {
@@ -362,6 +374,7 @@ function FileCard({ p, services, bindings, lams, set, remove }: {
               onChange={e => set({ range: e.target.value })} /></div>
         ) : null}
       </div>
+      {p.local && (u.kind === 'pdf' || img) && rangeOK(o.range) ? <PagePreview file={p.local} kind={u.kind} range={o.range} /> : null}
       {bindings.length && !img ? (
         <div className="field"><label htmlFor={`${fid}bind`}>{tt('Түптеу', 'Переплёт')}</label>
           <select className="input" id={`${fid}bind`} value={o.bindingId} onChange={e => set({ bindingId: Number(e.target.value) })}>
@@ -443,6 +456,7 @@ function JobView({ id }: { id: number }) {
         <span className="small">{nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)}{(lang !== 'kk' ? j.placeRu : j.placeKk) ? ', ' + (lang !== 'kk' ? j.placeRu : j.placeKk) : ''} · <b className="num">{j.pickupAt ? hhmm(j.pickupAt) : tt('мүмкіндігінше тез', 'как можно скорее')}</b></span>
         {j.pickupToken ? <PickupQr token={j.pickupToken} /> : null}
         {j.ahead != null && j.status === 'new' ? <span className="small" id="printAhead">{j.ahead === 0 ? tt('Сіз кезекте біріншісіз', 'Вы первый в очереди') : tt(`Алдыңызда ${j.ahead} тапсырыс`, `Перед вами заказов: ${j.ahead}`)}</span> : null}
+        {j.etaMin && (j.status === 'new' || j.status === 'printing') ? <span className="small muted" id="printEta">{etaLabel(j.etaMin, tt)}</span> : null}
       </div>
       {step >= 0 ? (
         <ol className="cafe-steps" aria-label={tt('Тапсырыс барысы', 'Ход заказа')}>
@@ -617,9 +631,9 @@ function PrintBoard() {
           <Icon n="bell" s={18} /> {sound ? tt('Дыбыс қосулы', 'Звук включён') : tt('Дыбысты қосу', 'Включить звук')}
         </button>
       </div>
-      <Seg items={[['queue', tt('Кезек', 'Очередь')], ['prices', tt('Прайс', 'Прайс')]]} cur={tab} onPick={setTab} />
+      <Seg items={[['queue', tt('Кезек', 'Очередь')], ['report', tt('Есеп', 'Отчёт')], ['prices', tt('Прайс', 'Прайс')]]} cur={tab} onPick={setTab} />
       <ErrorLine err={err} />
-      {tab === 'prices' ? <PrintCatalog shopId={board.shopId} role={me?.myRole ?? ''} /> : (
+      {tab === 'prices' ? <PrintCatalog shopId={board.shopId} role={me?.myRole ?? ''} /> : tab === 'report' ? <DayReport shopId={board.shopId} /> : (
         <>
           {manual.length ? (
             <div className="card cafe-alert" role="alert">

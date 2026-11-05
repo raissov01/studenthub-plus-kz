@@ -53,6 +53,7 @@ type Job struct {
 	Files         []Upload   `json:"files"`
 	// the student's view: jobs ahead in the shop's queue (0 = next), the signed counter QR of an open job
 	Ahead       *int   `json:"ahead,omitempty"`
+	EtaMin      *int   `json:"etaMin,omitempty"` // a rough «ready in ≈ N min» while it waits in an open shop
 	PickupToken string `json:"pickupToken,omitempty"`
 	// staff and admin views
 	Customer *string `json:"customer,omitempty"`
@@ -439,6 +440,9 @@ func getJob(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		}
 	}
 	j.Ahead = ahead(ctx, j)
+	if j.Ahead != nil {
+		eta(ctx, j, shopOpen(ctx, j.ShopID))
+	}
 	j.forStudent(u.ID)
 	httpx.JSON(w, http.StatusOK, map[string]any{"job": j})
 }
@@ -499,6 +503,9 @@ func respondJob(w http.ResponseWriter, r *http.Request, u *auth.User, id int64) 
 		return
 	}
 	j.Ahead = ahead(r.Context(), j)
+	if j.Ahead != nil {
+		eta(r.Context(), j, shopOpen(r.Context(), j.ShopID))
+	}
 	j.forStudent(u.ID)
 	httpx.JSON(w, http.StatusOK, map[string]any{"job": j})
 }

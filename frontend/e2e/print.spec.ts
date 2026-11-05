@@ -53,6 +53,7 @@ test('print: upload → the server prices it → pay at the counter → the job 
   await signedIn(page, lang);
   const quotes: Record<string, unknown>[] = [];
   const posted: Record<string, unknown>[] = [];
+  const estimates: Record<string, unknown>[] = [];
   let uploads = 0;
   let reads = 0;
   await page.route('**/api/print/**', async route => {
@@ -78,10 +79,15 @@ test('print: upload → the server prices it → pay at the counter → the job 
         ...(goods ? [{ kind: 'goods', refId: 31, nameKk: 'Папка', nameRu: 'Папка', qty: goods / 30000, unitPrice: 30000, total: goods }] : [])];
       return route.fulfill({ json: { quote: { lines, total: sides + bind + goods, review: false } } });
     }
+    if (path === '/api/print/estimate') {
+      const it = req.postDataJSON().items[0];
+      estimates.push(it);
+      return route.fulfill({ json: { quote: { lines: [], total: it.pages * it.copies * (it.duplex ? 1500 : 2000), review: false } } });
+    }
     if (path === '/api/print/jobs' && req.method() === 'POST') { posted.push(req.postDataJSON()); return route.fulfill({ status: 201, json: { job: job({ total: 160000 }), duplicate: false } }); }
     if (path === '/api/print/jobs/701') {
       reads++;
-      return route.fulfill({ json: { job: reads > 2 ? job({ total: 160000, status: 'ready', printingAt: '2026-11-05T06:05:00Z', readyAt: '2026-11-05T06:10:00Z' }) : job({ total: 160000 }) } });
+      return route.fulfill({ json: { job: reads > 2 ? job({ total: 160000, status: 'ready', printingAt: '2026-11-05T06:05:00Z', readyAt: '2026-11-05T06:10:00Z' }) : job({ total: 160000, etaMin: 15 }) } });
     }
     return route.fulfill({ status: 501, json: { error: { code: 'unmocked_print' } } });
   });
@@ -94,14 +100,29 @@ test('print: upload → the server prices it → pay at the counter → the job 
   // the price list shows every service, including the ones done only at the counter
   await expect(page.getByText(t('кассада', 'на кассе')).first()).toBeVisible();
   await fits(page);
+  // the price before any upload: pages typed by hand, the server's sum
+  await page.locator('#printCalc summary').click();
+  await page.locator('#pcPages').fill('12');
+  await page.locator('#pcCopies').fill('2');
+  await expect(page.locator('#printCalcTotal')).toHaveText(/480\s₸/);
+  expect(estimates.at(-1)).toEqual({ serviceId: 21, size: 'A4', color: false, duplex: false, copies: 2, pages: 12, bindingId: 0 });
+  await fits(page);
   // a format the shop does not take is refused before uploading
   await page.locator('#printFile').setInputFiles({ name: 'virus.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') });
   await expect(page.getByText(/virus\.exe/)).toBeVisible();
   expect(uploads).toBe(0);
-  await page.locator('#printFile').setInputFiles({ name: 'Курстық.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') });
+  const doc = await PDFDocument.create();
+  for (let i = 0; i < 10; i++) doc.addPage(i === 1 ? [842, 595] : [595, 842]);
+  await page.locator('#printFile').setInputFiles({ name: 'Курстық.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await doc.save()) });
   const card = page.getByRole('article', { name: 'Курстық.pdf' });
   await expect(card).toBeVisible();
   expect(uploads).toBe(1);
+  // the student's own proof, drawn on this device: the first eight pages, the landscape one flagged
+  await card.getByRole('button', { name: t('Беттерді көру', 'Посмотреть страницы') }).click();
+  await expect(card.locator('.print-thumbs img')).toHaveCount(8);
+  await expect(card.locator('.print-thumbs li.is-land')).toHaveCount(1);
+  await expect(card.locator('.print-preview')).toContainText(t('Тағы 2 бет', 'Ещё страниц: 2'));
+  await fits(page);
   // two copies, duplex, bound; a folder: the total is the server's
   await card.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') }).check();
   await card.getByRole('group', { name: t('Дана саны', 'Количество копий') }).getByRole('button', { name: t('Көбейту', 'Больше') }).click();
@@ -125,6 +146,10 @@ test('print: upload → the server prices it → pay at the counter → the job 
   // the code and the queue, then the operator marks it ready and the screen follows by itself
   await expect(page.locator('#printCode')).toHaveText('482');
   await expect(page.locator('#printAhead')).toContainText('2');
+  await expect(page.locator('#printEta')).toContainText('15');
+  // the options are remembered for the next order at this shop (never the file or its pages)
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('print:preset:4') ?? 'null'))).toEqual(
+    { serviceId: 21, size: 'A4', color: false, duplex: true, copies: 2, bindingId: 22, laminationId: 0 });
   await expect(page.getByText(t('Кассада төлейсіз', 'Оплата на кассе'))).toBeVisible();
   await expect(page.getByRole('status').getByText(t('Дайын', 'Готово'), { exact: true })).toBeVisible({ timeout: 15_000 });
   await fits(page);
@@ -270,6 +295,10 @@ test('print: the counter finds a stack by code or QR, prints a batch in queue or
       return route.fulfill({ json: { results: [{ id: 701, ok: true }, { id: 703, ok: true }] } });
     }
     if (path === '/api/print/jobs/702') return route.fulfill({ json: { job: { ...b, customer: undefined, pickupToken: token } } });
+    if (path === '/api/print/staff/report') {
+      return route.fulfill({ json: { report: { day: '2026-11-05', received: 41, pickedUp: 37, noShow: 1, cancelled: 2, open: 3, revenueKaspi: 1250000, revenueCounter: 830000,
+        refunded: 0, refundsManual: 0, pagesBw: 1630, pagesColor: 42, sheets: 1100, waitMedianMin: 18 } } });
+    }
     if (path === '/api/print/files/91') {
       const d = await PDFDocument.create();
       for (let i = 0; i < 10; i++) d.addPage([595, 842]);
@@ -327,6 +356,11 @@ test('print: the counter finds a stack by code or QR, prints a batch in queue or
   await plan.getByRole('button', { name: t('Барлығы: басып жатырмын', 'Все: печатаю') }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   expect(bulks).toEqual([{ action: 'printing', ids: [701, 703] }]);
+  // the day in numbers
+  await page.getByRole('tab', { name: t('Есеп', 'Отчёт') }).click();
+  await expect(page.locator('.print-report')).toContainText(/12\s500\s₸/);
+  await expect(page.locator('.print-report')).toContainText('1630');
+  await fits(page);
   // the student's screen carries the QR the operator scans
   await page.goto('/print/jobs?id=702');
   await expect(page.locator('#printQr svg')).toBeVisible();

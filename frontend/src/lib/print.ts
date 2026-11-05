@@ -50,7 +50,7 @@ export interface Job {
   priceState: PriceState; proposedTotal: number | null; adjustReason: string | null; pickupAt: string | null; pickupCode: string; note: string;
   status: JobStatus; paymentMethod: PaymentMethod; paymentStatus: PaymentStatus; refundManual: boolean;
   pay: { url: string; qr: string; expiresAt: string | null } | null; cancelReason: string | null; queuedAt: string; createdAt: string;
-  printingAt: string | null; readyAt: string | null; closedAt: string | null; filesDeleted: boolean; files: Upload[]; ahead?: number; pickupToken?: string;
+  printingAt: string | null; readyAt: string | null; closedAt: string | null; filesDeleted: boolean; files: Upload[]; ahead?: number; pickupToken?: string; etaMin?: number;
   customer?: string; userId?: number;
   events?: { id: number; actorId: number | null; actorKind: string; kind: string; detail: Record<string, unknown>; createdAt: string }[];
 }
@@ -317,3 +317,45 @@ export function paddedPages(pages: number, duplex: boolean): number {
 
 /** slips are four to an A4 sheet */
 export const slipSheets = (n: number) => Math.ceil(n / 4);
+
+/* ---------- remembered options («как в прошлый раз») ---------- */
+
+/** the options worth remembering per shop: never the file, its pages or its page range */
+export type Preset = Pick<FileOpts, 'serviceId' | 'size' | 'color' | 'duplex' | 'copies' | 'bindingId' | 'laminationId'>;
+
+export const presetKey = (shopId: number) => `print:preset:${shopId}`;
+
+export function presetOf(o: FileOpts): Preset {
+  return { serviceId: o.serviceId, size: o.size, color: o.color, duplex: o.duplex, copies: o.copies, bindingId: o.bindingId, laminationId: o.laminationId };
+}
+
+/** a stored preset read back defensively (another device's or an old shape): null when unusable */
+export function parsePreset(raw: string | null): Preset | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as Record<string, unknown>;
+    const n = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : 0);
+    if (typeof v !== 'object' || !v || typeof v.size !== 'string') return null;
+    return { serviceId: n(v.serviceId), size: v.size, color: v.color === true, duplex: v.duplex === true, copies: n(v.copies) || 1, bindingId: n(v.bindingId), laminationId: n(v.laminationId) };
+  } catch { return null; }
+}
+
+/** a fresh upload's options with the remembered ones on top, kept consistent with what the shop prices today
+    (a service gone, a size no longer priced, binding on an image: fixOpts and the checks below drop them) */
+export function withPreset(o: FileOpts, p: Preset | null, services: Service[], kind: FileKind): FileOpts {
+  if (!p) return o;
+  const svc = services.find(s => s.id === p.serviceId && s.kind === 'print' && s.online && s.active);
+  const bind = services.find(s => s.id === p.bindingId && s.kind === 'binding' && s.online && s.active);
+  const lam = services.find(s => s.id === p.laminationId && s.kind === 'lamination' && s.online && s.active);
+  return fixOpts({
+    ...o, serviceId: svc ? svc.id : o.serviceId, size: p.size, color: p.color, duplex: p.duplex, copies: p.copies,
+    bindingId: bind && !isImage(kind) ? bind.id : 0, laminationId: lam ? lam.id : 0,
+  }, services, kind);
+}
+
+/** «≈ 15 мин» on the job screen: rough, from the queue ahead */
+export function etaLabel(min: number | undefined, tt: TT): string {
+  if (!min) return '';
+  if (min >= 120) return tt(`≈ ${Math.round(min / 60)} сағатта дайын`, `Готово через ≈ ${Math.round(min / 60)} ч`);
+  return tt(`≈ ${min} минутта дайын`, `Готово через ≈ ${min} мин`);
+}

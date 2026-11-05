@@ -1843,6 +1843,17 @@ p.print-review { padding: 8px 10px; border: 1px solid var(--p-sky-ink); border-r
 .print-tip .btn { align-self: flex-start; }
 .print-qr { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .print-qr .qr svg { width: 168px; height: 168px; }
+.print-calc { gap: 10px; }
+.print-calc-sum { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.print-calc[open] .print-calc-sum { margin-bottom: 4px; }
+.print-report { display: flex; flex-direction: column; gap: 10px; }
+.print-preview { display: flex; flex-direction: column; gap: 6px; }
+.print-preview-btn { align-self: flex-start; }
+.print-thumbs { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; overflow-x: auto; }
+.print-thumbs li { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.print-thumbs img { display: block; height: auto; max-height: 160px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; background: #FFFFFF; }
+.print-thumbs li.is-land img { border-color: var(--p-peach-ink); }
+.print-land { margin: 0; color: var(--p-peach-ink); }
 /* ---------- university voice: surveys, feedback, wellbeing (components/views/voice.tsx) ---------- */
 .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

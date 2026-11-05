@@ -289,6 +289,8 @@ var routePolicies = map[string]RoutePolicy{
 	"POST /api/print/staff/jobs/{id}/ready":                {"signed-in (staff of the job's shop; agreed price, paid or pay at counter)", "yes", "yes", "print"},
 	"POST /api/print/staff/jobs/{id}/picked-up":            {"signed-in (staff of the job's shop; the student's code or signed QR must match the job)", "yes", "yes", "print"},
 	"GET /api/print/staff/lookup":                          {"signed-in (print shop staff; own shop only, RLS; code or HMAC-signed QR)", "yes (per-staff lookup limit)", "yes", "print"},
+	"POST /api/print/estimate":                             {"anonymous (active shop; priced on the server from typed page counts; nothing stored)", "yes (+ per-IP estimate limit)", "yes", "print"},
+	"GET /api/print/staff/report":                          {"signed-in (print shop staff; own shop only, RLS)", "no", "yes", "print"},
 	"POST /api/print/staff/jobs/bulk":                      {"signed-in (staff; each job re-checked as one action, RLS; ≤ 40; printing/ready only)", "yes", "yes", "print"},
 	"POST /api/print/staff/jobs/{id}/no-show":              {"signed-in (staff of the job's shop; after ready + grace)", "yes", "yes", "print"},
 	"POST /api/print/staff/jobs/{id}/decline":              {"signed-in (staff of the job's shop)", "yes", "yes", "print"},

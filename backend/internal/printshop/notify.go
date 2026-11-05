@@ -144,7 +144,7 @@ func notifyStaffPrice(ctx context.Context, jobID int64, accepted bool) {
 	}
 }
 
-// notifyStudent: ready, price_proposed, price_confirmed, declined, refunded, refund_manual.
+// notifyStudent: ready, reminder, price_proposed, price_confirmed, declined, refunded, refund_manual.
 func notifyStudent(ctx context.Context, jobID int64, kind string) {
 	j, err := jobByID(ctx, jobID)
 	if err != nil || j.userID == nil {
@@ -171,6 +171,15 @@ func notifyStudent(ctx context.Context, jobID int64, kind string) {
 		if j.PaymentMethod == "pickup" {
 			text += pick(lang, fmt.Sprintf("\nТөлем кассада: %s.", shopkit.Tenge(j.Total)), fmt.Sprintf("\nОплата на кассе: %s.", shopkit.Tenge(j.Total)))
 		}
+	case "reminder":
+		if j.Status != "ready" {
+			return
+		}
+		where := shop
+		if place != "" {
+			where += ", " + place
+		}
+		text = reminderText(lang, j, where)
 	case "price_proposed":
 		if j.ProposedTotal == nil {
 			return

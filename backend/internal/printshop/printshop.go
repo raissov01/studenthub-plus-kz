@@ -137,6 +137,7 @@ func Routes(mux httpx.Router) {
 	// a file, by a short-lived signed link (no session: the link itself is the permission)
 	h("GET /api/print/files/{id}", serveFile)
 	staffRoutes(h)
+	extraRoutes(h)
 	adminRoutes(h)
 }
 

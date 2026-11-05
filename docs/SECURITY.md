@@ -211,6 +211,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/print/staff/catalog` | signed-in (staff of the shop, admin) | no | yes | print |
 | GET | `/api/print/staff/jobs` | signed-in (print shop staff; own shop only, RLS) | no | yes | print |
 | GET | `/api/print/staff/lookup` | signed-in (print shop staff; own shop only, RLS; code or HMAC-signed QR) | yes (per-staff lookup limit) | yes | print |
+| GET | `/api/print/staff/report` | signed-in (print shop staff; own shop only, RLS) | no | yes | print |
 | GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
@@ -406,6 +407,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
 | POST | `/api/portfolio/certificates` | signed-in (consented) | yes | yes | portfolio |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
+| POST | `/api/print/estimate` | anonymous (active shop; priced on the server from typed page counts; nothing stored) | yes (+ per-IP estimate limit) | yes | print |
 | POST | `/api/print/jobs` | signed-in (consented; repriced on the server; idempotency key; active/daily job caps) | yes (+ per-user job limit) | yes | print |
 | POST | `/api/print/jobs/{id}/cancel` | signed-in (own job, only before printing) | yes | yes | print |
 | POST | `/api/print/jobs/{id}/pay` | signed-in (own unpaid Kaspi job with an agreed price; one invoice request at a time) | yes | yes | print |
