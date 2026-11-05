@@ -20,6 +20,8 @@ import { dOff } from '@/lib/format';
 import { buildScheduleIcs } from '@/lib/ics';
 import type { ClassItem, IconName } from '@/lib/types';
 import { HomeReviewDue } from '@/components/views/review';
+import { HomeDesk } from '@/components/views/home-desk';
+import { useDesktop } from '@/lib/desktop';
 
 const Mark = ({ id, label }: { id: string; label: string }) => (
   <span className={`mk mk-${hue(id)}`} aria-hidden="true">{plainOrg(label).charAt(0).toUpperCase()}</span>
@@ -108,6 +110,7 @@ export function Home() {
   const rec = recruitingPick(clubs.data?.clubs ?? []);
   if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'user' as IconName, id: 'club' + rec.id, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
   const focused = useRef(false);
+  const desktop = useDesktop();
   return (
     <>
       <form className="search" id="homeSearch" role="search" onSubmit={e => {
@@ -163,6 +166,7 @@ export function Home() {
       </section>
 
       <PointsChip />
+      {desktop ? <HomeDesk /> : null}
     </>
   );
 }

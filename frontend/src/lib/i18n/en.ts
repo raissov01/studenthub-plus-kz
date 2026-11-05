@@ -3490,4 +3490,10 @@ export const EN: Record<string, string> = {
   "№8 жатақхана": "Dormitory №8",
   "№{0} бас тарту": "Reject №{0}",
   "№{0}: баға": "№{0}: price",
+  // laptop layout (components/SideNav.tsx, views/home-desk.tsx, views/detail.tsx)
+  "{0} оқылмаған": "{0} unread",
+  "Жылдам әрекеттер": "Quick actions",
+  "Мәзірді ашу": "Expand menu",
+  "Мәзірді жию": "Collapse menu",
+  "Ұқсас мүмкіндіктер": "Similar opportunities",
 };

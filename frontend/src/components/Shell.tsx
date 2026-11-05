@@ -7,6 +7,8 @@ import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Boot } from '@/components/Boot';
 import { NavDrawer, OPEN_MENU } from '@/components/NavDrawer';
+import { SideNav } from '@/components/SideNav';
+import { useDesktop } from '@/lib/desktop';
 import { ConsentSheet, SignInSheet } from '@/components/views/account';
 import { Icon } from '@/components/ui';
 import { Onboarding } from '@/components/views/profile';
@@ -27,7 +29,7 @@ const TAB_OF: Record<string, string> = { opps: 'search', bonus: 'search', ai: 'h
 
 export function Shell({ children }: { children: ReactNode }) {
   const app = useApp();
-  const { S, ui, I, tt, go, back, sheet, toastMsg, closeSheet, content, openSheet, setActiveTab, fromOf } = app;
+  const { S, ui, I, tt, go, back, sheet, toastMsg, closeSheet, content, openSheet, setActiveTab, fromOf, setUi } = app;
   const hydrated = useHydrated();
   const tg = useTelegram();
   const pathname = usePathname();
@@ -114,6 +116,23 @@ export function Shell({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
+  // laptop: «/» focuses the screen's search box (or opens «Іздеу»), like most web apps
+  const desktop = useDesktop();
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey || sheet) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      const box = document.querySelector<HTMLInputElement>('#sq, #hq');
+      e.preventDefault();
+      if (box?.id === 'sq') { box.focus(); return; }
+      setUi({ sqFocus: true });
+      go('search');
+    };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  }, [sheet, go, setUi]);
+
   // Escape closes a sheet
   useEffect(() => {
     if (!sheet) return;
@@ -147,7 +166,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
           <div className="top-title" id="title">
             {name === 'home'
-              ? <span className="brand"><Logo />Student Hub</span>
+              ? desktop && hydrated ? tt('Басты бет', 'Главная') : <span className="brand"><Logo />Student Hub</span>
               : meta.title}
           </div>
           {hydrated && acc.loaded && !hasAccount(acc) && root ? (
@@ -164,7 +183,13 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main id="main" className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? <><OfflineBanner />{children}</> : null}</main>
+      <aside className="sidenav" aria-label={tt('Бөлімдер', 'Разделы')}>
+        {hydrated && desktop ? (
+          <SideNav v={v} tabRoot={tabRoot} unread={unread} badge={badge}
+            onSignIn={acc.loaded && !hasAccount(acc) ? () => openSheet(acc.user ? <ConsentSheet /> : <SignInSheet />) : undefined} />
+        ) : null}
+      </aside>
+      <main id="main" data-screen={name} className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? <><OfflineBanner />{children}</> : null}</main>
       {hydrated ? <Boot root={root} /> : null}
       <nav className="tabbar" aria-label="Student Hub">
         <div className="tabbar-in">

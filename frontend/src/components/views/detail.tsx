@@ -1,6 +1,7 @@
 'use client';
 /* Detail screens: vacancy and opportunity (database events: views/events.tsx). Job and opportunity pages carry the trust block. */
 import { useEffect, type ReactNode } from 'react';
+import { useDesktop } from '@/lib/desktop';
 import { useApp } from '@/components/app';
 import { CommunityReport } from '@/components/views/ambassador';
 import { track } from '@/features/analytics/track';
@@ -77,71 +78,107 @@ function TrustBlock({ item, kind, id, report }: { item: Provenance; kind: string
 
 export function JobView({ id }: { id: string }) {
   const { content } = useApp();
+  const wide = useDesktop();
   const j = content.jobs.find(x => x.id === id);
   const found = !!j || !!jobDbId(id);
   useEffect(() => { if (found) trackView('job_view', id); }, [found, id]);
   // an employer job that is not in the cached content yet (or hidden for this viewer's age) comes from the API
   if (!j && content.source === 'loading') return <ScreenLoading />;
-  if (!j) return jobDbId(id) ? <LiveEmployerJob id={id} render={x => <JobBody j={x} />} /> : null;
-  return <JobBody j={j} />;
+  if (!j) return jobDbId(id) ? <LiveEmployerJob id={id} render={x => <JobBody j={x} wide={wide} />} /> : null;
+  return <JobBody j={j} wide={wide} />;
 }
 
-/** a vacancy page body; also the admin editor's preview */
-export function JobBody({ j }: { j: Job }) {
+/** a vacancy page body; also the admin editor's preview. `wide`: the laptop layout with a right rail */
+export function JobBody({ j, wide }: { j: Job; wide?: boolean }) {
   const { S, tt, tp, L, I, go, openSheet } = useApp();
   const real = isEmployerJob(j);
   const perHour = hourly(j);
   const pt = payText(j, I), applied = !!S.applied[j.id];
-  return (
+  const head = (
+    <div className="detail-head">
+      <div className="badges">
+        {j.today ? <span className="badge b-sun"><Icon n="bolt" s={12} /> {tt('Бүгінгі жұмыс', 'Работа на сегодня')}</span> : null}
+        {j.tags.filter(k => JOB_TAGS[k]).map(k => <span key={k} className="badge b-line">{tp(JOB_TAGS[k])}</span>)}
+      </div>
+      <h1>{L(j.title)}</h1>
+      <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} kind="job" id={j.id} />
+      <p className="muted">{L(j.org)} {real ? null : <VerifiedBadge item={j} kind="job" id={j.id} />}</p>
+    </div>
+  );
+  const facts = (
+    <div className="card">
+      <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num">{pt.main}</span><span className="muted small">{pt.sub}</span></div>
+      <dl className="kv">
+        {Number.isFinite(perHour) && perHour > 0 ? <><dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {I.money(perHour)}</dd></> : null}
+        <dt>{tt('Кесте', 'График')}</dt><dd>{L(j.sched)}</dd>
+        <dt>{tt('Қала', 'Город')}</dt><dd>{L(CITIES[j.city])}</dd>
+      </dl>
+    </div>
+  );
+  const cal = <CalendarActions item={'job:' + j.id} target={deadlinePinTarget('job', j)} />;
+  const info = <EmployerJobInfo j={j} />;
+  const body = (
     <>
-      <div className="detail-head">
-        <div className="badges">
-          {j.today ? <span className="badge b-sun"><Icon n="bolt" s={12} /> {tt('Бүгінгі жұмыс', 'Работа на сегодня')}</span> : null}
-          {j.tags.filter(k => JOB_TAGS[k]).map(k => <span key={k} className="badge b-line">{tp(JOB_TAGS[k])}</span>)}
-        </div>
-        <h1>{L(j.title)}</h1>
-        <ShareRow path={pathOf('job:' + j.id)} title={L(j.title)} kind="job" id={j.id} />
-        <p className="muted">{L(j.org)} {real ? null : <VerifiedBadge item={j} kind="job" id={j.id} />}</p>
-      </div>
-      <div className="card">
-        <div className="card-row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}><span className="big-num">{pt.main}</span><span className="muted small">{pt.sub}</span></div>
-        <dl className="kv">
-          {Number.isFinite(perHour) && perHour > 0 ? <><dt>{tt('Сағатына', 'В час')}</dt><dd className="num">≈ {I.money(perHour)}</dd></> : null}
-          <dt>{tt('Кесте', 'График')}</dt><dd>{L(j.sched)}</dd>
-          <dt>{tt('Қала', 'Город')}</dt><dd>{L(CITIES[j.city])}</dd>
-        </dl>
-      </div>
-      <CalendarActions item={'job:' + j.id} target={deadlinePinTarget('job', j)} />
-      <EmployerJobInfo j={j} />
       <section className="section"><h2>{tt('Не істеу керек', 'Что нужно делать')}</h2><p style={real ? { whiteSpace: 'pre-line', overflowWrap: 'anywhere' } : undefined}>{L(j.desc)}</p></section>
       {j.req.length ? <section className="section"><h2>{tt('Талаптар', 'Требования')}</h2><ul className="bullets">{j.req.map((r, i) => <li key={i}>{L(r)}</li>)}</ul></section> : null}
       <div className="demo-note"><Icon n="shield" s={18} /><span>{tt('Қауіпсіздік: жұмысқа орналасу үшін алдын ала ақша төлемеңіз. Төлем мен жұмыс уақыты алдын ала жазылуы тиіс.', 'Безопасность: не платите деньги за трудоустройство. Оплата и время работы должны быть указаны заранее.')}</span></div>
       <TrustBlock item={j} kind="job" id={j.id} report={real ? <JobReportButton j={j} /> : undefined} />
-      {real ? (
-        <EmployerApplyCta j={j}>
-          <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
-        </EmployerApplyCta>
-      ) : <div className="sticky-cta">
-        {applied
-          ? <button className="btn secondary" type="button" onClick={() => go('applications')}><Icon n="check" s={18} /> {tt('Өтінім берілді', 'Отклик отмечен')}</button>
-          : <button className="btn" type="button" onClick={() => openSheet(<MarkAppliedSheet j={j} />)}><Icon n="send" s={18} /> {tt('Өтінім бердім', 'Я откликнулся')}</button>}
-        <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
-      </div>}
     </>
   );
+  const cta = real ? (
+    <EmployerApplyCta j={j}>
+      <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
+    </EmployerApplyCta>
+  ) : <div className="sticky-cta">
+    {applied
+      ? <button className="btn secondary" type="button" onClick={() => go('applications')}><Icon n="check" s={18} /> {tt('Өтінім берілді', 'Отклик отмечен')}</button>
+      : <button className="btn" type="button" onClick={() => openSheet(<MarkAppliedSheet j={j} />)}><Icon n="send" s={18} /> {tt('Өтінім бердім', 'Я откликнулся')}</button>}
+    <button className="btn ghost" type="button" onClick={() => go('match:' + j.id)}><Icon n="target" s={18} /> {tt('Сәйкестікті тексеру', 'Проверить совпадение')}</button>
+  </div>;
+  if (wide) return <DetailGrid main={<>{head}{info}{body}</>} rail={<>{facts}{cta}{cal}</>} />;
+  return <>{head}{facts}{cal}{info}{body}{cta}</>;
 }
 
 export function OppView({ id }: { id: string }) {
   const { content } = useApp();
+  const wide = useDesktop();
   const o = content.opportunities.find(x => x.id === id);
   const found = !!o;
   useEffect(() => { if (found) trackView('opportunity_view', id); }, [found, id]);
   if (!o) return content.source === 'loading' ? <ScreenLoading /> : null;
-  return <OppBody o={o} />;
+  return <OppBody o={o} wide={wide} />;
 }
 
-/** an opportunity page body; also the admin editor's preview */
-export function OppBody({ o }: { o: Opportunity }) {
+/** the laptop rail's «more like this»: up to three open opportunities of the same type */
+function Related({ o }: { o: Opportunity }) {
+  const { content, tt, L, I, go } = useApp();
+  const list = content.opportunities.filter(x => x.id !== o.id && x.type === o.type).slice(0, 3);
+  if (!list.length) return null;
+  return (
+    <section className="section rail-related">
+      <h2>{tt('Ұқсас мүмкіндіктер', 'Похожие возможности')}</h2>
+      <div className="group">
+        {list.map(x => {
+          const l = oppLeft(x);
+          return (
+            <button key={x.id} type="button" className="row" onClick={() => go('opp:' + x.id)}>
+              <span className="row-main"><span className="row-title">{L(x.title)}</span>
+                <span className="row-sub">{L(x.org)}{Number.isFinite(l) ? ' · ' + I.daysLeftTxt(l) : ''}</span></span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** a laptop page: the reading column and a sticky rail with the deadline, the actions and the key facts */
+function DetailGrid({ main, rail }: { main: ReactNode; rail: ReactNode }) {
+  return <div className="detail-grid"><div className="detail-main">{main}</div><aside className="detail-rail">{rail}</aside></div>;
+}
+
+/** an opportunity page body; also the admin editor's preview. `wide`: the laptop layout with a right rail */
+export function OppBody({ o, wide }: { o: Opportunity; wide?: boolean }) {
   const { S, ui, tt, L, I, setUi, update, toast, go } = useApp();
   const id = o.id;
   const cfg = useConfig();
@@ -154,7 +191,7 @@ export function OppBody({ o }: { o: Opportunity }) {
   const ready = o.docs.filter((_, i) => docs[i]).length;
   const left = oppLeft(o);
   const saved = !!S.saved[o.id];
-  return (
+  const head = (
     <>
       <div className="detail-head">
         <div className="badges">
@@ -171,9 +208,21 @@ export function OppBody({ o }: { o: Opportunity }) {
           ? <>{tt('Қабылдау', 'Приём до')}: {I.fDate(dOff(left))} · {I.daysLeftTxt(left)}</>
           : tt('Өтінім мерзімі шектелмеген', 'Приём заявок без срока')}</p>
       </div>
+    </>
+  );
+  const cal = (
+    <>
       <CalendarActions item={'opp:' + o.id} target={deadlinePinTarget('opp', o)} />
+    </>
+  );
+  const desc = (
+    <>
       <p>{L(o.desc)}</p>
       <FeedNote o={o} />
+    </>
+  );
+  const check = (
+    <>
       <section className="card">
         <div className="card-row" style={{ alignItems: 'center' }}>
           <span className={`ico ${showCheck ? (q.ok ? 'ok' : 'bad') : ''}`}><Icon n="target" /></span>
@@ -188,6 +237,10 @@ export function OppBody({ o }: { o: Opportunity }) {
           </>
         ) : <button className="btn" type="button" onClick={() => setUi(u => ({ oppCheck: { ...u.oppCheck, [id]: true } }))}>{tt('Тексеру', 'Проверить')}</button>}
       </section>
+    </>
+  );
+  const rest = (
+    <>
       {o.docs.length ? <section className="section">
         <SectionHead title={tt('Құжаттар', 'Документы')} more={<span className="tiny muted num">{ready}/{o.docs.length} {tt('дайын', 'готово')}</span>} />
         <div className="group">
@@ -201,6 +254,10 @@ export function OppBody({ o }: { o: Opportunity }) {
       </section> : null}
       {o.steps.length ? <section className="section"><h2>{tt('Қалай рәсімдеу керек', 'Как оформить')}</h2><ol className="steps">{o.steps.map((s, i) => <li key={i}><span>{L(s)}</span></li>)}</ol></section> : null}
       <TrustBlock item={o} kind="opp" id={o.id} />
+    </>
+  );
+  const cta = (
+    <>
       <div className="sticky-cta">
         <button className={`btn ${saved ? 'secondary' : ''} block`} type="button" onClick={() => {
           update(s => { if (s.saved[o.id]) delete s.saved[o.id]; else s.saved[o.id] = Date.now(); });
@@ -217,4 +274,16 @@ export function OppBody({ o }: { o: Opportunity }) {
       </div>
     </>
   );
+  if (wide) {
+    const deadline = (
+      <div className="card rail-deadline">
+        <span className="tiny muted"><Icon n="clock" s={14} /> {tt('Қабылдау', 'Приём до')}</span>
+        {Number.isFinite(left)
+          ? <><b className="big-num num">{I.fDate(dOff(left))}</b><span className={`small ${left <= 14 ? 'urgent' : 'muted'}`}>{I.daysLeftTxt(left)}</span></>
+          : <b>{tt('Өтінім мерзімі шектелмеген', 'Приём заявок без срока')}</b>}
+      </div>
+    );
+    return <DetailGrid main={<>{head}{desc}{rest}</>} rail={<>{deadline}{cta}{cal}{check}<Related o={o} /></>} />;
+  }
+  return <>{head}{cal}{desc}{check}{rest}{cta}</>;
 }
