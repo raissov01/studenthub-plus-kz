@@ -39,6 +39,10 @@ export interface Config {
     clubs: boolean;
     /** automatic opportunity feed from Telegram channels and websites (FEATURE_FEEDS, docs/feeds.md) */
     feeds: boolean;
+    /** spec 08 «kind streak»: evening reminder, milestones, session pause, 2 freezes (FEATURE_STREAK, needs points) */
+    streak?: boolean;
+    /** spec 10 career-fair booths: exhibitors, booth QR check-in, next-day summary (FEATURE_FAIRS, needs events) */
+    fairs?: boolean;
   };
 }
 
@@ -47,7 +51,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false, streak: false, fairs: false },
 };
 
 export type FeatureName = keyof Config['features'];

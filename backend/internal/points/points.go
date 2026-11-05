@@ -69,7 +69,7 @@ const (
 	DailyXPCap   = 150 // all earning reasons together, per Almaty day
 	DailyCoinCap = 30
 	FreezeCost   = 20
-	MaxFreezes   = 1
+	MaxFreezes   = 1 // with FEATURE_STREAK on: StreakMaxFreezes (see maxFreezes)
 	QuizBonusXP  = 5
 )
 
@@ -112,6 +112,7 @@ type Award struct {
 	Duplicate bool   `json:"duplicate,omitempty"` // this action already paid earlier
 	Capped    bool   `json:"capped,omitempty"`    // a daily/weekly cap stopped (part of) it
 	Reason    string `json:"reason"`
+	Milestone int    `json:"milestone,omitempty"` // a streak milestone this action reached (spec 08)
 }
 
 // Earn describes one action to award.
@@ -138,9 +139,10 @@ func lockWallet(ctx context.Context, tx Querier, userID int64) (*wallet, error) 
 		return nil, err
 	}
 	var w wallet
-	err := tx.QueryRow(ctx, `select coins, xp, streak_days, streak_best, last_active_day, freezes
+	err := tx.QueryRow(ctx, `select coins, xp, streak_days, streak_best, last_active_day, freezes,
+		session_pause_from, session_pause_until, last_milestone
 		from points_wallets where user_id = $1 for update`, userID).
-		Scan(&w.Coins, &w.XP, &w.Streak, &w.Best, &w.LastDay, &w.Freezes)
+		Scan(&w.Coins, &w.XP, &w.Streak, &w.Best, &w.LastDay, &w.Freezes, &w.PauseFrom, &w.PauseUntil, &w.LastMilestone)
 	return &w, err
 }
 
@@ -149,19 +151,24 @@ type wallet struct {
 	XP                  int64
 	LastDay             *time.Time
 	Freezes             int
+	// «Сессия режимі» (streak.go): missed days inside [PauseFrom, PauseUntil] cost nothing
+	PauseFrom, PauseUntil *time.Time
+	LastMilestone         int
+	Milestone             int // set by saveWallet when this action crossed a milestone
 }
 
-// streakAfter applies one active day to the streak (the wallet row must be locked).
+// streakAfter applies one active day to the streak (the wallet row must be locked). Missed days
+// inside a session pause are free; each other missed day takes one freeze, and the streak
+// restarts when there are not enough freezes.
 func (w *wallet) streakAfter(day time.Time) (used bool) {
 	switch {
 	case w.LastDay != nil && !w.LastDay.Before(day):
 		return false
-	case w.LastDay != nil && w.LastDay.AddDate(0, 0, 1).Equal(day):
+	case w.LastDay != nil && missedDays(*w.LastDay, day, w.PauseFrom, w.PauseUntil) <= w.Freezes:
+		n := missedDays(*w.LastDay, day, w.PauseFrom, w.PauseUntil)
+		w.Freezes -= n
 		w.Streak++
-	case w.LastDay != nil && w.LastDay.AddDate(0, 0, 2).Equal(day) && w.Freezes > 0:
-		w.Freezes--
-		w.Streak++
-		used = true
+		used = n > 0
 	default:
 		w.Streak = 1
 	}
@@ -176,16 +183,34 @@ func (w *wallet) streakAfter(day time.Time) (used bool) {
 // CurrentStreak is the streak as of today: kept while yesterday (or, with a freeze in hand, the
 // day before) was active.
 func CurrentStreak(last *time.Time, streak, freezes int, today time.Time) int {
+	return CurrentStreakPaused(last, streak, freezes, today, nil, nil)
+}
+
+// CurrentStreakPaused is CurrentStreak with a session pause: missed days inside it are free.
+// Today itself is not missed yet.
+func CurrentStreakPaused(last *time.Time, streak, freezes int, today time.Time, from, until *time.Time) int {
 	if last == nil {
 		return 0
 	}
-	switch {
-	case !last.Before(today.AddDate(0, 0, -1)):
-		return streak
-	case last.Equal(today.AddDate(0, 0, -2)) && freezes > 0:
+	if missedDays(*last, today, from, until) <= freezes {
 		return streak
 	}
 	return 0
+}
+
+// missedDays counts the days strictly between last and day that a session pause does not cover.
+func missedDays(last, day time.Time, from, until *time.Time) int {
+	n := 0
+	for d := last.AddDate(0, 0, 1); d.Before(day); d = d.AddDate(0, 0, 1) {
+		if from != nil && until != nil && !d.Before(*from) && !d.After(*until) {
+			continue
+		}
+		n++
+		if n > 3 { // more than any freeze count: no need to walk a long gap
+			return n
+		}
+	}
+	return n
 }
 
 // Grant awards e inside tx (the caller's transaction): a savepoint keeps a points failure from
@@ -260,7 +285,9 @@ func award(ctx context.Context, tx Querier, e Earn, now time.Time) (*Award, erro
 	if today >= rule.PerDay || (rule.PerWeek > 0 && week >= rule.PerWeek) {
 		a.Capped = true
 		// still an active day for the streak
-		return a, saveWallet(ctx, tx, e.UserID, w, day)
+		err := saveWallet(ctx, tx, e.UserID, w, day)
+		a.Milestone = w.Milestone
+		return a, err
 	}
 	if left := DailyXPCap - dayXP; xp > left {
 		xp, a.Capped = max(left, 0), true
@@ -292,14 +319,19 @@ func award(ctx context.Context, tx Querier, e Earn, now time.Time) (*Award, erro
 			a.Coins = coins
 		}
 	}
-	return a, saveWallet(ctx, tx, e.UserID, w, day)
+	err = saveWallet(ctx, tx, e.UserID, w, day)
+	a.Milestone = w.Milestone
+	return a, err
 }
 
 func saveWallet(ctx context.Context, tx Querier, userID int64, w *wallet, day time.Time) error {
 	w.streakAfter(day)
+	if err := milestone(ctx, tx, userID, w, day); err != nil {
+		return err
+	}
 	_, err := tx.Exec(ctx, `update points_wallets set coins = $2, xp = $3, streak_days = $4, streak_best = $5,
-		last_active_day = $6, freezes = $7, updated_at = now() where user_id = $1`,
-		userID, w.Coins, w.XP, w.Streak, w.Best, w.LastDay, w.Freezes)
+		last_active_day = $6, freezes = $7, last_milestone = $8, updated_at = now() where user_id = $1`,
+		userID, w.Coins, w.XP, w.Streak, w.Best, w.LastDay, w.Freezes, w.LastMilestone)
 	return err
 }
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { almatyToday, awardText, levelPct, newKey, plural } from './points';
+import { almatyToday, awardText, levelPct, newKey, plural, milestoneToShow, REMINDER_TIMES } from './points';
 
 const kk = (a: string) => a;
 const ru = (_: string, b: string) => b;
@@ -33,4 +33,12 @@ test('idempotency keys match the server pattern and differ', () => {
 test('Almaty day rolls over at 19:00 UTC', () => {
   assert.equal(almatyToday(new Date('2026-11-08T18:59:00Z')), '2026-11-08');
   assert.equal(almatyToday(new Date('2026-11-08T19:00:00Z')), '2026-11-09');
+});
+
+test('a milestone is shown once per device, only when newer than the last one shown', () => {
+  assert.equal(milestoneToShow(7, 0), 7);
+  assert.equal(milestoneToShow(7, 7), 0);
+  assert.equal(milestoneToShow(undefined, 0), 0);
+  assert.equal(milestoneToShow(14, 7), 14);
+  assert.deepEqual(REMINDER_TIMES.filter(t => t < '19:00' || t > '21:00'), []);
 });

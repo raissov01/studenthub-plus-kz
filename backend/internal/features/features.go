@@ -14,7 +14,7 @@ import (
 )
 
 // Names lists every switch in display order.
-var Names = []string{"events", "ambassador", "mentors", "market", "portfolio", "b2b", "quiz", "points", "cafe", "surveys", "feedback", "wellbeing", "lostfound", "courseqa", "roommates", "clubs", "feeds"}
+var Names = []string{"events", "ambassador", "mentors", "market", "portfolio", "b2b", "quiz", "points", "cafe", "surveys", "feedback", "wellbeing", "lostfound", "courseqa", "roommates", "clubs", "feeds", "streak", "fairs"}
 
 // Enabled reports whether the named feature is on. Unknown names are off.
 func Enabled(name string) bool {

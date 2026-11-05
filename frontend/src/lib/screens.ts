@@ -116,6 +116,9 @@ const META: Record<string, Meta> = {
   roommates: { title: (prm, x) => (prm === 'new' ? t('Хабарландыру', 'Объявление')(x) : prm === 'requests' ? t('Сұраулар', 'Запросы')(x) : t('Пәтерлес', 'Соседи по жилью')(x)), tab: 'home' },
   clubs: { title: (_, x) => t('Клубтар', 'Клубы')(x), tab: 'home' },
   club: { title: (_, x) => t('Клуб', 'Клуб')(x), tab: 'home' },
+  grades: { title: (_, x) => t('Бағалар', 'Оценки')(x), tab: 'profile' },
+  applications: { title: (_, x) => t('Менің өтінімдерім', 'Мои отклики')(x), tab: 'profile' },
+  booth: { title: (_, x) => t('Жәрмеңке стенді', 'Стенд ярмарки')(x), tab: 'home' },
   checkin: { title: (_, x) => t('Іс-шараға келу', 'Отметка на мероприятии')(x), tab: 'home' },
   organize: {
     title: (prm, x) => (prm === 'new' ? t('Жаңа іс-шара', 'Новое мероприятие')(x) : prm ? t('Іс-шараны басқару', 'Управление мероприятием')(x) : t('Ұйымдастырушы', 'Организатор')(x)),

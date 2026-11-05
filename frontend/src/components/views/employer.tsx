@@ -19,6 +19,7 @@ import {
 import { CITIES, HOME_CITIES, JOB_TAGS, SKILLS, SPECS } from '@/lib/data/static';
 import { money } from '@/lib/format';
 import type { LText } from '@/lib/types';
+import { EmployerFairs } from '@/components/views/fairs';
 
 export function EmployerCabinet({ prm }: { prm: string }) {
   return <Feature name="b2b"><EmployerRoute prm={prm} /></Feature>;
@@ -139,6 +140,7 @@ function Verified({ me, reload }: { me: EmployerMe; reload: () => void }) {
         ) : <Empty icon="briefcase" action={<button className="btn" type="button" onClick={() => go('employer:jobs/new')}>{tt('Алғашқы вакансияны жариялау', 'Опубликовать первую вакансию')}</button>}>
           {tt('Әзірге вакансия жоқ. Алғашқы 3 вакансияны әкімші тексереді.', 'Вакансий пока нет. Первые 3 вакансии проверяет администратор.')}</Empty>}
       </section>
+      <EmployerFairs />
       <Members me={me} onLeft={reload} />
     </>
   );

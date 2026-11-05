@@ -70,6 +70,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
 | DELETE | `/api/clubs/{id}/members/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
 | DELETE | `/api/employer/members/{userId}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
+| DELETE | `/api/events/{id}/exhibitors/{employerId}` | ambassador, university_staff (own university), admin | yes | yes | fairs |
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
@@ -130,11 +131,15 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/cron/ambassador` | cron (CRON_SECRET) | no | yes | ambassador |
 | GET | `/api/cron/b2b` | cron (CRON_SECRET) | no | yes | b2b |
 | GET | `/api/cron/events` | cron (CRON_SECRET) | no | yes | events |
+| GET | `/api/cron/fairs` | cron (CRON_SECRET) | no | yes | fairs |
 | GET | `/api/cron/feedback` | cron (CRON_SECRET) | no | yes | feedback |
 | GET | `/api/cron/market` | cron (CRON_SECRET) | no | yes | market |
 | GET | `/api/cron/mentors` | cron (CRON_SECRET) | no | yes | mentors |
 | GET | `/api/cron/notify` | cron (CRON_SECRET) | no | yes | — |
+| GET | `/api/cron/streak` | cron (CRON_SECRET) | no | yes | streak |
 | GET | `/api/discounts/checks` | anonymous | no | no (no input) | — |
+| GET | `/api/employer/fairs` | employer (verified company; own booths) | no | no (no input) | fairs |
+| GET | `/api/employer/fairs/{id}/checkins` | employer (verified company; only fields each student shared, the rest as a count) | no | yes | fairs |
 | GET | `/api/employer/jobs` | employer (own company; owner for membership/close/transfer) | no | no (no input) | b2b |
 | GET | `/api/employer/jobs/{id}/applications` | employer (own company; owner for membership/close/transfer) | no | yes | b2b |
 | GET | `/api/employer/me` | signed-in | no | no (no input) | b2b |
@@ -147,8 +152,10 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/events/{id}/attendees` | anonymous (count); names for organizers and registered students, never university_staff (count 1–4 as "< 5") | no | yes | events |
 | GET | `/api/events/{id}/attendees.csv` | ambassador, university_staff (own university; university_staff: aggregate metric,value CSV only), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/checkin/live` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/exhibitors` | anonymous (visible event; booth QR links and scan counts for organizers) | no | yes | fairs |
 | GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university; university_staff: distribution from 5 answers, no comments), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/ics` | anonymous | no | yes | events |
+| GET | `/api/events/{id}/my-booths` | signed-in (own scans) | no | yes | fairs |
 | GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, 1–4 as "< 5", empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/feedback/mine` | signed-in (own signed tickets) | no | no (no input) | feedback |
 | GET | `/api/feedback/photos/{name}` | university_staff (assigned recipient), admin | no | yes | feedback |
@@ -229,6 +236,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | PATCH | `/api/me` | signed-in | yes | yes | — |
 | PATCH | `/api/mentors/me` | signed-in | yes | yes | mentors |
 | PATCH | `/api/points/settings` | signed-in (consented) | yes | yes | points |
+| PATCH | `/api/points/streak` | signed-in (consented; reminder on/off, 19:00–21:00) | yes | yes | streak |
 | PATCH | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | PATCH | `/api/portfolio/settings` | signed-in | yes | yes | portfolio |
 | PATCH | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
@@ -318,12 +326,14 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/employer/rules/accept` | employer (own company; owner for membership/close/transfer) | yes | no (no input) | b2b |
 | POST | `/api/employer/transfer` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | POST | `/api/events` | anonymous | yes | yes | — |
+| POST | `/api/events/booth-checkin` | signed-in (consented; signed static booth token, start−30 min … end+1 h) | yes | yes | fairs |
 | POST | `/api/events/checkin` | anonymous | yes | yes | events |
 | POST | `/api/events/checkin/claim` | signed-in | yes | yes | events |
 | POST | `/api/events/create` | ambassador, university_staff (own university), admin | yes | yes | events |
 | POST | `/api/events/{id}/checkin/manual` | ambassador, university_staff (own university; university_staff: by e-ticket code only), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/checkin/revoke` | ambassador, university_staff (own university; university_staff: refused (needs a user id)), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/checkin/start` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/events/{id}/exhibitors` | ambassador, university_staff (own university), admin (career events only; verified company by BIN) | yes | yes | fairs |
 | POST | `/api/events/{id}/feedback` | signed-in | yes | yes | events |
 | POST | `/api/events/{id}/finish` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/register` | signed-in | yes | yes | events |
@@ -361,6 +371,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/points/claim` | signed-in (consented; device-only actions: XP only, no coins, capped; 20/user/hour) | yes (+ per-user claim limit) | yes | points |
 | POST | `/api/points/daily` | signed-in (consented; once per Almaty day) | yes | no (no input) | points |
 | POST | `/api/points/freeze` | signed-in (consented; at most 1 freeze held) | yes | yes | points |
+| POST | `/api/points/pause` | signed-in (consented; once per semester, 1–14 days) | yes | yes | streak |
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
 | POST | `/api/portfolio/certificates` | signed-in (consented) | yes | yes | portfolio |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |

@@ -19,6 +19,8 @@ export function defaults(lang?: Lang): AppState {
     deadlines: [],
     calendarPins: [],
     timetable: [],
+    scores: [],
+    applications: [],
   };
 }
 

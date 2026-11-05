@@ -36,6 +36,9 @@ import { LostFoundScreen } from '@/components/views/lostfound';
 import { QAScreen } from '@/components/views/qa';
 import { RoommatesScreen } from '@/components/views/roommates';
 import { AdminClubs, ClubScreen, ClubsScreen } from '@/components/views/clubs';
+import { GradesScreen } from '@/components/views/grades';
+import { ApplicationsScreen } from '@/components/views/applications';
+import { BoothScreen } from '@/components/views/fairs';
 import { parseView } from '@/lib/routes';
 import { sectionOfView } from '@/lib/sections';
 
@@ -118,6 +121,9 @@ export function Screen({ v }: { v: string }) {
     case 'roommates': return <RoommatesScreen />;
     case 'clubs': return <ClubsScreen />;
     case 'club': return <ClubScreen />;
+    case 'grades': return <GradesScreen />;
+    case 'applications': return <ApplicationsScreen />;
+    case 'booth': return <BoothScreen />;
     default: return <Home />;
   }
 }

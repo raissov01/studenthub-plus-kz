@@ -65,6 +65,7 @@ func Routes(mux httpx.Router) {
 	h("POST /api/points/redeem", auth.Write(auth.Need(redeem)))
 	h("GET /api/points/redemptions", auth.Need(myRedemptions))
 	adminRoutes(h)
+	streakRoutes(mux) // spec 08, FEATURE_STREAK (streak.go)
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
@@ -124,6 +125,12 @@ type Streak struct {
 	MaxFreezes  int  `json:"maxFreezes"`
 	FreezeCost  int  `json:"freezeCost"`
 	ActiveToday bool `json:"activeToday"`
+	// spec 08 (FEATURE_STREAK only, streak.go)
+	NextMilestone int               `json:"nextMilestone,omitempty"`
+	LastMilestone int               `json:"lastMilestone,omitempty"`
+	Milestones    []int             `json:"milestones,omitempty"`
+	Pause         *Pause            `json:"pause,omitempty"`
+	Reminder      *ReminderSettings `json:"reminder,omitempty"`
 }
 
 type Settings struct {
@@ -150,7 +157,9 @@ func load(ctx context.Context, userID int64, now time.Time) (*Summary, error) {
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		s.Streak.Days = CurrentStreak(last, s.Streak.Days, s.Streak.Freezes, today)
+		if err := loadStreak(ctx, tx, s, last, s.Streak.Days, today); err != nil {
+			return err
+		}
 		s.Streak.ActiveToday = last != nil && last.Equal(today)
 		counts := map[string][2]int{}
 		rows, err := tx.Query(ctx, `select reason, count(*) filter (where day = $1::date), count(*)
@@ -195,7 +204,7 @@ func load(ctx context.Context, userID int64, now time.Time) (*Summary, error) {
 		return nil, err
 	}
 	s.Level, s.LevelXP, s.NextLevelXP = Level(s.XP)
-	s.Streak.MaxFreezes, s.Streak.FreezeCost = MaxFreezes, FreezeCost
+	s.Streak.MaxFreezes, s.Streak.FreezeCost = maxFreezes(), FreezeCost
 	s.Today.XPCap, s.Today.CoinsCap = DailyXPCap, DailyCoinCap
 	return s, nil
 }
@@ -305,7 +314,7 @@ func buyFreeze(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			u.ID, ReasonFreeze, body.Key).Scan(&done); err != nil || done {
 			return err // a retried request: already bought
 		}
-		if wl.Freezes >= MaxFreezes {
+		if wl.Freezes >= maxFreezes() {
 			return errHaveFreeze
 		}
 		if err := spend(ctx, tx, u.ID, wl, -FreezeCost, ReasonFreeze, "freeze", body.Key, nil, "", Now()); err != nil {
@@ -315,6 +324,8 @@ func buyFreeze(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return err
 	})
 	switch {
+	case errors.Is(err, errHaveFreeze) && maxFreezes() > 1:
+		httpx.Error(w, r, http.StatusConflict, "freeze_owned", MsgHaveFrz2)
 	case errors.Is(err, errHaveFreeze):
 		httpx.Error(w, r, http.StatusConflict, "freeze_owned", MsgHaveFrz)
 	case errors.Is(err, errNoCoins):

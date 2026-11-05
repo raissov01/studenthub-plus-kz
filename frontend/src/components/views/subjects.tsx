@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useApp, type App } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { NewNoteSheet } from '@/components/views/notes';
+import { SubjectScoreRow } from '@/components/views/grades';
 import { buildPlan } from '@/lib/domain';
 import { diffDays, plural } from '@/lib/format';
 import { almatyYmd } from '@/lib/calendar';
@@ -221,6 +222,7 @@ function SubjectPage({ id }: { id: string }) {
 
       <section className="section" aria-labelledby="subjGrade">
         <SectionHead title={<span id="subjGrade">{tt('Баға', 'Оценка')}</span>} />
+        <SubjectScoreRow id={s.id} />
         {grade
           ? <Row go="gpa" icon="chart" title={tt(`Күтілетін баға: ${grade.g}`, `Ожидаемая оценка: ${grade.g}`)} sub={tt(`${grade.cr} кредит · GPA есебі`, `${grade.cr} кредитов · расчёт GPA`)} />
           : <Row onClick={() => { update(x => { x.gpaPlan.push({ n: s.name, cr: 5, g: 'B' }); }); go('gpa'); }} icon="chart"

@@ -15,6 +15,7 @@ import { rememberEvent, rememberMine, savedTicket, savedTickets, withMy } from '
 import { BUILDINGS } from '@/lib/data/campus';
 import { CalendarActions, eventPinTarget } from '@/components/views/calendar';
 import { awardText, pointsChanged } from '@/lib/points';
+import { FairSection } from '@/components/views/fairs';
 import {
   ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
   type Attendance, type CheckinResult, type DbEvent, type FeedbackSummary, type LiveView, type RegRow, type RegsResp,
@@ -121,6 +122,7 @@ function DbEvent_({ id }: { id: string }) {
       {e.status !== 'cancelled' && !isPast(e.ends_at) ? <CalendarActions item={'event:' + e.id} target={eventPinTarget(e.id, { kk: e.title_kk, ru: e.title_ru }, e.starts_at)} /> : null}
       {!att.data?.attendees ? <p className="tiny muted">{tt('Қатысушылардың аты тек тіркелгендерге көрінеді.', 'Имена участников видны только записавшимся.')}</p> : null}
       {evDesc(e, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evDesc(e, lang)}</p> : null}
+      <FairSection id={e.id} cat={e.cat} manage={!!e.can_manage} />
       {e.can_manage ? <button className="btn secondary block" type="button" onClick={() => go('organize:' + e.id)}><Icon n="gear" s={18} /> {tt('Іс-шараны басқару', 'Управлять мероприятием')}</button> : null}
       {my?.status === 'registered' ? (
         <>

@@ -15,7 +15,8 @@ export const PLAIN = [
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
   'subjects', 'notes', 'review', 'timetable', 'cafe', 'surveys', 'feedback', 'wellbeing',
-  'voice', 'lostfound', 'qa', 'roommates', 'clubs', 'club',
+  'voice', 'lostfound', 'qa', 'roommates', 'clubs', 'club', 'grades', 'applications',
+  'booth',
 ] as const;
 /** screens that need an id */
 export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer', 'cafe'] as const;
@@ -34,7 +35,7 @@ export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
 export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 /** device-local study screens whose item id rides in the query ('notes:n1' <-> /notes?id=n1), so the one saved
     page (/notes, /subjects, /review) opens every note, subject and review session offline */
-export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys', 'lostfound', 'qa', 'roommates', 'club'] as const;
+export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys', 'lostfound', 'qa', 'roommates', 'club', 'grades'] as const;
 
 const FIXED: Record<string, string> = {
   home: '/',

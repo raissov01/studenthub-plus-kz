@@ -142,6 +142,8 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ`, `FEATURE_SURVEYS`, `FEATURE_FEEDBACK`, `FEATURE_WELLBEING` | `true` — функция қосулы ([UNIVOICE.md](UNIVOICE.md)) |
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ` | `true` — функция қосулы |
 | `FEATURE_LOSTFOUND`, `FEATURE_COURSEQA`, `FEATURE_ROOMMATES` | қауымдастық функциялары, [api/community.md](api/community.md) |
+| `FEATURE_STREAK` | `true` — серия: кешкі еске салу, белестер, сессия үзілісі, 2 қорғаныс (`FEATURE_POINTS` керек; timer: `GET /api/cron/streak` әр 10 минут) |
+| `FEATURE_FAIRS` | `true` — мансап жәрмеңкесі стендтері, стенд QR, келесі күнгі қорытынды (`FEATURE_EVENTS` керек; timer: `GET /api/cron/fairs` күнде 09:00) |
 | `ALLOWED_HOSTS` | Origin тексеру тізімі; әдепкі `studenthub.studywithraissov.com,studenthub-plus-kz.vercel.app,studenthub-platform.vercel.app,localhost,127.0.0.1` |
 | `RATE_WRITE_PER_MIN` | жазу сұраныстарының шегі, әдепкі 30 (IP бойынша да, қолданушы бойынша да) |
 | `REPORT_URL`, `SUGGEST_FORM_URL` | `/api/config` арқылы фронтқа |

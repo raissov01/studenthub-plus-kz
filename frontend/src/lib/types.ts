@@ -1,6 +1,8 @@
 import type { RoadmapState } from '@/features/roadmap/logic';
 import type { CalPin, OwnDeadline } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
+import type { ScoreEntry } from '@/lib/scores';
+import type { TrackedApp } from '@/lib/applications';
 
 export type { IconName };
 export type Lang = 'kk' | 'ru';
@@ -219,4 +221,9 @@ export interface AppState {
   calendarPins: CalPin[];
   /** «Сабақ кестесі»: the student's own weekly timetable (lib/timetable.ts); added later */
   timetable: TimetableEntry[];
+  /** spec 04 «Бағалар»: own RK/exam scores and absences per subject (lib/scores.ts); added later, load() fills it in */
+  scores: ScoreEntry[];
+  /** spec 06 «Менің өтінімдерім»: applications with stage, follow-up and note (lib/applications.ts); added later,
+      load() fills it in and migrates the old `applied` marks */
+  applications: TrackedApp[];
 }
