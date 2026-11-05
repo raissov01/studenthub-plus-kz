@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 	"strings"
@@ -128,13 +129,78 @@ func (h Hours) ValidSlot(now, at time.Time) bool {
 
 // ---------- small helpers ----------
 
-// PickupCode is the three digits a student shows at the counter.
-func PickupCode() string {
-	n, err := rand.Int(rand.Reader, big.NewInt(900))
-	if err != nil {
-		return strconv.FormatInt(time.Now().UnixNano()%900+100, 10)
+// PickupCode is a random three-digit code (100–999), not checked against anything: use UniqueCode when placing.
+func PickupCode() string { return randomCode(3) }
+
+func randomCode(digits int) string {
+	lo := int64(1)
+	for i := 1; i < digits; i++ {
+		lo *= 10
 	}
-	return strconv.FormatInt(n.Int64()+100, 10)
+	n, err := rand.Int(rand.Reader, big.NewInt(9*lo))
+	if err != nil {
+		return strconv.FormatInt(time.Now().UnixNano()%(9*lo)+lo, 10)
+	}
+	return strconv.FormatInt(n.Int64()+lo, 10)
+}
+
+// ErrNoCode: every code of that length is taken (the caller refuses the order; it never reuses a code).
+var ErrNoCode = errors.New("shopkit: every pickup code is in use")
+
+// FreeCode picks a random code of digits digits (no leading zero) that is not in used: a few random draws, then a
+// walk from a random start, so it always finds the last free code. ok = false when every code is taken.
+func FreeCode(used map[string]bool, digits int) (string, bool) {
+	if digits < 1 || digits > 6 {
+		return "", false
+	}
+	for i := 0; i < 16; i++ {
+		if c := randomCode(digits); !used[c] {
+			return c, true
+		}
+	}
+	lo := 1
+	for i := 1; i < digits; i++ {
+		lo *= 10
+	}
+	span := 9 * lo
+	start, _ := strconv.Atoi(randomCode(digits))
+	for i := 0; i < span; i++ {
+		c := strconv.Itoa(lo + (start-lo+i)%span)
+		if !used[c] {
+			return c, true
+		}
+	}
+	return "", false
+}
+
+// UniqueCode is the code for a new order of one shop, inside the transaction that inserts it. The caller holds a
+// lock that orders the shop's inserts (its shop row FOR UPDATE), and a partial unique index on (shop, code) among
+// the open orders is the database's own guard. A code of an open order never repeats; today's closed orders'
+// codes are avoided too while any other is free (a student may still read today's message). table and scope are
+// constants of the calling package (cafe_orders/cafe_id, print_jobs/shop_id), never request input.
+func UniqueCode(ctx context.Context, tx pgx.Tx, digits int, table, scope string, shopID int64, open []string, now time.Time) (string, error) {
+	base := `select pickup_code from ` + table + ` where ` + scope + ` = $1 and `
+	for _, q := range []string{
+		base + `(status = any($2) or created_at >= $3)`,
+		base + `status = any($2) and $3::timestamptz is not null`,
+	} {
+		rows, err := tx.Query(ctx, q, shopID, open, DayStart(now))
+		if err != nil {
+			return "", err
+		}
+		codes, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return "", err
+		}
+		used := make(map[string]bool, len(codes))
+		for _, c := range codes {
+			used[c] = true
+		}
+		if c, ok := FreeCode(used, digits); ok {
+			return c, nil
+		}
+	}
+	return "", ErrNoCode
 }
 
 // Tenge formats tiyn as «1 250 ₸».

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { PDFDocument } from 'pdf-lib';
 import { test, expect, onboard, fits, label } from './fixtures';
 import { config } from './content';
 import type { Lang } from '../src/lib/types';
@@ -52,6 +53,7 @@ test('print: upload → the server prices it → pay at the counter → the job 
   await signedIn(page, lang);
   const quotes: Record<string, unknown>[] = [];
   const posted: Record<string, unknown>[] = [];
+  const estimates: Record<string, unknown>[] = [];
   let uploads = 0;
   let reads = 0;
   await page.route('**/api/print/**', async route => {
@@ -77,10 +79,15 @@ test('print: upload → the server prices it → pay at the counter → the job 
         ...(goods ? [{ kind: 'goods', refId: 31, nameKk: 'Папка', nameRu: 'Папка', qty: goods / 30000, unitPrice: 30000, total: goods }] : [])];
       return route.fulfill({ json: { quote: { lines, total: sides + bind + goods, review: false } } });
     }
+    if (path === '/api/print/estimate') {
+      const it = req.postDataJSON().items[0];
+      estimates.push(it);
+      return route.fulfill({ json: { quote: { lines: [], total: it.pages * it.copies * (it.duplex ? 1500 : 2000), review: false } } });
+    }
     if (path === '/api/print/jobs' && req.method() === 'POST') { posted.push(req.postDataJSON()); return route.fulfill({ status: 201, json: { job: job({ total: 160000 }), duplicate: false } }); }
     if (path === '/api/print/jobs/701') {
       reads++;
-      return route.fulfill({ json: { job: reads > 2 ? job({ total: 160000, status: 'ready', printingAt: '2026-11-05T06:05:00Z', readyAt: '2026-11-05T06:10:00Z' }) : job({ total: 160000 }) } });
+      return route.fulfill({ json: { job: reads > 2 ? job({ total: 160000, status: 'ready', printingAt: '2026-11-05T06:05:00Z', readyAt: '2026-11-05T06:10:00Z' }) : job({ total: 160000, etaMin: 15 }) } });
     }
     return route.fulfill({ status: 501, json: { error: { code: 'unmocked_print' } } });
   });
@@ -93,14 +100,29 @@ test('print: upload → the server prices it → pay at the counter → the job 
   // the price list shows every service, including the ones done only at the counter
   await expect(page.getByText(t('кассада', 'на кассе')).first()).toBeVisible();
   await fits(page);
+  // the price before any upload: pages typed by hand, the server's sum
+  await page.locator('#printCalc summary').click();
+  await page.locator('#pcPages').fill('12');
+  await page.locator('#pcCopies').fill('2');
+  await expect(page.locator('#printCalcTotal')).toHaveText(/480\s₸/);
+  expect(estimates.at(-1)).toEqual({ serviceId: 21, size: 'A4', color: false, duplex: false, copies: 2, pages: 12, bindingId: 0 });
+  await fits(page);
   // a format the shop does not take is refused before uploading
   await page.locator('#printFile').setInputFiles({ name: 'virus.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') });
   await expect(page.getByText(/virus\.exe/)).toBeVisible();
   expect(uploads).toBe(0);
-  await page.locator('#printFile').setInputFiles({ name: 'Курстық.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') });
+  const doc = await PDFDocument.create();
+  for (let i = 0; i < 10; i++) doc.addPage(i === 1 ? [842, 595] : [595, 842]);
+  await page.locator('#printFile').setInputFiles({ name: 'Курстық.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await doc.save()) });
   const card = page.getByRole('article', { name: 'Курстық.pdf' });
   await expect(card).toBeVisible();
   expect(uploads).toBe(1);
+  // the student's own proof, drawn on this device: the first eight pages, the landscape one flagged
+  await card.getByRole('button', { name: t('Беттерді көру', 'Посмотреть страницы') }).click();
+  await expect(card.locator('.print-thumbs img')).toHaveCount(8);
+  await expect(card.locator('.print-thumbs li.is-land')).toHaveCount(1);
+  await expect(card.locator('.print-preview')).toContainText(t('Тағы 2 бет', 'Ещё страниц: 2'));
+  await fits(page);
   // two copies, duplex, bound; a folder: the total is the server's
   await card.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') }).check();
   await card.getByRole('group', { name: t('Дана саны', 'Количество копий') }).getByRole('button', { name: t('Көбейту', 'Больше') }).click();
@@ -124,6 +146,10 @@ test('print: upload → the server prices it → pay at the counter → the job 
   // the code and the queue, then the operator marks it ready and the screen follows by itself
   await expect(page.locator('#printCode')).toHaveText('482');
   await expect(page.locator('#printAhead')).toContainText('2');
+  await expect(page.locator('#printEta')).toContainText('15');
+  // the options are remembered for the next order at this shop (never the file or its pages)
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('print:preset:4') ?? 'null'))).toEqual(
+    { serviceId: 21, size: 'A4', color: false, duplex: true, copies: 2, bindingId: 22, laminationId: 0 });
   await expect(page.getByText(t('Кассада төлейсіз', 'Оплата на кассе'))).toBeVisible();
   await expect(page.getByRole('status').getByText(t('Дайын', 'Готово'), { exact: true })).toBeVisible({ timeout: 15_000 });
   await fits(page);
@@ -176,6 +202,7 @@ test('print: the operator board confirms or changes a price, prints and hands ov
   await signedIn(page, lang);
   const actions: string[] = [];
   const prices: unknown[] = [];
+  const handovers: unknown[] = [];
   let cur = job({ priceState: 'review', customer: 'Аружан Т.', lines: [{ ...job().lines[0], pagesDeclared: true }] });
   await page.route('**/api/print/**', async route => {
     const req = route.request();
@@ -189,6 +216,7 @@ test('print: the operator board confirms or changes a price, prints and hands ov
     const m = /^\/api\/print\/staff\/jobs\/701\/(printing|ready|picked-up|no-show|decline)$/.exec(path);
     if (m && req.method() === 'POST') {
       actions.push(m[1]);
+      if (m[1] === 'picked-up') handovers.push(req.postDataJSON());
       cur = { ...cur, status: m[1] === 'printing' ? 'printing' : m[1] === 'ready' ? 'ready' : 'picked_up' };
       return route.fulfill({ json: { job: cur } });
     }
@@ -216,10 +244,125 @@ test('print: the operator board confirms or changes a price, prints and hands ov
   await page.getByRole('tab', { name: new RegExp(t('Басып жатыр', 'Печатаются')) }).click();
   await page.locator('.print-ticket').getByRole('button', { name: t('Дайын', 'Готово'), exact: true }).click();
   await page.getByRole('tab', { name: new RegExp(t('Дайын', 'Готовы') + ' ') }).click();
+  // the handover needs the code the student says
   await page.locator('.print-ticket').getByRole('button', { name: t('Берілді', 'Выдан') }).click();
+  const hand = page.getByRole('dialog');
+  await expect(hand).toContainText('Аружан Т.');
+  await hand.locator('#hsCode').fill('№482');
+  await hand.getByRole('button', { name: t('Берілді', 'Выдан') }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
   expect(actions).toEqual(['printing', 'ready', 'picked-up']);
+  expect(handovers).toEqual([{ code: '482' }]);
   // the price list at the counter
   await page.getByRole('tab', { name: t('Прайс', 'Прайс') }).click();
   await expect(page.locator('.cafe-switch input').first()).toBeChecked();
   await fits(page);
+});
+
+test('print: the counter finds a stack by code or QR, prints a batch in queue order, and the student shows a QR', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await signedIn(page, lang);
+  const token = 'PJ-702-4821-0123456789abcdef0123';
+  const a = job({ id: 701, pickupCode: '1207', customer: 'Аружан Т.', queuedAt: '2026-11-05T06:01:00Z' });
+  const b = job({ id: 702, pickupCode: '4821', customer: 'Нұрлан Қ.', queuedAt: '2026-11-05T06:00:00Z', status: 'ready', readyAt: '2026-11-05T06:10:00Z' });
+  const c = job({ id: 703, pickupCode: '0450', customer: 'Әлия С.', queuedAt: '2026-11-05T06:02:00Z' });
+  const d = job({ id: 704, pickupCode: '0999', customer: 'Ерлан Б.', queuedAt: '2026-11-05T05:59:00Z', status: 'ready' });
+  const e = job({ id: 705, pickupCode: '0200', customer: 'Дана М.', queuedAt: '2026-11-05T06:03:00Z', status: 'ready' });
+  const lookups: string[] = [];
+  const handovers: unknown[] = [];
+  const bulks: unknown[] = [];
+  let picked = false;
+  await page.route('**/api/print/**', async route => {
+    const req = route.request();
+    const url = new URL(req.url());
+    const path = url.pathname;
+    if (path === '/api/print/staff/jobs') {
+      return route.fulfill({ json: { shopId: 4, shops: [{ ...shop, myRole: 'operator', separator: 'slip' }], jobs: [d, b, a, c, e].filter(j => !(picked && j.id === 702)),
+        counts: { new: 2, ready: picked ? 2 : 3 } } });
+    }
+    if (path === '/api/print/staff/lookup') {
+      const q = url.searchParams.get('q') ?? '';
+      lookups.push(q);
+      return route.fulfill({ json: { jobs: q === '4821' || q === token ? [b] : [], valid: true, byToken: q === token } });
+    }
+    if (path === '/api/print/staff/jobs/702/picked-up') {
+      handovers.push(req.postDataJSON());
+      picked = true;
+      return route.fulfill({ json: { job: { ...b, status: 'picked_up' } } });
+    }
+    if (path === '/api/print/staff/jobs/bulk') {
+      bulks.push(req.postDataJSON());
+      return route.fulfill({ json: { results: [{ id: 701, ok: true }, { id: 703, ok: true }] } });
+    }
+    if (path === '/api/print/jobs/702') return route.fulfill({ json: { job: { ...b, customer: undefined, pickupToken: token } } });
+    if (path === '/api/print/staff/report') {
+      return route.fulfill({ json: { report: { day: '2026-11-05', received: 41, pickedUp: 37, noShow: 1, cancelled: 2, open: 3, revenueKaspi: 1250000, revenueCounter: 830000,
+        refunded: 0, refundsManual: 0, pagesBw: 1630, pagesColor: 42, sheets: 1100, waitMedianMin: 18 } } });
+    }
+    if (path === '/api/print/files/91') {
+      const d = await PDFDocument.create();
+      for (let i = 0; i < 10; i++) d.addPage([595, 842]);
+      return route.fulfill({ body: Buffer.from(await d.save()), contentType: 'application/pdf' });
+    }
+    return route.fulfill({ status: 501, json: { error: { code: 'unmocked_print' } } });
+  });
+  await onboard(page, lang);
+  await page.goto('/print/staff');
+  // the zero-paper tip, once
+  await expect(page.getByText(t('Стектерді қағазсыз бөлу', 'Разделять стопки без бумаги'))).toBeVisible();
+  await page.getByRole('button', { name: t('Түсінікті', 'Понятно') }).click();
+  await expect(page.getByText(t('Стектерді қағазсыз бөлу', 'Разделять стопки без бумаги'))).toHaveCount(0);
+  // a code nobody has, then the right one: the name and the pages to check against the stack
+  const search = page.locator('#pcSearch');
+  await search.fill('7777');
+  await search.press('Enter');
+  await expect(page.getByText(t('№7777 табылмады. Кодты қайта сұраңыз.', '№7777 не найден. Спросите код ещё раз.'))).toBeVisible();
+  await search.fill('№4821');
+  await search.press('Enter');
+  const found = page.locator('.print-handover');
+  await expect(found).toContainText('Нұрлан Қ.');
+  await expect(found).toContainText(t('20 бет', '20 стр.'));
+  await expect(found).toContainText('Курстық.pdf');
+  await fits(page);
+  await found.getByRole('button', { name: t('Төледі — берілді', 'Оплатил — выдан') }).click();
+  await expect(page.locator('.print-handover')).toHaveCount(0);
+  expect(handovers).toEqual([{ code: '4821' }]);
+  // a USB scanner types the QR into the same box
+  await search.fill(token);
+  await search.press('Enter');
+  await expect(page.locator('.print-handover')).toContainText('Нұрлан Қ.');
+  expect(lookups).toEqual(['7777', '4821', token]);
+  // the ready pile sorts by code on demand
+  await page.getByRole('tab', { name: new RegExp(t('Дайын', 'Готовы') + ' ') }).click();
+  const readyCol = page.locator('.cafe-col').nth(2);
+  await expect(readyCol.locator('.cafe-ticket-code')).toHaveText(['№0999', '№0200']);
+  await readyCol.getByRole('button', { name: t('Кезек бойынша', 'По очереди') }).click();
+  await expect(readyCol.locator('.cafe-ticket-code')).toHaveText(['№0200', '№0999']);
+  // a batch ticked out of order prints in queue order; slips come four to a sheet; one bulk move
+  await page.getByRole('tab', { name: new RegExp(t('Жаңа', 'Новые')) }).click();
+  await page.getByRole('checkbox', { name: t('№0450: басуға таңдау', '№0450: выбрать для печати') }).check();
+  await page.getByRole('checkbox', { name: t('№1207: басуға таңдау', '№1207: выбрать для печати') }).check();
+  await page.locator('#printPlanBtn').click();
+  const plan = page.getByRole('dialog');
+  await expect(plan.locator('.print-plan-item b.num')).toHaveText(['№1207', '№0450']);
+  await expect(plan.getByRole('button', { name: new RegExp(t('Кесетін парақшалар', 'Вкладыши для разрезания')) })).toContainText('1');
+  // slips for the batch and one job's print-ready PDF are built in this browser (10 pages, duplex, 2 copies = 20)
+  await plan.getByRole('button', { name: new RegExp(t('Кесетін парақшалар', 'Вкладыши для разрезания')) }).click();
+  await expect(plan.locator('#printSlipsPdf')).toHaveAttribute('href', /^blob:/);
+  await expect(plan.locator('#printSlipsPdf')).toContainText('1');
+  await plan.getByRole('button', { name: /PDF · A4/ }).first().click();
+  await expect(plan.getByRole('link', { name: new RegExp(t('PDF жүктеу · 20 бет', 'Скачать PDF · 20 стр.')) })).toHaveAttribute('href', /^blob:/);
+  await fits(page);
+  await plan.getByRole('button', { name: t('Барлығы: басып жатырмын', 'Все: печатаю') }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(bulks).toEqual([{ action: 'printing', ids: [701, 703] }]);
+  // the day in numbers
+  await page.getByRole('tab', { name: t('Есеп', 'Отчёт') }).click();
+  await expect(page.locator('.print-report')).toContainText(/12\s500\s₸/);
+  await expect(page.locator('.print-report')).toContainText('1630');
+  await fits(page);
+  // the student's screen carries the QR the operator scans
+  await page.goto('/print/jobs?id=702');
+  await expect(page.locator('#printQr svg')).toBeVisible();
+  await expect(page.locator('#printCode')).toHaveText('4821');
 });

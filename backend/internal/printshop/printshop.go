@@ -82,6 +82,8 @@ var (
 	MsgManager    = httpx.Msg{KK: "Прайсты тек менеджер өзгертеді.", RU: "Прайс меняет только менеджер."}
 	MsgShopData   = httpx.Msg{KK: "Полиграфия деректерін тексеріңіз.", RU: "Проверьте данные полиграфии."}
 	MsgCatalog    = httpx.Msg{KK: "Қызметті тексеріңіз: баға бүтін теңгемен, атаулары толық.", RU: "Проверьте услугу: цена в целых тенге, названия заполнены."}
+	MsgCodes      = httpx.Msg{KK: "Полиграфияда ашық тапсырыс тым көп. Бірнеше минуттан соң қайталаңыз.", RU: "В полиграфии слишком много открытых заказов. Повторите через несколько минут."}
+	MsgMismatch   = httpx.Msg{KK: "Код бұл тапсырысқа сәйкес емес. Студенттен кодты қайта сұраңыз не QR-ды сканерлеңіз.", RU: "Код не совпадает с этим заказом. Спросите код ещё раз или отсканируйте QR."}
 	MsgNoUser     = httpx.Msg{KK: "Пайдаланушы табылмады.", RU: "Пользователь не найден."}
 )
 
@@ -135,6 +137,7 @@ func Routes(mux httpx.Router) {
 	// a file, by a short-lived signed link (no session: the link itself is the permission)
 	h("GET /api/print/files/{id}", serveFile)
 	staffRoutes(h)
+	extraRoutes(h)
 	adminRoutes(h)
 }
 
@@ -220,6 +223,7 @@ type Shop struct {
 	PaymentMode   string   `json:"paymentMode"`
 	NoteKK        string   `json:"noteKk"`
 	NoteRU        string   `json:"noteRu"`
+	Separator     string   `json:"separator"` // none, slip, full: how the operator divides the stacks
 	// computed
 	OpenNow  bool     `json:"openNow"`
 	Payments []string `json:"payments"`
@@ -267,7 +271,7 @@ type Goods struct {
 }
 
 const shopCols = `s.id, s.name_kk, s.name_ru, s.building, s.place_kk, s.place_ru, to_char(s.open_time, 'HH24:MI'), to_char(s.close_time, 'HH24:MI'),
-	s.open_days, s.slot_minutes, s.lead_minutes, s.min_order, s.accepts, s.retention_days, s.active, s.payment_mode, s.note_kk, s.note_ru,
+	s.open_days, s.slot_minutes, s.lead_minutes, s.min_order, s.accepts, s.retention_days, s.active, s.payment_mode, s.note_kk, s.note_ru, s.separator,
 	s.kaspi_merchant_ref, s.kaspi_org_id, print_kaspi_ready(s.id)`
 
 func scanShop(row pgx.Row, extra ...any) (*Shop, error) {
@@ -276,7 +280,7 @@ func scanShop(row pgx.Row, extra ...any) (*Shop, error) {
 	var ref string
 	var org *int64
 	err := row.Scan(append([]any{&s.ID, &s.NameKK, &s.NameRU, &s.Building, &s.PlaceKK, &s.PlaceRU, &s.OpenTime, &s.CloseTime,
-		&days, &s.SlotMinutes, &s.LeadMinutes, &s.MinOrder, &s.Accepts, &s.RetentionDays, &s.Active, &s.PaymentMode, &s.NoteKK, &s.NoteRU,
+		&days, &s.SlotMinutes, &s.LeadMinutes, &s.MinOrder, &s.Accepts, &s.RetentionDays, &s.Active, &s.PaymentMode, &s.NoteKK, &s.NoteRU, &s.Separator,
 		&ref, &org, &s.kaspiOK}, extra...)...)
 	if err != nil {
 		return nil, err

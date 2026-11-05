@@ -1818,6 +1818,42 @@ p.print-review { padding: 8px 10px; border: 1px solid var(--p-sky-ink); border-r
 .print-dl { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; overflow-wrap: anywhere; min-height: 32px; }
 .print-why { margin: 0; padding: 6px 8px; border: 1px solid var(--p-sky-ink); background: var(--p-sky); border-radius: var(--r-sm); }
 .print-ticket[data-price="review"], .print-ticket[data-price="proposed"] { border-style: dashed; }
+/* the counter (components/views/print-counter.tsx): lookup by code or QR, the print plan, the zero-paper tip */
+.print-counter { gap: 10px; border-color: var(--p-violet-ink); }
+.print-counter-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.print-counter-input { flex: 1 1 160px; min-width: 0; font-size: 1.6rem; letter-spacing: .08em; font-weight: 700; }
+.print-scan { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.print-handover { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.print-handover[data-status="ready"] { background: var(--p-mint); border-color: var(--p-mint-ink); }
+.print-handover-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.print-handover-name { margin: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+.print-handover p { margin: 0; }
+.print-owes { font-weight: 700; color: var(--p-peach-ink); }
+.print-who { font-weight: 600; }
+.print-pick { width: 22px; height: 22px; accent-color: var(--primary); flex: none; align-self: center; }
+.print-batchbar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--p-violet); border-color: var(--p-violet-ink); }
+.print-batchbar .small { flex: 1; }
+.print-plan-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.print-plan-item { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.print-plan-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.print-seg { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.print-manual { padding: 4px 8px; border: 1px solid var(--p-peach-ink); background: var(--p-peach); border-radius: var(--r-sm); overflow-wrap: anywhere; }
+.print-tip { gap: 6px; background: var(--p-sky); border-color: var(--p-sky-ink); }
+.print-tip p { margin: 0; }
+.print-tip .btn { align-self: flex-start; }
+.print-qr { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.print-qr .qr svg { width: 168px; height: 168px; }
+.print-calc { gap: 10px; }
+.print-calc-sum { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.print-calc[open] .print-calc-sum { margin-bottom: 4px; }
+.print-report { display: flex; flex-direction: column; gap: 10px; }
+.print-preview { display: flex; flex-direction: column; gap: 6px; }
+.print-preview-btn { align-self: flex-start; }
+.print-thumbs { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; overflow-x: auto; }
+.print-thumbs li { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.print-thumbs img { display: block; height: auto; max-height: 160px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; background: #FFFFFF; }
+.print-thumbs li.is-land img { border-color: var(--p-peach-ink); }
+.print-land { margin: 0; color: var(--p-peach-ink); }
 /* ---------- university voice: surveys, feedback, wellbeing (components/views/voice.tsx) ---------- */
 .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

@@ -1,5 +1,7 @@
 import { test, expect, label, response, sql } from './helpers';
 import { kaspiPort } from './settings';
+import { readFile } from 'node:fs/promises';
+import { PDFDocument } from 'pdf-lib';
 
 // Real Go API + Postgres + the fake kaspi-pos. (1) The admin adds an operator and the shop's own Kaspi cashier; a
 // student uploads a real PDF (the server counts its pages), sees the server's price, pays at the counter, the operator
@@ -79,15 +81,39 @@ test('print: PDF upload → server price → pay at the counter → operator pri
   expect(dl.headers()['content-security-policy']).toContain('sandbox');
   expect((await dl.body()).subarray(0, 5).toString()).toBe('%PDF-');
   expect((await o.request.get(href!.replace(/s=[0-9a-f]+/, 's=' + '0'.repeat(64)))).status()).toBe(403);
-  await response(o, `/api/print/staff/jobs/${job.id}/printing`, () => ticket.getByRole('button', { name: t('Басып жатырмын', 'Печатаю') }).click());
+  // the print plan: a print-ready PDF built in the operator's browser from the real file, then a batch move
+  await ticket.getByRole('button', { name: 'PDF', exact: true }).click();
+  const plan = o.getByRole('dialog');
+  await plan.getByRole('button', { name: /PDF · A4/ }).click();
+  // three pages, duplex, one copy: the odd page gets a blank back (4 pages); the student's pages are untouched
+  const save = plan.getByRole('link', { name: new RegExp(t('PDF жүктеу · 4 бет', 'Скачать PDF · 4 стр.')) });
+  const [download] = await Promise.all([o.waitForEvent('download'), save.click()]);
+  const saved = await PDFDocument.load(await readFile((await download.path())!));
+  expect(saved.getPageCount()).toBe(4);
+  expect(saved.getPage(0).getSize()).toEqual({ width: 595, height: 842 });
+  expect(download.suggestedFilename()).toMatch(/^\d{4}-1-A4\.pdf$/);
+  await response(o, '/api/print/staff/jobs/bulk', () => plan.getByRole('button', { name: t('Барлығы: басып жатырмын', 'Все: печатаю') }).click());
+  await expect.poll(() => sql<{ status: string }>(`select status from print_jobs where id = $1`, job.id)[0].status).toBe('printing');
   await o.getByRole('tab', { name: new RegExp(t('Басып жатыр', 'Печатаются')) }).click();
   await response(o, `/api/print/staff/jobs/${job.id}/ready`, () => o.locator('.print-ticket').getByRole('button', { name: t('Дайын', 'Готово'), exact: true }).click());
   await expect(s.getByRole('status').getByText(t('Дайын', 'Готово'), { exact: true })).toBeVisible({ timeout: 20_000 });
   // «Дайын» reached the student's inbox (Telegram delivery itself is closed in this suite)
   await expect.poll(() => sql<{ n: number }>(`select count(*)::int as n from notifications where user_id = $1 and category = 'print' and link = $2`,
     student.id, `/print/jobs?id=${job.id}`)[0].n).toBe(1);
-  await o.getByRole('tab', { name: new RegExp(t('Дайын', 'Готовы') + ' ') }).click();
-  await response(o, `/api/print/staff/jobs/${job.id}/picked-up`, () => o.locator('.print-ticket').getByRole('button', { name: t('Берілді', 'Выдан') }).click());
+  // the handover at the counter: a unique four-digit code; the student's screen shows a signed QR; a USB scanner (or
+  // the camera) puts it into the search box; the operator checks the name and hands over (the server checks the match)
+  const [{ pickup_code: code }] = sql<{ pickup_code: string }>(`select pickup_code from print_jobs where id = $1`, job.id);
+  expect(code).toMatch(/^[1-9][0-9]{3}$/);
+  await expect(s.locator('#printQr svg')).toBeVisible();
+  const token = (await (await s.request.get(`/api/print/jobs/${job.id}`)).json()).job.pickupToken as string;
+  expect(token).toMatch(new RegExp(`^PJ-${job.id}-${code}-[0-9a-f]{20}$`));
+  expect((await o.request.post(`/api/print/staff/jobs/${job.id}/picked-up`, { data: { code: code === '1000' ? '1001' : '1000' }, headers: { Origin: new URL(o.url()).origin } })).status()).toBe(409);
+  await o.locator('#pcSearch').fill(token);
+  await o.locator('#pcSearch').press('Enter');
+  const found = o.locator('.print-handover');
+  await expect(found).toContainText(`Print s.`);
+  await expect(found).toContainText('Курстық жұмыс.pdf');
+  await response(o, `/api/print/staff/jobs/${job.id}/picked-up`, () => found.getByRole('button', { name: t('Төледі — берілді', 'Оплатил — выдан') }).click());
   const kinds = sql<{ kind: string }>(`select kind from print_job_events where job_id = $1 order by id`, job.id).map(r => r.kind);
   expect(kinds).toEqual(['created', 'printing', 'ready', 'picked_up']);
   // another student sees nothing of it
@@ -99,6 +125,10 @@ test('print: PDF upload → server price → pay at the counter → operator pri
   await response(s, '/api/print/uploads', () => s.locator('#printFile').setInputFiles({ name: 'scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nbroken\n') }));
   const scan = s.getByRole('article', { name: 'scan.pdf' });
   await scan.getByLabel(t('Файлдағы бет саны', 'Страниц в файле')).fill('5');
+  // the last order's options at this shop come back (duplex: 5 × 15 ₸); one tap restores one-sided (5 × 20 ₸)
+  await expect(scan.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') })).toBeChecked();
+  await expect(s.locator('#printTotal')).toHaveText(/75\s₸/);
+  await scan.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') }).uncheck();
   await expect(s.locator('#printTotal')).toHaveText(/100\s₸/);
   await s.getByRole('radio', { name: new RegExp(t('Kaspi арқылы', 'Через Kaspi')) }).check();
   await response(s, '/api/print/jobs', () => s.locator('#printSubmit').click());

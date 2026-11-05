@@ -80,3 +80,80 @@ test('line details and the price list read like the shop board', () => {
   assert.deepEqual(priceList({ ...print, kind: 'binding', pricing: { tiers: [{ maxSheets: 50, price: 50000 }, { maxSheets: 150, price: 80000 }] } }, tt, 'kk').map(sp),
     ['1–50 парақ: 500 ₸', '51–150 парақ: 800 ₸']);
 });
+
+test('the counter: page ranges, print runs, what to check against the stack, scans and the ready pile', async () => {
+  const p = await import('./print');
+  assert.deepEqual(p.rangePages('', 3), [0, 1, 2]);
+  assert.deepEqual(p.rangePages('3, 1-2, 2', 5), [0, 1, 2]);
+  assert.equal(p.rangePages('4-2', 5), null);
+  assert.equal(p.rangePages('6', 5), null);
+  assert.equal(p.rangePages('1;2', 5), null);
+  assert.equal(p.rangePages('', 0), null);
+  const files: Upload[] = [pdf, docx, png].map(f => ({ ...f, jobId: 1 }));
+  const j = {
+    lines: [
+      { kind: 'file', fileId: 9, nameKk: 'a.pdf', nameRu: 'a.pdf', size: 'A4', duplex: true, copies: 2, pages: 5, sheets: 3, total: 1 },
+      { kind: 'file', fileId: 10, nameKk: 'b.docx', nameRu: 'b.docx', size: 'A4', duplex: true, copies: 1, pages: 7, sheets: 4, total: 1 },
+      { kind: 'goods', refId: 1, nameKk: 'Папка', nameRu: 'Папка', qty: 1, total: 1 },
+      { kind: 'file', fileId: 11, nameKk: 'c.png', nameRu: 'c.png', size: 'A4', color: true, copies: 3, pages: 1, sheets: 1, total: 1 },
+    ],
+    files,
+  } as unknown as Pick<Job, 'lines' | 'files'>;
+  const segs = p.segments(j);
+  assert.equal(segs.length, 2, 'colour and duplex split the print runs; goods are not printed');
+  assert.equal(segs[0].lines.length, 2);
+  assert.equal(p.segmentLabel(segs[0], tt), 'A4 · ақ-қара · 2 жақты');
+  assert.equal(p.segmentLabel(segs[1], tt), 'A4 · түрлі түсті · 1 жақты');
+  assert.ok(p.manualKind('docx') && !p.manualKind('pdf') && !p.manualKind('png'));
+  assert.deepEqual(p.stackSummary(j), { pages: 5 * 2 + 7 + 3, sheets: 3 * 2 + 4 + 3, copies: 3, files: 3, first: 'a.pdf' });
+  assert.equal(p.paddedPages(5, true), 6);
+  assert.equal(p.paddedPages(5, false), 5);
+  assert.equal(p.paddedPages(4, true), 4);
+  assert.equal(p.slipSheets(1), 1);
+  assert.equal(p.slipSheets(4), 1);
+  assert.equal(p.slipSheets(5), 2);
+  // what the box or the camera holds
+  assert.deepEqual(p.parseCounterInput(' №4821 '), { code: '4821' });
+  assert.deepEqual(p.parseCounterInput('482'), { code: '482' });
+  const tok = 'PJ-12-4821-0123456789abcdef0123';
+  assert.deepEqual(p.parseCounterInput(tok), { token: tok });
+  assert.equal(p.parseCounterInput('48'), null);
+  assert.equal(p.parseCounterInput('PJ-12-4821-XYZ'), null);
+  assert.equal(p.parseCounterInput('https://example.com'), null);
+  // the batch comes out in queue order whatever order it was ticked in; the ready pile sorts by code on demand
+  const q = [{ id: 3, queuedAt: '2026-11-05T10:02:00Z', pickupCode: '1200' }, { id: 1, queuedAt: '2026-11-05T10:00:00Z', pickupCode: '9001' },
+    { id: 2, queuedAt: '2026-11-05T10:01:00Z', pickupCode: '0450' }];
+  assert.deepEqual(p.batchOrder(q, new Set([3, 1])).map(x => x.id), [1, 3]);
+  assert.deepEqual(p.sortReady(q, 'queue').map(x => x.id), [1, 2, 3]);
+  assert.deepEqual(p.sortReady(q, 'code').map(x => x.pickupCode), ['0450', '1200', '9001']);
+});
+
+test('remembered options: applied only where the shop still prices them; the ETA label', async () => {
+  const p = await import('./print');
+  const bind: Service = { ...print, id: 2, kind: 'binding', pricing: { tiers: [{ maxSheets: 50, price: 50000 }] } };
+  const base = p.fixOpts(p.defaultOpts(pdf, [print, bind, lam]), [print, bind, lam], 'pdf');
+  const saved = p.presetOf({ ...base, size: 'A4', duplex: true, copies: 3, bindingId: 2, laminationId: 3, range: '1-2', pages: 9 });
+  assert.equal(p.presetKey(4), 'print:preset:4');
+  assert.deepEqual(Object.keys(saved).sort(), ['bindingId', 'color', 'copies', 'duplex', 'laminationId', 'serviceId', 'size']);
+  const back = p.parsePreset(JSON.stringify(saved));
+  const o = p.withPreset(base, back, [print, bind, lam], 'pdf');
+  assert.equal(o.duplex, true);
+  assert.equal(o.copies, 3);
+  assert.equal(o.bindingId, 2);
+  assert.equal(o.range, '', 'a page range is never remembered');
+  assert.equal(o.pages, base.pages);
+  // an image takes no binding and no duplex; a size no longer priced falls back; a gone binding is dropped
+  const img = p.withPreset(p.defaultOpts(png, [print]), back, [print], 'png');
+  assert.equal(img.duplex, false);
+  assert.equal(img.bindingId, 0);
+  assert.equal(p.withPreset(base, { ...saved, size: 'A0' }, [print], 'pdf').size, 'A4');
+  assert.equal(p.withPreset(base, { ...saved, color: true, size: 'A3' }, [print], 'pdf').color, false);
+  // junk in storage is ignored
+  assert.equal(p.parsePreset('{oops'), null);
+  assert.equal(p.parsePreset(null), null);
+  assert.equal(p.parsePreset('{"size":5}'), null);
+  assert.equal(p.withPreset(base, null, [print], 'pdf'), base);
+  assert.equal(p.etaLabel(15, tt), '≈ 15 минутта дайын');
+  assert.equal(p.etaLabel(180, tt), '≈ 3 сағатта дайын');
+  assert.equal(p.etaLabel(undefined, tt), '');
+});

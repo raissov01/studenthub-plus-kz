@@ -444,6 +444,9 @@ func StartPoller(ctx context.Context, every time.Duration) {
 				if _, err := Sweep(ctx); err != nil && !errors.Is(err, db.ErrNoDB) {
 					log.Printf("print: poller: %v", err)
 				}
+				if _, err := remindReady(ctx); err != nil && !errors.Is(err, db.ErrNoDB) {
+					log.Printf("print: reminders: %v", err)
+				}
 				if time.Since(lastRetain) > 10*time.Minute {
 					lastRetain = time.Now()
 					if res, err := Retain(ctx); err != nil && !errors.Is(err, db.ErrNoDB) {
