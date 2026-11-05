@@ -1,5 +1,13 @@
 [
  {
+  "kk": " (бір ретте ең көбі {0})",
+  "ru": " (за раз не больше {0})",
+  "en": " (at most {0} at a time)",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": " (кері алынды)",
   "ru": " (отменено)",
   "en": " (canceled)",
@@ -134,6 +142,14 @@
   "en": " — deleted",
   "files": [
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "#{0}: модератор тағайындау",
+  "ru": "#{0}: назначить модератором",
+  "en": "#{0}: make a moderator",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -451,6 +467,22 @@
   ]
  },
  {
+  "kk": "30 күнде белсенді",
+  "ru": "Активны за 30 дней",
+  "en": "Active in 30 days",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "30 күнде болған",
+  "ru": "Был за 30 дней",
+  "en": "Seen in 30 days",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "3–140 таңба",
   "ru": "3–140 символов",
   "en": "3–140 characters",
@@ -552,6 +584,22 @@
   "en": "6. Your rights",
   "files": [
    "src/components/views/privacy.tsx"
+  ]
+ },
+ {
+  "kk": "7 күнде белсенді (WAU)",
+  "ru": "Активны за 7 дней (WAU)",
+  "en": "Active in 7 days (WAU)",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "7 күнде болған",
+  "ru": "Был за 7 дней",
+  "en": "Seen in 7 days",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -731,6 +779,17 @@
   ]
  },
  {
+  "kk": "CSV экспорт",
+  "ru": "Экспорт CSV",
+  "en": "CSV export",
+  "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
+   "src/lib/console.ts",
+   "src/lib/screens.ts"
+  ]
+ },
+ {
   "kk": "Email адресі дұрыс емес.",
   "ru": "Некорректный email.",
   "en": "Invalid email address.",
@@ -874,6 +933,14 @@
   "en": "Download Excel template",
   "files": [
    "src/components/quiz/editor.tsx"
+  ]
+ },
+ {
+  "kk": "Excel-ге: қолданушылар, тапсырыстар, өтініштер",
+  "ru": "Для Excel: пользователи, заказы, обращения",
+  "en": "For Excel: users, orders, feedback",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -1074,12 +1141,36 @@
   ]
  },
  {
+  "kk": "Kaspi кассир сессиясы қосылмаған: тек кассада төлеу.",
+  "ru": "Сессия кассира Kaspi не подключена: только оплата на кассе.",
+  "en": "The Kaspi cashier session is not connected: pay at the counter only.",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Kaspi не касса",
   "ru": "Kaspi или касса",
   "en": "Kaspi or cashier",
   "files": [
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
+  ]
+ },
+ {
+  "kk": "Kaspi не кассада",
+  "ru": "Kaspi или на кассе",
+  "en": "Kaspi or at the counter",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
+  "kk": "Kaspi сессиясы үзілді ({0}): әкімші қайта кіруі керек.",
+  "ru": "Сессия Kaspi прервана ({0}): администратору нужно войти снова.",
+  "en": "The Kaspi session broke ({0}): an administrator needs to sign in again.",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -1114,6 +1205,14 @@
   "files": [
    "src/lib/cafe.ts",
    "src/lib/print.ts"
+  ]
+ },
+ {
+  "kk": "Kaspi-ге қосуды (SMS коды) Student Hub әкімшісі жасайды. Ақша әрқашан дүкеннің өз шотына түседі.",
+  "ru": "Подключение к Kaspi (код из SMS) делает администратор Student Hub. Деньги всегда идут на счёт самого магазина.",
+  "en": "Connecting Kaspi (SMS code) is done by a Student Hub administrator. Money always goes to the shop's own account.",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -1402,6 +1501,14 @@
   ]
  },
  {
+  "kk": "Telegram байланысты",
+  "ru": "Привязан Telegram",
+  "en": "Telegram linked",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
   "kk": "Telegram байланыстырылды",
   "ru": "Telegram привязан",
   "en": "Telegram linked",
@@ -1578,11 +1685,27 @@
   ]
  },
  {
+  "kk": "id-ді «Қолданушылар» бетінен табыңыз.",
+  "ru": "id можно найти на странице «Пользователи».",
+  "en": "Find the id on the «Users» page.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "{0} · 20 МБ-қа дейін · ең көбі {1} файл. Файлдар жабық сақталады және {2} күннен соң өшіріледі.",
   "ru": "{0} · до 20 МБ · не больше {1} файлов. Файлы хранятся закрыто и удаляются через {2} дн.",
   "en": "{0} · up to 20 MB · max {1} files. Files are stored privately and deleted after {2} days.",
   "files": [
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "{0} алушы, оның {1} қызметкерсіз · {2} университет қызметкері · {3} жауап берілген",
+  "ru": "{0} получателей, без сотрудника {1} · {2} сотрудников вуза · {3} с ответом",
+  "en": "{0} recipient{0|s}, {1} without staff · {2} university staff · {3} answered",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -1781,6 +1904,7 @@
   "ru": "{0} дн.",
   "en": "{0} day{0||s}",
   "files": [
+   "src/components/views/admin-health.tsx",
    "src/components/views/mentors.tsx",
    "src/components/views/review.tsx",
    "src/components/views/streak.tsx"
@@ -1862,6 +1986,14 @@
   ]
  },
  {
+  "kk": "{0} сағ",
+  "ru": "{0} ч",
+  "en": "{0} h",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
   "kk": "{0} сағ {1} мин кейін",
   "ru": "через {0} ч {1} мин",
   "en": "in {0} h {1} min",
@@ -1937,11 +2069,27 @@
   ]
  },
  {
+  "kk": "{0} шағым · {1} негізсіз · соңғысы {2}",
+  "ru": "{0} жалоб · {1} необоснованных · последняя {2}",
+  "en": "{0} report{0|s} · {1} groundless · last {2}",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "{0} қатарынан!",
   "ru": "{0} подряд!",
   "en": "{0} in a row!",
   "files": [
    "src/components/views/streak.tsx"
+  ]
+ },
+ {
+  "kk": "{0} қатысушы",
+  "ru": "{0} участн.",
+  "en": "{0} participant{0|s}",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -1958,6 +2106,22 @@
   "en": "Responds to {0}% of applications",
   "files": [
    "src/components/views/jobs-b2b.tsx"
+  ]
+ },
+ {
+  "kk": "{0}-бет",
+  "ru": "Стр. {0}",
+  "en": "Page {0}",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "{0}-бет / {1}",
+  "ru": "Стр. {0} из {1}",
+  "en": "Page {0} of {1}",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -2062,6 +2226,7 @@
   "en": "Year {0}",
   "files": [
    "src/components/PortfolioPage.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/clubs.tsx",
    "src/components/views/events.tsx",
    "src/components/views/fairs.tsx",
@@ -2135,6 +2300,7 @@
   "ru": "{0}: убрать",
   "en": "{0}: remove",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/print.tsx"
   ]
  },
@@ -2153,6 +2319,14 @@
   "en": "{0}: already marked",
   "files": [
    "src/components/views/fairs.tsx"
+  ]
+ },
+ {
+  "kk": "{0}: модератор құқығын алу",
+  "ru": "{0}: снять права модератора",
+  "en": "{0}: remove moderator rights",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -2332,6 +2506,14 @@
   ]
  },
  {
+  "kk": "«Бәрін жариялау» сүзгіге сай барлық күтудегі жазбаны алады; алдымен нақты саны мен тізімі көрсетіледі. Мерзімі өткендері өткізіліп жіберіледі.",
+  "ru": "«Опубликовать всё» берёт все ожидающие записи под фильтр; сначала покажем точное число и список. Просроченные пропускаются.",
+  "en": "«Publish all» takes every pending item matching the filter; the exact count and list are shown first. Expired items are skipped.",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "«Деректерімді жүктеу» — сервердегі бар деректеріңіз бір JSON файлда",
   "ru": "«Скачать мои данные» — все ваши данные с сервера в одном JSON-файле",
   "en": "“Download my data” — all your server data in one JSON file",
@@ -2361,6 +2543,14 @@
   "en": "“Fits me” list is based on your ad.",
   "files": [
    "src/components/views/roommates.tsx"
+  ]
+ },
+ {
+  "kk": "«Онлайн» тек осы сервер процесінің жадында саналады және қайта іске қосқанда нөлденеді.",
+  "ru": "«Онлайн» считается только в памяти этого процесса сервера и обнуляется при перезапуске.",
+  "en": "«Online» is counted only in this server process's memory and resets on restart.",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -2437,6 +2627,14 @@
   "en": "Search and export",
   "files": [
    "src/components/views/subjects.tsx"
+  ]
+ },
+ {
+  "kk": "Іздеу, сүзгі, профиль, шектеу, өшіру",
+  "ru": "Поиск, фильтры, профиль, ограничение, удаление",
+  "en": "Search, filters, profile, restriction, deletion",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -2572,6 +2770,7 @@
   "ru": "Мероприятия",
   "en": "Events",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/events.tsx",
    "src/components/views/home.tsx",
    "src/components/views/moderation.tsx",
@@ -2684,6 +2883,14 @@
   "en": "Event check-in",
   "files": [
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Іс-шараға тіркелу",
+  "ru": "Регистрации",
+  "en": "Event registrations",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -3048,11 +3255,45 @@
   ]
  },
  {
+  "kk": "Аккаунт шектелген",
+  "ru": "Аккаунт ограничен",
+  "en": "Account restricted",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Аккаунт шектелді",
+  "ru": "Аккаунт ограничен",
+  "en": "Account restricted",
+  "files": [
+   "src/components/views/admin-users.tsx",
+   "src/lib/console.ts"
+  ]
+ },
+ {
   "kk": "Аккаунт өшірілді",
   "ru": "Аккаунт удалён",
   "en": "Account deleted",
   "files": [
-   "src/components/views/account.tsx"
+   "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Аккаунт өшірілді (әкімші)",
+  "ru": "Аккаунт удалён (админ)",
+  "en": "Account deleted (by admin)",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Аккаунт өшірілді (өзі)",
+  "ru": "Аккаунт удалён (сам)",
+  "en": "Account deleted (by the user)",
+  "files": [
+   "src/lib/console.ts"
   ]
  },
  {
@@ -3096,6 +3337,22 @@
   ]
  },
  {
+  "kk": "Аккаунттар (келісіммен)",
+  "ru": "Аккаунты (с согласием)",
+  "en": "Accounts (with consent)",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Аккаунтты шектеу",
+  "ru": "Ограничить аккаунт",
+  "en": "Restrict the account",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Аккаунтты қолдану үшін деректер туралы келісім керек",
   "ru": "Чтобы пользоваться аккаунтом, нужно согласие на обработку данных",
   "en": "Consent to data processing required to use account",
@@ -3116,7 +3373,8 @@
   "ru": "Удалить аккаунт",
   "en": "Delete account",
   "files": [
-   "src/components/views/account.tsx"
+   "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -3133,6 +3391,14 @@
   "en": "Already have an account?",
   "files": [
    "src/components/views/account-email.tsx"
+  ]
+ },
+ {
+  "kk": "Аккаунтыңыз шектелген: панельдерді көре аласыз, бірақ өзгерте алмайсыз.",
+  "ru": "Ваш аккаунт ограничен: панели видны, но изменять ничего нельзя.",
+  "en": "Your account is restricted: you can see the panels but cannot change anything.",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -3235,9 +3501,10 @@
  },
  {
   "kk": "Алдағы іс-шаралар",
-  "ru": "Ближайшие мероприятия",
+  "ru": "Будущие мероприятия",
   "en": "Upcoming events",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/clubs.tsx"
   ]
  },
@@ -3295,6 +3562,14 @@
   "en": "Orders ahead: {0}",
   "files": [
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "Алдыңғы",
+  "ru": "Назад",
+  "en": "Previous",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -3367,6 +3642,8 @@
   "ru": "Снять",
   "en": "Get",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/feeds.tsx",
    "src/components/views/points.tsx"
   ]
@@ -3407,9 +3684,10 @@
  },
  {
   "kk": "Алынды",
-  "ru": "Выдан",
+  "ru": "Убран",
   "en": "Received",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/points.tsx",
    "src/components/views/print.tsx",
@@ -3431,6 +3709,7 @@
   "ru": "Убрать",
   "en": "Remove",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/shop-common.tsx"
   ]
  },
@@ -3522,6 +3801,7 @@
   "en": "Ambassador",
   "files": [
    "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/map.tsx"
   ]
  },
@@ -3548,6 +3828,7 @@
   "ru": "Кабинет амбассадора",
   "en": "Ambassador dashboard",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/entries.tsx",
    "src/lib/screens.ts"
   ]
@@ -3607,6 +3888,7 @@
   "ru": "Амбассадоры",
   "en": "Ambassadors",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -4122,6 +4404,7 @@
   "ru": "Имя",
   "en": "Name",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/jobs-b2b.tsx"
   ]
  },
@@ -4131,6 +4414,14 @@
   "en": "Name (empty — account name)",
   "files": [
    "src/components/views/portfolio.tsx"
+  ]
+ },
+ {
+  "kk": "Аты бойынша",
+  "ru": "По имени",
+  "en": "By name",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -4162,7 +4453,6 @@
   "ru": "Имя, @username или Telegram id",
   "en": "Name, @username or Telegram id",
   "files": [
-   "src/components/views/admin.tsx",
    "src/components/views/employer.tsx"
   ]
  },
@@ -4172,6 +4462,22 @@
   "en": "Name, @username or ticket code",
   "files": [
    "src/components/views/events.tsx"
+  ]
+ },
+ {
+  "kk": "Аты, @username, email не id",
+  "ru": "Имя, @username, email или id",
+  "en": "Name, @username, email or id",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Аты, байланыс, рөл, университет, белсенділік. Сүзгілер — «Қолданушылар» бетінде.",
+  "ru": "Имя, контакты, роль, вуз, активность. Фильтры — на странице «Пользователи».",
+  "en": "Name, contacts, role, university, activity. Filters are on the «Users» page.",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -4357,6 +4663,7 @@
   "ru": "Открыть",
   "en": "Open",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/applications.tsx",
    "src/components/views/calendar.tsx",
    "src/components/views/cert-files.tsx",
@@ -4400,6 +4707,14 @@
    "src/components/views/print.tsx",
    "src/components/views/profile.tsx",
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Ашық сауалнамалар",
+  "ru": "Открытые опросы",
+  "en": "Open surveys",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -4610,9 +4925,10 @@
  },
  {
   "kk": "Ақшаны қолмен қайтару керек",
-  "ru": "Нужен ручной возврат",
+  "ru": "Нужно вернуть деньги вручную",
   "en": "Manual refund required",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/print.tsx"
   ]
@@ -4912,6 +5228,14 @@
   ]
  },
  {
+  "kk": "Баптау (әкімші)",
+  "ru": "Настройки (админ)",
+  "en": "Settings (admin)",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Баптаулар",
   "ru": "Настройки",
   "en": "Settings",
@@ -4950,12 +5274,14 @@
   "ru": "Все",
   "en": "All",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/admin-content.tsx",
-   "src/components/views/admin.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/clubs.tsx",
    "src/components/views/employer.tsx",
+   "src/components/views/feeds.tsx",
    "src/components/views/home.tsx",
    "src/components/views/inbox.tsx",
    "src/components/views/lostfound.tsx",
@@ -5143,11 +5469,27 @@
   ]
  },
  {
+  "kk": "Барлық экспорт",
+  "ru": "Все экспорты",
+  "en": "All exports",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Барлық қала",
   "ru": "Все города",
   "en": "All cities",
   "files": [
    "src/components/views/search.tsx"
+  ]
+ },
+ {
+  "kk": "Барлық қолданушылар",
+  "ru": "Все пользователи",
+  "en": "All users",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -5206,6 +5548,7 @@
    "src/components/views/account-email.tsx",
    "src/components/views/account.tsx",
    "src/components/views/admin-content.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/admin.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/cafe.tsx",
@@ -5246,6 +5589,14 @@
   ]
  },
  {
+  "kk": "Бас тартылды / келмеді",
+  "ru": "Отменено / не пришли",
+  "en": "Cancelled / no-show",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Басталу уақытын көрсетіңіз; аяқталуы одан кейін болуы керек.",
   "ru": "Укажите время начала; окончание должно быть позже.",
   "en": "Specify start time; end must be later.",
@@ -5262,6 +5613,14 @@
    "src/components/views/events.tsx",
    "src/components/views/notify.tsx",
    "src/components/views/timetable.tsx"
+  ]
+ },
+ {
+  "kk": "Бастап",
+  "ru": "С",
+  "en": "From",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -5330,6 +5689,7 @@
   "ru": "Печать",
   "en": "Print",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/fairs.tsx",
    "src/components/views/suggest.tsx",
@@ -5342,6 +5702,14 @@
   "en": "Print (per page)",
   "files": [
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "Басып шығару тапсырыстары",
+  "ru": "Заказы печати",
+  "en": "Print orders",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -5443,6 +5811,33 @@
   "en": "Others",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Басқару",
+  "ru": "Управлять",
+  "en": "Manage",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Басқару бөлімдері",
+  "ru": "Разделы управления",
+  "en": "Management sections",
+  "files": [
+   "src/components/views/admin-layout.tsx"
+  ]
+ },
+ {
+  "kk": "Басқару панелі",
+  "ru": "Панель управления",
+  "en": "Control panel",
+  "files": [
+   "src/components/NavDrawer.tsx",
+   "src/components/views/account.tsx"
   ]
  },
  {
@@ -5787,6 +6182,14 @@
   ]
  },
  {
+  "kk": "Белгіленген өтініштер (әкімшіге)",
+  "ru": "Помеченные обращения (админу)",
+  "en": "Flagged feedback (for the admin)",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Белгілер",
   "ru": "Метки",
   "en": "Tags",
@@ -5805,9 +6208,10 @@
  },
  {
   "kk": "Белгіні алу",
-  "ru": "Снять отметку",
+  "ru": "Снять выделение",
   "en": "Remove mark",
   "files": [
+   "src/components/views/feeds.tsx",
    "src/components/views/qa.tsx"
   ]
  },
@@ -5816,6 +6220,7 @@
   "ru": "Активна",
   "en": "Active",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/lostfound.tsx",
    "src/components/views/market.tsx",
@@ -5835,11 +6240,59 @@
   ]
  },
  {
-  "kk": "Белсенді еске салулар",
-  "ru": "Активные напоминания",
-  "en": "Active reminders",
+  "kk": "Белсенді аккаунттар, 14 күн",
+  "ru": "Активные аккаунты, 14 дней",
+  "en": "Active accounts, 14 days",
   "files": [
    "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Белсенді күн (30)",
+  "ru": "Активных дней (30)",
+  "en": "Active days (30)",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Белсенділігі бойынша",
+  "ru": "По активности",
+  "en": "By activity",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Белсенділік",
+  "ru": "Активность",
+  "en": "Activity",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Белсенділік әлі жиналмаған: кірген аккаунттар келгенде санала бастайды.",
+  "ru": "Активность ещё не собрана: начнёт считаться, когда зайдут аккаунты.",
+  "en": "Activity has not been collected yet: it starts counting when signed-in accounts visit.",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Белсенділік — кірген аккаунттың сайтқа күніне бір сұрауы; {0} бастап саналады.",
+  "ru": "Активность — хотя бы один запрос вошедшего аккаунта за день; считается с {0}.",
+  "en": "Activity is at least one request of a signed-in account in a day; counted since {0}.",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Берген",
+  "ru": "Есть",
+  "en": "Given",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -5868,10 +6321,19 @@
   ]
  },
  {
+  "kk": "Берілгендер сомасы",
+  "ru": "Сумма выданных",
+  "en": "Handed-over total",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Берілді",
-  "ru": "Выдан",
+  "ru": "Выдано",
   "en": "Given",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/market.tsx",
    "src/components/views/print.tsx"
@@ -5931,6 +6393,15 @@
   "en": "What to show",
   "files": [
    "src/components/views/portfolio.tsx"
+  ]
+ },
+ {
+  "kk": "Беттер",
+  "ru": "Страницы",
+  "en": "Pages",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -6087,6 +6558,14 @@
    "src/components/views/feeds.tsx",
    "src/components/views/moderation.tsx",
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "Бос емес қосылымдар",
+  "ru": "Занятые соединения",
+  "en": "Connections in use",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -6544,6 +7023,7 @@
   "ru": "Сегодня",
   "en": "Today",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/calendar.tsx",
    "src/lib/caltasks.ts",
    "src/lib/domain.ts"
@@ -6566,6 +7046,14 @@
   ]
  },
  {
+  "kk": "Бүгін белсенді (DAU)",
+  "ru": "Активны сегодня (DAU)",
+  "en": "Active today (DAU)",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Бүгін белсенді болдыңыз — серия сақталды.",
   "ru": "Сегодня вы были активны — серия сохранена.",
   "en": "You were active today — streak saved.",
@@ -6582,11 +7070,27 @@
   ]
  },
  {
+  "kk": "Бүгін дүкендер",
+  "ru": "Магазины сегодня",
+  "en": "Shops today",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Бүгін соңғы күн",
   "ru": "Сегодня последний день",
   "en": "Last day today",
   "files": [
    "src/lib/format.ts"
+  ]
+ },
+ {
+  "kk": "Бүгін түскен",
+  "ru": "Поступило сегодня",
+  "en": "Received today",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -6619,6 +7123,14 @@
   "en": "Review today: {0} {0|card|cards}",
   "files": [
    "src/components/views/review.tsx"
+  ]
+ },
+ {
+  "kk": "Бүгін құрылғылар (анонимді)",
+  "ru": "Устройства сегодня (анонимно)",
+  "en": "Devices today (anonymous)",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -6959,6 +7471,22 @@
   ]
  },
  {
+  "kk": "Бұл сүзгіге сай жазба жоқ",
+  "ru": "Под этот фильтр записей нет",
+  "en": "No items match this filter",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Бұл сүзгімен ешкім табылмады",
+  "ru": "По этому фильтру никого нет",
+  "en": "Nobody matches this filter",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Бұл тіркелуді растамау керек пе?",
   "ru": "Отменить эту отметку?",
   "en": "Cancel this mark?",
@@ -7080,6 +7608,14 @@
   ]
  },
  {
+  "kk": "Бәрін жариялау",
+  "ru": "Опубликовать всё",
+  "en": "Publish all",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Бөлме тыныш, қараңғы және салқын болсын.",
   "ru": "Пусть в комнате будет тихо, темно и прохладно.",
   "en": "Room should be quiet, dark, and cool.",
@@ -7104,6 +7640,22 @@
   ]
  },
  {
+  "kk": "Бөлім атауы",
+  "ru": "Название раздела",
+  "en": "Section name",
+  "files": [
+   "src/components/views/admin-layout.tsx"
+  ]
+ },
+ {
+  "kk": "Бөлім атауы…",
+  "ru": "Название раздела…",
+  "en": "Section name…",
+  "files": [
+   "src/components/views/admin-layout.tsx"
+  ]
+ },
+ {
   "kk": "Бөлім күйі белгісіз",
   "ru": "Состояние раздела неизвестно",
   "en": "Section status unknown",
@@ -7121,9 +7673,10 @@
  },
  {
   "kk": "Бөлімге өту",
-  "ru": "Перейти в раздел",
+  "ru": "Перейти к разделу",
   "en": "Go to section",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/roadmap.tsx"
   ]
  },
@@ -7132,7 +7685,8 @@
   "ru": "Разделы",
   "en": "Sections",
   "files": [
-   "src/components/NavDrawer.tsx"
+   "src/components/NavDrawer.tsx",
+   "src/components/views/admin-layout.tsx"
   ]
  },
  {
@@ -7233,6 +7787,7 @@
   "ru": "Вакансии",
   "en": "Jobs",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/employer.tsx"
   ]
  },
@@ -7412,6 +7967,7 @@
   "en": "Ready",
   "files": [
    "src/components/views/cafe.tsx",
+   "src/components/views/feeds.tsx",
    "src/components/views/print.tsx",
    "src/lib/print.ts"
   ]
@@ -7586,6 +8142,14 @@
   ]
  },
  {
+  "kk": "Дейін",
+  "ru": "По",
+  "en": "To",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Деканат немесе ақпараттық жүйедегі электрондық анықтама",
   "ru": "Деканат или электронная справка в информационной системе",
   "en": "Dean's office or electronic certificate in the information system",
@@ -7646,6 +8210,7 @@
   "ru": "Состояние системы",
   "en": "System status",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/admin.tsx",
    "src/features/roadmap/items.ts",
    "src/lib/screens.ts"
@@ -7752,6 +8317,14 @@
   ]
  },
  {
+  "kk": "Дерекқор көлемі",
+  "ru": "Размер базы",
+  "en": "Database size",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
   "kk": "Дерекқорға қосылу",
   "ru": "Связь с базой данных",
   "en": "Database connection",
@@ -7833,6 +8406,14 @@
    "src/components/views/ambassador.tsx",
    "src/components/views/points.tsx",
    "src/components/views/suggest.tsx"
+  ]
+ },
+ {
+  "kk": "Дүкен панелі",
+  "ru": "Панель магазина",
+  "en": "Shop panel",
+  "files": [
+   "src/lib/screens.ts"
   ]
  },
  {
@@ -8368,6 +8949,14 @@
   ]
  },
  {
+  "kk": "Ескертпе журналға (міндетті емес)",
+  "ru": "Комментарий в журнал (необязательно)",
+  "en": "Note for the log (optional)",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Ескі сілтеме бірден жұмыс істемей қалады — оны кімге жібердіңіз, солар «Мұндай бет жоқ» көреді. Сілтеме тарап кетсе, осылай қайтарып аласыз.",
   "ru": "Старая ссылка сразу перестанет работать — все, кому вы её отправили, увидят «Такой страницы нет». Так можно отозвать ссылку, если она разошлась.",
   "en": "Old links stop working immediately — recipients see “Page not found”. This is how you revoke a shared link.",
@@ -8376,11 +8965,35 @@
   ]
  },
  {
+  "kk": "Ескілері",
+  "ru": "Старее",
+  "en": "Older",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Ескісі бірінші",
+  "ru": "Сначала старые",
+  "en": "Oldest first",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Ескісі бірінші.",
   "ru": "Сначала старые.",
   "en": "Oldest first.",
   "files": [
    "src/components/views/moderation.tsx"
+  ]
+ },
+ {
+  "kk": "Ескісі бірінші; қайтарғанда себеп міндетті",
+  "ru": "Сначала старые; при отказе причина обязательна",
+  "en": "Oldest first; a reason is required to reject",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -8404,8 +9017,15 @@
   "ru": "Никого не найдено",
   "en": "No one found",
   "files": [
-   "src/components/views/admin.tsx",
    "src/components/views/employer.tsx"
+  ]
+ },
+ {
+  "kk": "Ешкім тағайындалмаған",
+  "ru": "Никто не назначен",
+  "en": "Nobody assigned",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -8439,6 +9059,14 @@
   "en": "Nothing found. Try another word.",
   "files": [
    "src/components/views/search.tsx"
+  ]
+ },
+ {
+  "kk": "Ешқашан",
+  "ru": "Ни разу",
+  "en": "Never",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -8506,6 +9134,14 @@
   ]
  },
  {
+  "kk": "Ең жаңасы",
+  "ru": "Самые новые",
+  "en": "Newest",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Ең көбі {0} пункт",
   "ru": "Не больше {0} пунктов",
   "en": "Up to {0} items",
@@ -8519,6 +9155,14 @@
   "en": "Do the most important task first thing in the morning",
   "files": [
    "src/features/roadmap/items.ts"
+  ]
+ },
+ {
+  "kk": "Ең үлкен кестелер",
+  "ru": "Самые большие таблицы",
+  "en": "Largest tables",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -8548,6 +9192,7 @@
    "src/components/views/employer.tsx",
    "src/components/views/events.tsx",
    "src/components/views/fairs.tsx",
+   "src/components/views/feeds.tsx",
    "src/components/views/jobs-b2b.tsx",
    "src/components/views/mentors.tsx",
    "src/components/views/portfolio.tsx",
@@ -8610,6 +9255,14 @@
    "src/components/views/print.tsx",
    "src/components/views/qa.tsx",
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Жад · {0} goroutine",
+  "ru": "Память · {0} goroutine",
+  "en": "Memory · {0} goroutines",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -8749,6 +9402,22 @@
   ]
  },
  {
+  "kk": "Жаппай жариялау",
+  "ru": "Массовая публикация",
+  "en": "Bulk publish",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Жаппай қабылдамау",
+  "ru": "Массовое отклонение",
+  "en": "Bulk reject",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Жарамды",
   "ru": "Действует до",
   "en": "Valid until",
@@ -8834,6 +9503,14 @@
   ]
  },
  {
+  "kk": "Жарияланды: {0}",
+  "ru": "Опубликовано: {0}",
+  "en": "Published: {0}",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Жарияланым ресми дереккөзде бар екені расталды.",
   "ru": "Подтверждено, что публикация есть в официальном источнике.",
   "en": "Confirmed in official source.",
@@ -8900,6 +9577,14 @@
    "src/components/views/university.tsx",
    "src/components/views/voice.tsx",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Жариялау ({0})",
+  "ru": "Опубликовать ({0})",
+  "en": "Publish ({0})",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -9015,6 +9700,14 @@
    "src/components/views/admin-content.tsx",
    "src/components/views/moderation.tsx",
    "src/components/views/university.tsx"
+  ]
+ },
+ {
+  "kk": "Жасыру, қайтару, жариялауды шектеу",
+  "ru": "Скрыть, вернуть, ограничить публикации",
+  "en": "Hide, restore, limit posting",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -9418,6 +10111,14 @@
   "en": "Status after answer",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Жауаптар",
+  "ru": "Ответы",
+  "en": "Answers",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -9874,6 +10575,14 @@
   ]
  },
  {
+  "kk": "Жаңа қызметкер: @username, email не id",
+  "ru": "Новый сотрудник: @username, email или id",
+  "en": "New staff member: @username, email or id",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Жаңа құпиясөз",
   "ru": "Новый пароль",
   "en": "New password",
@@ -9903,6 +10612,22 @@
   "en": "New request",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Жаңа, 7 күн",
+  "ru": "Новые, 7 дней",
+  "en": "New, 7 days",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Жаңалары",
+  "ru": "Новее",
+  "en": "Newer",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -9944,6 +10669,8 @@
   "en": "Refresh",
   "files": [
    "src/components/Pwa.tsx",
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/print.tsx"
   ]
@@ -9963,6 +10690,14 @@
   "en": "Updating…",
   "files": [
    "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
+  "kk": "Жаңасы бірінші",
+  "ru": "Сначала новые",
+  "en": "Newest first",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -10332,6 +11067,14 @@
   ]
  },
  {
+  "kk": "Жолдар",
+  "ru": "Строк",
+  "en": "Rows",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
   "kk": "Жолдар (әр жолға біреу)",
   "ru": "Строки (по одной в строке)",
   "en": "Lines (one per line)",
@@ -10506,6 +11249,14 @@
   ]
  },
  {
+  "kk": "Жоқ (тек бот)",
+  "ru": "Нет (только бот)",
+  "en": "No (bot only)",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Жоқ (түнгі ауысым, алкоголь сатылатын орын, ауыр жұмыс)",
   "ru": "Нет (ночные смены, продажа алкоголя, тяжёлый труд)",
   "en": "No (night shifts, alcohol sales, heavy work)",
@@ -10518,8 +11269,17 @@
   "ru": "Журнал",
   "en": "Journal",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
+  ]
+ },
+ {
+  "kk": "Журналда жазба жоқ",
+  "ru": "В журнале нет записей",
+  "en": "No entries in the log",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -10552,6 +11312,14 @@
   "en": "Your gender",
   "files": [
    "src/components/views/roommates.tsx"
+  ]
+ },
+ {
+  "kk": "Жіберген шағымдары",
+  "ru": "Отправленные жалобы",
+  "en": "Reports sent",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -10680,7 +11448,6 @@
   "ru": "Загрузка…",
   "en": "Loading…",
   "files": [
-   "src/components/views/admin.tsx",
    "src/components/views/common.tsx",
    "src/components/views/events.tsx",
    "src/components/views/inbox.tsx",
@@ -10795,6 +11562,7 @@
   "ru": "Работодатели",
   "en": "Employers",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -10847,6 +11615,22 @@
   "files": [
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
+  ]
+ },
+ {
+  "kk": "Жұмыс орны",
+  "ru": "Рабочее место",
+  "en": "Workspace",
+  "files": [
+   "src/components/views/admin-layout.tsx"
+  ]
+ },
+ {
+  "kk": "Жұмыс орнын ашу",
+  "ru": "Открыть рабочее место",
+  "en": "Open the workspace",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -11147,6 +11931,22 @@
   "en": "AI today",
   "files": [
    "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "ИИ сенімділігі кемінде",
+  "ru": "Уверенность ИИ не ниже",
+  "en": "AI confidence at least",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "ИИ тапқан жазбаларды тексеру",
+  "ru": "Проверка записей, найденных ИИ",
+  "en": "Review items found by AI",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -11627,6 +12427,14 @@
   ]
  },
  {
+  "kk": "Кассада төлеу",
+  "ru": "Оплата на кассе",
+  "en": "Pay at the counter",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Кассир нөмірі",
   "ru": "Номер кассира",
   "en": "Cashier number",
@@ -11788,9 +12596,11 @@
  },
  {
   "kk": "Кез келген",
-  "ru": "Любая",
+  "ru": "Любое",
   "en": "Any",
   "files": [
+   "src/components/views/admin-users.tsx",
+   "src/components/views/feeds.tsx",
    "src/components/views/lostfound.tsx",
    "src/components/views/market.tsx",
    "src/components/views/roommates.tsx"
@@ -11875,7 +12685,17 @@
   "ru": "Доска очереди",
   "en": "Queue board",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Кезек, шағымдар және контент. Рөл беретін өтінімдер (амбассадор, ментор, компания, клуб жетекшісі) — әкімшіде.",
+  "ru": "Очередь, жалобы и контент. Заявки, выдающие роли (амбассадор, ментор, компания, руководитель клуба), — у администратора.",
+  "en": "Queue, reports and content. Requests that grant a role (ambassador, mentor, company, club leader) go to the administrator.",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -11884,6 +12704,38 @@
   "en": "Join queue",
   "files": [
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "Кезекте күтуде",
+  "ru": "Ждут в очереди",
+  "en": "Waiting in the queue",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Кезең басы",
+  "ru": "Начало периода",
+  "en": "Period start",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Кезең бойынша барлық жазба.",
+  "ru": "Все записи за период.",
+  "en": "All entries for the period.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Кезең соңы",
+  "ru": "Конец периода",
+  "en": "Period end",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -11932,6 +12784,14 @@
   "en": "Arrived {0}",
   "files": [
    "src/components/views/events.tsx"
+  ]
+ },
+ {
+  "kk": "Келген сілтеме",
+  "ru": "Пришёл по ссылке",
+  "en": "Came via link",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -12021,6 +12881,7 @@
   "en": "Next",
   "files": [
    "src/components/quiz/play.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/voice.tsx"
   ]
  },
@@ -12158,11 +13019,11 @@
   ]
  },
  {
-  "kk": "Келісім бергендер",
-  "ru": "Дали согласие",
-  "en": "Agreed",
+  "kk": "Келісім",
+  "ru": "Согласие",
+  "en": "Consent",
   "files": [
-   "src/components/views/admin.tsx"
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -12278,6 +13139,7 @@
   "en": "Schedule",
   "files": [
    "src/components/views/admin-content.tsx",
+   "src/components/views/admin-health.tsx",
    "src/components/views/detail.tsx"
   ]
  },
@@ -12455,6 +13317,14 @@
   ]
  },
  {
+  "kk": "Клуб бетін басқару",
+  "ru": "Управлять страницей клуба",
+  "en": "Manage the club page",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Клуб бетін өзгерту",
   "ru": "Изменить страницу клуба",
   "en": "Edit club page",
@@ -12512,6 +13382,30 @@
   ]
  },
  {
+  "kk": "Клуб әкімшілері",
+  "ru": "Админы клубов",
+  "en": "Club admins",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Клуб әкімшісі",
+  "ru": "Админ клуба",
+  "en": "Club admin",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Клуб әкімшісі жоқ",
+  "ru": "Админов клубов нет",
+  "en": "No club admins",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Клубтан шығу",
   "ru": "Выйти из клуба",
   "en": "Leave club",
@@ -12533,6 +13427,9 @@
   "en": "Clubs",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin-users.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts",
    "src/lib/sections.ts"
@@ -12682,6 +13579,7 @@
   "ru": "Команда",
   "en": "Team",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/ambassador.tsx"
   ]
  },
@@ -12754,6 +13652,7 @@
   "ru": "Компания",
   "en": "Company",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/jobs-b2b.tsx"
   ]
  },
@@ -12811,6 +13710,14 @@
   "en": "No companies",
   "files": [
    "src/components/views/employer.tsx"
+  ]
+ },
+ {
+  "kk": "Компания кабинеті",
+  "ru": "Кабинет компании",
+  "en": "Company cabinet",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -13119,8 +14026,18 @@
   "ru": "Контент",
   "en": "Content",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Контентіне шағымдар",
+  "ru": "Жалобы на его контент",
+  "en": "Reports on their content",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -13200,12 +14117,46 @@
   ]
  },
  {
+  "kk": "Кофе тапсырыстары",
+  "ru": "Заказы кофе",
+  "en": "Coffee orders",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Кофе: {0} берілді / {1} тапсырыс",
+  "ru": "Кофе: выдано {0} / заказов {1}",
+  "en": "Coffee: {0} handed over / {1} order{1|s}",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Кофе: қолмен қайтару",
+  "ru": "Кофе: вернуть деньги вручную",
+  "en": "Coffee: return money by hand",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Кофейня",
   "ru": "Кофейня",
   "en": "Coffee shop",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/cafe.tsx",
    "src/lib/inbox.ts"
+  ]
+ },
+ {
+  "kk": "Кофейня қызметкерлері",
+  "ru": "Сотрудники кофеен",
+  "en": "Café staff",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -13221,6 +14172,7 @@
   "ru": "Кофейни",
   "en": "Coffee shops",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/cafe.tsx",
    "src/components/views/moderation.tsx",
@@ -13437,6 +14389,14 @@
   ]
  },
  {
+  "kk": "Кім жасады (id)",
+  "ru": "Кто сделал (id)",
+  "en": "Done by (id)",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Кім көре алады",
   "ru": "Кто может видеть",
   "en": "Who can see",
@@ -13471,6 +14431,14 @@
   ]
  },
  {
+  "kk": "Кімге (id)",
+  "ru": "Кому (id)",
+  "en": "Done to (id)",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Кімге арналған, не береді — 10–2000 таңба",
   "ru": "Для кого и что даёт — 10–2000 символов",
   "en": "For whom and what it gives — 10–2000 characters",
@@ -13492,6 +14460,14 @@
   "en": "Write who you want to learn from: field, experience",
   "files": [
    "src/features/roadmap/items.ts"
+  ]
+ },
+ {
+  "kk": "Кімнің қандай құқығы бар — бір жерде. Әр беру мен алу себебімен журналға жазылады.",
+  "ru": "Кто чем управляет — в одном месте. Каждая выдача и снятие пишется в журнал с причиной.",
+  "en": "Who manages what, in one place. Every grant and removal is logged with its reason.",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -13666,6 +14642,7 @@
   "ru": "День",
   "en": "Day",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/ai.tsx"
   ]
  },
@@ -14055,6 +15032,14 @@
   ]
  },
  {
+  "kk": "Көлемі",
+  "ru": "Размер",
+  "en": "Size",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
   "kk": "Көлемі жақсы ({0} сөз).",
   "ru": "Хороший объём ({0} слов).",
   "en": "Good length ({0} words).",
@@ -14110,12 +15095,21 @@
   "ru": "Не указан",
   "en": "Not specified",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/clubs.tsx",
    "src/components/views/detail.tsx",
    "src/components/views/events.tsx",
    "src/components/views/profile.tsx",
    "src/components/views/suggest.tsx",
    "src/components/views/university.tsx"
+  ]
+ },
+ {
+  "kk": "Көрініп тұрғанның бәрін белгілеу",
+  "ru": "Выделить все видимые",
+  "en": "Select all visible",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -14641,10 +15635,19 @@
   ]
  },
  {
+  "kk": "Менеджер тек {0} қоса алады; жаңа менеджерді әкімші тағайындайды.",
+  "ru": "Менеджер добавляет только: {0}; нового менеджера назначает администратор.",
+  "en": "A manager adds only: {0}; a new manager is appointed by an administrator.",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Ментор",
   "ru": "Ментор",
   "en": "Mentor",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/lib/portfolio.ts"
   ]
  },
@@ -14780,6 +15783,7 @@
   "ru": "Подбор менторов",
   "en": "Mentor matching",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
@@ -14800,6 +15804,14 @@
   "files": [
    "src/components/NavDrawer.tsx",
    "src/lib/caltasks.ts"
+  ]
+ },
+ {
+  "kk": "Менің басқа панельдерім",
+  "ru": "Мои другие панели",
+  "en": "My other panels",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -14858,6 +15870,7 @@
   "ru": "Моё менторство",
   "en": "My mentorship",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/entries.tsx",
    "src/components/views/mentors.tsx",
    "src/lib/screens.ts"
@@ -14869,6 +15882,15 @@
   "en": "My studies",
   "files": [
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Менің панельдерім",
+  "ru": "Мои панели",
+  "en": "My panels",
+  "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -15165,6 +16187,14 @@
   ]
  },
  {
+  "kk": "Мерзімі өткен өтініштер",
+  "ru": "Просроченные обращения",
+  "en": "Overdue feedback",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Мерзімі өтті",
   "ru": "Срок истёк",
   "en": "Deadline expired",
@@ -15194,6 +16224,14 @@
   ]
  },
  {
+  "kk": "Модератор",
+  "ru": "Модератор",
+  "en": "Moderator",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Модератор дәлелді тексереді. Бекітілсе, клуб бетін, жаңалықтарын, іс-шараларын және өтінімдерді өзіңіз басқарасыз.",
   "ru": "Модератор проверит подтверждение. После одобрения вы будете вести страницу клуба, новости, мероприятия и заявки.",
   "en": "Moderator will verify proof. Once approved, you will manage the club page, news, events, and applications.",
@@ -15202,12 +16240,107 @@
   ]
  },
  {
+  "kk": "Модератор ету",
+  "ru": "Сделать модератором",
+  "en": "Make a moderator",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Модератор кезекті, шағымдарды, тегін заттарды, ағын мен контентті қарайды. Қолданушылар, экспорт, ақша және рөл беретін өтінімдер оған жабық.",
+  "ru": "Модератор разбирает очередь, жалобы, «Отдам даром», ленту и контент. Пользователи, экспорт, деньги и заявки, выдающие роли, ему закрыты.",
+  "en": "A moderator works the queue, reports, «Giveaway», the feed and content. Users, exports, money and requests that grant roles are closed to them.",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Модератор тағайындалды",
+  "ru": "Назначен модератор",
+  "en": "Moderator appointed",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx",
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Модератор тағайындау",
+  "ru": "Назначить модератором",
+  "en": "Appoint as moderator",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Модератор құқығы алынды",
+  "ru": "Права модератора сняты",
+  "en": "Moderator rights removed",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Модератор құқығын алу",
+  "ru": "Снять права модератора",
+  "en": "Remove moderator rights",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Модератор әлі жоқ",
+  "ru": "Модераторов пока нет",
+  "en": "No moderators yet",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Модератордың жұмыс орны осылай көрінеді. Сіз әкімші ретінде рөл беретін өтінімдерді де көресіз.",
+  "ru": "Так выглядит рабочее место модератора. Как администратор вы видите и заявки, выдающие роли.",
+  "en": "This is the moderator's workspace. As an administrator you also see requests that grant roles.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Модераторлар",
+  "ru": "Модераторы",
+  "en": "Moderators",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Модераторлар және кім нені басқарады",
+  "ru": "Модераторы и кто чем управляет",
+  "en": "Moderators and who manages what",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Модераторлықты алу",
+  "ru": "Снять модератора",
+  "en": "Remove moderator",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Модерация",
   "ru": "Модерация",
   "en": "Moderation",
   "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/moderation.tsx",
-   "src/lib/inbox.ts"
+   "src/lib/inbox.ts",
+   "src/lib/screens.ts"
   ]
  },
  {
@@ -15215,6 +16348,9 @@
   "ru": "Очередь модерации",
   "en": "Moderation queue",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -15225,6 +16361,22 @@
   "en": "Moderation decisions",
   "files": [
    "src/components/views/notify.tsx"
+  ]
+ },
+ {
+  "kk": "Модерация: бекітілді",
+  "ru": "Модерация: одобрено",
+  "en": "Moderation: approved",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Модерация: қайтарылды",
+  "ru": "Модерация: отклонено",
+  "en": "Moderation: rejected",
+  "files": [
+   "src/lib/console.ts"
   ]
  },
  {
@@ -15456,6 +16608,8 @@
   "ru": "Лента возможностей",
   "en": "Opportunities feed",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
    "src/lib/screens.ts"
   ]
  },
@@ -15473,6 +16627,7 @@
   "ru": "Возможности, работа, скидки",
   "en": "Opportunities, jobs, discounts",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/moderation.tsx"
   ]
  },
@@ -15551,6 +16706,14 @@
   ]
  },
  {
+  "kk": "Мұнда тек өзіңіз басқаратын бөлімдер. Әр әрекетті сервер қайта тексереді.",
+  "ru": "Здесь только разделы, которыми вы управляете. Каждое действие сервер проверяет заново.",
+  "en": "Only the sections you manage are here. The server checks every action again.",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Мұндай бет жоқ.",
   "ru": "Такой страницы нет.",
   "en": "Page not found.",
@@ -15581,6 +16744,7 @@
   "files": [
    "src/components/NavDrawer.tsx",
    "src/components/Shell.tsx",
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/cafe.tsx"
   ]
@@ -15979,6 +17143,14 @@
   "en": "Unfounded",
   "files": [
    "src/components/views/moderation.tsx"
+  ]
+ },
+ {
+  "kk": "Негізсіз шағымды жабу не жазбаны жасыру",
+  "ru": "Закрыть необоснованную или скрыть запись",
+  "en": "Close a groundless report or hide the item",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -16688,6 +17860,7 @@
   "ru": "id пользователя",
   "en": "User id",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/shop-common.tsx"
   ]
  },
@@ -16738,6 +17911,14 @@
   "en": "Is it useful? (1–5, optional)",
   "files": [
    "src/components/views/mentors.tsx"
+  ]
+ },
+ {
+  "kk": "Панель",
+  "ru": "Панель",
+  "en": "Panel",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -16804,9 +17985,18 @@
   "en": "Printing",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/print.tsx",
    "src/lib/inbox.ts",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Полиграфия қызметкерлері",
+  "ru": "Сотрудники полиграфий",
+  "en": "Print shop staff",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -16818,10 +18008,27 @@
   ]
  },
  {
+  "kk": "Полиграфия: {0} берілді / {1} тапсырыс",
+  "ru": "Полиграфия: выдано {0} / заказов {1}",
+  "en": "Print: {0} handed over / {1} order{1|s}",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Полиграфия: қолмен қайтару",
+  "ru": "Полиграфия: вернуть деньги вручную",
+  "en": "Print: return money by hand",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Полиграфиялар",
   "ru": "Полиграфии",
   "en": "Printings",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/components/views/print-admin.tsx",
    "src/components/views/print.tsx",
@@ -16889,6 +18096,7 @@
   "ru": "Прайс",
   "en": "Price list",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/print-admin.tsx",
    "src/components/views/print.tsx"
   ]
@@ -17288,6 +18496,7 @@
   "en": "Roommates",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin.tsx",
    "src/lib/screens.ts"
   ]
  },
@@ -17357,7 +18566,8 @@
   "ru": "Для подтверждения введите DELETE",
   "en": "Type DELETE to confirm",
   "files": [
-   "src/components/views/account.tsx"
+   "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -17500,6 +18710,14 @@
   ]
  },
  {
+  "kk": "Ресми жазбалар",
+  "ru": "Официальные записи",
+  "en": "Official items",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Ресми мүмкіндік",
   "ru": "Официальная возможность",
   "en": "Official opportunity",
@@ -17556,6 +18774,14 @@
   ]
  },
  {
+  "kk": "Реті",
+  "ru": "Порядок",
+  "en": "Sort",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Ретімен",
   "ru": "Порядок",
   "en": "Order",
@@ -17588,11 +18814,27 @@
   ]
  },
  {
+  "kk": "Рөл алынды",
+  "ru": "Роль снята",
+  "en": "Role removed",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
   "kk": "Рөл беру",
   "ru": "Выдать роль",
   "en": "Assign role",
   "files": [
    "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Рөл берілді",
+  "ru": "Роль выдана",
+  "en": "Role granted",
+  "files": [
+   "src/lib/console.ts"
   ]
  },
  {
@@ -17612,6 +18854,40 @@
   ]
  },
  {
+  "kk": "Рөл, құқық, шектеу, өшіру, экспорт және модерация шешімдерінің бәрі осында: кім, кімге, қашан, қандай себеппен.",
+  "ru": "Здесь все роли, права, ограничения, удаления, экспорты и решения модерации: кто, кому, когда и почему.",
+  "en": "Every role, right, restriction, deletion, export and moderation decision is here: who, to whom, when and why.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Рөлдер бойынша",
+  "ru": "По ролям",
+  "en": "By role",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Рөлдер мен мүшеліктер",
+  "ru": "Роли и членство",
+  "en": "Roles and memberships",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Рөлдер мен құқықтар",
+  "ru": "Роли и права",
+  "en": "Roles and rights",
+  "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
+   "src/lib/screens.ts"
+  ]
+ },
+ {
   "kk": "Рөлді алу",
   "ru": "Снять роль",
   "en": "Remove role",
@@ -17621,10 +18897,20 @@
   ]
  },
  {
+  "kk": "Рөлді өзгерту",
+  "ru": "Изменить роль",
+  "en": "Change role",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Рөлі",
   "ru": "Роль",
   "en": "Role",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/shop-common.tsx"
   ]
  },
@@ -17833,6 +19119,14 @@
   ]
  },
  {
+  "kk": "Сайттағы контент",
+  "ru": "Контент на сайте",
+  "en": "Content on the site",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Сайтты жақсарту үшін құрылғыға кездейсоқ id беріледі және бірнеше оқиға жазылады: кіру (күніне бір рет), онбординг аяқталды (мамандық, курс, қала — тек санат), вакансия не мүмкіндікті ашу (оның id-і), бөлісу, мерзімді сақтау, AI-чатқа хабарлама жіберу (тек саны), «Даму жоспары» қадамы, Telegram ішінде ашылды ма, кері байланыс бағасы мен «не жетіспейді» мәтіні (сақтамас бұрын сервер одан email, телефон, сілтеме, ұзын сандар, GPA мен адам атына ұқсас сөздерді өшіреді).",
   "ru": "Чтобы улучшать сайт, устройству присваивается случайный id и записываются несколько событий: визит (раз в день), завершение онбординга (специальность, курс, город — только категории), открытие вакансии или возможности (её id), «поделиться», сохранение срока, сообщение в AI-чат (только факт), шаг «Плана развития», открыт ли сайт в Telegram, оценка и текст «чего не хватает» (перед сохранением сервер удаляет из него email, телефоны, ссылки, длинные числа, GPA и похожие на имена слова).",
   "en": "To improve the site, a random id is assigned to the device and several events are recorded: visit (once a day), onboarding completed (major, course, city — only categories), opening a vacancy or opportunity (its id), share, deadline save, AI chat message (only count), “Development plan” step, opened in Telegram, feedback rating and “what’s missing” text (server removes email, phone, links, long numbers, GPA, and name-like words before saving).",
@@ -18007,6 +19301,22 @@
   ]
  },
  {
+  "kk": "Сауалнама жасау, өтініштерге жауап, алушылар мен байланыстар",
+  "ru": "Создать опрос, ответить на обращения, получатели и контакты",
+  "en": "Create a survey, answer feedback, recipients and contacts",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Сауалнама мен өтініштер",
+  "ru": "Опросы и обращения",
+  "en": "Surveys and feedback",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Сауалнама прогресі",
   "ru": "Прогресс опроса",
   "en": "Survey progress",
@@ -18023,13 +19333,30 @@
   ]
  },
  {
+  "kk": "Сауалнама әлі жоқ",
+  "ru": "Опросов пока нет",
+  "en": "No surveys yet",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Сауалнамалар",
   "ru": "Опросы",
   "en": "Surveys",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin-console.tsx",
    "src/components/views/voice.tsx",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Сауалнамалар, өтініштер, психолог байланыстары",
+  "ru": "Опросы, обращения, контакты психологов",
+  "en": "Surveys, feedback, counsellor contacts",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -18333,6 +19660,15 @@
   ]
  },
  {
+  "kk": "Себебі (журналға жазылады)",
+  "ru": "Причина (пишется в журнал)",
+  "en": "Reason (goes to the log)",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Себебі (міндетті емес)",
   "ru": "Причина (необязательно)",
   "en": "Reason (optional)",
@@ -18372,7 +19708,9 @@
   "ru": "Причина (обязательно, пишется в журнал)",
   "en": "Reason (required, logged)",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/employer.tsx",
+   "src/components/views/feeds.tsx",
    "src/components/views/mentors.tsx",
    "src/components/views/moderation.tsx",
    "src/components/views/points.tsx"
@@ -18515,6 +19853,22 @@
   "en": "Server",
   "files": [
    "src/components/views/admin-content.tsx"
+  ]
+ },
+ {
+  "kk": "Сервер жұмыс істеп тұр",
+  "ru": "Сервер работает",
+  "en": "Server up for",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
+  "kk": "Сервер мен дерекқор",
+  "ru": "Сервер и база данных",
+  "en": "Server and database",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -18985,6 +20339,38 @@
   ]
  },
  {
+  "kk": "Сома",
+  "ru": "Сумма",
+  "en": "Total",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
+  "kk": "Сома — бүгін берілген тапсырыстар (қайтарылғандарсыз). Ақша дүкеннің өз шотына түседі.",
+  "ru": "Сумма — выданные сегодня заказы (без возвратов). Деньги идут на счёт самого магазина.",
+  "en": "The total is today's handed-over orders (refunds excluded). Money goes to the shop's own account.",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "Сома, төлем, күй; студенттің тек id-і.",
+  "ru": "Сумма, оплата, статус; от студента только id.",
+  "en": "Total, payment, status; only the student's id.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Сома, төлем, күй; файлдарсыз.",
+  "ru": "Сумма, оплата, статус; без файлов.",
+  "en": "Total, payment, status; no files.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Соманы бүтін теңгемен жазыңыз.",
   "ru": "Укажите сумму в целых тенге.",
   "en": "Enter amount in whole tenge.",
@@ -19001,11 +20387,27 @@
   ]
  },
  {
+  "kk": "Соңғы 14 күн",
+  "ru": "Последние 14 дней",
+  "en": "Last 14 days",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Соңғы 24 сағаттағы браузер қателері",
   "ru": "Ошибки браузера за последние 24 часа",
   "en": "Browser errors in last 24 hours",
   "files": [
    "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
+  "kk": "Соңғы белсенділік",
+  "ru": "Последняя активность",
+  "en": "Last activity",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -19030,6 +20432,14 @@
   "en": "Last collection",
   "files": [
    "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Соңғы кіру",
+  "ru": "Последний вход",
+  "en": "Last sign-in",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -19094,6 +20504,14 @@
   "en": "Last confirmation",
   "files": [
    "src/components/views/sheets.tsx"
+  ]
+ },
+ {
+  "kk": "Соңғы сауалнамалар",
+  "ru": "Последние опросы",
+  "en": "Latest surveys",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -19262,6 +20680,17 @@
   "ru": "Голос студентов",
   "en": "Student voice",
   "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
+   "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Студент дауысы: барлық университет",
+  "ru": "Голос студентов: все вузы",
+  "en": "Student voice: all universities",
+  "files": [
+   "src/components/views/admin.tsx",
    "src/lib/screens.ts"
   ]
  },
@@ -19270,7 +20699,8 @@
   "ru": "Голос студентов: управление",
   "en": "Student voice: management",
   "files": [
-   "src/components/NavDrawer.tsx"
+   "src/components/NavDrawer.tsx",
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -19304,6 +20734,14 @@
   "en": "Student sees this (in interface language). Buttons here are inactive.",
   "files": [
    "src/components/views/admin-content.tsx"
+  ]
+ },
+ {
+  "kk": "Студент сайтты оқи алады, кіре-шыға алады және аккаунтын өшіре алады, бірақ жаза, жариялай, тапсырыс бере алмайды.",
+  "ru": "Студент сможет читать, входить и выходить и удалить аккаунт, но не сможет писать, публиковать и заказывать.",
+  "en": "The student can read, sign in and out and delete the account, but cannot write, post or order.",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -19352,6 +20790,14 @@
   "en": "Students see the recipient only when at least one staff member is assigned: admin or university_staff of this university.",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Студенттер ұсынған",
+  "ru": "От студентов",
+  "en": "From students",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -19449,6 +20895,14 @@
   "en": "Student id (from /admin users list)",
   "files": [
    "src/components/views/points.tsx"
+  ]
+ },
+ {
+  "kk": "Студенттің өзі «Аккаунтты өшіру» басқандағыдай: барлық деректері мен файлдары қайтарусыз өшеді. Тек студент өзі сұраса ғана қолданыңыз.",
+  "ru": "Как если бы студент сам нажал «Удалить аккаунт»: все данные и файлы удаляются безвозвратно. Только по просьбе самого студента.",
+  "en": "As if the student pressed «Delete account» themselves: all data and files are deleted for good. Only at the student's own request.",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -19597,6 +21051,14 @@
   ]
  },
  {
+  "kk": "Сыйлық өтінімдері",
+  "ru": "Заявки на награды",
+  "en": "Reward requests",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Сыйлықтар",
   "ru": "Награды",
   "en": "Rewards",
@@ -19658,6 +21120,14 @@
   "en": "You are near: {0}.",
   "files": [
    "src/components/views/map.tsx"
+  ]
+ },
+ {
+  "kk": "Сіз басқаратын бөлімдер: кофейня, клуб, модерация…",
+  "ru": "Разделы, которыми вы управляете: кофейня, клуб, модерация…",
+  "en": "Sections you manage: café, club, moderation…",
+  "files": [
+   "src/components/views/account.tsx"
   ]
  },
  {
@@ -19778,6 +21248,14 @@
   "en": "Your changes are applied.",
   "files": [
    "src/components/views/grades.tsx"
+  ]
+ },
+ {
+  "kk": "Сіз — бас әкімшісіз: төменде бүкіл сайттың нақты көрсеткіштері мен басқару бөлімдері.",
+  "ru": "Вы — главный администратор: ниже реальные показатели всего сайта и разделы управления.",
+  "en": "You are the main administrator: below are the site's real numbers and the management sections.",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -20023,6 +21501,7 @@
   "ru": "Фильтры",
   "en": "Filters",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/search.tsx"
   ]
  },
@@ -20039,6 +21518,7 @@
   "ru": "Сбросить фильтры",
   "en": "Clear filters",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/search.tsx"
   ]
  },
@@ -20091,6 +21571,14 @@
   ]
  },
  {
+  "kk": "Сұрау бойынша өшіру",
+  "ru": "Удалить по просьбе",
+  "en": "Delete on request",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Сұрау жіберу",
   "ru": "Отправить запрос",
   "en": "Send request",
@@ -20104,6 +21592,14 @@
   "en": "Request sent",
   "files": [
    "src/components/views/roommates.tsx"
+  ]
+ },
+ {
+  "kk": "Сұрау қайдан келді (міндетті)",
+  "ru": "Откуда пришла просьба (обязательно)",
+  "en": "Where the request came from (required)",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -20242,6 +21738,8 @@
   "ru": "Вопросы",
   "en": "Questions",
   "files": [
+   "src/components/views/admin-users.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/qa.tsx",
    "src/lib/notes.ts"
   ]
@@ -20437,8 +21935,17 @@
   "ru": "Найдено: {0}",
   "en": "Found: {0}",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/clubs.tsx",
    "src/components/views/search.tsx"
+  ]
+ },
+ {
+  "kk": "Табылмады",
+  "ru": "Не найдено",
+  "en": "Not found",
+  "files": [
+   "src/components/views/admin-layout.tsx"
   ]
  },
  {
@@ -20447,6 +21954,8 @@
   "en": "Lost and found",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin-users.tsx",
+   "src/components/views/admin.tsx",
    "src/lib/screens.ts"
   ]
  },
@@ -20707,6 +22216,8 @@
   "ru": "Доска заказов",
   "en": "Order board",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/lib/screens.ts"
   ]
  },
@@ -20800,6 +22311,8 @@
   "ru": "Назначить",
   "en": "Assign",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/clubs.tsx"
   ]
  },
@@ -20954,11 +22467,51 @@
   ]
  },
  {
+  "kk": "Таңдалды: {0}",
+  "ru": "Выбрано: {0}",
+  "en": "Selected: {0}",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Таңдалды: {0} / {1}",
   "ru": "Выбрано: {0} / {1}",
   "en": "Selected: {0} / {1}",
   "files": [
    "src/components/views/roadmap.tsx"
+  ]
+ },
+ {
+  "kk": "Таңдалғандар",
+  "ru": "Выбранные",
+  "en": "Selected",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Таңдалғанды жариялау",
+  "ru": "Опубликовать выбранные",
+  "en": "Publish selected",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Таңдалғанды қабылдамау",
+  "ru": "Отклонить выбранные",
+  "en": "Reject selected",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Таңдау",
+  "ru": "Выбрать",
+  "en": "Select",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -21051,6 +22604,10 @@
   "ru": "Отдам даром",
   "en": "Free items",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin-users.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/entries.tsx",
    "src/components/views/market.tsx",
    "src/components/views/moderation.tsx",
@@ -21180,6 +22737,14 @@
   ]
  },
  {
+  "kk": "Тек метадеректер: мәтінсіз, авторсыз.",
+  "ru": "Только метаданные: без текста и автора.",
+  "en": "Metadata only: no text, no author.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Тек нақты, тексерілген байланыстарды енгізіңіз. Бос болса, студенттер «әлі қосылмаған» деп көреді.",
   "ru": "Вносите только реальные проверенные контакты. Пока пусто, студенты видят «ещё не добавлены».",
   "en": "Enter only real verified contacts. If empty, students see “not added yet.”",
@@ -21209,6 +22774,14 @@
   "en": "Only unread",
   "files": [
    "src/components/views/inbox.tsx"
+  ]
+ },
+ {
+  "kk": "Тек сандар: өтініш мәтіндері мен сауалнама жауаптары «Студент дауысы» бетінде, 5-тен аз топ ешқашан көрсетілмейді.",
+  "ru": "Только числа: тексты обращений и ответы опросов — на странице «Голос студентов», группы меньше 5 никогда не показываются.",
+  "en": "Numbers only: feedback texts and survey answers stay on the «Student voice» page, groups under 5 are never shown.",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -21266,6 +22839,14 @@
   "en": "Only on university grounds or crowded places. Don’t share personal financial data.",
   "files": [
    "src/components/views/market.tsx"
+  ]
+ },
+ {
+  "kk": "Тек шектелгендер",
+  "ru": "Только ограниченные",
+  "en": "Restricted only",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -21374,6 +22955,14 @@
   "files": [
    "src/components/views/moderation.tsx",
    "src/lib/b2b.ts"
+  ]
+ },
+ {
+  "kk": "Тексеруді күткен компаниялар",
+  "ru": "Компании ждут проверки",
+  "en": "Companies awaiting review",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -21651,6 +23240,14 @@
   ]
  },
  {
+  "kk": "Толық журнал",
+  "ru": "Весь журнал",
+  "en": "Full log",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Толық қаржыландырылады",
   "ru": "Полностью финансируется",
   "en": "Fully funded",
@@ -21838,11 +23435,27 @@
   ]
  },
  {
+  "kk": "Тізім мен қатысушылар саны. Жауаптар — әр сауалнаманың өз CSV-інде (5-тен аз топ жасырын).",
+  "ru": "Список и число участников. Ответы — в CSV каждого опроса (группы меньше 5 скрыты).",
+  "en": "The list and the number of participants. Answers are in each survey's own CSV (groups under 5 hidden).",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Тізімге",
   "ru": "К списку",
   "en": "To list",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Тізімге оралу",
+  "ru": "К списку",
+  "en": "Back to the list",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -21952,9 +23565,10 @@
  },
  {
   "kk": "Тіркелген",
-  "ru": "Записались",
+  "ru": "Создан",
   "en": "Registered",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/events.tsx"
   ]
  },
@@ -21980,6 +23594,22 @@
   "en": "Registered students: {0}",
   "files": [
    "src/components/views/fairs.tsx"
+  ]
+ },
+ {
+  "kk": "Тіркелген, бастап",
+  "ru": "Создан, с",
+  "en": "Created from",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Тіркелген, дейін",
+  "ru": "Создан, по",
+  "en": "Created to",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -22062,6 +23692,14 @@
   "en": "Sign in via Telegram to register — ticket and reminder link to account.",
   "files": [
    "src/components/views/events.tsx"
+  ]
+ },
+ {
+  "kk": "Тіркелу, 30 күн",
+  "ru": "Регистрации, 30 дней",
+  "en": "Sign-ups, 30 days",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -22291,6 +23929,14 @@
   ]
  },
  {
+  "kk": "Түскен",
+  "ru": "Поступило",
+  "en": "Received",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Түстер",
   "ru": "Цвета",
   "en": "Colors",
@@ -22322,6 +23968,14 @@
   "files": [
    "src/components/views/calendar.tsx",
    "src/components/views/print.tsx"
+  ]
+ },
+ {
+  "kk": "Түсім, ₸",
+  "ru": "Выручка, ₸",
+  "en": "Revenue, ₸",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -22687,6 +24341,7 @@
   "en": "University",
   "files": [
    "src/components/NavDrawer.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/events.tsx",
    "src/components/views/voice.tsx",
@@ -22746,6 +24401,7 @@
   "ru": "Кабинет университета",
   "en": "University office",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/entries.tsx",
    "src/lib/screens.ts"
   ]
@@ -22803,6 +24459,8 @@
   "ru": "Сотрудники университетов",
   "en": "University staff",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -22821,6 +24479,7 @@
   "en": "University staff member",
   "files": [
    "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/university.tsx"
   ]
  },
@@ -23014,6 +24673,14 @@
   ]
  },
  {
+  "kk": "Файлдар Excel-де бірден ашылады (UTF-8). Әр экспорт журналға жазылады. Жеке деректерді тек қажет жерде қолданыңыз.",
+  "ru": "Файлы сразу открываются в Excel (UTF-8). Каждый экспорт пишется в журнал. Используйте личные данные только там, где это нужно.",
+  "en": "The files open straight in Excel (UTF-8). Every export is logged. Use personal data only where it is needed.",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Файлдар тек осы құрылғыда сақталады, ешқайда жіберілмейді.",
   "ru": "Файлы хранятся только на этом устройстве и никуда не отправляются.",
   "en": "Files are stored only on this device and are not sent anywhere.",
@@ -23050,6 +24717,8 @@
   "ru": "Не удалось скачать файл",
   "en": "Failed to download file",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/university.tsx"
   ]
  },
@@ -23589,10 +25258,27 @@
   ]
  },
  {
+  "kk": "Шағым жасалған жазба",
+  "ru": "Записей с жалобами",
+  "en": "Items with reports",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "Шағым жасалған жазбалар",
+  "ru": "Записи с жалобами",
+  "en": "Items with reports",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Шағым жоқ",
   "ru": "Жалоб нет",
   "en": "No complaints",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/moderation.tsx"
   ]
  },
@@ -23663,6 +25349,8 @@
   "ru": "Жалобы",
   "en": "Complaints",
   "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -23788,6 +25476,39 @@
   ]
  },
  {
+  "kk": "Шектеу",
+  "ru": "Ограничить",
+  "en": "Restrict",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Шектеу алынды",
+  "ru": "Ограничение снято",
+  "en": "Restriction removed",
+  "files": [
+   "src/components/views/admin-users.tsx",
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Шектеу себебі",
+  "ru": "Причина ограничения",
+  "en": "Restriction reason",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Шектеуді алу",
+  "ru": "Снять ограничение",
+  "en": "Remove restriction",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Шет тілі",
   "ru": "Иностранный язык",
   "en": "Foreign language",
@@ -23852,11 +25573,28 @@
   ]
  },
  {
+  "kk": "Шешім күтіп тұр",
+  "ru": "Ждёт решения",
+  "en": "Waiting for a decision",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "Шкала",
   "ru": "Шкала",
   "en": "Scale",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Шолу",
+  "ru": "Обзор",
+  "en": "Overview",
+  "files": [
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24061,6 +25799,22 @@
   ]
  },
  {
+  "kk": "алу",
+  "ru": "снять",
+  "en": "remove",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "архивте",
+  "ru": "в архиве",
+  "en": "archived",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "ат@мысал.kz",
   "ru": "имя@пример.kz",
   "en": "name@example.kz",
@@ -24086,11 +25840,45 @@
   ]
  },
  {
+  "kk": "ашық",
+  "ru": "открыт",
+  "en": "open",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "ашық вакансия жоқ",
   "ru": "нет открытых вакансий",
   "en": "no open vacancies",
   "files": [
    "src/components/views/fairs.tsx"
+  ]
+ },
+ {
+  "kk": "ашық сауалнама",
+  "ru": "открытых опросов",
+  "en": "open surveys",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "ашық сауалнама ({0} жоба, {1} жабық)",
+  "ru": "открытых опросов ({0} черн., {1} закр.)",
+  "en": "open surveys ({0} drafts, {1} closed)",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "ашық өтініш",
+  "ru": "открытых обращений",
+  "en": "open feedback",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24122,6 +25910,8 @@
   "ru": "бариста",
   "en": "barista",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/cafe-admin.tsx"
   ]
  },
@@ -24130,6 +25920,7 @@
   "ru": "всего",
   "en": "total",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/feeds.tsx"
   ]
  },
@@ -24158,6 +25949,22 @@
   ]
  },
  {
+  "kk": "белгіленген (әкімшіге)",
+  "ru": "помечено (админу)",
+  "en": "flagged (for the admin)",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "белсенділік жоқ",
+  "ru": "нет активности",
+  "en": "no activity",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "беттер {0}",
   "ru": "стр. {0}",
   "en": "p. {0}",
@@ -24166,10 +25973,19 @@
   ]
  },
  {
+  "kk": "ботты бұғаттаған",
+  "ru": "бот заблокирован",
+  "en": "blocked the bot",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "бүгін",
   "ru": "сегодня",
   "en": "today",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/common.tsx",
    "src/components/views/review.tsx",
    "src/components/views/subjects.tsx"
@@ -24189,6 +26005,22 @@
   "en": "today {0}/{1}, this week {2}/{3}",
   "files": [
    "src/components/views/points.tsx"
+  ]
+ },
+ {
+  "kk": "бұл сіз",
+  "ru": "это вы",
+  "en": "this is you",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "бұрын шешілген",
+  "ru": "уже рассмотрены",
+  "en": "already decided",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -24241,6 +26073,22 @@
   ]
  },
  {
+  "kk": "жабық",
+  "ru": "закрыт",
+  "en": "closed",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
+  "kk": "жазба",
+  "ru": "записей",
+  "en": "items",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "жазба жоқ",
   "ru": "нет записей",
   "en": "no entries",
@@ -24249,10 +26097,19 @@
   ]
  },
  {
+  "kk": "жарияланды",
+  "ru": "опубликовано",
+  "en": "published",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "жарияланған",
   "ru": "опубликовано",
   "en": "published",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/feeds.tsx"
   ]
  },
@@ -24272,6 +26129,22 @@
    "src/components/views/employer.tsx",
    "src/components/views/feeds.tsx",
    "src/components/views/review.tsx"
+  ]
+ },
+ {
+  "kk": "жаңа өтінім",
+  "ru": "новых откликов",
+  "en": "new applications",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "жаңалық тексеруде",
+  "ru": "новостей на проверке",
+  "en": "news awaiting review",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24297,6 +26170,15 @@
   "en": "unreachable",
   "files": [
    "src/components/views/grades.tsx"
+  ]
+ },
+ {
+  "kk": "жоба",
+  "ru": "черновик",
+  "en": "draft",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24332,6 +26214,22 @@
   ]
  },
  {
+  "kk": "жүйе",
+  "ru": "система",
+  "en": "system",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "жүктелуде…",
+  "ru": "загрузка…",
+  "en": "loading…",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "жұптар {0} / {1}",
   "ru": "пары {0} из {1}",
   "en": "pairs {0} / {1}",
@@ -24340,10 +26238,19 @@
   ]
  },
  {
+  "kk": "және тағы {0}",
+  "ru": "и ещё {0}",
+  "en": "and {0} more",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "иесі",
   "ru": "владелец",
   "en": "owner",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/employer.tsx"
   ]
  },
@@ -24361,6 +26268,14 @@
   "en": "cashier not logged in",
   "files": [
    "src/components/views/shop-common.tsx"
+  ]
+ },
+ {
+  "kk": "кезекте",
+  "ru": "в очереди",
+  "en": "in queue",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24392,7 +26307,7 @@
   "ru": "без согласия",
   "en": "without consent",
   "files": [
-   "src/components/views/admin.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/employer.tsx"
   ]
  },
@@ -24410,6 +26325,14 @@
   "en": "yesterday",
   "files": [
    "src/components/views/common.tsx"
+  ]
+ },
+ {
+  "kk": "клуб әкімшісі",
+  "ru": "админ клуба",
+  "en": "club admin",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24434,6 +26357,14 @@
   "en": "credits earned",
   "files": [
    "src/components/views/profile.tsx"
+  ]
+ },
+ {
+  "kk": "күйі",
+  "ru": "статус",
+  "en": "status",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24483,8 +26414,18 @@
   "ru": "менеджер",
   "en": "manager",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
+  ]
+ },
+ {
+  "kk": "мерзімсіз",
+  "ru": "без срока",
+  "en": "no deadline",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -24492,8 +26433,43 @@
   "ru": "до",
   "en": "until",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/employer.tsx",
    "src/components/views/university.tsx"
+  ]
+ },
+ {
+  "kk": "мерзімі өткен",
+  "ru": "просрочено",
+  "en": "overdue",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
+  "kk": "мерзімі өткен {0}",
+  "ru": "просрочено {0}",
+  "en": "expired {0}",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "мерзімі өткен, өткізілді",
+  "ru": "просрочены, пропущены",
+  "en": "expired, skipped",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "модератор",
+  "ru": "модератор",
+  "en": "moderator",
+  "files": [
+   "src/components/views/admin-users.tsx",
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24603,9 +26579,10 @@
  },
  {
   "kk": "мүше",
-  "ru": "участник",
+  "ru": "участников",
   "en": "member",
   "files": [
+   "src/components/views/admin.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/employer.tsx",
    "src/components/views/moderation.tsx"
@@ -24632,6 +26609,8 @@
   "ru": "оператор",
   "en": "operator",
   "files": [
+   "src/components/views/admin-shop.tsx",
+   "src/components/views/admin.tsx",
    "src/components/views/print-admin.tsx"
   ]
  },
@@ -24669,11 +26648,20 @@
   ]
  },
  {
+  "kk": "психолог байланыстары",
+  "ru": "контакты психологов",
+  "en": "counsellor contacts",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "расталмаған",
   "ru": "не подтверждён",
   "en": "unconfirmed",
   "files": [
    "src/components/views/account.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/grades.tsx"
   ]
  },
@@ -24715,6 +26703,14 @@
   "en": "from",
   "files": [
    "src/components/quiz/answer.tsx"
+  ]
+ },
+ {
+  "kk": "сауалнамаға қатысқан",
+  "ru": "ответов на опросы",
+  "en": "survey answers",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -24782,11 +26778,27 @@
   ]
  },
  {
+  "kk": "соңғы рет {0}",
+  "ru": "был {0}",
+  "en": "seen {0}",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "стенд",
   "ru": "стенд",
   "en": "stand",
   "files": [
    "src/components/views/fairs.tsx"
+  ]
+ },
+ {
+  "kk": "сіз",
+  "ru": "вы",
+  "en": "you",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -24803,6 +26815,14 @@
   "en": "tasks completed",
   "files": [
    "src/components/views/ai.tsx"
+  ]
+ },
+ {
+  "kk": "тақтада",
+  "ru": "на доске",
+  "en": "on the board",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24835,6 +26855,14 @@
   "en": "visible only to you",
   "files": [
    "src/components/views/clubs.tsx"
+  ]
+ },
+ {
+  "kk": "тексеруде",
+  "ru": "на проверке",
+  "en": "under review",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24896,11 +26924,27 @@
   ]
  },
  {
+  "kk": "университет",
+  "ru": "университет",
+  "en": "university",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "файлдар {0} күн",
   "ru": "файлы {0} дн.",
   "en": "Files {0} {0|day|days}",
   "files": [
    "src/components/views/print-admin.tsx"
+  ]
+ },
+ {
+  "kk": "шағым",
+  "ru": "жалоб",
+  "en": "reports",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -24925,6 +26969,14 @@
   "en": "invited: {0}",
   "files": [
    "src/components/views/moderation.tsx"
+  ]
+ },
+ {
+  "kk": "шектелген",
+  "ru": "ограничен",
+  "en": "restricted",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -24994,6 +27046,14 @@
   ]
  },
  {
+  "kk": "Қабылдамау ({0})",
+  "ru": "Отклонить ({0})",
+  "en": "Reject ({0})",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Қабылданатын жауаптар",
   "ru": "Допустимые ответы",
   "en": "Allowed answers",
@@ -25015,6 +27075,14 @@
   "en": "Rejected, coins returned",
   "files": [
    "src/components/views/points.tsx"
+  ]
+ },
+ {
+  "kk": "Қабылданбады: {0}",
+  "ru": "Отклонено: {0}",
+  "en": "Rejected: {0}",
+  "files": [
+   "src/components/views/feeds.tsx"
   ]
  },
  {
@@ -25156,11 +27224,27 @@
   ]
  },
  {
+  "kk": "Қазір онлайн ({0} мин)",
+  "ru": "Онлайн сейчас ({0} мин)",
+  "en": "Online now ({0} min)",
+  "files": [
+   "src/components/views/admin-health.tsx"
+  ]
+ },
+ {
   "kk": "Қазір сізге арналған ашық сауалнама жоқ.",
   "ru": "Сейчас нет открытых опросов для вас.",
   "en": "No open surveys for you now.",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Қазір тақтада",
+  "ru": "Сейчас на доске",
+  "en": "On the board now",
+  "files": [
+   "src/components/views/admin-shop.tsx"
   ]
  },
  {
@@ -25249,14 +27333,6 @@
   "en": "Where to get it",
   "files": [
    "src/components/views/profile.tsx"
-  ]
- },
- {
-  "kk": "Қайдан келді",
-  "ru": "Откуда пришли",
-  "en": "Where from",
-  "files": [
-   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -25995,6 +28071,14 @@
   ]
  },
  {
+  "kk": "Қолданушы",
+  "ru": "Пользователь",
+  "en": "User",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Қолданушы ID (Әкімші → Қолданушылар іздеуінен)",
   "ru": "ID пользователя (Админ → поиск пользователей)",
   "en": "User ID (Admin → User search)",
@@ -26015,7 +28099,10 @@
   "ru": "Пользователи",
   "en": "Users",
   "files": [
-   "src/components/views/admin.tsx"
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
+   "src/lib/screens.ts"
   ]
  },
  {
@@ -26023,7 +28110,7 @@
   "ru": "Поиск пользователя",
   "en": "Search user",
   "files": [
-   "src/components/views/admin.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/employer.tsx"
   ]
  },
@@ -26189,6 +28276,7 @@
   "files": [
    "src/components/quiz/question-editor.tsx",
    "src/components/views/admin-content.tsx",
+   "src/components/views/admin-shop.tsx",
    "src/components/views/ai.tsx",
    "src/components/views/ambassador.tsx",
    "src/components/views/calendar.tsx",
@@ -26221,6 +28309,14 @@
   ]
  },
  {
+  "kk": "Қосулы: {0} · {1}",
+  "ru": "Подключено: {0} · {1}",
+  "en": "Connected: {0} · {1}",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
   "kk": "Қосулы: сілтемесі бар кез келген адам көре алады (іздеу жүйелеріне түспейді).",
   "ru": "Включена: видит любой, у кого есть ссылка (в поисковики не попадает).",
   "en": "On: anyone with the link can see (not indexed by search engines).",
@@ -26230,9 +28326,10 @@
  },
  {
   "kk": "Қосылды",
-  "ru": "Добавлено",
+  "ru": "Добавлен",
   "en": "Added",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/ai.tsx",
    "src/components/views/feeds.tsx"
   ]
@@ -26293,6 +28390,14 @@
   "en": "Additional comment",
   "files": [
    "src/lib/voice.ts"
+  ]
+ },
+ {
+  "kk": "Қосымша рөл не мүшелік жоқ",
+  "ru": "Дополнительных ролей и членства нет",
+  "en": "No extra roles or memberships",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -26384,11 +28489,28 @@
   ]
  },
  {
+  "kk": "Қызметкер алынды",
+  "ru": "Сотрудник убран",
+  "en": "Staff member removed",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
   "kk": "Қызметкер жоқ",
-  "ru": "Нет сотрудников",
+  "ru": "Сотрудников нет",
   "en": "No employees",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Қызметкер қосылды",
+  "ru": "Сотрудник добавлен",
+  "en": "Staff member added",
+  "files": [
+   "src/lib/console.ts"
   ]
  },
  {
@@ -26758,6 +28880,31 @@
   ]
  },
  {
+  "kk": "Құқық",
+  "ru": "Право",
+  "en": "Permission",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "Құқық алынды",
+  "ru": "Права сняты",
+  "en": "Rights removed",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
+  "kk": "қабылданбады",
+  "ru": "отклонено",
+  "en": "rejected",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "қадам",
   "ru": "шаг.",
   "en": "step",
@@ -26832,9 +28979,10 @@
  },
  {
   "kk": "қосулы",
-  "ru": "включено",
+  "ru": "включены",
   "en": "on",
   "files": [
+   "src/components/views/admin-users.tsx",
    "src/components/views/admin.tsx",
    "src/components/views/feeds.tsx"
   ]
@@ -26845,6 +28993,22 @@
   "en": "connected · {0} · {1}",
   "files": [
    "src/components/views/shop-common.tsx"
+  ]
+ },
+ {
+  "kk": "қосылған",
+  "ru": "добавлен",
+  "en": "added",
+  "files": [
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
+  "kk": "қызметкер",
+  "ru": "сотрудник",
+  "en": "staff",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -27156,6 +29320,7 @@
   "ru": "Баллы и награды",
   "en": "Points and rewards",
   "files": [
+   "src/components/views/admin-layout.tsx",
    "src/components/views/moderation.tsx",
    "src/lib/screens.ts"
   ]
@@ -27217,6 +29382,14 @@
   "files": [
    "src/components/NavDrawer.tsx",
    "src/lib/screens.ts"
+  ]
+ },
+ {
+  "kk": "Ұсыныстар",
+  "ru": "Предложения",
+  "en": "Suggestions",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -27329,6 +29502,14 @@
   "en": "Empty for now",
   "files": [
    "src/components/views/admin-content.tsx"
+  ]
+ },
+ {
+  "kk": "Әзірге бірде-бір университет бапталмаған",
+  "ru": "Пока ни один университет не настроен",
+  "en": "No university is set up yet",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -27670,6 +29851,14 @@
   ]
  },
  {
+  "kk": "Әзірге қолданушы жоқ",
+  "ru": "Пользователей пока нет",
+  "en": "No users yet",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Әзірге ұсыныс жоқ",
   "ru": "Предложений пока нет",
   "en": "No offers yet",
@@ -27744,6 +29933,14 @@
   ]
  },
  {
+  "kk": "Әкімші жоқ",
+  "ru": "Администраторов нет",
+  "en": "No administrators",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Әкімші тексерген соң сайтта шығады. Шешім Telegram-ға келеді, күйін «Менің ұсыныстарым» бөлімінен көресіз.",
   "ru": "После проверки администратором оно появится на сайте. Решение придёт в Telegram, статус — в разделе «Мои предложения».",
   "en": "After admin approval, it will appear on the site. The decision will come via Telegram; status is in “My offers.”",
@@ -27768,11 +29965,27 @@
   ]
  },
  {
+  "kk": "Әкімші шешімімен жазу, жариялау және тапсырыс беру уақытша жабық. Оқу, шығу және аккаунтты өшіру жұмыс істейді.",
+  "ru": "По решению администратора писать, публиковать и заказывать временно нельзя. Чтение, выход и удаление аккаунта работают.",
+  "en": "By an administrator's decision, writing, posting and ordering are closed for now. Reading, signing out and deleting the account work.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
   "kk": "Әкімші қарап шықты. Мерзім мен шарттарды түпнұсқадан тексеріңіз.",
   "ru": "Проверено администратором. Сроки и условия сверяйте с оригиналом.",
   "en": "Checked by admin. Verify terms and conditions with the original.",
   "files": [
    "src/components/views/feeds.tsx"
+  ]
+ },
+ {
+  "kk": "Әкімшілер",
+  "ru": "Администраторы",
+  "en": "Administrators",
+  "files": [
+   "src/components/views/admin-console.tsx"
   ]
  },
  {
@@ -27849,11 +30062,27 @@
   ]
  },
  {
+  "kk": "Әр жазба жеке жариялаудағыдай тексеріледі; мерзімі өткендер жарияланбайды.",
+  "ru": "Каждая запись проверяется как при обычной публикации; просроченные не публикуются.",
+  "en": "Each item is checked as in a single publish; expired items are not published.",
+  "files": [
+   "src/components/views/feeds.tsx"
+  ]
+ },
+ {
   "kk": "Әр жауапты конспект үзіндісімен салыстырыңыз. Сұрақтарды өзгертіп не жойып, содан кейін сақтаңыз.",
   "ru": "Сверьте каждый ответ с цитатой из конспекта. Измените или удалите вопросы, затем сохраните.",
   "en": "Compare each answer with a note excerpt. Edit or delete questions, then save.",
   "files": [
    "src/components/quiz/editor.tsx"
+  ]
+ },
+ {
+  "kk": "Әр рөл, шектеу, экспорт және шешім",
+  "ru": "Каждая роль, ограничение, экспорт и решение",
+  "en": "Every role, restriction, export and decision",
+  "files": [
+   "src/components/views/admin.tsx"
   ]
  },
  {
@@ -27897,11 +30126,30 @@
   ]
  },
  {
+  "kk": "Әрекет",
+  "ru": "Действие",
+  "en": "Action",
+  "files": [
+   "src/components/views/admin-console.tsx"
+  ]
+ },
+ {
   "kk": "Әрекет орындалмады. Қайталап көріңіз.",
   "ru": "Действие не выполнено. Попробуйте снова.",
   "en": "Action not completed. Please try again.",
   "files": [
    "src/components/quiz/live.tsx"
+  ]
+ },
+ {
+  "kk": "Әрекеттер журналы",
+  "ru": "Журнал действий",
+  "en": "Action log",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx",
+   "src/components/views/admin.tsx",
+   "src/lib/screens.ts"
   ]
  },
  {
@@ -27959,6 +30207,23 @@
   "en": "Learn the admission conditions for the military department",
   "files": [
    "src/features/roadmap/items.ts"
+  ]
+ },
+ {
+  "kk": "әкімші",
+  "ru": "администратор",
+  "en": "administrator",
+  "files": [
+   "src/components/views/admin-console.tsx",
+   "src/components/views/admin-shop.tsx"
+  ]
+ },
+ {
+  "kk": "Өз аккаунтыңызға рөл, шектеу және өшіру қолданылмайды.",
+  "ru": "К своему аккаунту роль, ограничение и удаление не применяются.",
+  "en": "Role, restriction and deletion do not apply to your own account.",
+  "files": [
+   "src/components/views/admin-users.tsx"
   ]
  },
  {
@@ -28150,6 +30415,14 @@
   "en": "Help yourself",
   "files": [
    "src/components/views/voice.tsx"
+  ]
+ },
+ {
+  "kk": "Өлі жолдар",
+  "ru": "Мёртвых",
+  "en": "Dead rows",
+  "files": [
+   "src/components/views/admin-health.tsx"
   ]
  },
  {
@@ -28641,10 +30914,19 @@
   ]
  },
  {
+  "kk": "Өтініш алушы",
+  "ru": "Получатель обращений",
+  "en": "Feedback recipient",
+  "files": [
+   "src/components/views/admin-users.tsx"
+  ]
+ },
+ {
   "kk": "Өтініш алушылар",
   "ru": "Получатели обращений",
   "en": "Recipients",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/voice.tsx"
   ]
  },
@@ -28693,6 +30975,7 @@
   "ru": "Обращения",
   "en": "Requests",
   "files": [
+   "src/components/views/admin-console.tsx",
    "src/components/views/voice.tsx"
   ]
  },
@@ -28710,6 +30993,7 @@
   "en": "Delete",
   "files": [
    "src/components/views/admin-content.tsx",
+   "src/components/views/admin-users.tsx",
    "src/components/views/feeds.tsx",
    "src/components/views/market.tsx",
    "src/components/views/qa.tsx",
@@ -28731,6 +31015,7 @@
   "ru": "Выключена",
   "en": "Off",
   "files": [
+   "src/components/views/admin-shop.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
   ]
@@ -28783,6 +31068,14 @@
   ]
  },
  {
+  "kk": "өтінім",
+  "ru": "заявок",
+  "en": "requests",
+  "files": [
+   "src/components/views/admin.tsx"
+  ]
+ },
+ {
   "kk": "өтінім мерзімі",
   "ru": "приём заявок до",
   "en": "application deadline",
@@ -28792,7 +31085,7 @@
  },
  {
   "kk": "өшірулі",
-  "ru": "выключено",
+  "ru": "выключена",
   "en": "disabled",
   "files": [
    "src/components/views/admin.tsx",

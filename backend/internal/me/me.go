@@ -103,6 +103,10 @@ func Routes(mux httpx.Router) {
 // scoped to the user (RLS on).
 var InboxUnread func(ctx context.Context, tx pgx.Tx, userID int64) (int, error)
 
+// HasConsole reports whether the user has any /admin panel (internal/console sets it); "console" in GET /api/me
+// lets the app show the entry without a second request.
+var HasConsole func(ctx context.Context, u *auth.User) (bool, error)
+
 // get: GET /api/me. It also slides the session (auth.Touch): the app calls it on start, so
 // an active student's session never runs out.
 func get(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +126,14 @@ func get(w http.ResponseWriter, r *http.Request) {
 			log.Printf("me: inbox unread %d: %v", u.ID, err) // the profile still loads
 		}
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"user": u, "needsConsent": u.NeedsConsent(), "inboxUnread": unread})
+	console := false
+	if HasConsole != nil {
+		var err error
+		if console, err = HasConsole(r.Context(), u); err != nil {
+			log.Printf("me: console %d: %v", u.ID, err) // the profile still loads
+		}
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"user": u, "needsConsent": u.NeedsConsent(), "inboxUnread": unread, "console": console})
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {

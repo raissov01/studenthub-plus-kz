@@ -9,6 +9,10 @@ import { Mine } from '@/components/views/opps';
 import { Admission, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
 import { AdminHealth } from '@/components/views/admin-health';
 import { Admin } from '@/components/views/admin';
+import { AdminUsers } from '@/components/views/admin-users';
+import { AdminAudit, AdminExports, AdminModeration, AdminRoles, AdminVoice } from '@/components/views/admin-console';
+import { AdminShop } from '@/components/views/admin-shop';
+import { AdminLayout } from '@/components/views/admin-layout';
 import { Privacy } from '@/components/views/privacy';
 import { Roadmap } from '@/components/views/roadmap';
 import { Ambassador, CertificateView } from '@/components/views/ambassador';
@@ -43,6 +47,34 @@ import { ApplicationsScreen } from '@/components/views/applications';
 import { BoothScreen } from '@/components/views/fairs';
 import { parseView } from '@/lib/routes';
 import { sectionOfView } from '@/lib/sections';
+
+/** the /admin/* screens (inside AdminLayout) */
+function adminScreen(prm: string) {
+  if (!prm) return <Admin />;
+  const sub = prm.replace(/\?.*$/, '');
+  if (sub === 'users') return <AdminUsers />;
+  if (sub === 'audit') return <AdminAudit />;
+  if (sub === 'roles') return <AdminRoles />;
+  if (sub === 'exports') return <AdminExports />;
+  if (sub === 'voice') return <AdminVoice />;
+  if (sub === 'moderation') return <AdminModeration />;
+  if (sub === 'shop') return <AdminShop />;
+  if (prm === 'health') return <AdminHealth />;
+  if (prm === 'queue') return <AdminQueue />;
+  if (prm === 'reports') return <AdminReports />;
+  if (prm === 'mentors') return <AdminMentors />;
+  if (prm === 'ambassadors') return <AdminAmbassadors />;
+  if (prm === 'market') return <AdminMarket />;
+  if (prm === 'employers') return <AdminEmployers />;
+  if (prm === 'staff') return <AdminStaff />;
+  if (prm === 'points') return <AdminPoints />;
+  if (prm === 'cafe' || prm.startsWith('cafe?')) return <AdminCafe />;
+  if (prm === 'print' || prm.startsWith('print?')) return <AdminPrint />;
+  if (prm === 'clubs') return <AdminClubs />;
+  if (prm === 'feeds') return <AdminFeeds />;
+  if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
+  return <NotFound />;
+}
 
 export function Screen({ v }: { v: string }) {
   const [name, prm] = parseView(v);
@@ -80,23 +112,7 @@ export function Screen({ v }: { v: string }) {
     case 'settings': return <Settings />;
     case 'roadmap': return <Roadmap />;
     case 'privacy': return <Privacy />;
-    case 'admin':
-      if (!prm) return <Admin />;
-      if (prm === 'health') return <AdminHealth />;
-      if (prm === 'queue') return <AdminQueue />;
-      if (prm === 'reports') return <AdminReports />;
-      if (prm === 'mentors') return <AdminMentors />;
-      if (prm === 'ambassadors') return <AdminAmbassadors />;
-      if (prm === 'market') return <AdminMarket />;
-      if (prm === 'employers') return <AdminEmployers />;
-      if (prm === 'staff') return <AdminStaff />;
-      if (prm === 'points') return <AdminPoints />;
-      if (prm === 'cafe' || prm.startsWith('cafe?')) return <AdminCafe />;
-      if (prm === 'print' || prm.startsWith('print?')) return <AdminPrint />;
-      if (prm === 'clubs') return <AdminClubs />;
-      if (prm === 'feeds') return <AdminFeeds />;
-      if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
-      return <NotFound />;
+    case 'admin': return <AdminLayout view={v}>{adminScreen(prm)}</AdminLayout>;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
     case 'mentors': return <Mentors prm={prm} />;
     case 'market': return <Market prm={prm} />;

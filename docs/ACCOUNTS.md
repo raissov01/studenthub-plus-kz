@@ -120,8 +120,18 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 береді: `POST /api/admin/role`, себебі міндетті (3–500 таңба), `audit_log`-қа `role_grant`
 немесе `role_revoke` (жаңа рөл `student` болса) жазылады: кім, кімге, себеп, `{from, to}`.
 Өз рөліңді өзгертуге болмайды. Бірінші admin — `ADMIN_TELEGRAM_IDS`: тізімдегі Telegram id
-кіргенде admin болады, бұл `audit_log`-қа бір рет жазылады. Тізімнен алып тастамаса, admin
-рөлі алынса да келесі кіруде қайта беріледі.
+кіргенде admin болады, бұл `audit_log`-қа бір рет жазылады. Email арқылы кіретін иелер үшін —
+`ADMIN_EMAILS`: тізімдегі email (үлкен-кіші әріп маңызды емес) **расталған** болса ғана кіргенде admin
+болады (`audit_log` reason = `ADMIN_EMAILS bootstrap`). Тізімнен алып тастамаса, admin рөлі алынса да
+келесі кіруде қайта беріледі.
+
+Тар әкімші құқықтары (`admin_grants`, қазір `moderator`) users.role-ға қосымша: студент бола тұрып модератор
+болуға болады. Тек admin береді/алады (`/admin/roles` не қолданушы беті), себебі міндетті, `scope_grant` /
+`scope_revoke` журналға жазылады. Модератор кезекті, шағымдарды, тегін заттарды, ағын мен контентті қарайды;
+рөл беретін өтінімдер (амбассадор, ментор, компания тексеру, клуб жетекшісі), қолданушылар, экспорт және ақша
+оған жабық. Кофейня/полиграфия менеджері өз командасын (`/admin/shop?cafe=N`) басқарады: тек бариста/оператор
+қосып-алады, менеджерді admin тағайындайды. Бұғатталған аккаунт (`user_blocks`) оқи алады, кіре-шыға алады,
+өзін өшіре алады, қалған барлық жазу 403 `account_restricted`.
 
 ## Ажыратқыштар (feature flags)
 
@@ -139,6 +149,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `BOT_TOKEN` | initData мен Login Widget hash тексеру (BotFather-ден) |
 | `BOT_USERNAME` | `/api/config` арқылы фронтқа (Login Widget `data-telegram-login`) |
 | `ADMIN_TELEGRAM_IDS` | үтірмен бөлінген Telegram id, мысалы `123456789,987654321` |
+| `ADMIN_EMAILS` | үтірмен бөлінген email, мысалы `owner@example.kz`; тек расталған email admin болады |
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ`, `FEATURE_SURVEYS`, `FEATURE_FEEDBACK`, `FEATURE_WELLBEING` | `true` — функция қосулы ([UNIVOICE.md](UNIVOICE.md)) |
 | `FEATURE_EVENTS`, `FEATURE_AMBASSADOR`, `FEATURE_MENTORS`, `FEATURE_MARKET`, `FEATURE_PORTFOLIO`, `FEATURE_B2B`, `FEATURE_QUIZ` | `true` — функция қосулы |
 | `FEATURE_LOSTFOUND`, `FEATURE_COURSEQA`, `FEATURE_ROOMMATES` | қауымдастық функциялары, [api/community.md](api/community.md) |

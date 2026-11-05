@@ -88,8 +88,10 @@ func handle(mux httpx.Router, feature, pattern string, fn http.HandlerFunc) {
 // write is a signed-in, origin-checked, rate-limited mutation.
 func write(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.Need(fn)) }
 
-// admin is an admin-only mutation.
-func admin(fn auth.Handler) http.HandlerFunc { return auth.Write(auth.NeedRole(fn, "admin")) }
+// admin is a moderation mutation: an admin or a moderator (admin_grants).
+func admin(fn auth.Handler) http.HandlerFunc {
+	return auth.Write(auth.NeedScope(fn, auth.ScopeModerator))
+}
 
 // ---------- errors ----------
 

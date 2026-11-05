@@ -47,8 +47,9 @@ func init() { registerContent() }
 
 // Routes wires /api/admin/content*.
 func Routes(mux httpx.Router) {
-	admin := func(h auth.Handler) http.HandlerFunc { return auth.NeedRole(h, "admin") }
-	write := func(h auth.Handler) http.HandlerFunc { return auth.Write(auth.NeedRole(h, "admin")) }
+	// content is moderation work: an admin or a moderator (admin_grants)
+	admin := func(h auth.Handler) http.HandlerFunc { return auth.NeedScope(h, auth.ScopeModerator) }
+	write := func(h auth.Handler) http.HandlerFunc { return auth.Write(auth.NeedScope(h, auth.ScopeModerator)) }
 	mux.HandleFunc("GET /api/admin/content", admin(list))
 	mux.HandleFunc("POST /api/admin/content", write(create))
 	mux.HandleFunc("POST /api/admin/content/validate", write(validate))

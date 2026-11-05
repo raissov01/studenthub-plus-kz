@@ -240,6 +240,10 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into club_admins(club_id,user_id,granted_by) values ($1,$2,$2),($1,$3,$2)`, club, uid, other)
 		exec(`insert into club_members(club_id,user_id,status,decided_by) values ($1,$2,'member',$2),($1,$3,'member',$2)`, club, uid, other)
 		exec(`insert into club_posts(club_id,author_id,body_kk,status) values ($1,$2,'fixture','published')`, club, uid)
+		// admin console: a scoped role granted to and by the user, a block, a day of activity
+		exec(`insert into admin_grants(user_id,scope,granted_by,reason) values ($1,'moderator',$2,'fixture grant'),($2,'moderator',$1,'fixture grant')`, uid, other)
+		exec(`insert into user_blocks(user_id,reason,blocked_by) values ($1,'fixture block',$2),($2,'fixture block',$1)`, uid, other)
+		exec(`insert into user_active_days(user_id,day) values ($1,current_date)`, uid)
 		return nil
 	})
 	if err != nil {

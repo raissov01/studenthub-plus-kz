@@ -225,7 +225,7 @@ func lfGet(w http.ResponseWriter, r *http.Request) {
 	var viewer int64
 	isAdmin := false
 	if v != nil {
-		viewer, isAdmin = v.ID, v.Role == "admin"
+		viewer, isAdmin = v.ID, v.Can(auth.ScopeModerator)
 	}
 	var post lfPost
 	var owner int64
@@ -831,7 +831,7 @@ func lfPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	if !public {
 		u := auth.Current(r)
-		if u == nil || (u.ID != owner && u.Role != "admin") {
+		if u == nil || (u.ID != owner && !u.Can(auth.ScopeModerator)) {
 			notFound(w, r)
 			return
 		}

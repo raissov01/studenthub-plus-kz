@@ -93,11 +93,11 @@ func Routes(mux httpx.Router) {
 	h("POST /api/market/photos", w(upload))
 	h("GET /api/market/photos/{name}", servePhoto)
 
-	h("GET /api/admin/market/items", auth.NeedRole(adminItems, "admin"))
-	h("POST /api/admin/market/items/{id}/hide", auth.Write(auth.NeedRole(adminHide, "admin")))
-	h("POST /api/admin/market/items/{id}/restore", auth.Write(auth.NeedRole(adminRestore, "admin")))
-	h("POST /api/admin/market/bans", auth.Write(auth.NeedRole(adminBan, "admin")))
-	h("DELETE /api/admin/market/bans/{userId}", auth.Write(auth.NeedRole(adminUnban, "admin")))
+	h("GET /api/admin/market/items", auth.NeedScope(adminItems, auth.ScopeModerator))
+	h("POST /api/admin/market/items/{id}/hide", auth.Write(auth.NeedScope(adminHide, auth.ScopeModerator)))
+	h("POST /api/admin/market/items/{id}/restore", auth.Write(auth.NeedScope(adminRestore, auth.ScopeModerator)))
+	h("POST /api/admin/market/bans", auth.Write(auth.NeedScope(adminBan, auth.ScopeModerator)))
+	h("DELETE /api/admin/market/bans/{userId}", auth.Write(auth.NeedScope(adminUnban, auth.ScopeModerator)))
 
 	h("GET /api/cron/market", cronHandler)
 }

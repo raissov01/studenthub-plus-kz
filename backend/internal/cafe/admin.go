@@ -167,6 +167,7 @@ func addStaff(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	var in struct {
 		UserID int64  `json:"userId"`
 		Role   string `json:"role"`
+		Reason string `json:"reason"` // optional, kept in the audit log
 	}
 	if !ok || httpx.Decode(r, &in, 1<<10) != nil || in.UserID <= 0 || (in.Role != "barista" && in.Role != "manager") {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
@@ -186,7 +187,10 @@ func addStaff(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if err == nil && tag.RowsAffected() == 0 {
 			return refuse(http.StatusNotFound, "not_found", httpx.MsgNotFound)
 		}
-		return err
+		if err != nil {
+			return err
+		}
+		return shopkit.AuditStaff(ctx, tx, u.ID, "staff_grant", in.UserID, "cafe", cafeID, in.Role, in.Reason)
 	})
 	var oe *orderErr
 	if errors.As(err, &oe) {
@@ -210,8 +214,15 @@ func removeStaff(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	ctx := r.Context()
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `delete from cafe_staff where cafe_id = $1 and user_id = $2`, cafeID, userID)
-		return err
+		var role string
+		err := tx.QueryRow(ctx, `delete from cafe_staff where cafe_id = $1 and user_id = $2 returning role`, cafeID, userID).Scan(&role)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		return shopkit.AuditStaff(ctx, tx, u.ID, "staff_revoke", userID, "cafe", cafeID, role, "")
 	})
 	if err != nil {
 		fail(w, r, "remove staff", err)

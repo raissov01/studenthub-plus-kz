@@ -6,6 +6,7 @@ import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Icon } from '@/components/ui';
 import { useConfig } from '@/lib/config';
+import { useAccount } from '@/lib/account';
 import { SECTIONS, sectionOfView, visibleTabs, type SectionId } from '@/lib/sections';
 import type { IconName } from '@/lib/types';
 
@@ -18,6 +19,9 @@ const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern',
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tt, go, content } = useApp();
   const cfg = useConfig();
+  const acc = useAccount();
+  const role = acc.user?.role;
+  const hasConsole = !!acc.user && (role === 'admin' || !!acc.console || !!acc.user.scopes?.length);
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -60,6 +64,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
       ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
+      ...(hasConsole ? [['admin', 'chart', tt('Басқару панелі', 'Панель управления')] as Item] : []),
     ]],
   ];
   return (

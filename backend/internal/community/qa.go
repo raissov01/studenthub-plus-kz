@@ -231,7 +231,7 @@ func qaGet(w http.ResponseWriter, r *http.Request) {
 	var viewer int64
 	isAdmin := false
 	if v != nil {
-		viewer, isAdmin = v.ID, v.Role == "admin"
+		viewer, isAdmin = v.ID, v.Can(auth.ScopeModerator)
 	}
 	var q qaQuestion
 	answers := []qaAnswerOut{}
