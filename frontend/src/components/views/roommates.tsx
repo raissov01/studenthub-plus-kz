@@ -132,14 +132,14 @@ function RMHome() {
       ) : null}
       <ErrorLine err={list.err || me.err} />
       {!list.data && !list.err ? <Loading /> : list.data?.needListing ? (
-        <Empty icon="home" action={<button className="btn secondary" type="button" onClick={() => go('roommates:new')}>{tt('Хабарландыру беру', 'Разместить объявление')}</button>}>
+        <Empty icon="bed" action={<button className="btn secondary" type="button" onClick={() => go('roommates:new')}>{tt('Хабарландыру беру', 'Разместить объявление')}</button>}>
           {tt('«Маған сай» тізімі сіздің хабарландыруыңызға қарап құралады.', 'Список «Подходят мне» строится по вашему объявлению.')}</Empty>
       ) : list.data?.listings.filter(l => !l.mine).length ? (
         list.data.listings.filter(l => !l.mine).map(l => (
           <ListingCard key={l.id} l={l} onRequest={() => openSheet(<RequestSheet l={l} done={reload} />)} />
         ))
       ) : list.data ? (
-        <Empty icon="home">{tt('Әзірге сәйкес хабарландыру жоқ. Өзіңіз жариялаңыз — басқалар сізді табады.', 'Подходящих объявлений пока нет. Разместите своё — вас найдут.')}</Empty>
+        <Empty icon="bed">{tt('Әзірге сәйкес хабарландыру жоқ. Өзіңіз жариялаңыз — басқалар сізді табады.', 'Подходящих объявлений пока нет. Разместите своё — вас найдут.')}</Empty>
       ) : null}
       {me.data ? <p className="tiny muted">{tt(`Бүгін ${me.data.requestsToday}/${me.data.dailyLimit} сұрау.`, `Сегодня запросов: ${me.data.requestsToday}/${me.data.dailyLimit}.`)}</p> : null}
       <p className="note">{tt('Пәтерді көрмей ақша аудармаңыз. Алғашқы кездесу — адам көп жерде. Ақша сұраса не күдікті болса — шағымданыңыз.',
@@ -168,7 +168,7 @@ function RMNew() {
   const [tried, setTried] = useState(false);
   if (me.err) return <ErrorLine err={me.err} />;
   if (!me.data) return <Loading />;
-  if (me.data.listing) return <Empty icon="home" action={<button className="btn secondary" type="button" onClick={() => go('roommates')}>{tt('Хабарландыруым', 'Моё объявление')}</button>}>
+  if (me.data.listing) return <Empty icon="bed" action={<button className="btn secondary" type="button" onClick={() => go('roommates')}>{tt('Хабарландыруым', 'Моё объявление')}</button>}>
     {tt('Бір адамға бір белсенді хабарландыру. Жаңасын беру үшін бұрынғысын жабыңыз.', 'Одно активное объявление на человека. Чтобы создать новое, закройте прежнее.')}</Empty>;
   const draft = { ...f, budgetMin: Number(f.budgetMin), budgetMax: Number(f.budgetMax) };
   const problem = rmProblem(draft, me.data.gender, today);
@@ -245,7 +245,7 @@ function RMRequests() {
       <SectionHead title={tt('Мен жібергендер', 'Отправленные')} />
       {outgoing.length ? outgoing.map(r => (
         <div key={r.id} className="card">
-          {r.listing ? <Row go={'roommates:' + r.listingId} icon="home" title={r.listing.district} sub={status(r.status)} /> : null}
+          {r.listing ? <Row go={'roommates:' + r.listingId} icon="bed" title={r.listing.district} sub={status(r.status)} /> : null}
           {r.contact ? <ContactCard c={r.contact} title={tt('Байланыс', 'Контакт')} /> : null}
         </div>
       )) : <p className="small muted">{tt('Сіз әлі сұрау жібермедіңіз.', 'Вы ещё не отправляли запросов.')}</p>}

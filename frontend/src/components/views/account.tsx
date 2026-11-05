@@ -249,13 +249,13 @@ export function AccountSection() {
         <Row icon="user" title={u.name || (u.username ? '@' + u.username : u.email ? <Addr email={u.email} /> : 'Telegram')} sub={[u.username ? '@' + u.username : '', roleLabel(u.role, tt)].filter(Boolean).join(' · ')} chev={false} />
         {/* email sign-in: shown only while the server offers it */}
         {cfg.emailAuth
-          ? <Row onClick={() => openSheet(<EmailSheet />)} icon="chat" title={u.email ? tt('Email-ді өзгерту', 'Сменить email') : tt('Email қосу', 'Добавить email')}
+          ? <Row onClick={() => openSheet(<EmailSheet />)} icon="mail" title={u.email ? tt('Email-ді өзгерту', 'Сменить email') : tt('Email қосу', 'Добавить email')}
             sub={u.email
               ? <><Addr email={u.email} /> <span className={`badge ${u.emailVerified ? 'b-ok' : 'b-sun'}`}>{u.emailVerified ? tt('расталған', 'подтверждён') : tt('расталмаған', 'не подтверждён')}</span></>
               : tt('Email мен құпиясөз арқылы да кіру үшін', 'Чтобы входить и по email с паролем')} />
           : null}
         {cfg.emailAuth && u.email
-          ? <Row onClick={() => openSheet(<PasswordSheet />)} icon="shield" title={tt('Құпиясөзді өзгерту', 'Сменить пароль')} sub={tt('Басқа құрылғылардағы кірулер жабылады', 'Входы на других устройствах закроются')} />
+          ? <Row onClick={() => openSheet(<PasswordSheet />)} icon="key" title={tt('Құпиясөзді өзгерту', 'Сменить пароль')} sub={tt('Басқа құрылғылардағы кірулер жабылады', 'Входы на других устройствах закроются')} />
           : null}
         {u.telegramId
           ? (cfg.emailAuth ? <Row icon="send" title={tt('Telegram байланысқан', 'Telegram привязан')} sub={u.username ? '@' + u.username : tt('Бот хабарламалары қолжетімді', 'Сообщения бота доступны')} chev={false} /> : null)
@@ -263,11 +263,11 @@ export function AccountSection() {
             sub={tt('Telegram жоқ: бот еске салу мен хабарлама жібере алмайды', 'Telegram не привязан: бот не сможет напоминать и присылать уведомления')} />}
         {acc.needsConsent
           ? <Row onClick={() => openSheet(<ConsentSheet />)} icon="shield" tone="sun" title={tt('Келісім беру', 'Дать согласие')} sub={tt('Аккаунтты қолдану үшін деректер туралы келісім керек', 'Чтобы пользоваться аккаунтом, нужно согласие на обработку данных')} />
-          : <Row onClick={sync} icon="copy" title={tt('Аккаунтпен синхрондау', 'Синхронизировать с аккаунтом')}
+          : <Row onClick={sync} icon="sync" title={tt('Аккаунтпен синхрондау', 'Синхронизировать с аккаунтом')}
             sub={busy === 'sync' ? tt('Жіберіліп жатыр…', 'Отправляем…') : tt('Тек аты, тіл, университет, факультет, курс және қала жіберіледі. GPA мен телефон — ешқашан.', 'Отправляются только имя, язык, вуз, факультет, курс и город. GPA и телефон — никогда.')} chev={false} />}
         <Row onClick={() => run('export', () => downloadExport(S.lang), tt('Файл жүктелді', 'Файл скачан'))} icon="file" title={tt('Деректерімді жүктеу', 'Скачать мои данные')} sub={tt('Сервердегі бар деректеріңіз, JSON файл', 'Все ваши данные с сервера, файл JSON')} chev={false} />
-        {u.role === 'admin' ? <Row go="admin" icon="chart" title={tt('Әкімші беті', 'Панель администратора')} /> : null}
-        <Row onClick={() => run('out', () => signOut(false, S.lang), tt('Шықтыңыз', 'Вы вышли'))} icon="back" title={tt('Шығу', 'Выйти')} chev={false} />
+        {u.role === 'admin' ? <Row go="admin" icon="dashboard" title={tt('Әкімші беті', 'Панель администратора')} /> : null}
+        <Row onClick={() => run('out', () => signOut(false, S.lang), tt('Шықтыңыз', 'Вы вышли'))} icon="logout" title={tt('Шығу', 'Выйти')} chev={false} />
         <Row onClick={() => run('outAll', () => signOut(true, S.lang), tt('Барлық құрылғыдан шықтыңыз', 'Вы вышли на всех устройствах'))} icon="x" title={tt('Барлық құрылғыдан шығу', 'Выйти на всех устройствах')} chev={false} />
         <Row onClick={() => openSheet(<DeleteSheet />)} icon="trash" tone="bad" title={tt('Аккаунтты өшіру', 'Удалить аккаунт')} sub={tt('Сервердегі деректер толық өшеді', 'Данные на сервере удалятся полностью')} chev={false} />
       </div>

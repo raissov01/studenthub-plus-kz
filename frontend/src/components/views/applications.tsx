@@ -12,7 +12,7 @@ import {
 } from '@/lib/applications';
 import type { Job } from '@/lib/types';
 
-const STAGE_ICON: Record<Stage, 'send' | 'chat' | 'award' | 'x' | 'back'> = { sent: 'send', interview: 'chat', offer: 'award', rejected: 'x', withdrawn: 'back' };
+const STAGE_ICON: Record<Stage, 'send' | 'mic' | 'award' | 'x' | 'back'> = { sent: 'send', interview: 'mic', offer: 'award', rejected: 'x', withdrawn: 'back' };
 const STAGE_TONE: Record<Stage, string> = { sent: 'b-sky', interview: 'b-sun', offer: 'b-ok', rejected: 'b-line', withdrawn: 'b-line' };
 
 export function StagePill({ s }: { s: Stage }) {

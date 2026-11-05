@@ -115,7 +115,7 @@ function DbEvent_({ id }: { id: string }) {
         <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={`${hhmm(e.starts_at)}–${hhmm(e.ends_at)} · ${e.university}`} chev={false} />
         {b ? <Row onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }} icon="pin" title={e.place_text || L(b.name)} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')} />
           : e.place_text ? <Row icon="pin" title={e.place_text} chev={false} /> : null}
-        <Row icon="user" title={tt(`Кім барады: ${att.data?.count ?? e.registered}`, `Кто идёт: ${att.data?.count ?? e.registered}`)}
+        <Row icon="users" title={tt(`Кім барады: ${att.data?.count ?? e.registered}`, `Кто идёт: ${att.data?.count ?? e.registered}`)}
           sub={e.capacity == null ? tt('Орын шектелмеген', 'Без ограничения мест') : e.spots_left ? tt(`Бос орын: ${e.spots_left} / ${e.capacity}`, `Свободно: ${e.spots_left} из ${e.capacity}`) : tt(`Орын толды (${e.capacity}). Күту тізімі бар`, `Мест нет (${e.capacity}). Есть лист ожидания`)}
           onClick={att.data?.attendees ? () => openSheet(<AttendeesSheet list={att.data?.attendees ?? []} />) : undefined} chev={!!att.data?.attendees} />
       </div>
@@ -289,7 +289,7 @@ export function VerifiedAttendance({ empty = null }: { empty?: ReactNode } = {})
   return (
     <div className="group">
       {data.attendance.map(a => (
-        <Row key={a.event_id} go={'event:' + a.event_id} icon="calendar" title={evTitle(a, lang)} sub={I.fDateY(almatyWall(a.starts_at))}
+        <Row key={a.event_id} go={'event:' + a.event_id} icon="ticket" title={evTitle(a, lang)} sub={I.fDateY(almatyWall(a.starts_at))}
           end={<span className="badge b-ok"><Icon n="check" s={12} /> {tt('Расталған', 'Подтверждено')}</span>} />
       ))}
     </div>
@@ -369,7 +369,7 @@ function OrganizerList() {
       {can ? <button className="btn block" type="button" onClick={() => go('organize:new')}><Icon n="plus" s={18} /> {tt('Жаңа іс-шара', 'Новое мероприятие')}</button> : null}
       {data.events.length
         ? <div className="list">{data.events.map(e => <OrgCard key={e.id} e={e} />)}</div>
-        : <Empty icon="calendar">{tt('Әзірге іс-шара жоқ. Біріншісін құрыңыз.', 'Мероприятий пока нет. Создайте первое.')}</Empty>}
+        : <Empty icon="ticket">{tt('Әзірге іс-шара жоқ. Біріншісін құрыңыз.', 'Мероприятий пока нет. Создайте первое.')}</Empty>}
       <p className="note">{tt('Іс-шара тек өз университетіңізге жарияланады. Модерация жоқ — бұл сіздің тікелей рөліңіз.', 'Мероприятие публикуется только для вашего университета. Без модерации — это ваша прямая роль.')}</p>
     </>
   );
@@ -379,7 +379,7 @@ function OrgCard({ e }: { e: DbEvent }) {
   const { tt, lang, I, go } = useApp();
   const st: Record<string, string> = { draft: tt('Черновик', 'Черновик'), published: tt('Жарияланған', 'Опубликовано'), finished: tt('Аяқталды', 'Завершено'), cancelled: tt('Тоқтатылды', 'Отменено') };
   return (
-    <Row onClick={() => go('organize:' + e.id)} icon="calendar" title={evTitle(e, lang)}
+    <Row onClick={() => go('organize:' + e.id)} icon="ticket" title={evTitle(e, lang)}
       sub={<>{I.fDate(almatyWall(e.starts_at))}, {hhmm(e.starts_at)} · {st[e.status]}<span className="badges"><span className="badge b-line num">{tt(`Тіркелген ${e.registered}`, `Записались ${e.registered}`)}</span><span className="badge b-line num">{tt(`Келген ${e.checked_in}`, `Пришли ${e.checked_in}`)}</span></span></>} />
   );
 }
@@ -716,5 +716,5 @@ function ScanOverlay({ onTicket, onClose }: { onTicket: (t: string) => Promise<C
 /** admin shortcut: every event of every university is managed from /organize as well */
 export function AdminEventsLink() {
   const { tt } = useApp();
-  return <AdminOnly><Row go="organize" icon="calendar" title={tt('Іс-шаралар (ұйымдастыру)', 'Мероприятия (организация)')} /></AdminOnly>;
+  return <AdminOnly><Row go="organize" icon="ticket" title={tt('Іс-шаралар (ұйымдастыру)', 'Мероприятия (организация)')} /></AdminOnly>;
 }

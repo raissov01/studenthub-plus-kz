@@ -37,7 +37,7 @@ const daysAgo = (iso: string) => Math.max(0, Math.floor((Date.now() - Date.parse
 function QuestionRow({ q }: { q: QAQuestion }) {
   const { tt } = useApp();
   return (
-    <Row go={'qa:' + q.id} icon="chat" title={q.title}
+    <Row go={'qa:' + q.id} icon="qa" title={q.title}
       sub={[q.subject, tt(`${q.answers} жауап`, `ответов: ${q.answers}`), agoDays(daysAgo(q.createdAt), tt)].join(' · ')}
       end={q.acceptedAnswerId ? <span className="badge b-ok">{tt('Шешілді', 'Решено')}</span> : q.locked ? <span className="badge b-line">{tt('Жабық', 'Закрыто')}</span> : undefined} />
   );
@@ -76,7 +76,7 @@ function QAListView({ subject }: { subject: string }) {
       {!data && !err ? <Loading /> : data?.questions.length ? (
         <div className="group" aria-label={tt('Сұрақтар', 'Вопросы')}>{data.questions.map(x => <QuestionRow key={x.id} q={x} />)}</div>
       ) : data ? (
-        <Empty icon="chat" action={<button className="btn secondary" type="button" onClick={() => go(subject ? 'qa:new:' + subject : 'qa:new')}>{tt('Бірінші сұрақ', 'Первый вопрос')}</button>}>
+        <Empty icon="qa" action={<button className="btn secondary" type="button" onClick={() => go(subject ? 'qa:new:' + subject : 'qa:new')}>{tt('Бірінші сұрақ', 'Первый вопрос')}</button>}>
           {subject ? tt('Бұл пән бойынша әзірге сұрақ жоқ.', 'По этому предмету пока нет вопросов.') : tt('Әзірге сұрақ жоқ.', 'Пока нет вопросов.')}
         </Empty>
       ) : null}

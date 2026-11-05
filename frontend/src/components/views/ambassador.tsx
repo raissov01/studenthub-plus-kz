@@ -104,7 +104,7 @@ function CabinetGate() {
   if (!acc.loaded) return <Loading />;
   if (!acc.user) return <NotFound />;
   if (cab.code === 'not_ambassador' || cab.code === 'forbidden') {
-    return <Empty icon="award" action={<button className="btn secondary" type="button" onClick={() => go('ambassador:apply')}>{tt('Амбассадор болу', 'Стать амбассадором')}</button>}>
+    return <Empty icon="badge" action={<button className="btn secondary" type="button" onClick={() => go('ambassador:apply')}>{tt('Амбассадор болу', 'Стать амбассадором')}</button>}>
       {tt('Кабинет тек белсенді амбассадорларға ашық.', 'Кабинет открыт только действующим амбассадорам.')}</Empty>;
   }
   if (cab.err) return <ErrorLine err={cab.err} />;
@@ -165,9 +165,9 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
       <section className="section"><SectionHead title={tt('Қосу', 'Добавить')} />
         <div className="group">
           <Row onClick={() => openSheet(<SuggestSheet kind="opportunity" onDone={subs.reload} />)} icon="globe" title={tt('Мүмкіндік', 'Возможность')} sub={tt('Грант, тағылымдама, байқау', 'Грант, стажировка, конкурс')} />
-          {eventsOn && canCreateEvents(acc.user?.role) ? <Row go="organize:new" icon="calendar" title={tt('Іс-шара', 'Мероприятие')} sub={tt('Модерациясыз, тек өз университетіңізге', 'Без модерации, только для вашего вуза')} /> : null}
+          {eventsOn && canCreateEvents(acc.user?.role) ? <Row go="organize:new" icon="ticket" title={tt('Іс-шара', 'Мероприятие')} sub={tt('Модерациясыз, тек өз университетіңізге', 'Без модерации, только для вашего вуза')} /> : null}
           <Row onClick={() => openSheet(<SuggestSheet kind="place" onDone={subs.reload} />)} icon="pin" title={tt('Пайдалы орын', 'Полезное место')} sub={tt('Асхана, баспахана, кітапхана…', 'Столовая, печать, библиотека…')} />
-          {mentorsOn && t.role_in_team === 'lead' ? <Row go="ambassador:mentors" icon="cap" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
+          {mentorsOn && t.role_in_team === 'lead' ? <Row go="ambassador:mentors" icon="mentor" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
         </div>
       </section>
       <section className="section"><SectionHead title={tt('Шақыру сілтемесі', 'Ссылка-приглашение')} />
@@ -379,7 +379,7 @@ export function RatingEntry() {
   const acc = useAccount();
   const { data } = useLoad<{ mine: RatingRow | null }>(on ? '/api/ambassador/rating' + (acc.user ? '?u=' + acc.user.id : '') : null);
   if (!on) return null;
-  return <Row go="ambassador:rating" icon="award" title={tt('Университеттер рейтингі', 'Рейтинг университетов')}
+  return <Row go="ambassador:rating" icon="chart" title={tt('Университеттер рейтингі', 'Рейтинг университетов')}
     sub={data?.mine ? tt(`Университетіміз ${data.mine.rank}-орында`, `Наш университет на ${data.mine.rank}-м месте`) : tt('Амбассадор командаларының жұмысы', 'Работа команд амбассадоров')} />;
 }
 

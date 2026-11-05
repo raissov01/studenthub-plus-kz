@@ -10,7 +10,7 @@ export const CAL_KINDS: CalKind[] = ['class', 'opp', 'job', 'event', 'exam', 'ow
 
 export interface KindStyle {
   /** components/ui Icon name */
-  icon: 'book' | 'globe' | 'briefcase' | 'calendar' | 'cap' | 'clock';
+  icon: 'book' | 'globe' | 'briefcase' | 'ticket' | 'cap' | 'clock';
   /** the CSS custom property with this kind's solid colour */
   token: string;
   kk: string;
@@ -20,7 +20,7 @@ export const KIND_STYLE: Record<CalKind, KindStyle> = {
   class: { icon: 'book', token: '--cal-class', kk: 'Сабақ', ru: 'Занятие' },
   opp: { icon: 'globe', token: '--cal-opp', kk: 'Тағылымдама, грант', ru: 'Стажировка, грант' },
   job: { icon: 'briefcase', token: '--cal-job', kk: 'Вакансия', ru: 'Вакансия' },
-  event: { icon: 'calendar', token: '--cal-event', kk: 'Іс-шара', ru: 'Мероприятие' },
+  event: { icon: 'ticket', token: '--cal-event', kk: 'Іс-шара', ru: 'Мероприятие' },
   exam: { icon: 'cap', token: '--cal-exam', kk: 'Емтихан', ru: 'Экзамен' },
   own: { icon: 'clock', token: '--cal-own', kk: 'Менікі', ru: 'Моё' },
 };

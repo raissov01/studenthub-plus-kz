@@ -565,7 +565,7 @@ function AgendaRow({ it }: { it: CalItem }) {
           <PrioTag p={it.prio} />
           {it.done ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Орындалды', 'Выполнено')}</span> : null}
           {it.pin ? <span className="badge b-line"><Icon n="bookmark" s={12} /> {tt('Күнтізбеде', 'В календаре')}</span>
-            : savedBadge ? <span className="badge b-sun"><Icon n="heart" s={12} /> {tt('Сақталған', 'Сохранено')}</span> : null}
+            : savedBadge ? <span className="badge b-sun"><Icon n="bookmark" s={12} /> {tt('Сақталған', 'Сохранено')}</span> : null}
         </span>
       </button>
       {it.kind === 'class' ? null : (
@@ -776,7 +776,7 @@ export function CalendarView() {
           <div className="cal-filters">
             <div className="chips">
               <button className="chip" type="button" aria-pressed={ui.calSaved} onClick={() => setUi({ calSaved: !ui.calSaved })}>
-                <Icon n="heart" s={16} /> {tt('Сақталғандар мен менікі', 'Сохранённое и моё')}
+                <Icon n="bookmark" s={16} /> {tt('Сақталғандар мен менікі', 'Сохранённое и моё')}
               </button>
               {year ? null : S.timetable.length ? (
                 <button className="chip cal-classes-chip" type="button" aria-pressed={classesOn} onClick={() => setUi({ calClasses: classesOn ? 'off' : 'on' })}>

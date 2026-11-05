@@ -14,7 +14,7 @@ export const OPEN_MENU = 'studenthub:menu';
 export const openMenu = () => window.dispatchEvent(new Event(OPEN_MENU));
 
 type Item = [string, IconName, string];
-const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'calendar'], ['courses', 'award'], ['deals', 'tag']];
+const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'ticket'], ['courses', 'course'], ['deals', 'tag']];
 
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tt, go, content } = useApp();
@@ -48,28 +48,28 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
-      ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
-      ...(cfg.features.courseqa ? [['qa', 'chat', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
+      ['timetable', 'timetable', tt('Сабақ кестесі', 'Расписание занятий')],
+      ...(cfg.features.courseqa ? [['qa', 'qa', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
     ]],
     [tt('Университет', 'Университет'), [
-      ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
+      ['services', 'building', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
       ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
-      ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as Item] : []),
-      ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
-      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
+      ...(cfg.features.print ? [['print', 'printer', tt('Полиграфия', 'Полиграфия')] as Item] : []),
+      ...(cfg.features.surveys ? [['surveys', 'survey', tt('Сауалнамалар', 'Опросы')] as Item] : []),
+      ...(cfg.features.feedback ? [['feedback', 'feedback', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
       ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
-      ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
-      ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
-      ...(cfg.features.clubs ? [['clubs', 'user', tt('Клубтар', 'Клубы')] as Item] : []),
+      ...(cfg.features.lostfound ? [['lostfound', 'lostfound', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
+      ...(cfg.features.roommates ? [['roommates', 'bed', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
+      ...(cfg.features.clubs ? [['clubs', 'users', tt('Клубтар', 'Клубы')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
       ...(cfg.features.points ? [['points', 'trophy', tt('Ұпайлар', 'Баллы')] as Item] : []),
-      ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
+      ['saved', 'bookmark', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
       ...((role === 'admin' || role === 'university_staff') && (cfg.features.surveys || cfg.features.feedback || cfg.features.wellbeing)
-        ? [['voice', 'shield', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
+        ? [['voice', 'megaphone', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
     ]],
   ];
   return (

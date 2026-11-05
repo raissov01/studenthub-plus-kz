@@ -48,7 +48,7 @@ function SurveyList() {
   return (
     <div className="stack">
       <ErrorLine err={err} />
-      {list.length === 0 && !err ? <Empty icon="chart">{tt('Қазір сізге арналған ашық сауалнама жоқ.', 'Сейчас нет открытых опросов для вас.')}</Empty> : null}
+      {list.length === 0 && !err ? <Empty icon="survey">{tt('Қазір сізге арналған ашық сауалнама жоқ.', 'Сейчас нет открытых опросов для вас.')}</Empty> : null}
       {list.map(s => (
         <div className="card" key={s.id}>
           <h2 className="uv-title">{s.title}</h2>
@@ -76,7 +76,7 @@ function SurveyFlow({ id }: { id: string }) {
   const head = useRef<HTMLHeadingElement>(null);
   useEffect(() => { head.current?.focus(); }, [step]);
   if (loading && !data) return <Loading />;
-  if (code === 'not_found' || (!data && err)) return <Empty icon="chart" action={<button className="btn secondary" type="button" onClick={() => go('surveys')}>{tt('Сауалнамалар', 'Опросы')}</button>}>{tt('Сауалнама табылмады не жабылған.', 'Опрос не найден или закрыт.')}</Empty>;
+  if (code === 'not_found' || (!data && err)) return <Empty icon="survey" action={<button className="btn secondary" type="button" onClick={() => go('surveys')}>{tt('Сауалнамалар', 'Опросы')}</button>}>{tt('Сауалнама табылмады не жабылған.', 'Опрос не найден или закрыт.')}</Empty>;
   const s = data!.survey;
   if (done || s.done) {
     const text = done ? awardText(done.award, tt) : '';
@@ -257,7 +257,7 @@ function Compose({ onSent }: { onSent: () => void }) {
   if (!acc.loaded) return <Loading />;
   if (!signedIn) return <SignInCard text={tt('Өтініш жіберу үшін кіріңіз (тек университет студенттері жаза алуы үшін). Анонимді режимде атыңыз өтінішпен бірге сақталмайды.', 'Чтобы отправить обращение, войдите (так пишут только студенты университета). В анонимном режиме имя не сохраняется вместе с обращением.')} />;
   const recs = data?.recipients ?? [];
-  if (data && recs.length === 0) return <Empty icon="chat">{data.university ? tt('Университетіңіз үшін алушылар әлі бапталмаған.', 'Для вашего университета получатели ещё не настроены.') : tt('Профильде университетіңізді көрсетіңіз.', 'Укажите университет в профиле.')}</Empty>;
+  if (data && recs.length === 0) return <Empty icon="feedback">{data.university ? tt('Университетіңіз үшін алушылар әлі бапталмаған.', 'Для вашего университета получатели ещё не настроены.') : tt('Профильде университетіңізді көрсетіңіз.', 'Укажите университет в профиле.')}</Empty>;
   const len = body.trim().length;
   const valid = rec > 0 && len >= 10 && len <= FEEDBACK_MAX && (flag !== 'threat' || ack);
   const send = async () => {
@@ -410,7 +410,7 @@ function MyTickets() {
   return (
     <div className="stack">
       <ErrorLine err={err} />
-      {items.length === 0 ? <Empty icon="chat">{tt('Әзірге өтініш жоқ.', 'Пока нет обращений.')}</Empty> : null}
+      {items.length === 0 ? <Empty icon="feedback">{tt('Әзірге өтініш жоқ.', 'Пока нет обращений.')}</Empty> : null}
       {items.map(m => <TicketCard key={m.ticket.id} m={m} open={open === m.ticket.id} toggle={() => setOpen(open === m.ticket.id ? 0 : m.ticket.id)} reload={load} />)}
       <details className="card">
         <summary className="small">{tt('Басқа құрылғыдағы анонимді өтінішті кодпен ашу', 'Открыть анонимное обращение по коду с другого устройства')}</summary>
@@ -639,7 +639,7 @@ function StaffSurveys() {
     <div className="stack">
       <ErrorLine err={err || busyErr} />
       <button className="btn block" type="button" onClick={() => setView({ k: 'edit', s: null })}><Icon n="plus" s={18} /> {tt('Жаңа сауалнама', 'Новый опрос')}</button>
-      {data?.surveys.length === 0 ? <Empty icon="chart">{tt('Әзірге сауалнама жоқ. Үлгіден бастауға болады.', 'Опросов пока нет. Можно начать с шаблона.')}</Empty> : null}
+      {data?.surveys.length === 0 ? <Empty icon="survey">{tt('Әзірге сауалнама жоқ. Үлгіден бастауға болады.', 'Опросов пока нет. Можно начать с шаблона.')}</Empty> : null}
       {data?.surveys.map(s => (
         <div className="card" key={s.id}>
           <h2 className="uv-title">{s.title}</h2>
@@ -828,7 +828,7 @@ function StaffInbox() {
       <Seg items={[['open', tt('Ашық', 'Открытые')], ['answered', tt('Жауап берілген', 'С ответом')], ['closed', tt('Жабық', 'Закрытые')], ['all', tt('Барлығы', 'Все')]]} cur={status} onPick={setStatus} />
       <ErrorLine err={err} />
       {data && data.recipients.length === 0 ? <p className="note">{tt('Сізге әлі бірде-бір алушы (бөлім) бекітілмеген. Әкімшіге хабарласыңыз.', 'Вам ещё не назначен ни один получатель (отдел). Обратитесь к администратору.')}</p> : null}
-      {!data ? <Loading /> : data.tickets.length === 0 ? <Empty icon="chat">{tt('Өтініш жоқ.', 'Обращений нет.')}</Empty> : null}
+      {!data ? <Loading /> : data.tickets.length === 0 ? <Empty icon="feedback">{tt('Өтініш жоқ.', 'Обращений нет.')}</Empty> : null}
       {data?.tickets.map(t => (
         <div className="card" key={t.id}>
           <button type="button" className="uv-ticket-head" aria-expanded={open === t.id} onClick={() => setOpen(open === t.id ? 0 : t.id)}>

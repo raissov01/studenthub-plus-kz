@@ -139,11 +139,11 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className={`top${scrolled ? ' scrolled' : ''}`} id="top">
         <div className="top-row">
           <button className="icon-btn" id="back" type="button" onClick={back} aria-label={tt('Артқа', 'Назад')} hidden={root || !!tg.app}>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+            <Icon n="back" s={24} />
           </button>
           <button className="icon-btn" id="menu-btn" type="button" hidden={!root} onClick={() => setMenu(true)}
             aria-label={tt('Мәзір', 'Меню')} aria-haspopup="dialog" aria-expanded={menu} aria-controls="nav-drawer">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+            <Icon n="menu" s={24} />
           </button>
           <div className="top-title" id="title">
             {name === 'home'

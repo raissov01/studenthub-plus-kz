@@ -71,7 +71,7 @@ function SubjectList() {
       {S.timetable.length
         ? <p className="small muted">{tt('Пәндер сіздің сабақ кестеңізден алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из вашего расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
         : (
-          <Empty icon="clock" action={<button className="btn secondary" type="button" id="subjAddTimetable" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>}>
+          <Empty icon="timetable" action={<button className="btn secondary" type="button" id="subjAddTimetable" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>}>
             {tt('Сабақ кестеңізді қосыңыз — пәндер одан өздігінен шығады. Немесе пәнді төменнен қолмен қосыңыз.', 'Добавьте своё расписание — предметы появятся из него сами. Или добавьте предмет вручную ниже.')}
           </Empty>
         )}
@@ -202,7 +202,7 @@ function SubjectPage({ id }: { id: string }) {
       {qaOn ? (
         <section className="section" aria-labelledby="subjQa">
           <SectionHead title={<span id="subjQa">{tt('Сұрақ-жауап', 'Вопросы и ответы')}</span>} />
-          <Row go={qaBoard(s.name)} icon="chat" title={tt('Курстастардан сұрау', 'Спросить однокурсников')}
+          <Row go={qaBoard(s.name)} icon="qa" title={tt('Курстастардан сұрау', 'Спросить однокурсников')}
             sub={tt('Осы пән бойынша сұрақтар мен жауаптар', 'Вопросы и ответы по этому предмету')} />
         </section>
       ) : null}
@@ -225,8 +225,8 @@ function SubjectPage({ id }: { id: string }) {
         <SectionHead title={<span id="subjGrade">{tt('Баға', 'Оценка')}</span>} />
         <SubjectScoreRow id={s.id} />
         {grade
-          ? <Row go="gpa" icon="chart" title={tt(`Күтілетін баға: ${grade.g}`, `Ожидаемая оценка: ${grade.g}`)} sub={tt(`${grade.cr} кредит · GPA есебі`, `${grade.cr} кредитов · расчёт GPA`)} />
-          : <Row onClick={() => { update(x => { x.gpaPlan.push({ n: s.name, cr: 5, g: 'B' }); }); go('gpa'); }} icon="chart"
+          ? <Row go="gpa" icon="grades" title={tt(`Күтілетін баға: ${grade.g}`, `Ожидаемая оценка: ${grade.g}`)} sub={tt(`${grade.cr} кредит · GPA есебі`, `${grade.cr} кредитов · расчёт GPA`)} />
+          : <Row onClick={() => { update(x => { x.gpaPlan.push({ n: s.name, cr: 5, g: 'B' }); }); go('gpa'); }} icon="grades"
             title={tt('Бағаны енгізу', 'Ввести оценку')} sub={tt('GPA калькуляторына қосылады', 'Добавится в калькулятор GPA')} />}
       </section>
 

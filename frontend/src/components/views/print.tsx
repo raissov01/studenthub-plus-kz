@@ -56,7 +56,7 @@ function ShopList() {
           <SectionHead title={tt('Менің тапсырыстарым', 'Мои заказы')} />
           <div className="group">
             {active.map(j => (
-              <Row key={j.id} go={`print:j${j.id}`} icon="file" title={<span className="cafe-code-inline num">№{j.pickupCode}</span>}
+              <Row key={j.id} go={`print:j${j.id}`} icon="printer" title={<span className="cafe-code-inline num">№{j.pickupCode}</span>}
                 sub={`${nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)} · ${money(j.total)}`} end={<JobBadge j={j} />} />
             ))}
           </div>
@@ -66,10 +66,10 @@ function ShopList() {
         <SectionHead title={tt('Полиграфиялар', 'Полиграфии')}
           more={hasAccount(acc) ? <button className="link-btn" type="button" onClick={() => go('print:jobs')}>{tt('Тарих', 'История')}</button> : undefined} />
         <ErrorLine err={list.err} />
-        {!list.data ? <Loading /> : !list.data.shops.length ? <Empty icon="file">{tt('Әзірге полиграфия қосылмаған.', 'Полиграфии пока не подключены.')}</Empty> : (
+        {!list.data ? <Loading /> : !list.data.shops.length ? <Empty icon="printer">{tt('Әзірге полиграфия қосылмаған.', 'Полиграфии пока не подключены.')}</Empty> : (
           <div className="group">
             {list.data.shops.map(s => (
-              <Row key={s.id} go={`print:${s.id}`} icon="file" tone={s.openNow ? 'nico-2' : ''} title={nameOf(s, lang)}
+              <Row key={s.id} go={`print:${s.id}`} icon="printer" tone={s.openNow ? 'nico-2' : ''} title={nameOf(s, lang)}
                 sub={`${placeOf(s, lang)}${placeOf(s, lang) ? ' · ' : ''}${hoursLabel(s, lang)}`}
                 end={<span className={`badge ${s.openNow ? 'b-ok' : 'b-line'}`}>{s.openNow ? tt('Ашық', 'Открыто') : tt('Жабық', 'Закрыто')}</span>} />
             ))}
@@ -516,10 +516,10 @@ function JobHistory() {
   return (
     <div className="cafe print">
       <ErrorLine err={q.err} />
-      {!q.data ? <Loading /> : !q.data.jobs.length ? <Empty icon="file">{tt('Әзірге тапсырыс жоқ.', 'Заказов пока нет.')}</Empty> : (
+      {!q.data ? <Loading /> : !q.data.jobs.length ? <Empty icon="printer">{tt('Әзірге тапсырыс жоқ.', 'Заказов пока нет.')}</Empty> : (
         <div className="group">
           {q.data.jobs.map(j => (
-            <Row key={j.id} go={`print:j${j.id}`} icon="file" title={<span className="num">№{j.pickupCode} · {money(j.total)}</span>}
+            <Row key={j.id} go={`print:j${j.id}`} icon="printer" title={<span className="num">№{j.pickupCode} · {money(j.total)}</span>}
               sub={`${nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)} · ${j.createdAt.slice(0, 10)}`} end={<JobBadge j={j} />} />
           ))}
         </div>

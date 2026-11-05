@@ -93,10 +93,10 @@ function GradeList() {
           {list.map(s => {
             const e = S.scores.find(x => x.subject === s.id);
             const abs = e ? absenceState(e) : 'none';
-            return <Row key={s.id} go={'grades:' + s.id} icon="chart" tone={abs === 'limit' ? 'bad' : ''} title={s.name} sub={summary(e, g, tt)} />;
+            return <Row key={s.id} go={'grades:' + s.id} icon="grades" tone={abs === 'limit' ? 'bad' : ''} title={s.name} sub={summary(e, g, tt)} />;
           })}
         </div>
-      ) : <Empty icon="chart">{tt('Пәндер сабақ кестесінен алынады. Кесте әлі жоқ болса, пәнді төменде өзіңіз қосыңыз.', 'Предметы берутся из расписания. Если его пока нет, добавьте предмет ниже.')}</Empty>}
+      ) : <Empty icon="grades">{tt('Пәндер сабақ кестесінен алынады. Кесте әлі жоқ болса, пәнді төменде өзіңіз қосыңыз.', 'Предметы берутся из расписания. Если его пока нет, добавьте предмет ниже.')}</Empty>}
       <form className="card form" onSubmit={e => { e.preventDefault(); add(); }}>
         <div className="field">
           <label htmlFor="gradeNew">{tt('Пән қосу', 'Добавить предмет')}</label>
@@ -105,7 +105,7 @@ function GradeList() {
         <button className="btn" type="submit" disabled={!name.trim()}><Icon n="plus" s={18} /> {tt('Қосу', 'Добавить')}</button>
       </form>
       <FormulaCard g={g} />
-      <Row go="gpa" icon="chart" title={tt('GPA калькуляторы', 'Калькулятор GPA')} sub={tt('Қорытынды бағаларды GPA-ға толтыру', 'Заполнить GPA итоговыми оценками')} />
+      <Row go="gpa" icon="calc" title={tt('GPA калькуляторы', 'Калькулятор GPA')} sub={tt('Қорытынды бағаларды GPA-ға толтыру', 'Заполнить GPA итоговыми оценками')} />
     </>
   );
 }
@@ -172,7 +172,7 @@ function GradeSheet({ id }: { id: string }) {
   const { list, ready } = useGradeSubjects();
   const s = list.find(x => x.id === id);
   if (!ready) return <p className="small muted" role="status">{tt('Жүктелуде…', 'Загрузка…')}</p>;
-  if (!s) return <Empty icon="chart" action={<button className="btn secondary" type="button" onClick={() => go('grades', { replace: true })}>{tt('Бағалар', 'Оценки')}</button>}>{tt('Пән табылмады.', 'Предмет не найден.')}</Empty>;
+  if (!s) return <Empty icon="grades" action={<button className="btn secondary" type="button" onClick={() => go('grades', { replace: true })}>{tt('Бағалар', 'Оценки')}</button>}>{tt('Пән табылмады.', 'Предмет не найден.')}</Empty>;
   const e = S.scores.find(x => x.subject === id) ?? emptyEntry(id, s.name);
   const ro = e.source === 'import';
   const set = (patch: Partial<ScoreEntry>) => update(st => {
@@ -278,8 +278,8 @@ export function SubjectScoreRow({ id }: { id: string }) {
   const { S, tt } = useApp();
   const g = useGrading();
   const e = S.scores.find(x => x.subject === id);
-  if (!e) return <Row go={'grades:' + id} icon="chart" title={tt('Бағалар парағы', 'Лист оценок')} sub={tt('АБ, емтихан, сабақтан қалу', 'РК, экзамен, пропуски')} />;
-  return <Row go={'grades:' + id} icon="chart" title={tt('Бағалар парағы', 'Лист оценок')} sub={summary(e, g, tt)} />;
+  if (!e) return <Row go={'grades:' + id} icon="grades" title={tt('Бағалар парағы', 'Лист оценок')} sub={tt('АБ, емтихан, сабақтан қалу', 'РК, экзамен, пропуски')} />;
+  return <Row go={'grades:' + id} icon="grades" title={tt('Бағалар парағы', 'Лист оценок')} sub={summary(e, g, tt)} />;
 }
 
 /** GPA «Бағалардан толтыру» (spec 04 G4) */

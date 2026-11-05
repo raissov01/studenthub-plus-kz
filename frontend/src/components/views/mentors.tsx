@@ -104,8 +104,8 @@ function MentorsHome() {
         <section className="section"><SectionHead title={tt('Жақын топтық кездесулер', 'Ближайшие групповые встречи')} /><GroupMeetings list={s.groupMeetings} /></section>
       ) : null}
       <div className="group">
-        {s.me?.mentorStatus ? <Row go="mentors:me" icon="cap" title={tt('Менің менторлығым', 'Моё менторство')} />
-          : <Row go="mentors:become" icon="cap" title={tt('Ментор болу', 'Стать ментором')} sub={tt('2–4 курс студенттері мен түлектер, 18+', 'Студенты 2–4 курса и выпускники, 18+')} />}
+        {s.me?.mentorStatus ? <Row go="mentors:me" icon="mentor" title={tt('Менің менторлығым', 'Моё менторство')} />
+          : <Row go="mentors:become" icon="mentor" title={tt('Ментор болу', 'Стать ментором')} sub={tt('2–4 курс студенттері мен түлектер, 18+', 'Студенты 2–4 курса и выпускники, 18+')} />}
         {req?.status === 'matched' && !s.me?.mentorStatus ? null : acc.user ? <Row go="mentors:me" icon="user" title={tt('Менің жұптарым', 'Мои пары')} /> : null}
       </div>
     </>
@@ -448,5 +448,5 @@ function MentorStatusSheet({ p, onDone }: { p: AdminPair; onDone: () => void }) 
 /** the mentors entry row for the services board / profile; hidden while the switch is off */
 export function MentorsEntry() {
   const { tt } = useApp();
-  return <Row go="mentors" icon="cap" title={tt('Менторлар', 'Менторы')} sub={tt('Алғашқы айда көмек: жатақхана, құжаттар, оқу', 'Помощь в первый месяц: общежитие, документы, учёба')} />;
+  return <Row go="mentors" icon="mentor" title={tt('Менторлар', 'Менторы')} sub={tt('Алғашқы айда көмек: жатақхана, құжаттар, оқу', 'Помощь в первый месяц: общежитие, документы, учёба')} />;
 }

@@ -12,7 +12,7 @@ type Lang = 'kk' | 'ru';
 
 function Ico({ n, s = 16 }: { n: IconName; s?: number }) {
   // static icon markup from lib/icons (never user data)
-  return <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: IC[n] }} />;
+  return <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: IC[n] }} />;
 }
 
 /** a calendar day of an RFC 3339 instant, read in Astana time (UTC+5) whatever the server's zone */

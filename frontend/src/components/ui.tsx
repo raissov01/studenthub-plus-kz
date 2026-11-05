@@ -43,7 +43,7 @@ export function Chip({ pressed, onClick, children }: { pressed?: boolean; onClic
   return <button className="chip" type="button" aria-pressed={!!pressed} onClick={onClick}>{children}</button>;
 }
 
-export function Seg({ items, cur, onPick }: { items: [string, string][]; cur: string; onPick: (k: string) => void }) {
+export function Seg({ items, cur, onPick }: { items: [string, ReactNode][]; cur: string; onPick: (k: string) => void }) {
   return (
     <div className="seg" role="tablist">
       {/* legacy markup: the stylesheet keys the selected segment on aria-pressed */}
@@ -130,7 +130,7 @@ export function Heart({ id, opp }: { id: string; opp: boolean }) {
   };
   return (
     <button className="heart" type="button" onClick={flip} aria-pressed={on} aria-label={on ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}>
-      <Icon n="heart" s={20} />
+      <Icon n="bookmark" s={20} />
     </button>
   );
 }
