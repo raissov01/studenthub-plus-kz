@@ -1,0 +1,20 @@
+[Unit]
+Description=Student Hub opportunity feed: collect Telegram/website posts, AI filter, moderation queue (docs/feeds.md)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/studenthub/.env
+WorkingDirectory=/opt/studenthub/docker
+TimeoutStartSec=28min
+# Does nothing unless FEATURE_FEEDS is on. Runs a one-off container of the deployed API image (same env file,
+# same compose network, its own 150 MB limit) that is removed afterwards. The optional MTProto session
+# (FEEDS_TG_SESSION, a root-only 0600 file) is never mounted: root pipes it to stdin and the collector keeps it
+# in memory only.
+ExecStart=/bin/sh -c 'case "$${FEATURE_FEEDS:-}" in 1|true|yes|on) ;; *) echo "FEATURE_FEEDS is off"; exit 0 ;; esac; \
+  if [ -n "$${FEEDS_TG_SESSION:-}" ] && [ -r "$${FEEDS_TG_SESSION}" ]; then \
+    exec docker compose run --rm --no-deps -T -e FEEDS_TG_SESSION=/dev/stdin api /app/feeds-collect < "$${FEEDS_TG_SESSION}"; \
+  else \
+    exec docker compose run --rm --no-deps -T -e FEEDS_TG_SESSION= api /app/feeds-collect < /dev/null; \
+  fi'

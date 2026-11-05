@@ -90,6 +90,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/content/{id}` | admin | no | yes | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
 | GET | `/api/admin/feedback/recipients` | admin | no | yes | feedback |
+| GET | `/api/admin/feeds` | admin | no | no (no input) | feeds |
+| GET | `/api/admin/feeds/items` | admin | no | yes | feeds |
 | GET | `/api/admin/health` | admin | no | no (no input) | — |
 | GET | `/api/admin/market/items` | admin | no | yes | market |
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
@@ -247,6 +249,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
 | POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
+| POST | `/api/admin/feeds/items/{id}/unpublish` | admin | yes | yes | feeds |
+| POST | `/api/admin/feeds/sources/{id}` | admin | yes | yes | feeds |
 | POST | `/api/admin/lostfound/moderate` | admin | yes | yes | lostfound |
 | POST | `/api/admin/market/bans` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/hide` | admin | yes | yes | market |

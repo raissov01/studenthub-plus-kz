@@ -191,12 +191,14 @@ if bool "$DEPLOY_NGINX" && [[ "$MODE" == compose ]]; then
   fi
 fi
 
-# ---------- timers (host systemd; they curl the API on 127.0.0.1:8110 with CRON_SECRET) ----------
+# ---------- timers (host systemd; cron/notify curl the API on 127.0.0.1:8110 with CRON_SECRET, feeds runs a
+# one-off api container with /app/feeds-collect and exits at once while FEATURE_FEEDS is off) ----------
 if bool "$DEPLOY_TIMERS"; then
   log "Timers"
-  cp systemd/studenthub-cron.service systemd/studenthub-cron.timer systemd/studenthub-notify.service systemd/studenthub-notify.timer /etc/systemd/system/
+  cp systemd/studenthub-cron.service systemd/studenthub-cron.timer systemd/studenthub-notify.service systemd/studenthub-notify.timer \
+    systemd/studenthub-feeds.service systemd/studenthub-feeds.timer /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now studenthub-cron.timer studenthub-notify.timer
+  systemctl enable --now studenthub-cron.timer studenthub-notify.timer studenthub-feeds.timer
   systemctl list-timers 'studenthub-*' --no-pager || true
 fi
 

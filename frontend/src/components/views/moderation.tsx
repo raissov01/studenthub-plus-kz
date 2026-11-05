@@ -10,6 +10,7 @@ import { AdminOnly, ErrorLine, errText, Feature, Loading, ReasonSheet, useFeatur
 import { api } from '@/lib/account';
 import { MARKET_CATS, MARKET_CONDITIONS, type AdminMarketItem } from '@/lib/market';
 import { QueueEditSheet } from '@/components/views/suggest';
+import { FeedEditSheet, FeedsAdminRow } from '@/components/views/feeds';
 
 interface QueueItem {
   id: number; kind: string; payload: Record<string, unknown>; submitted_by: number | null; university: string | null;
@@ -27,6 +28,7 @@ export function kindLabel(k: string, tt: (kk: string, ru: string) => string): st
     employer_job: ['Жұмыс берушінің вакансиясы', 'Вакансия работодателя'],
     employer_verification: ['Жұмыс берушіні тексеру', 'Проверка работодателя'], job_report: ['Вакансияға шағым', 'Жалоба на вакансию'],
     club_leader: ['Клуб жетекшісі', 'Руководитель клуба'], club_post: ['Клуб жаңалығы', 'Новость клуба'],
+    feed_item: ['Мүмкіндіктер ағыны (ИИ)', 'Лента возможностей (ИИ)'],
   };
   return m[k] ? tt(m[k][0], m[k][1]) : k;
 }
@@ -130,6 +132,10 @@ function QueueCard({ it, onDone }: { it: QueueItem; onDone: () => void }) {
         <div className="btn-row">
           {it.kind === 'opportunity' || it.kind === 'place' ? (
             <button className="btn ghost" type="button" onClick={() => openSheet(<QueueEditSheet id={it.id} kind={it.kind === 'place' ? 'place' : 'opportunity'} payload={it.payload} onDone={onDone} />)}>
+              <Icon n="edit" s={18} /> {tt('Түзету', 'Исправить')}</button>
+          ) : null}
+          {it.kind === 'feed_item' ? (
+            <button className="btn ghost" type="button" onClick={() => openSheet(<FeedEditSheet id={it.id} payload={it.payload} onDone={onDone} />)}>
               <Icon n="edit" s={18} /> {tt('Түзету', 'Исправить')}</button>
           ) : null}
           <button className="btn danger" type="button" onClick={() => decide('reject')}>{tt('Қайтару', 'Отклонить')}</button>
@@ -329,7 +335,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
-  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe'), clubs = useFeature('clubs');
+  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe'), clubs = useFeature('clubs'), feeds = useFeature('feeds');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
@@ -346,6 +352,7 @@ export function ModerationLinks() {
         {b2b ? <Row go="admin:employers" icon="briefcase" title={tt('Жұмыс берушілер', 'Работодатели')} /> : null}
         {b2b ? <Row go="admin:staff" icon="cap" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
         {clubs ? <Row go="admin:clubs" icon="user" title={tt('Клубтар', 'Клубы')} sub={tt('Клубтар, жетекшілер, архив', 'Клубы, руководители, архив')} /> : null}
+        {feeds ? <FeedsAdminRow /> : null}
         {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
         {cafe ? <Row go="admin:cafe" icon="cup" title={tt('Кофейнялар', 'Кофейни')} sub={tt('Мәзір, қызметкерлер, Kaspi, тапсырыстар журналы', 'Меню, сотрудники, Kaspi, журнал заказов')} /> : null}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 /* Rows and cards of the search lists (vacancy, opportunity), the «Ұсын» link, and «Менің тізімім». */
 import { useApp } from '@/components/app';
+import { FeedBadge } from '@/components/views/feeds';
 import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
@@ -55,6 +56,7 @@ export function OppCard({ o }: { o: Opportunity }) {
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-line">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
           <OfficialBadge o={o} />
+          <FeedBadge o={o} />
           {S.saved[o.id] ? <span className="badge b-sun">{tt('Сақталған', 'Сохранено')}</span> : null}
         </div>
         <h3>{L(o.title)}</h3>

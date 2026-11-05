@@ -15,7 +15,8 @@ docker compose (project studenthub, /opt/studenthub/docker)
    ├── postgres  studenthub-postgres  127.0.0.1:5442  том studenthub-pg (external)   160M
    ├── api       studenthub-api       127.0.0.1:8110  /opt/studenthub/uploads        150M
    └── web       studenthub-web       127.0.0.1:8112                                 300M
-systemd (хостта): studenthub-cron.timer 10:00, studenthub-notify.timer сағат сайын → curl 127.0.0.1:8110
+systemd (хостта): studenthub-cron.timer 10:00, studenthub-notify.timer сағат сайын → curl 127.0.0.1:8110;
+                  studenthub-feeds.timer 30 мин сайын → docker compose run api /app/feeds-collect (FEATURE_FEEDS қосулы болса)
 ```
 
 ## Сервердегі файлдар
