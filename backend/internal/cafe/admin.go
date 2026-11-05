@@ -7,13 +7,12 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
-	"github.com/raissov01/studenthub-plus-kz/backend/internal/cafe/payments"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 func adminRoutes(h func(string, http.HandlerFunc)) {
@@ -25,10 +24,10 @@ func adminRoutes(h func(string, http.HandlerFunc)) {
 	h("DELETE /api/admin/cafes/{id}/staff/{userId}", auth.Write(admin(removeStaff)))
 	h("GET /api/admin/cafe/orders", admin(adminOrders))
 	h("GET /api/admin/cafe/orders/{id}", admin(adminOrder))
-	h("POST /api/admin/cafes/{id}/kaspi/login/start", auth.Write(admin(kaspiLoginStart)))
-	h("POST /api/admin/cafes/{id}/kaspi/login/verify", auth.Write(admin(kaspiLoginVerify)))
-	h("POST /api/admin/cafes/{id}/kaspi/check", auth.Write(admin(kaspiCheck)))
-	h("DELETE /api/admin/cafes/{id}/kaspi", auth.Write(admin(kaspiLogout)))
+	h("POST /api/admin/cafes/{id}/kaspi/login/start", auth.Write(admin(kaspiAdmin.LoginStart)))
+	h("POST /api/admin/cafes/{id}/kaspi/login/verify", auth.Write(admin(kaspiAdmin.LoginVerify)))
+	h("POST /api/admin/cafes/{id}/kaspi/check", auth.Write(admin(kaspiAdmin.Check)))
+	h("DELETE /api/admin/cafes/{id}/kaspi", auth.Write(admin(kaspiAdmin.Logout)))
 }
 
 // ---------- cafés ----------
@@ -310,15 +309,6 @@ func adminOrder(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 
 // ---------- Kaspi cashier login (the café added our cashier number in Kaspi Pay; docs/cafe.md) ----------
 
-func cashier(w http.ResponseWriter, r *http.Request) CashierLogin {
-	c := Cashier()
-	if c == nil || payments.SessionKey() == nil {
-		httpx.Error(w, r, http.StatusServiceUnavailable, "kaspi_not_configured", MsgKaspiOff)
-		return nil
-	}
-	return c
-}
-
 func cafeExists(ctx context.Context, id int64) (orgID *int64, err error) {
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, `select kaspi_org_id from cafes where id = $1`, id).Scan(&orgID)
@@ -326,184 +316,9 @@ func cafeExists(ctx context.Context, id int64) (orgID *int64, err error) {
 	return orgID, err
 }
 
-func kaspiLoginStart(w http.ResponseWriter, r *http.Request, u *auth.User) {
-	id, ok := pathID(r, "id")
-	var in struct {
-		Phone string `json:"phone"`
-	}
-	if !ok || httpx.Decode(r, &in, 1<<10) != nil || payments.NormalizePhone(in.Phone) == "" {
-		httpx.Error(w, r, http.StatusBadRequest, "bad_phone", MsgKaspiLogin)
-		return
-	}
-	c := cashier(w, r)
-	if c == nil {
-		return
-	}
-	if _, err := cafeExists(r.Context(), id); err != nil {
-		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
-		return
-	}
-	if limited(w, r, "kaspi-login:"+itoa(u.ID), 6, time.Hour) {
-		return
-	}
-	pid, err := c.LoginStart(r.Context(), in.Phone)
-	if err != nil {
-		log.Printf("cafe: Kaspi login start for café %d: %v", id, err)
-		httpx.JSON(w, http.StatusBadGateway, map[string]any{"error": map[string]string{"code": "kaspi_login", "message": pick(httpx.Lang(r), MsgKaspiLogin.KK, MsgKaspiLogin.RU), "detail": trim(err.Error(), 160)}})
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"processId": pid})
-}
-
-var reOTP = regexp.MustCompile(`^[0-9]{4,8}$`)
-
-func kaspiLoginVerify(w http.ResponseWriter, r *http.Request, u *auth.User) {
-	id, ok := pathID(r, "id")
-	var in struct {
-		ProcessID string `json:"processId"`
-		OTP       string `json:"otp"`
-	}
-	if !ok || httpx.Decode(r, &in, 2<<10) != nil || in.ProcessID == "" || len(in.ProcessID) > 200 || !reOTP.MatchString(in.OTP) {
-		httpx.Error(w, r, http.StatusBadRequest, "bad_request", MsgKaspiLogin)
-		return
-	}
-	c := cashier(w, r)
-	if c == nil {
-		return
-	}
-	ctx := r.Context()
-	orgID, err := cafeExists(ctx, id)
-	if err != nil {
-		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
-		return
-	}
-	l, err := c.LoginVerify(ctx, in.ProcessID, in.OTP)
-	if err != nil {
-		log.Printf("cafe: Kaspi login verify for café %d: %v", id, err)
-		httpx.Error(w, r, http.StatusBadGateway, "kaspi_login", MsgKaspiLogin)
-		return
-	}
-	orgName := l.OrgName
-	// one number in several businesses: this café's business, by its OrganizationId
-	if orgID != nil && *orgID != 0 && *orgID != l.OrganizationID {
-		pid, name, err := c.OrgContext(ctx, l.Session, *orgID)
-		if err != nil {
-			log.Printf("cafe: Kaspi org-context %d for café %d: %v", *orgID, id, err)
-			httpx.Error(w, r, http.StatusBadGateway, "kaspi_org", MsgKaspiLogin)
-			return
-		}
-		l.Session.ProfileID, orgName = pid, name
-	}
-	key := payments.SessionKey()
-	ct, err := payments.Encrypt(l.Session, key)
-	if err != nil {
-		fail(w, r, "encrypt session", err)
-		return
-	}
-	hash := payments.PhoneHash(l.Phone, key)
-	err = db.Tx(ctx, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `insert into cafe_kaspi_sessions (cafe_id, ciphertext, phone_hash, phone_masked, org_name, created_by)
-			values ($1, $2, $3, $4, $5, $6) on conflict (cafe_id) do update set ciphertext = excluded.ciphertext, phone_hash = excluded.phone_hash,
-			phone_masked = excluded.phone_masked, org_name = excluded.org_name, broken = false, last_error = null, created_by = excluded.created_by, updated_at = now()`,
-			id, ct, hash, payments.MaskPhone(l.Phone), trim(orgName, 200), u.ID); err != nil {
-			return err
-		}
-		// a new login of the same number replaces the old token on Kaspi's side: other cafés of the number get the
-		// fresh token with their own profile
-		rows, err := tx.Query(ctx, `select cafe_id, ciphertext from cafe_kaspi_sessions where phone_hash = $1 and cafe_id <> $2 for update`, hash, id)
-		if err != nil {
-			return err
-		}
-		type other struct {
-			id int64
-			ct string
-		}
-		others, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (other, error) {
-			var o other
-			return o, row.Scan(&o.id, &o.ct)
-		})
-		if err != nil {
-			return err
-		}
-		for _, o := range others {
-			old, err := payments.Decrypt(o.ct, key)
-			if err != nil {
-				continue
-			}
-			fresh := l.Session
-			fresh.ProfileID = old.ProfileID
-			nct, err := payments.Encrypt(fresh, key)
-			if err != nil {
-				return err
-			}
-			if _, err := tx.Exec(ctx, `update cafe_kaspi_sessions set ciphertext = $2, broken = false, last_error = null, updated_at = now() where cafe_id = $1`, o.id, nct); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		fail(w, r, "save session", err)
-		return
-	}
-	log.Printf("cafe: admin %d logged in the Kaspi cashier of café %d (%s)", u.ID, id, payments.MaskPhone(l.Phone))
-	httpx.JSON(w, http.StatusOK, map[string]any{"phoneMasked": payments.MaskPhone(l.Phone), "orgName": orgName})
-}
-
-func kaspiCheck(w http.ResponseWriter, r *http.Request, _ *auth.User) {
-	id, ok := pathID(r, "id")
-	if !ok {
-		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
-		return
-	}
-	c := cashier(w, r)
-	if c == nil {
-		return
-	}
-	ctx := r.Context()
-	var ct string
-	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `select ciphertext from cafe_kaspi_sessions where cafe_id = $1`, id).Scan(&ct)
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		httpx.JSON(w, http.StatusOK, map[string]any{"active": false})
-		return
-	}
-	if err != nil {
-		fail(w, r, "kaspi check", err)
-		return
-	}
-	s, err := payments.Decrypt(ct, payments.SessionKey())
-	if err == nil {
-		err = c.Check(ctx, *s)
-	}
-	if err != nil {
-		markBroken(ctx, id, err)
-		httpx.JSON(w, http.StatusOK, map[string]any{"active": false})
-		return
-	}
-	_ = db.Tx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `update cafe_kaspi_sessions set broken = false, last_error = null, updated_at = now() where cafe_id = $1`, id)
-		return err
-	})
-	httpx.JSON(w, http.StatusOK, map[string]any{"active": true})
-}
-
-func kaspiLogout(w http.ResponseWriter, r *http.Request, u *auth.User) {
-	id, ok := pathID(r, "id")
-	if !ok {
-		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)
-		return
-	}
-	ctx := r.Context()
-	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `delete from cafe_kaspi_sessions where cafe_id = $1`, id)
-		return err
-	})
-	if err != nil {
-		fail(w, r, "kaspi logout", err)
-		return
-	}
-	log.Printf("cafe: admin %d removed the Kaspi session of café %d", u.ID, id)
-	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
+var kaspiAdmin = shopkit.KaspiAdmin{
+	Sessions: sessions,
+	OrgID:    cafeExists,
+	Cashier:  func() shopkit.CashierLogin { return Cashier() },
+	Broken:   markBroken,
 }

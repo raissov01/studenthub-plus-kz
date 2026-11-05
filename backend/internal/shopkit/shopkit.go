@@ -1,0 +1,254 @@
+// Package shopkit is the small layer the campus shops share: the café (internal/cafe, docs/cafe.md) and the print
+// shop (internal/printshop, docs/print.md). It holds what does not depend on what a shop sells: opening hours and
+// pickup slots, the pickup code, money formatting, staff short names, the append-only order audit trail, the
+// Telegram button markup, the kaspi-pos webhook signature, the shop's Kaspi cashier session store and its admin
+// login screens (kaspi.go).
+//
+// Money never passes through Student Hub: a Kaspi invoice is issued in the shop's own name with the shop's own
+// cashier session (internal/cafe/payments); pay-at-the-counter needs no money flow at all.
+package shopkit
+
+import (
+	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"math/big"
+	"strconv"
+	"strings"
+	"time"
+	_ "time/tzdata"
+	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
+)
+
+// Almaty is the wall clock of every campus shop.
+var Almaty = func() *time.Location {
+	if loc, err := time.LoadLocation("Asia/Almaty"); err == nil {
+		return loc
+	}
+	return time.FixedZone("Asia/Almaty", 5*3600)
+}()
+
+// DayStart is Almaty midnight of now's day.
+func DayStart(now time.Time) time.Time {
+	l := now.In(Almaty)
+	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, Almaty)
+}
+
+// ---------- opening hours and pickup slots ----------
+
+// Clock parses "HH:MM" into minutes after midnight.
+func Clock(s string) (int, bool) {
+	h, m, ok := strings.Cut(s, ":")
+	if !ok {
+		return 0, false
+	}
+	hh, err1 := strconv.Atoi(h)
+	mm, err2 := strconv.Atoi(m)
+	if err1 != nil || err2 != nil || hh < 0 || hh > 23 || mm < 0 || mm > 59 {
+		return 0, false
+	}
+	return hh*60 + mm, true
+}
+
+// Hours is a shop's week: open days (ISO, 1 = Monday), opening and closing time, the slot step and the lead time.
+type Hours struct {
+	Active      bool
+	OpenDays    []int
+	OpenTime    string
+	CloseTime   string
+	SlotMinutes int
+	LeadMinutes int
+}
+
+// OpenToday reports whether now's Almaty weekday is an open day.
+func (h Hours) OpenToday(now time.Time) bool {
+	wd := int(now.In(Almaty).Weekday())
+	if wd == 0 {
+		wd = 7
+	}
+	for _, d := range h.OpenDays {
+		if d == wd {
+			return true
+		}
+	}
+	return false
+}
+
+// OpenAt reports whether the shop is open at t (an open day, between opening and closing).
+func (h Hours) OpenAt(t time.Time) bool {
+	from, ok1 := Clock(h.OpenTime)
+	to, ok2 := Clock(h.CloseTime)
+	if !h.Active || !ok1 || !ok2 || !h.OpenToday(t) {
+		return false
+	}
+	l := t.In(Almaty)
+	m := l.Hour()*60 + l.Minute()
+	return m >= from && m < to
+}
+
+// Slots are today's pickup times (Asia/Almaty) still to choose: every SlotMinutes from opening to the last slot
+// that starts before closing, no earlier than now + LeadMinutes. Empty on a closed day or an inactive shop.
+func (h Hours) Slots(now time.Time) []time.Time {
+	if !h.Active || !h.OpenToday(now) {
+		return nil
+	}
+	from, ok1 := Clock(h.OpenTime)
+	to, ok2 := Clock(h.CloseTime)
+	step := h.SlotMinutes
+	if !ok1 || !ok2 || step <= 0 {
+		return nil
+	}
+	day := DayStart(now)
+	earliest := now.Add(time.Duration(h.LeadMinutes) * time.Minute)
+	var out []time.Time
+	for m := from; m < to; m += step {
+		t := day.Add(time.Duration(m) * time.Minute)
+		if !t.Before(earliest) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// ValidSlot reports whether at is one of today's slots.
+func (h Hours) ValidSlot(now, at time.Time) bool {
+	for _, t := range h.Slots(now) {
+		if t.Equal(at) {
+			return true
+		}
+	}
+	return false
+}
+
+// ---------- small helpers ----------
+
+// PickupCode is the three digits a student shows at the counter.
+func PickupCode() string {
+	n, err := rand.Int(rand.Reader, big.NewInt(900))
+	if err != nil {
+		return strconv.FormatInt(time.Now().UnixNano()%900+100, 10)
+	}
+	return strconv.FormatInt(n.Int64()+100, 10)
+}
+
+// Tenge formats tiyn as «1 250 ₸».
+func Tenge(tiyn int64) string {
+	neg := tiyn < 0
+	if neg {
+		tiyn = -tiyn
+	}
+	s := strconv.FormatInt(tiyn/100, 10)
+	var b strings.Builder
+	if neg {
+		b.WriteString("−")
+	}
+	for i, r := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			b.WriteRune(' ')
+		}
+		b.WriteRune(r)
+	}
+	return b.String() + " ₸"
+}
+
+// ShortName: «Аружан С.», enough to call out at the counter; the staff never see the full name or a phone.
+func ShortName(name string) string {
+	parts := strings.Fields(name)
+	if len(parts) == 0 {
+		return ""
+	}
+	out := parts[0]
+	if utf8.RuneCountInString(out) > 20 {
+		out = string([]rune(out)[:20])
+	}
+	if len(parts) > 1 {
+		r, _ := utf8.DecodeRuneInString(parts[1])
+		out += " " + string(r) + "."
+	}
+	return out
+}
+
+// TextOK: between min and max runes and no surrounding spaces.
+func TextOK(s string, min, max int) bool {
+	n := utf8.RuneCountInString(s)
+	return n >= min && n <= max && strings.TrimSpace(s) == s
+}
+
+// Pick is kk or ru by the reader's language.
+func Pick(lang, kk, ru string) string {
+	if lang == "ru" {
+		return ru
+	}
+	return kk
+}
+
+// Trim cuts s to n bytes (for log lines and stored error reasons).
+func Trim(s string, n int) string {
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
+}
+
+// VerifySignature checks the sidecar's "sha256=<hex HMAC of the raw body>" in constant time.
+func VerifySignature(raw []byte, header, secret string) bool {
+	if secret == "" || !strings.HasPrefix(header, "sha256=") {
+		return false
+	}
+	m := hmac.New(sha256.New, []byte(secret))
+	m.Write(raw)
+	want := hex.EncodeToString(m.Sum(nil))
+	return hmac.Equal([]byte(strings.TrimPrefix(header, "sha256=")), []byte(want))
+}
+
+// ---------- audit trail ----------
+
+// Event appends one row to an append-only order audit table (cafe_order_events, print_job_events) inside the
+// caller's transaction. table and fk are constants of the calling package, never request input.
+func Event(ctx context.Context, tx pgx.Tx, table, fk string, orderID int64, actor *int64, kind, name string, detail map[string]any) error {
+	if detail == nil {
+		detail = map[string]any{}
+	}
+	raw, err := json.Marshal(detail)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `insert into `+table+` (`+fk+`, actor_id, actor_kind, kind, detail) values ($1, $2, $3, $4, $5)`,
+		orderID, actor, kind, name, string(raw))
+	return err
+}
+
+// ---------- Telegram buttons ----------
+
+type Button struct {
+	Text         string `json:"text"`
+	URL          string `json:"url,omitempty"`
+	CallbackData string `json:"callback_data,omitempty"`
+}
+
+// Markup is an inline keyboard; empty rows are dropped.
+func Markup(rows ...[]Button) json.RawMessage {
+	var kb [][]Button
+	for _, r := range rows {
+		if len(r) > 0 {
+			kb = append(kb, r)
+		}
+	}
+	raw, _ := json.Marshal(map[string]any{"inline_keyboard": kb})
+	return raw
+}
+
+// LinkButton opens a page of the site. Telegram accepts only https URL buttons, so it is empty elsewhere.
+func LinkButton(text, path string) []Button {
+	site := config.SiteURL()
+	if !strings.HasPrefix(site, "https://") {
+		return nil
+	}
+	return []Button{{Text: text, URL: site + path}}
+}

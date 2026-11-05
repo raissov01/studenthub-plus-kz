@@ -335,7 +335,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
-  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe'), clubs = useFeature('clubs'), feeds = useFeature('feeds');
+  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe'), print = useFeature('print'), clubs = useFeature('clubs'), feeds = useFeature('feeds');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
@@ -355,6 +355,7 @@ export function ModerationLinks() {
         {feeds ? <FeedsAdminRow /> : null}
         {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
         {cafe ? <Row go="admin:cafe" icon="cup" title={tt('Кофейнялар', 'Кофейни')} sub={tt('Мәзір, қызметкерлер, Kaspi, тапсырыстар журналы', 'Меню, сотрудники, Kaspi, журнал заказов')} /> : null}
+        {print ? <Row go="admin:print" icon="file" title={tt('Полиграфиялар', 'Полиграфии')} sub={tt('Прайс, қызметкерлер, Kaspi, тапсырыстар журналы', 'Прайс, сотрудники, Kaspi, журнал заказов')} /> : null}
       </div>
     </section>
   );

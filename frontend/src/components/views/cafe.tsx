@@ -3,19 +3,19 @@
    the café's own Kaspi account) or at the counter → order status with a big pickup code; order history; the counter's
    order board (/cafe/staff, made for a tablet); the compact home shortcut. Every price shown here is a preview: the
    server recomputes the order from its own menu. Flat: solid fills, 1px borders. */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { Empty, Icon, Qr, Row, SectionHead, Seg } from '@/components/ui';
+import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useFeature, useLoad, useNeedAccount } from '@/components/views/common';
+import { KaspiPay, beep } from '@/components/views/shop-common';
 import { useQueryId } from '@/components/views/subjects';
 import { api, useAccount } from '@/lib/account';
 import {
   addToCart, cartTotal, defaultOptions, hoursLabel, isActive, loadCart, missingOptions, money, newArrivals, paymentLabel, pickChoice,
-  preferLink, saveCart, setQty, shouldPoll, statusLabel, stepIndex, unitPrice,
+  saveCart, setQty, shouldPoll, statusLabel, stepIndex, unitPrice,
   type Cafe as CafeT, type CartLine, type Item, type Menu, type Order, type PaymentMethod,
 } from '@/lib/cafe';
 import { newKey } from '@/lib/points';
-import { useTelegram, type TgApp } from '@/lib/telegram';
 
 const nameOf = (x: { nameKk: string; nameRu: string }, lang: string) => (lang === 'ru' ? x.nameRu : x.nameKk);
 
@@ -362,7 +362,7 @@ function OrderView({ id }: { id: number }) {
         <div className="card cafe-paycard">
           <h2>{tt('Kaspi арқылы төлеу', 'Оплата через Kaspi')}</h2>
           {o.paymentStatus === 'failed' ? <p className="small urgent">{tt('Төлем өтпеді не уақыты бітті. Қайта көріңіз.', 'Оплата не прошла или истекла. Попробуйте снова.')}</p> : null}
-          {o.pay ? <KaspiPay o={o} /> : <p className="small muted">{busy ? tt('Kaspi сілтемесі жасалып жатыр…', 'Создаём ссылку Kaspi…') : ''}</p>}
+          {o.pay ? <KaspiPay pay={o.pay} /> : <p className="small muted">{busy ? tt('Kaspi сілтемесі жасалып жатыр…', 'Создаём ссылку Kaspi…') : ''}</p>}
           <ErrorLine err={perr} />
           <div className="btn-row">
             {!o.pay || o.paymentStatus === 'failed' ? <button className="btn" type="button" disabled={busy} onClick={() => void pay()}>{tt('Kaspi QR алу', 'Получить Kaspi QR')}</button> : null}
@@ -395,30 +395,6 @@ function OrderView({ id }: { id: number }) {
   );
 }
 
-const noSub = () => () => {};
-
-function KaspiPay({ o }: { o: Order }) {
-  const { tt } = useApp();
-  // the server render (and the first paint) assume a phone: the link first
-  const link = useSyncExternalStore(noSub, () => preferLink(window), () => true);
-  const tg = useTelegram().app as (TgApp & { openLink?: (url: string) => void }) | null;
-  if (!o.pay) return null;
-  return (
-    <div className="cafe-kaspi">
-      <a className="btn block" href={o.pay.url} target="_blank" rel="noopener" id="kaspiLink" onClick={e => {
-        // inside the Telegram Mini App the link must leave Telegram to reach the Kaspi app
-        if (tg?.openLink) { e.preventDefault(); tg.openLink(o.pay!.url); }
-      }}>{tt('Kaspi қосымшасында ашу', 'Открыть в приложении Kaspi')}</a>
-      {link ? (
-        <details><summary className="link-btn">{tt('QR кодты көрсету', 'Показать QR-код')}</summary><Qr text={o.pay.qr || o.pay.url} /></details>
-      ) : (
-        <><p className="small muted">{tt('Телефондағы Kaspi-мен сканерлеңіз:', 'Отсканируйте в Kaspi на телефоне:')}</p><Qr text={o.pay.qr || o.pay.url} /></>
-      )}
-      {o.pay.expiresAt ? <p className="tiny muted num">{tt(`QR ${hhmm(o.pay.expiresAt)} дейін жарамды`, `QR действует до ${hhmm(o.pay.expiresAt)}`)}</p> : null}
-    </div>
-  );
-}
-
 function OrderHistory() {
   const { tt, lang } = useApp();
   const acc = useAccount();
@@ -443,18 +419,6 @@ function OrderHistory() {
 /* ---------- the counter: order board (tablet) ---------- */
 
 interface Board { cafeId: number; cafes: CafeT[]; orders: Order[] }
-
-function beep() {
-  try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = 880; g.gain.value = 0.15;
-    o.connect(g); g.connect(ctx.destination);
-    o.start(); o.stop(ctx.currentTime + 0.25);
-    setTimeout(() => { void ctx.close(); }, 500);
-  } catch { /* no audio */ }
-}
 
 function StaffBoard() {
   const { tt, lang, openSheet, closeSheet, toast } = useApp();

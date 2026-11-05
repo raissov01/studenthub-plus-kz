@@ -2,9 +2,6 @@ package cafe
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,53 +19,26 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/features"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 // ---------- the café's cashier session ----------
 
-var errNoMerchant = errors.New("cafe: no Kaspi session")
+// sessions is the cafés' cashier session store (cafe_kaspi_sessions).
+var sessions = shopkit.Sessions{Table: "cafe_kaspi_sessions", Key: "cafe_id", Name: "cafe"}
+
+var errNoMerchant = shopkit.ErrNoMerchant
 
 // merchant loads and decrypts a café's cashier session. A broken or undecryptable session is errNoMerchant:
 // the café logs in again (admin → Кофейнялар → Kaspi).
 func merchant(ctx context.Context, cafeID int64) (payments.Merchant, error) {
-	m := payments.Merchant{CafeID: cafeID}
-	key := payments.SessionKey()
-	if key == nil {
-		return m, errNoMerchant
-	}
-	var ct string
-	var broken bool
-	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `select ciphertext, broken from cafe_kaspi_sessions where cafe_id = $1`, cafeID).Scan(&ct, &broken)
-	})
-	if errors.Is(err, pgx.ErrNoRows) || (err == nil && broken) {
-		return m, errNoMerchant
-	}
-	if err != nil {
-		return m, err
-	}
-	s, err := payments.Decrypt(ct, key)
-	if err != nil {
-		return m, errNoMerchant
-	}
-	m.Session = s
-	return m, nil
+	return sessions.Merchant(ctx, cafeID)
 }
 
 // markBroken: Kaspi rejected the session (logged in elsewhere, expired). Kaspi payments stop offering until
 // an admin logs the cashier in again; managers are told to switch the café to pay-at-pickup meanwhile.
 func markBroken(ctx context.Context, cafeID int64, cause error) {
-	var changed bool
-	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `update cafe_kaspi_sessions set broken = true, last_error = left($2, 300), updated_at = now() where cafe_id = $1 and not broken`, cafeID, cause.Error())
-		changed = err == nil && tag.RowsAffected() > 0
-		return err
-	})
-	if err != nil {
-		log.Printf("cafe: mark session broken %d: %v", cafeID, err)
-	}
-	if changed {
-		log.Printf("cafe: Kaspi session of café %d stopped working: %v", cafeID, cause)
+	if sessions.MarkBroken(ctx, cafeID, cause) {
 		go notifyManagers(context.WithoutCancel(ctx), cafeID, "session_broken", 0)
 	}
 }
@@ -293,10 +263,7 @@ func applyTx(ctx context.Context, tx pgx.Tx, op string, st payments.State, raw s
 		superseded = true
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
-		if st == payments.StatePaid {
-			log.Printf("cafe: Kaspi payment for an unknown operation %s (%d tiyn)", op, amount)
-		}
-		return "unknown_operation", eff, nil
+		return "unknown_operation", eff, nil // the webhook asks the other shop kinds, then logs
 	}
 	if err != nil {
 		return "", eff, err
@@ -491,24 +458,13 @@ func refundOperation(ctx context.Context, orderID, cafeID int64, op string, amou
 	notifyStudent(ctx, orderID, map[bool]string{true: "refunded", false: "refund_manual"}[rerr == nil])
 }
 
-func trim(s string, n int) string {
-	if len(s) > n {
-		return s[:n]
-	}
-	return s
-}
+func trim(s string, n int) string { return shopkit.Trim(s, n) }
 
 // ---------- POST /api/cafe/kaspi/webhook ----------
 
 // VerifySignature checks the sidecar's "sha256=<hex HMAC of the raw body>" in constant time.
 func VerifySignature(raw []byte, header, secret string) bool {
-	if secret == "" || !strings.HasPrefix(header, "sha256=") {
-		return false
-	}
-	m := hmac.New(sha256.New, []byte(secret))
-	m.Write(raw)
-	want := hex.EncodeToString(m.Sum(nil))
-	return hmac.Equal([]byte(strings.TrimPrefix(header, "sha256=")), []byte(want))
+	return shopkit.VerifySignature(raw, header, secret)
 }
 
 var webhookStates = map[string]payments.State{
@@ -549,6 +505,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	outcome := "duplicate"
 	var eff effect
+	var after func(context.Context)
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		var hookID int64
 		err := tx.QueryRow(ctx, `insert into cafe_kaspi_webhooks (operation_id, event, status, amount, outcome) values ($1, $2, $3, $4, 'pending')
@@ -575,6 +532,18 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return err
 			}
+			if outcome == "unknown_operation" {
+				// the same sidecar serves the other shop kinds (the print shop): their operations come here too
+				o, fn, handled, err := shopkit.ReconcileOther(ctx, tx, op, st, p.Status, amount)
+				if err != nil {
+					return err
+				}
+				if handled {
+					outcome, after = o, fn
+				} else if st == payments.StatePaid {
+					log.Printf("cafe: Kaspi payment for an unknown operation %s (%d tiyn)", op, amount)
+				}
+			}
 		}
 		_, err = tx.Exec(ctx, `update cafe_kaspi_webhooks set outcome = $2, order_id = nullif($3, 0) where id = $1`, hookID, outcome, eff.orderID)
 		return err
@@ -588,6 +557,9 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 		eff = effect{}
 	}
 	runEffect(ctx, eff)
+	if after != nil {
+		after(context.WithoutCancel(ctx))
+	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "outcome": outcome})
 }
 

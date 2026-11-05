@@ -112,6 +112,15 @@ name through the café's cashier session (kaspi-pos sidecar, internal network, X
 the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
 from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
 their café's orders through RLS; every order change is an append-only cafe_order_events row.
+Print shop (FEATURE_PRINT, docs/print.md): the same money rule and the café's Kaspi sidecar, with each
+shop's own cashier session in print_kaspi_sessions; the sidecar's single webhook reaches print jobs through
+the café endpoint (shopkit.RegisterOperations). Uploads are checked by magic bytes (PDF, JPEG, PNG,
+DOCX/XLSX/PPTX without macros), 20 MB each, per-student daily file and byte quotas; files get random
+names, are never public and are served only through 5-minute HMAC links bound to the file and the viewer
+(re-checked at serve time) as attachments with a sandboxing CSP; their bytes are deleted after the shop's
+retention period. No antivirus runs: the risk is documented in docs/print.md. Prices are recomputed from
+print_services/print_goods; a page count the server cannot make (Office files) is declared by the student
+and confirmed or changed by the operator, and a changed price needs the student's approval.
 University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
 answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
 keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group

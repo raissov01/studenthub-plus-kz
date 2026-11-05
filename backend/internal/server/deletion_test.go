@@ -205,6 +205,14 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
     values ($1,$2,'[{"itemId":1}]',50000,now(),'123','pickup','deletefixture1') returning id`, cafe, uid)
 		exec(`insert into cafe_order_events(order_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, order, uid)
 		exec(`insert into cafe_kaspi_sessions(cafe_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, cafe, uid)
+		// print shop: staff, a job with its file and audit, the shop's Kaspi session
+		shop := id(`insert into print_shops(name_kk,name_ru,created_by) values ('Fixture print','Fixture print',$1) returning id`, uid)
+		exec(`insert into print_staff(shop_id,user_id,role,added_by) values ($1,$2,'manager',$2),($1,$3,'operator',$2)`, shop, uid, other)
+		pjob := id(`insert into print_jobs(shop_id,user_id,lines,total,pickup_code,payment_method,idem_key)
+    values ($1,$2,'[{"kind":"goods"}]',30000,'123','pickup','deletefixture1') returning id`, shop, uid)
+		exec(`insert into print_files(user_id,job_id,file_name,display_name,kind,bytes,sha256) values ($1,$2,$3,'fixture.pdf','pdf',10,repeat('a',64))`, uid, pjob, strings.Repeat("f", 32)+".pdf")
+		exec(`insert into print_job_events(job_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, pjob, uid)
+		exec(`insert into print_kaspi_sessions(shop_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, shop, uid)
 		// university voice: surveys, feedback tickets, wellbeing contacts
 		survey := id(`insert into surveys(university,title,questions,marker_salt,created_by,anonymous) values ('LAUNCH','Fixture survey','[]',decode(repeat('ab',32),'hex'),$1,false) returning id`, uid)
 		exec(`with r as (insert into survey_responses(survey_id,answers) values ($1,'{}') returning id) insert into survey_response_owners(response_id,user_id) select id,$2 from r`, survey, uid)

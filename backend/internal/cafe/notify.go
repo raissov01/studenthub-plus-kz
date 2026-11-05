@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/notify"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 // Order updates go through notify.Order (transactional: no quiet hours or daily cap, never deferred). The
@@ -20,37 +20,15 @@ import (
 // Send is replaced by tests.
 var Send = notify.Order
 
-type button struct {
-	Text         string `json:"text"`
-	URL          string `json:"url,omitempty"`
-	CallbackData string `json:"callback_data,omitempty"`
-}
+type button = shopkit.Button
 
-func markup(rows ...[]button) json.RawMessage {
-	var kb [][]button
-	for _, r := range rows {
-		if len(r) > 0 {
-			kb = append(kb, r)
-		}
-	}
-	raw, _ := json.Marshal(map[string]any{"inline_keyboard": kb})
-	return raw
-}
+func markup(rows ...[]button) json.RawMessage { return shopkit.Markup(rows...) }
 
-func pick(lang, kk, ru string) string {
-	if lang == "ru" {
-		return ru
-	}
-	return kk
-}
+func pick(lang, kk, ru string) string { return shopkit.Pick(lang, kk, ru) }
 
 // boardButton opens the staff board. Telegram accepts only https URL buttons.
 func boardButton(lang string) []button {
-	site := config.SiteURL()
-	if !strings.HasPrefix(site, "https://") {
-		return nil
-	}
-	return []button{{Text: pick(lang, "Тапсырыстар тақтасы", "Доска заказов"), URL: site + "/cafe/staff"}}
+	return shopkit.LinkButton(pick(lang, "Тапсырыстар тақтасы", "Доска заказов"), "/cafe/staff")
 }
 
 func hhmm(o *Order) string { return o.PickupAt.In(almaty).Format("15:04") }

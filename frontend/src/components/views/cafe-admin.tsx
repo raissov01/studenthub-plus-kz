@@ -6,6 +6,7 @@ import { useApp } from '@/components/app';
 import { Row, SectionHead, Seg } from '@/components/ui';
 import { AdminOnly, ErrorLine, Feature, Loading, errText, hhmm, useLoad } from '@/components/views/common';
 import { StaffMenu } from '@/components/views/cafe';
+import { AuditTrail, KaspiPanel, StaffPanel } from '@/components/views/shop-common';
 import { useQueryId } from '@/components/views/subjects';
 import { api } from '@/lib/account';
 import { hoursLabel, money, paymentLabel, statusLabel, type Cafe, type Order } from '@/lib/cafe';
@@ -42,8 +43,8 @@ function Cafes() {
         <article className="card" key={c.id}>
           <h3>{lang === 'ru' ? c.nameRu : c.nameKk} <span className={`badge ${c.active ? 'b-ok' : 'b-line'}`}>{c.active ? tt('Белсенді', 'Активна') : tt('Өшірулі', 'Выключена')}</span></h3>
           <p className="small muted">{hoursLabel(c, lang)} · {tt(`слот ${c.slotMinutes} мин, ${c.slotCapacity} тапсырыс`, `слот ${c.slotMinutes} мин, ${c.slotCapacity} заказов`)} · {tt('төлем', 'оплата')}: {c.paymentMode}</p>
-          <KaspiPanel c={c} onDone={q.reload} />
-          <StaffPanel c={c} onDone={q.reload} />
+          <KaspiPanel kaspi={c.kaspi} base={`/api/admin/cafes/${c.id}`} onDone={q.reload} />
+          <StaffPanel staff={c.staff} base={`/api/admin/cafes/${c.id}`} roles={[['barista', tt('бариста', 'бариста')], ['manager', tt('менеджер', 'менеджер')]]} onDone={q.reload} />
           <div className="btn-row">
             <button className="btn ghost" type="button" onClick={() => openSheet(<CafeForm c={c} onDone={q.reload} />)}>{tt('Баптау', 'Настроить')}</button>
             <button className="btn ghost" type="button" onClick={() => openSheet(<><h2>{tt('Мәзір', 'Меню')}</h2><StaffMenu cafeId={c.id} role="admin" /></>)}>{tt('Мәзір', 'Меню')}</button>
@@ -114,87 +115,6 @@ function CafeForm({ c, onDone }: { c?: Cafe; onDone: () => void }) {
   );
 }
 
-function KaspiPanel({ c, onDone }: { c: Cafe; onDone: () => void }) {
-  const { tt, lang, toast } = useApp();
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [pid, setPid] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  const k = c.kaspi;
-  const call = async (fn: () => Promise<void>) => { setBusy(true); setErr(''); try { await fn(); } catch (x) { setErr(errText(x)); } finally { setBusy(false); } };
-  return (
-    <div className="cafe-kpanel">
-      <p className="small"><b>Kaspi:</b>{' '}
-        {!k?.loggedIn ? tt('кассир кірмеген', 'кассир не вошёл') : k.broken ? <span className="urgent">{tt('сессия үзілді — қайта кіріңіз', 'сессия прервалась — войдите заново')}</span>
-          : tt(`қосулы · ${k.phoneMasked} · ${k.orgName}`, `подключено · ${k.phoneMasked} · ${k.orgName}`)}</p>
-      {k?.configured ? (
-        <>
-          {!pid ? (
-            <form className="pts-inline" onSubmit={e => { e.preventDefault(); void call(async () => {
-              const r = await api<{ processId: string }>(`/api/admin/cafes/${c.id}/kaspi/login/start`, { method: 'POST', body: { phone }, lang });
-              setPid(r.processId); toast(tt('SMS кассир нөміріне жіберілді', 'SMS отправлено на номер кассира'));
-            }); }}>
-              <input className="input" aria-label={tt('Кассир нөмірі', 'Номер кассира')} placeholder="+7 7__ ___ __ __" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} />
-              <button className="btn secondary" type="submit" disabled={busy || phone.length < 10}>{tt('SMS', 'SMS')}</button>
-            </form>
-          ) : (
-            <form className="pts-inline" onSubmit={e => { e.preventDefault(); void call(async () => {
-              await api(`/api/admin/cafes/${c.id}/kaspi/login/verify`, { method: 'POST', body: { processId: pid, otp }, lang });
-              setPid(''); setOtp(''); toast(tt('Kaspi кассир сессиясы сақталды', 'Сессия кассира Kaspi сохранена')); onDone();
-            }); }}>
-              <input className="input num" aria-label={tt('SMS коды', 'SMS-код')} inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e => setOtp(e.target.value)} />
-              <button className="btn" type="submit" disabled={busy || otp.length < 4}>{tt('Растау', 'Подтвердить')}</button>
-            </form>
-          )}
-          {k.loggedIn ? (
-            <div className="btn-row">
-              <button className="btn ghost" type="button" disabled={busy} onClick={() => void call(async () => {
-                const r = await api<{ active: boolean }>(`/api/admin/cafes/${c.id}/kaspi/check`, { method: 'POST', lang });
-                toast(r.active ? tt('Сессия жұмыс істейді', 'Сессия работает') : tt('Сессия жұмыс істемейді', 'Сессия не работает')); onDone();
-              })}>{tt('Тексеру', 'Проверить')}</button>
-              <button className="btn ghost" type="button" disabled={busy} onClick={() => void call(async () => {
-                await api(`/api/admin/cafes/${c.id}/kaspi`, { method: 'DELETE', lang }); onDone();
-              })}>{tt('Ажырату', 'Отключить')}</button>
-            </div>
-          ) : null}
-        </>
-      ) : null}
-      <ErrorLine err={err} />
-    </div>
-  );
-}
-
-function StaffPanel({ c, onDone }: { c: Cafe; onDone: () => void }) {
-  const { tt, lang } = useApp();
-  const [uid, setUid] = useState('');
-  const [role, setRole] = useState('barista');
-  const [err, setErr] = useState('');
-  return (
-    <div className="cafe-kpanel">
-      <p className="small"><b>{tt('Қызметкерлер', 'Сотрудники')}:</b> {(c.staff ?? []).length ? '' : tt('жоқ', 'нет')}</p>
-      {(c.staff ?? []).map(s => (
-        <div className="btn-row" key={s.userId}>
-          <span className="small">{s.name || '—'}{s.username ? ` @${s.username}` : ''} · id {s.userId} · {s.role === 'manager' ? tt('менеджер', 'менеджер') : tt('бариста', 'бариста')}</span>
-          <button className="btn ghost" type="button" onClick={async () => { try { await api(`/api/admin/cafes/${c.id}/staff/${s.userId}`, { method: 'DELETE', lang }); onDone(); } catch (x) { setErr(errText(x)); } }}>{tt('Алып тастау', 'Убрать')}</button>
-        </div>
-      ))}
-      <form className="pts-inline" onSubmit={async e => {
-        e.preventDefault();
-        try { await api(`/api/admin/cafes/${c.id}/staff`, { method: 'POST', body: { userId: Number(uid), role }, lang }); setUid(''); onDone(); }
-        catch (x) { setErr(errText(x)); }
-      }}>
-        <input className="input num" inputMode="numeric" aria-label={tt('Пайдаланушы id', 'id пользователя')} placeholder="user id" value={uid} onChange={e => setUid(e.target.value)} />
-        <select className="input" aria-label={tt('Рөлі', 'Роль')} value={role} onChange={e => setRole(e.target.value)}>
-          <option value="barista">{tt('бариста', 'бариста')}</option><option value="manager">{tt('менеджер', 'менеджер')}</option>
-        </select>
-        <button className="btn secondary" type="submit" disabled={!/^\d+$/.test(uid)}>{tt('Қосу', 'Добавить')}</button>
-      </form>
-      <ErrorLine err={err} />
-    </div>
-  );
-}
-
 function Audit() {
   const { tt, lang, openSheet } = useApp();
   const id = Number(useQueryId() || 0);
@@ -232,12 +152,7 @@ function AuditSheet({ o }: { o: Order }) {
       <h2 className="num">#{o.id} · №{o.pickupCode}</h2>
       <p className="small">{statusLabel(o.status, tt)} · {paymentLabel(o, tt)} · {money(o.total)}</p>
       <SectionHead title={tt('Журнал', 'Журнал')} />
-      <ol className="cafe-audit">
-        {(o.events ?? []).map(e => (
-          <li key={e.id}><span className="num tiny muted">{e.createdAt.slice(0, 10)} {hhmm(e.createdAt)}</span> <b>{e.kind}</b> <span className="tiny muted">{e.actorKind}{e.actorId ? ` #${e.actorId}` : ''}</span>
-            {Object.keys(e.detail || {}).length ? <code className="tiny">{JSON.stringify(e.detail)}</code> : null}</li>
-        ))}
-      </ol>
+      <AuditTrail events={o.events} />
     </>
   );
 }

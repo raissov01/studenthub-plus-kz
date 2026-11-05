@@ -1799,6 +1799,25 @@ textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fon
   .cafe-board { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
   .cafe-col { display: flex; }
 }
+/* ---------- print shop «Полиграфия» (components/views/print.tsx); shares the café's board and code card ---------- */
+.print-build { display: flex; flex-direction: column; gap: 12px; }
+.print-drop { gap: 8px; }
+.print-drop label.btn { cursor: pointer; }
+.print-drop:focus-within label.btn { outline: 2px solid var(--primary); outline-offset: 2px; }
+.print-file { gap: 10px; }
+.print-file-top { display: flex; align-items: flex-start; gap: 8px; }
+.print-file-top .row-main { flex: 1; min-width: 0; }
+.print-fname { overflow-wrap: anywhere; }
+.print-2col { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: end; }
+.print-quote { gap: 8px; }
+.print-review { background: var(--p-sky); border-color: var(--p-sky-ink); color: var(--text); }
+p.print-review { padding: 8px 10px; border: 1px solid var(--p-sky-ink); border-radius: var(--r-sm); margin: 0; }
+.print-proposal { background: var(--p-peach); border-color: var(--p-peach-ink); gap: 8px; }
+.print-proposal h2 { margin: 0; }
+.print-files { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.print-dl { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; overflow-wrap: anywhere; min-height: 32px; }
+.print-why { margin: 0; padding: 6px 8px; border: 1px solid var(--p-sky-ink); background: var(--p-sky); border-radius: var(--r-sm); }
+.print-ticket[data-price="review"], .print-ticket[data-price="proposed"] { border-style: dashed; }
 /* ---------- university voice: surveys, feedback, wellbeing (components/views/voice.tsx) ---------- */
 .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

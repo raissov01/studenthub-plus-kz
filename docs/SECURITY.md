@@ -50,6 +50,15 @@ name through the café's cashier session (kaspi-pos sidecar, internal network, X
 the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
 from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
 their café's orders through RLS; every order change is an append-only cafe_order_events row.
+Print shop (FEATURE_PRINT, docs/print.md): the same money rule and the café's Kaspi sidecar, with each
+shop's own cashier session in print_kaspi_sessions; the sidecar's single webhook reaches print jobs through
+the café endpoint (shopkit.RegisterOperations). Uploads are checked by magic bytes (PDF, JPEG, PNG,
+DOCX/XLSX/PPTX without macros), 20 MB each, per-student daily file and byte quotas; files get random
+names, are never public and are served only through 5-minute HMAC links bound to the file and the viewer
+(re-checked at serve time) as attachments with a sandboxing CSP; their bytes are deleted after the shop's
+retention period. No antivirus runs: the risk is documented in docs/print.md. Prices are recomputed from
+print_services/print_goods; a page count the server cannot make (Office files) is declared by the student
+and confirmed or changed by the operator, and a changed price needs the student's approval.
 University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
 answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
 keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
@@ -65,6 +74,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/admin/clubs/{id}/admins/{userId}` | admin | yes | yes | clubs |
 | DELETE | `/api/admin/content/{id}` | admin | yes | yes | — |
 | DELETE | `/api/admin/market/bans/{userId}` | admin | yes | yes | market |
+| DELETE | `/api/admin/print/shops/{id}/kaspi` | admin | yes | yes | print |
+| DELETE | `/api/admin/print/shops/{id}/staff/{userId}` | admin | yes | yes | print |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
 | DELETE | `/api/ambassador/pause` | ambassador, admin (active term) | yes | no (no input) | ambassador |
 | DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
@@ -76,6 +87,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/me` | signed-in | yes | yes | — |
 | DELETE | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| DELETE | `/api/print/uploads/{id}` | signed-in (own upload not yet in a job) | yes | yes | print |
 | DELETE | `/api/qa/answers/{id}` | signed-in | yes | yes | courseqa |
 | DELETE | `/api/qa/questions/{id}` | signed-in | yes | yes | courseqa |
 | DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
@@ -101,6 +113,9 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/points/redemptions` | admin | no | yes | points |
 | GET | `/api/admin/points/rewards` | admin | no | no (no input) | points |
 | GET | `/api/admin/points/users/{userId}` | admin | no | yes | points |
+| GET | `/api/admin/print/jobs` | admin | no | yes | print |
+| GET | `/api/admin/print/jobs/{id}` | admin | no | yes | print |
+| GET | `/api/admin/print/shops` | admin | no | no (no input) | print |
 | GET | `/api/admin/queue` | admin | no | yes | — |
 | GET | `/api/admin/reports` | admin | no | yes | — |
 | GET | `/api/admin/summary` | admin | no | no (no input) | — |
@@ -187,6 +202,13 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/portfolio/certificates` | signed-in | no | no (no input) | portfolio |
 | GET | `/api/portfolio/files/{name}` | anonymous (public file on an enabled portfolio page; 128-bit random names); owner otherwise (403) | no | yes | portfolio |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/print/files/{id}` | signed link (HMAC secret from SESSION_SECRET, 5 min, bound to file + viewer; viewer re-checked: the file's student or staff of the job's shop) | no | yes | print |
+| GET | `/api/print/jobs/mine` | signed-in (own jobs, RLS) | no | no (no input) | print |
+| GET | `/api/print/jobs/{id}` | signed-in (own job or staff of its shop, RLS) | no | yes | print |
+| GET | `/api/print/shops` | anonymous | no | no (no input) | print |
+| GET | `/api/print/shops/{id}` | anonymous | no | yes | print |
+| GET | `/api/print/staff/catalog` | signed-in (staff of the shop, admin) | no | yes | print |
+| GET | `/api/print/staff/jobs` | signed-in (print shop staff; own shop only, RLS) | no | yes | print |
 | GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
@@ -270,6 +292,11 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/points/redemptions/{id}/reject` | admin | yes | yes | points |
 | POST | `/api/admin/points/rewards` | admin | yes | yes | points |
 | POST | `/api/admin/points/users/{userId}/adjust` | admin | yes | yes | points |
+| POST | `/api/admin/print/shops` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/check` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/login/start` | admin | yes (+ 6/admin/hour, shared with cafés) | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/login/verify` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/staff` | admin | yes | yes | print |
 | POST | `/api/admin/qa/moderate` | admin | yes | yes | courseqa |
 | POST | `/api/admin/qa/questions/{id}/lock` | admin | yes | yes | courseqa |
 | POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
@@ -375,6 +402,22 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
 | POST | `/api/portfolio/certificates` | signed-in (consented) | yes | yes | portfolio |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
+| POST | `/api/print/jobs` | signed-in (consented; repriced on the server; idempotency key; active/daily job caps) | yes (+ per-user job limit) | yes | print |
+| POST | `/api/print/jobs/{id}/cancel` | signed-in (own job, only before printing) | yes | yes | print |
+| POST | `/api/print/jobs/{id}/pay` | signed-in (own unpaid Kaspi job with an agreed price; one invoice request at a time) | yes | yes | print |
+| POST | `/api/print/jobs/{id}/price` | signed-in (own job with a proposed price) | yes | yes | print |
+| POST | `/api/print/quote` | signed-in (own free uploads; prices from the shop's catalogue, client totals ignored) | yes (+ per-user quote limit) | yes | print |
+| POST | `/api/print/staff/goods` | signed-in (manager of the shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/goods/{id}/stock` | signed-in (staff of the goods' shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/decline` | signed-in (staff of the job's shop) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/no-show` | signed-in (staff of the job's shop; after ready + grace) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/picked-up` | signed-in (staff of the job's shop) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/price` | signed-in (staff of the job's shop; unpaid new job; a change needs a reason and the student's approval) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/printing` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/ready` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/refunded` | signed-in (manager of the job's shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/services` | signed-in (manager of the shop, admin) | yes | yes | print |
+| POST | `/api/print/uploads` | signed-in (consented; magic bytes, 20 MB, daily file/byte quota; private file) | yes (+ per-user upload limit) | yes | print |
 | POST | `/api/qa/questions` | signed-in | yes | yes | courseqa |
 | POST | `/api/qa/questions/{id}/accept` | signed-in | yes | yes | courseqa |
 | POST | `/api/qa/questions/{id}/answers` | signed-in | yes | yes | courseqa |
@@ -411,10 +454,13 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
 | PUT | `/api/admin/feedback/recipients/{id}/staff` | admin | yes | yes | feedback |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
+| PUT | `/api/admin/print/shops/{id}` | admin | yes | yes | print |
 | PUT | `/api/cafe/staff/menu/categories/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/cafe/staff/menu/items/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| PUT | `/api/print/staff/goods/{id}` | signed-in (manager of the shop, admin) | yes | yes | print |
+| PUT | `/api/print/staff/services/{id}` | signed-in (manager of the shop, admin) | yes | yes | print |
 | PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
 | PUT | `/api/staff/surveys/{id}` | university_staff (bound university), admin; drafts only (published: closing date) | yes | yes | surveys |
 | PUT | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | yes | yes | wellbeing |

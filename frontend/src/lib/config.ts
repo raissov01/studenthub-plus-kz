@@ -23,6 +23,8 @@ export interface Config {
     points: boolean;
     /** «Кофе / Кофейня»: campus café pre-ordering (FEATURE_CAFE) */
     cafe: boolean;
+    /** «Полиграфия»: campus print / copy shop, uploads and the queue (FEATURE_PRINT) */
+    print: boolean;
     /** «Сауалнамалар / Опросы» (FEATURE_SURVEYS) */
     surveys: boolean;
     /** anonymous suggestions and complaints + staff inbox (FEATURE_FEEDBACK) */
@@ -51,7 +53,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false, streak: false, fairs: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, print: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false, streak: false, fairs: false },
 };
 
 export type FeatureName = keyof Config['features'];
