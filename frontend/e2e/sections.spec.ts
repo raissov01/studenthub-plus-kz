@@ -122,6 +122,19 @@ test('sub-tabs: items sort by subtype, arrow keys move, the tab is in the URL an
   await fits(page);
 });
 
+// keys pressed back to back: the router applies history.replaceState to useSearchParams later, so each key must see the
+// tab the previous key picked, not the one the URL hook still reports
+test('sub-tab keys pressed back to back land on the right tab', async ({ page, lang }) => {
+  await onboard(page, lang);
+  await page.goto('/internships');
+  await selected(page).focus();
+  for (const k of ['ArrowRight', 'End', 'ArrowRight', 'ArrowLeft', 'ArrowLeft', 'Home', 'ArrowLeft']) await page.keyboard.press(k);
+  // company -> mobility -> grants -> company -> grants -> exchange -> company -> grants
+  await expect(page).toHaveURL(/\/internships\?t=grants$/);
+  await expect(selected(page)).toHaveAttribute('id', 'st-intern-grants');
+  await expect(page.locator('#st-intern-grants')).toBeFocused();
+});
+
 test('«Жеңілдіктер» has «Тегін беремін» when the market is on', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await withData(page, true);
