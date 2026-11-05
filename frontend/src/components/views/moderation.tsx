@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Icon, Row, Seg, SectionHead } from '@/components/ui';
-import { AdminOnly, ErrorLine, errText, Feature, Loading, ReasonSheet, useFeature, useLoad, ymd } from '@/components/views/common';
+import { AdminOnly, ErrorLine, errText, Feature, Loading, ModeratorOnly, ReasonSheet, useFeature, useLoad, ymd } from '@/components/views/common';
 import { api } from '@/lib/account';
 import { MARKET_CATS, MARKET_CONDITIONS, type AdminMarketItem } from '@/lib/market';
 import { QueueEditSheet } from '@/components/views/suggest';
@@ -34,7 +34,7 @@ export function kindLabel(k: string, tt: (kk: string, ru: string) => string): st
 }
 
 export function AdminQueue() {
-  return <AdminOnly><Queue /></AdminOnly>;
+  return <ModeratorOnly><Queue /></ModeratorOnly>;
 }
 
 function Queue() {
@@ -150,7 +150,7 @@ function QueueCard({ it, onDone }: { it: QueueItem; onDone: () => void }) {
 interface ReportRow { kind: string; id: string; total: number; counted: number; first_at: string; reasons: string[]; hide_after: number; hidden: boolean }
 
 export function AdminReports() {
-  return <AdminOnly><Reports /></AdminOnly>;
+  return <ModeratorOnly><Reports /></ModeratorOnly>;
 }
 function Reports() {
   const { tt, lang, toast, openSheet, closeSheet, go } = useApp();
@@ -255,7 +255,7 @@ function TermEditSheet({ t, onDone }: { t: AdminTerm; onDone: () => void }) {
 
 /* ---------- market moderation ---------- */
 export function AdminMarket() {
-  return <Feature name="market"><AdminOnly><MarketAdmin /></AdminOnly></Feature>;
+  return <Feature name="market"><ModeratorOnly><MarketAdmin /></ModeratorOnly></Feature>;
 }
 function MarketAdmin() {
   const { tt, L, lang, toast, openSheet, closeSheet } = useApp();

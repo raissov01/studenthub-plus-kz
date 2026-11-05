@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Empty, Icon, Seg } from '@/components/ui';
-import { AdminOnly, ErrorLine, errText, Loading, NotFound, useLoad, ymd } from '@/components/views/common';
+import { ErrorLine, ModeratorOnly, errText, Loading, NotFound, useLoad, ymd } from '@/components/views/common';
 import { JobBody, OppBody } from '@/components/views/detail';
 import { JobRow, OppCard } from '@/components/views/opps';
 import { DealCard } from '@/components/views/search';
@@ -40,7 +40,7 @@ export function AdminContent({ prm }: { prm: string }) {
   else if (sub === 'content/new') screen = <NewItem />;
   else if (/^content\/adm-\d+$/.test(sub)) screen = <EditItem id={sub.slice('content/'.length)} />;
   else screen = <NotFound />;
-  return <AdminOnly>{screen}</AdminOnly>;
+  return <ModeratorOnly>{screen}</ModeratorOnly>;
 }
 
 /* ---------- list ---------- */

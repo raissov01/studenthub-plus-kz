@@ -28,9 +28,14 @@ export interface AccountUser {
   consentAt: string | null;
   isAdult: boolean | null;
   createdAt: string;
+  /** scoped admin rights (admin_grants: 'moderator'); null in sign-in replies */
+  scopes?: string[] | null;
+  /** an admin restricted the account: reads work, writes answer 403 account_restricted */
+  blocked?: boolean;
 }
-/** inboxUnread: unread in-site inbox items (GET /api/me, docs/api/inbox.md); 0 when signed out */
-export interface AccountState { loaded: boolean; user: AccountUser | null; needsConsent: boolean; inboxUnread: number }
+/** inboxUnread: unread in-site inbox items (GET /api/me, docs/api/inbox.md); 0 when signed out.
+    console: the account has at least one /admin panel (a role, a scoped grant or a staff row) */
+export interface AccountState { loaded: boolean; user: AccountUser | null; needsConsent: boolean; inboxUnread: number; console?: boolean }
 
 let token = '';
 let state: AccountState = { loaded: false, user: null, needsConsent: false, inboxUnread: 0 };
@@ -42,6 +47,8 @@ function set(next: Partial<AccountState>) {
   listeners.forEach(l => l());
 }
 export const getAccount = () => state;
+/** an admin, or a holder of the scoped right (admin_grants); the server re-checks every request */
+export const canScope = (u: AccountUser | null | undefined, scope: string) => !!u && (u.role === 'admin' || !!u.scopes?.includes(scope));
 /** the inbox endpoints answer the fresh unread count (GET /api/me/inbox, POST /api/me/inbox/read) */
 export function setInboxUnread(n: number) {
   if (!state.user || !Number.isFinite(n) || n < 0 || n === state.inboxUnread) return;
@@ -148,11 +155,15 @@ export async function apiDownload(path: string, filename: string, lang?: Lang): 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string; inboxUnread?: number };
+type MeResp = { user: AccountUser | null; needsConsent: boolean; token?: string; inboxUnread?: number; console?: boolean };
 /* sign-in and profile replies carry no inboxUnread: the last known count stays until the next GET /api/me */
+/* replies other than GET /api/me carry no scopes / block: keep the last known ones for the same account */
+const withRights = (u: AccountUser | null): AccountUser | null =>
+  u && u.scopes == null && state.user?.id === u.id ? { ...u, scopes: state.user.scopes, blocked: state.user.blocked } : u;
 const apply = (r: MeResp) => set({
-  loaded: true, user: r.user, needsConsent: !!r.user && r.needsConsent,
+  loaded: true, user: withRights(r.user), needsConsent: !!r.user && r.needsConsent,
   inboxUnread: !r.user ? 0 : typeof r.inboxUnread === 'number' ? r.inboxUnread : state.user?.id === r.user.id ? state.inboxUnread : 0,
+  console: !r.user ? false : typeof r.console === 'boolean' ? r.console : state.user?.id === r.user.id ? state.console : false,
 });
 
 /** GET /api/me once on start; failures mean «not signed in». A definite «nobody» from the server also drops the

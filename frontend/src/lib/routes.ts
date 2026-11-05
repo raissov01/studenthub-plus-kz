@@ -27,6 +27,7 @@ export const SUB_SCREENS = [
   'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:cafe', 'cafe:staff', 'cafe:orders', 'admin:clubs',
   'admin:print', 'print:staff', 'print:jobs',
   'admin:feeds',
+  'admin:users', 'admin:audit', 'admin:roles', 'admin:exports', 'admin:voice', 'admin:moderation', 'admin:shop',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)

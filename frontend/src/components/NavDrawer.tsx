@@ -19,7 +19,9 @@ const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern',
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tt, go, content } = useApp();
   const cfg = useConfig();
-  const role = useAccount().user?.role;
+  const acc = useAccount();
+  const role = acc.user?.role;
+  const hasConsole = !!acc.user && (role === 'admin' || !!acc.console || !!acc.user.scopes?.length);
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -70,6 +72,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
       ...((role === 'admin' || role === 'university_staff') && (cfg.features.surveys || cfg.features.feedback || cfg.features.wellbeing)
         ? [['voice', 'shield', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
+      ...(hasConsole ? [['admin', 'chart', tt('Басқару панелі', 'Панель управления')] as Item] : []),
     ]],
   ];
   return (

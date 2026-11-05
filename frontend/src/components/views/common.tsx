@@ -1,11 +1,12 @@
 'use client';
 /* Shared pieces of the account-backed features (events, ambassador, mentors, market, moderation): the neutral
    not-found screen, feature/role gates, the sign-in prompt, a small fetch hook and Almaty date helpers. */
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Empty, Icon } from '@/components/ui';
 import { ConsentSheet, SignInSheet } from '@/components/views/account';
-import { api, ApiError, useAccount, type AccountState } from '@/lib/account';
+import { api, ApiError, canScope, useAccount, type AccountState } from '@/lib/account';
 import { featureOn, useConfig, useConfigReady, type FeatureName } from '@/lib/config';
 import { useOnline } from '@/lib/pwa';
 
@@ -47,6 +48,23 @@ export function AdminOnly({ children }: { children: ReactNode }) {
   const acc = useAccount();
   if (!acc.loaded) return <Loading />;
   if (acc.user?.role !== 'admin') return <NotFound />;
+  return <>{children}</>;
+}
+
+const noSub = () => () => {};
+/** one ?name= query parameter of the current page (the router's, or the address bar's on the first static render) */
+export function useQueryParam(name: string): string | null {
+  const fromRouter = useSearchParams().get(name);
+  const fromBar = useSyncExternalStore(noSub, () => new URLSearchParams(window.location.search).get(name), () => null);
+  return fromRouter ?? fromBar;
+}
+
+/** moderation screens: admins and moderators (admin_grants); everyone else sees the neutral not-found screen.
+    The server checks the same right on every request. */
+export function ModeratorOnly({ children }: { children: ReactNode }) {
+  const acc = useAccount();
+  if (!acc.loaded) return <Loading />;
+  if (!canScope(acc.user, 'moderator')) return <NotFound />;
   return <>{children}</>;
 }
 

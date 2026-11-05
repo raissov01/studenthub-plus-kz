@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Row, SectionHead } from '@/components/ui';
-import { AdminOnly, Loading, NotFound } from '@/components/views/common';
+import { AdminOnly, Loading, NotFound, useLoad } from '@/components/views/common';
+import { Stat } from '@/components/views/admin';
 import { api, ApiError } from '@/lib/account';
 import type { Config, FeatureName } from '@/lib/config';
 import { locale } from '@/lib/i18n';
@@ -103,6 +104,50 @@ function HealthDashboard() {
         <div className="group">{h.errors?.length ? h.errors.map(e => <Row key={e.message} title={e.message} sub={tt(`Саны: ${e.count} · Соңғы рет: ${date(e.lastSeen)}`, `Количество: ${e.count} · Последний раз: ${date(e.lastSeen)}`)} chev={false} />) : <div className="empty">{unavailable ? unknown : tt('Қате тіркелмеген', 'Ошибок не зарегистрировано')}</div>}</div>
       </section>
     </> : null}
+    <SystemFacts key={revision} />
   </div>;
+}
+
+interface System {
+  uptimeSeconds: number; revision: string; goVersion: string; goroutines: number; heapMB: number; sysMB: number; onlineNow: number; onlineWindowMinutes: number;
+  pool?: { total: number; idle: number; inUse: number; max: number };
+  database: { sizeBytes: number; connections: Record<string, number>; tables: { name: string; rows: number; totalBytes: number; deadShare: number; vacuumed: string | null }[] };
+}
+const mb = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(1)} GB` : `${(b / (1 << 20)).toFixed(1)} MB`);
+
+/** process, pool and database facts (GET /api/admin/system) */
+function SystemFacts() {
+  const { tt } = useApp();
+  const q = useLoad<System>('/api/admin/system');
+  const s = q.data;
+  if (!s) return q.err ? <p className="small urgent" role="alert">{q.err}</p> : null;
+  const hours = Math.floor(s.uptimeSeconds / 3600);
+  const conns = Object.entries(s.database.connections).map(([k, n]) => `${k}: ${n}`).join(' · ');
+  return <>
+    <section className="section">
+      <SectionHead title={tt('Сервер мен дерекқор', 'Сервер и база данных')} />
+      <div className="stat-grid">
+        <Stat value={s.onlineNow} label={tt(`Қазір онлайн (${s.onlineWindowMinutes} мин)`, `Онлайн сейчас (${s.onlineWindowMinutes} мин)`)} />
+        <Stat value={hours >= 24 ? tt(`${Math.floor(hours / 24)} күн`, `${Math.floor(hours / 24)} дн.`) : tt(`${hours} сағ`, `${hours} ч`)} label={tt('Сервер жұмыс істеп тұр', 'Сервер работает')} />
+        <Stat value={mb(s.database.sizeBytes)} label={tt('Дерекқор көлемі', 'Размер базы')} />
+        <Stat value={s.pool ? `${s.pool.inUse}/${s.pool.max}` : '—'} label={tt('Бос емес қосылымдар', 'Занятые соединения')} />
+        <Stat value={`${s.heapMB} MB`} label={tt(`Жад · ${s.goroutines} goroutine`, `Память · ${s.goroutines} goroutine`)} />
+      </div>
+      <p className="tiny muted">{[s.revision ? `rev ${s.revision}` : '', s.goVersion, conns].filter(Boolean).join(' · ')}</p>
+      <p className="tiny muted">{tt('«Онлайн» тек осы сервер процесінің жадында саналады және қайта іске қосқанда нөлденеді.', '«Онлайн» считается только в памяти этого процесса сервера и обнуляется при перезапуске.')}</p>
+    </section>
+    <section className="section">
+      <SectionHead title={tt('Ең үлкен кестелер', 'Самые большие таблицы')} />
+      <div className="group table-wrap">
+        <table>
+          <thead><tr><th scope="col">{tt('Кесте', 'Таблица')}</th><th scope="col">{tt('Жолдар', 'Строк')}</th><th scope="col">{tt('Көлемі', 'Размер')}</th><th scope="col">{tt('Өлі жолдар', 'Мёртвых')}</th></tr></thead>
+          <tbody>{s.database.tables.map(t => (
+            <tr key={t.name}><td>{t.name}</td><td className="num">{t.rows}</td><td className="num">{mb(t.totalBytes)}</td>
+              <td className={`num${t.deadShare > 0.2 ? ' urgent' : ''}`}>{Math.round(t.deadShare * 100)}%</td></tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </section>
+  </>;
 }
 export function AdminHealth() { return <AdminOnly><HealthDashboard /></AdminOnly>; }
