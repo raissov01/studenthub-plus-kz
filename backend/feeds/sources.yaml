@@ -61,6 +61,17 @@ sources:
     enabled: true
     note: The project owner's own channel; scholarships, programs and free courses for KZ students.
 
+  - id: tg-grants-kz
+    kind: tg_public
+    handle: grants_scholarships
+    name: Grants KZ
+    lang: ru
+    category: scholarship
+    scope: international
+    trust: medium
+    enabled: true
+    note: Scholarships, grants and exchange programs for KZ students; link from the project owner.
+
   - id: tg-omacademy
     kind: tg_public
     handle: omacademytc
