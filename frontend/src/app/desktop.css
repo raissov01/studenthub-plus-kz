@@ -1,0 +1,243 @@
+/* ---------- Laptop / desktop layout (components/SideNav.tsx, lib/desktop.ts) ----------
+   Phones and tablets (<1024px) keep the single 640px column. From 1024px: a left sidebar instead of the bottom tabs,
+   a wider page (--page-w), per-screen grids (main[data-screen]), sheets as centred dialogs. Tablets (640–1023px) keep
+   the phone shell; a few lists go to two columns where it reads naturally. Flat: white page, 1px lines, pastel fills. */
+
+.sidenav { display: none; }
+
+/* ---------- phone polish (all widths) ----------
+   Touch targets: small controls keep their look, but their hit area reaches 44px (an invisible ::after);
+   one vertical rhythm on home (no extra margin under the café shortcut); a deadline row keeps its title readable
+   at 360–390px by letting the «N күн қалды» tag drop under the text. */
+.chip, .subtab, .link-btn, .heart { position: relative; }
+.chip::after, .subtab::after, .link-btn::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(44px, 100%); transform: translateY(-50%);
+}
+.heart { width: 44px; height: 44px; }
+.cafe-short { margin: 0; }
+.cafe-side { display: contents; }
+@media (max-width: 480px) {
+  .cal-home-row .row { flex-wrap: wrap; row-gap: 6px; }
+  .cal-home-row .row > .row-main { flex-basis: calc(100% - 64px); }
+  .cal-home-row .row > .tag { margin-left: 52px; }
+}
+.top-title { letter-spacing: -.01em; }
+.empty { padding: 32px 20px; }
+
+/* ---------- tablet and up: two-column lists where natural ---------- */
+@media (min-width: 720px) {
+  .deals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  :root { --side-w: 256px; --page-w: 920px; --page-pad: 32px; }
+  :root[data-side="mini"] { --side-w: 76px; }
+  /* screens that use the full width */
+  :root:has(main[data-screen="home"]), :root:has(main[data-screen="search"]), :root:has(main[data-screen="opps"]),
+  :root:has(main[data-screen="bonus"]), :root:has(main[data-screen="calendar"]), :root:has(main[data-screen="job"]),
+  :root:has(main[data-screen="opp"]), :root:has(main[data-screen="event"]), :root:has(main[data-screen="clubs"]),
+  :root:has(main[data-screen="cafe"]), :root:has(main[data-screen="print"]), :root:has(main[data-screen="admin"]),
+  :root:has(main[data-screen="profile"]), :root:has(main[data-screen="settings"]), :root:has(main[data-screen="saved"]),
+  :root:has(main[data-screen="map"]), :root:has(main[data-screen="points"]), :root:has(main[data-screen="market"]),
+  :root:has(main[data-screen="services"]), :root:has(main[data-screen="materials"]), :root:has(main[data-screen="ai"]),
+  :root:has(main[data-screen="employer"]), :root:has(main[data-screen="organize"]), :root:has(main[data-screen="university"]) {
+    --page-w: 1200px;
+  }
+
+  body { padding-left: var(--side-w); }
+  body::before { display: none; }
+
+  /* ----- sidebar ----- */
+  .sidenav {
+    display: block; position: fixed; inset: 0 auto 0 0; width: var(--side-w); z-index: 26;
+    background: var(--surface); border-right: 1px solid var(--line); overflow: hidden auto; scrollbar-width: thin;
+  }
+  .side-in { display: flex; flex-direction: column; min-height: 100%; padding: 12px 12px 14px; gap: 6px; }
+  .side-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 52px; padding-left: 6px; }
+  .side-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; gap: 10px; min-width: 0; white-space: nowrap; }
+  .side-toggle { width: 40px; height: 40px; border-radius: 10px; color: var(--muted); }
+  .side-toggle:hover { background: var(--surface-2); color: var(--text); }
+  .side-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .side-group { display: flex; flex-direction: column; gap: 2px; }
+  .side-group + .side-group { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .side-title { font-family: var(--font-body); font-size: .76rem; font-weight: 600; color: var(--muted); margin: 0 0 4px 12px; letter-spacing: 0; }
+  .side-item, .side-me {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 8px 12px; border: 0;
+    border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; font-size: .93rem; font-weight: 500; position: relative;
+  }
+  .side-item svg { flex: none; color: var(--muted); }
+  .side-item:hover, .side-me:hover { background: var(--surface-2); }
+  .side-item[aria-current="page"] { background: var(--p-violet); color: var(--p-violet-ink); font-weight: 600; }
+  .side-item[aria-current="page"] svg { color: var(--p-violet-ink); }
+  .side-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .side-count {
+    flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--primary); color: var(--on-primary);
+    font-size: .72rem; font-weight: 700; line-height: 20px; text-align: center;
+  }
+  .side-foot { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--surface); }
+  .side-me { min-height: 52px; padding: 8px 10px; }
+  .side-me[aria-current="page"] { background: var(--p-violet); }
+  .side-avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: var(--p-rose); color: var(--p-rose-ink); font-family: var(--font-display); font-weight: 700;
+  }
+  .side-me-txt { display: flex; flex-direction: column; line-height: 1.25; }
+  .side-me-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .side-me-txt span { font-size: .8rem; color: var(--muted); }
+  .side-signin { width: 100%; min-height: 40px; }
+  /* collapsed to icons: labels stay for screen readers */
+  :root[data-side="mini"] .side-in { padding-inline: 10px; align-items: stretch; }
+  :root[data-side="mini"] .side-head { flex-direction: column; padding-left: 0; gap: 4px; }
+  :root[data-side="mini"] .side-label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  :root[data-side="mini"] .side-item, :root[data-side="mini"] .side-me { justify-content: center; padding-inline: 0; }
+  :root[data-side="mini"] .side-title { height: 0; margin: 0; }
+  :root[data-side="mini"] .side-count { position: absolute; top: 2px; right: 4px; min-width: 16px; height: 16px; line-height: 16px; font-size: .64rem; padding: 0 4px; }
+  :root[data-side="mini"] .side-signin { padding-inline: 0; }
+
+  /* ----- header and page ----- */
+  .tabbar { display: none; }
+  #menu-btn { display: none; }
+  .top { border-bottom-color: var(--line); }
+  .top-row { max-width: calc(var(--page-w) + 2 * var(--page-pad)); padding-inline: calc(var(--page-pad) - 8px); min-height: 64px; }
+  .top-title { font-size: 1.35rem; }
+  .icon-btn:hover { background: var(--surface-2); }
+  main {
+    max-width: calc(var(--page-w) + 2 * var(--page-pad)); padding: 20px var(--page-pad) 56px; gap: 24px;
+  }
+  main.quiz-host-main { max-width: calc(1200px + 2 * var(--page-pad)); }
+
+  /* ----- hover and pointer polish (buttons that only had :active) ----- */
+  button.row:hover, a.row:hover, label.row:hover, .sr-main:hover, .nrow:hover, .drawer-item:hover { background: var(--surface-2); }
+  .chip:hover:not([aria-pressed="true"]) { border-color: var(--line-strong); }
+  button.card:hover, .fav-card > .card:hover { border-color: var(--line-strong); }
+  .btn:not(.secondary, .sun, .ghost, .danger, [disabled]):hover { background: var(--primary-press); }
+  .btn.ghost:not([disabled]):hover { background: var(--surface-2); }
+  .btn.secondary:not([disabled]):hover, .btn.sun:not([disabled]):hover { background: var(--tint); }
+
+  /* ----- sheets: centred dialogs ----- */
+  .sheet-back { align-items: center; padding: 32px; padding-left: calc(32px + var(--side-w)); }
+  .sheet {
+    max-width: 560px; max-height: min(86vh, 860px); border-radius: 18px; border: 1px solid var(--line);
+    padding: 22px 26px 26px; animation: dlg-in .16s ease-out;
+  }
+  .sheet .grab { display: none; }
+  .toast { left: calc(50% + var(--side-w) / 2); bottom: 28px; }
+  .update-bar { left: calc(50% + var(--side-w) / 2); bottom: 28px; }
+
+  /* ----- lists become card grids ----- */
+  main[data-screen="opps"] #sList > .group, main[data-screen="search"] #sList > .group, main[data-screen="bonus"] #sList > .group,
+  main[data-screen="saved"] > .group {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; background: transparent; border: 0; border-radius: 0; overflow: visible;
+  }
+  main[data-screen="opps"] #sList > .group > *, main[data-screen="search"] #sList > .group > *, main[data-screen="bonus"] #sList > .group > *,
+  main[data-screen="saved"] > .group > * {
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden;
+  }
+  main[data-screen="opps"] #sList > .group > * + *, main[data-screen="search"] #sList > .group > * + *, main[data-screen="bonus"] #sList > .group > * + *,
+  main[data-screen="saved"] > .group > * + * { border-top: 1px solid var(--line); }
+  main[data-screen="opps"] #sList > .list, main[data-screen="search"] #sList > .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .deals { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+  /* ----- search and sections: filters in a side panel (views/search.tsx renders it on a laptop) ----- */
+  .search-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .search-layout > .search-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .search-side {
+    position: sticky; top: 84px; display: flex; flex-direction: column; gap: 14px; padding: 18px;
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); max-height: calc(100vh - 104px); overflow: auto;
+  }
+  .search-side h2 { font-size: 1rem; }
+  .search-top { position: static; }
+
+  /* ----- detail page: main column + right rail (views/detail.tsx) ----- */
+  .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; }
+  .detail-main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+  .detail-rail { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .detail-rail .sticky-cta { position: static; flex-direction: column; margin: 0; padding: 0; background: none; border: 0; }
+  .detail-rail .sticky-cta .btn { flex: none; width: 100%; }
+  .detail-head h1 { font-size: 2.2rem; }
+
+  /* ----- home: a dashboard (rows fixed so a missing block leaves no hole in the other column) ----- */
+  main[data-screen="home"] { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px 28px; align-items: start; }
+  main[data-screen="home"] > * { grid-column: 1 / -1; min-width: 0; }
+  main[data-screen="home"] > #homeSearch { grid-row: 1; grid-column: 1 / span 8; }
+  main[data-screen="home"]:not(:has(> #cafeShortcut)) > #homeSearch { grid-column: 1 / -1; }
+  main[data-screen="home"] > #cafeShortcut { grid-row: 1; grid-column: 9 / -1; margin: 0; }
+  main[data-screen="home"] > #homeNews { grid-row: 2; }
+  main[data-screen="home"] > #homeClasses { grid-row: 3; grid-column: 1 / span 5; }
+  main[data-screen="home"] > #homeWeek { grid-row: 3; grid-column: 6 / -1; }
+  main[data-screen="home"] > #homeDeadlines { grid-row: 4; grid-column: 1 / span 5; }
+  main[data-screen="home"] > #homeQuick { grid-row: 4; grid-column: 6 / -1; }
+  main[data-screen="home"] > #homeReview, main[data-screen="home"] > .points-chip { grid-column: 1 / span 5; }
+  main[data-screen="home"] .hq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  main[data-screen="home"] .news-card { flex-basis: calc((100% - 24px) / 3); }
+
+  /* ----- clubs: cards in a grid ----- */
+  #clubList, #clubEvents, #clubNews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+  /* ----- calendar: the month picker stays compact ----- */
+  .cal-pick select.input { flex: 0 1 220px; }
+
+  /* ----- café menu: the list on the left, the café card and the cart on the right ----- */
+  .cafe-menu { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 0 32px; align-items: start; }
+  .cafe-menu > .section + .section { margin-top: 22px; }
+  .cafe-menu > * { grid-column: 1; min-width: 0; }
+  .cafe-menu > .cafe-side { grid-column: 2; grid-row: 1 / span 30; position: sticky; top: 84px; display: flex; flex-direction: column; gap: 12px; }
+  .cafe-side .cafe-cartbar { position: static; padding: 0; z-index: auto; }
+  .cafe-side .cafe-cartbar .btn { max-width: none; }
+
+  /* ----- profile and settings: two columns ----- */
+  main[data-screen="settings"], main[data-screen="profile"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+  main[data-screen="settings"] > *, main[data-screen="profile"] > * { min-width: 0; }
+  main[data-screen="profile"] > .hero, main[data-screen="profile"] > .offline-bar, main[data-screen="settings"] > .offline-bar { grid-column: 1 / -1; }
+
+  /* ----- café, print: menu + cart side by side; the counter boards keep their own grid ----- */
+  .cafe-board { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+
+  /* ----- admin area: room to work ----- */
+  main[data-screen="admin"] { gap: 20px; }
+}
+
+@media (min-width: 1360px) {
+  main[data-screen="opps"] #sList > .group, main[data-screen="search"] #sList > .group, main[data-screen="bonus"] #sList > .group,
+  main[data-screen="saved"] > .group, main[data-screen="opps"] #sList > .list, main[data-screen="search"] #sList > .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  :root { --side-w: 272px; }
+}
+
+@keyframes dlg-in { from { transform: translateY(8px); opacity: .6; } }
+
+/* ---------- laptop home cards (views/home-desk.tsx) and the detail rail ---------- */
+.hw-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.hw-day {
+  display: flex; flex-direction: column; gap: 4px; align-items: stretch; min-height: 132px; padding: 8px; min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; color: inherit;
+}
+.hw-day:hover { border-color: var(--line-strong); }
+.hw-day[aria-current="date"] { border-color: var(--primary); background: var(--p-violet); }
+.hw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+.hw-wd { font-size: .74rem; font-weight: 600; color: var(--muted); }
+.hw-num { font-family: var(--font-display); font-size: 1.05rem; }
+.hw-it {
+  font-size: .72rem; line-height: 1.3; padding: 2px 6px; border-radius: 5px; border-left: 3px solid var(--k, var(--primary));
+  background: var(--surface-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hw-more { font-size: .72rem; color: var(--muted); padding-left: 4px; }
+.hq-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.hq-act {
+  display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--text); font-weight: 600; font-size: .92rem; text-align: left;
+}
+.hq-act:hover { border-color: var(--line-strong); background: var(--surface-2); }
+.hq-ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--p-violet); color: var(--p-violet-ink); }
+.hq-act:nth-child(5n+2) .hq-ico { background: var(--p-sky); color: var(--p-sky-ink); }
+.hq-act:nth-child(5n+3) .hq-ico { background: var(--p-mint); color: var(--p-mint-ink); }
+.hq-act:nth-child(5n+4) .hq-ico { background: var(--p-peach); color: var(--p-peach-ink); }
+.hq-act:nth-child(5n+5) .hq-ico { background: var(--p-rose); color: var(--p-rose-ink); }
+.rail-deadline { gap: 4px; }
+.rail-deadline .tiny { display: inline-flex; align-items: center; gap: 6px; }
+.rail-deadline .big-num { font-family: var(--font-display); font-size: 1.6rem; }
+.rail-related h2 { font-size: 1rem; }
+.fav-card > .card > .badges:first-child { padding-right: 40px; }

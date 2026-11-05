@@ -19,6 +19,7 @@ import { NotifyToggle, type Cat as NotifyCat } from '@/components/views/notify';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
+import { useDesktop } from '@/lib/desktop';
 import { CITIES, COURSES, DEAL_CATS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, searchItems, type SearchItem } from '@/lib/domain';
 import { ALL_EVENT_CATS, canCreateEvents, evTitle, evDesc } from '@/lib/events';
@@ -47,7 +48,8 @@ function filterLabel(key: string, app: App): string {
 }
 
 /* ---------- the filter sheet ---------- */
-function FilterSheet({ cat }: { cat: FilterCat }) {
+/** the filters: a bottom sheet on a phone, a side panel next to the list on a laptop (`panel`) */
+function FilterSheet({ cat, panel }: { cat: FilterCat; panel?: boolean }) {
   const app = useApp();
   const { ui, tt, tp, L, setUi, closeSheet, content } = app;
   const eventsOn = useFeature('events');
@@ -124,10 +126,12 @@ function FilterSheet({ cat }: { cat: FilterCat }) {
     <>
       <h2>{tt('Сүзгілер', 'Фильтры')} · {title}</h2>
       {body}
-      <div className="btn-row">
-        {any ? <button className="btn ghost" type="button" onClick={() => setUi(clearAll(cat))}>{tt('Тазалау', 'Сбросить')}</button> : null}
-        <button className="btn" type="button" onClick={closeSheet}>{tt('Көрсету', 'Показать')}</button>
-      </div>
+      {panel ? (any ? <button className="btn ghost" type="button" onClick={() => setUi(clearAll(cat))}>{tt('Тазалау', 'Сбросить')}</button> : null) : (
+        <div className="btn-row">
+          {any ? <button className="btn ghost" type="button" onClick={() => setUi(clearAll(cat))}>{tt('Тазалау', 'Сбросить')}</button> : null}
+          <button className="btn" type="button" onClick={closeSheet}>{tt('Көрсету', 'Показать')}</button>
+        </div>
+      )}
     </>
   );
 }
@@ -375,7 +379,7 @@ const PLACEHOLDER: Record<FilterCat, [string, string]> = {
 };
 
 /** the search box with the filter button, and the removable chips of the active filters */
-function SearchBox({ cat, top }: { cat: FilterCat; top?: ReactNode }) {
+function SearchBox({ cat, top, panel }: { cat: FilterCat; top?: ReactNode; panel?: boolean }) {
   const app = useApp();
   const { ui, tt, setUi, openSheet } = app;
   const inp = useRef<HTMLInputElement>(null);
@@ -400,11 +404,11 @@ function SearchBox({ cat, top }: { cat: FilterCat; top?: ReactNode }) {
             <input ref={inp} className="input" id="sq" type="search" enterKeyHint="search" autoComplete="off" placeholder={tt(...PLACEHOLDER[cat])} value={ui.sq}
               onChange={e => setUi({ sq: e.target.value })} aria-label={tt('Іздеу', 'Поиск')} />
           </div>
-          <button className="icon-btn filter-btn" type="button" onClick={() => openSheet(<FilterSheet cat={cat} />)}
+          {panel ? null : <button className="icon-btn filter-btn" type="button" onClick={() => openSheet(<FilterSheet cat={cat} />)}
             aria-label={active.length ? tt(`Сүзгілер: ${active.length} қосулы`, `Фильтры: включено ${active.length}`) : tt('Сүзгілер', 'Фильтры')}>
             <Icon n="filter" s={22} />
             {active.length ? <span className="count">{active.length}</span> : null}
-          </button>
+          </button>}
         </div>
       </div>
       {active.length ? (
@@ -437,10 +441,27 @@ export function Search() {
     else if (sp?.get('k') === 'all') setUi({ sk: 'all' });
   }, [go, setUi]);
   return (
-    <>
-      <SearchBox cat="all" />
-      <div id="sList" className="section"><AllResults /></div>
-    </>
+    <Filtered cat="all">
+      {panel => <>
+        <SearchBox cat="all" panel={panel} />
+        <div id="sList" className="section"><AllResults /></div>
+      </>}
+    </Filtered>
+  );
+}
+
+/** a laptop shows the filters in a panel beside the list (lib/desktop.ts); a phone keeps the filter button and sheet */
+function Filtered({ cat, children }: { cat: FilterCat; children: (panel: boolean) => ReactNode }) {
+  const { tt } = useApp();
+  const desktop = useDesktop();
+  if (!desktop) return <>{children(false)}</>;
+  // «Тағылымдама» and «Тегін беремін» have no filters beyond their tabs: no empty panel
+  if (cat === 'intern' || cat === 'market') return <>{children(true)}</>;
+  return (
+    <div className="search-layout">
+      <aside className="search-side" aria-label={tt('Сүзгілер', 'Фильтры')}><FilterSheet cat={cat} panel /></aside>
+      <div className="search-main">{children(true)}</div>
+    </div>
   );
 }
 
@@ -519,10 +540,12 @@ function SectionBody({ section }: { section: SectionId }) {
   }
   const many = tabs.length > 1;
   return (
-    <>
-      <SearchBox cat={fcat} top={many ? <SubTabs section={section} tabs={tabs} cur={tab} onPick={pick} /> : null} />
-      <div id="sList" className="section" {...(many ? { role: 'tabpanel', 'aria-labelledby': `st-${section}-${tab}` } : {})}>{results}</div>
-    </>
+    <Filtered cat={fcat}>
+      {panel => <>
+        <SearchBox cat={fcat} panel={panel} top={many ? <SubTabs section={section} tabs={tabs} cur={tab} onPick={pick} /> : null} />
+        <div id="sList" className="section" {...(many ? { role: 'tabpanel', 'aria-labelledby': `st-${section}-${tab}` } : {})}>{results}</div>
+      </>}
+    </Filtered>
   );
 }
 

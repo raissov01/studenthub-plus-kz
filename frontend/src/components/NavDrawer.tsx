@@ -13,36 +13,17 @@ import type { IconName } from '@/lib/types';
 export const OPEN_MENU = 'studenthub:menu';
 export const openMenu = () => window.dispatchEvent(new Event(OPEN_MENU));
 
-type Item = [string, IconName, string];
+export type Item = [string, IconName, string];
 const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'calendar'], ['courses', 'award'], ['deals', 'tag']];
 
-export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tt, go, content } = useApp();
+/** the menu's groups of destinations, shared by the phone menu and the laptop sidebar (components/SideNav.tsx) */
+export function useNavGroups(): [string, Item[]][] {
+  const { tt } = useApp();
   const cfg = useConfig();
   const acc = useAccount();
   const role = acc.user?.role;
   const hasConsole = !!acc.user && (role === 'admin' || !!acc.console || !!acc.user.scopes?.length);
-  const panel = useRef<HTMLDivElement>(null);
-  const opener = useRef<Element | null>(null);
-
-  // focus moves into the menu and back to whatever opened it; Escape closes
-  useEffect(() => {
-    if (!open) return;
-    opener.current = document.activeElement;
-    panel.current?.querySelector<HTMLElement>('button')?.focus();
-    const on = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', on);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', on);
-      document.body.style.overflow = '';
-      (opener.current as HTMLElement | null)?.focus?.();
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-  const clubs = !!(cfg.features as Partial<Record<string, boolean>>).clubs;
-  const groups: [string, Item[]][] = [
+  return [
     // the sections, each with its own sub-tabs (lib/sections.ts), listed under the name
     [tt('Мүмкіндіктер', 'Возможности'), SECTION_MENU.map(([id, icon]): Item => [SECTIONS[id].view, icon, tt(...SECTIONS[id].label)])],
     [tt('Оқу', 'Учёба'), [
@@ -67,6 +48,32 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ...(hasConsole ? [['admin', 'chart', tt('Басқару панелі', 'Панель управления')] as Item] : []),
     ]],
   ];
+}
+
+export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { tt, go, content } = useApp();
+  const cfg = useConfig();
+  const groups = useNavGroups();
+  const panel = useRef<HTMLDivElement>(null);
+  const opener = useRef<Element | null>(null);
+
+  // focus moves into the menu and back to whatever opened it; Escape closes
+  useEffect(() => {
+    if (!open) return;
+    opener.current = document.activeElement;
+    panel.current?.querySelector<HTMLElement>('button')?.focus();
+    const on = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', on);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', on);
+      document.body.style.overflow = '';
+      (opener.current as HTMLElement | null)?.focus?.();
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  const clubs = !!(cfg.features as Partial<Record<string, boolean>>).clubs;
   return (
     <div className="drawer-back" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="drawer" ref={panel} role="dialog" aria-modal="true" aria-label={tt('Мәзір', 'Меню')} id="nav-drawer">

@@ -3760,4 +3760,10 @@ export const EN: Record<string, string> = {
   "қабылданбады": "rejected",
   "Әр жазба жеке жариялаудағыдай тексеріледі; мерзімі өткендер жарияланбайды.": "Each item is checked as in a single publish; expired items are not published.",
   "Өлі жолдар": "Dead rows",
+  // laptop layout (components/SideNav.tsx, views/home-desk.tsx, views/detail.tsx)
+  "{0} оқылмаған": "{0} unread",
+  "Жылдам әрекеттер": "Quick actions",
+  "Мәзірді ашу": "Expand menu",
+  "Мәзірді жию": "Collapse menu",
+  "Ұқсас мүмкіндіктер": "Similar opportunities",
 };

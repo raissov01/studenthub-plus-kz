@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { AppRoot } from '@/components/AppRoot';
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_NAME, SITE_URL } from '@/lib/seo';
 import './globals.css';
+import './desktop.css';
 
 // The root layout is static: prerendered once at build time with every tab (app/[[...slug]]). The feed is loaded
 // in the browser (lib/content-client.ts), so a tap never waits for a server render. Only the pages that need
@@ -36,8 +37,9 @@ export const viewport: Viewport = {
 };
 
 /* Runs before first paint: theme and language from the saved state (incl. the old studygo.v1 key), so a dark-theme
-   or Russian user does not see a flash of the defaults. */
-const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru'||s.lang==='en')d.lang=s.lang;}else{d.setAttribute('data-theme','light');}}catch(e){}`;
+   or Russian user does not see a flash of the defaults;
+   a laptop sidebar collapsed to icons (lib/desktop.ts) stays collapsed without a jump. */
+const bootScript = `try{var s=localStorage.getItem('studenthub.v1')||localStorage.getItem('studygo.v1');var d=document.documentElement;if(localStorage.getItem('studenthub.side')==='mini')d.setAttribute('data-side','mini');if(s){s=JSON.parse(s);if(s.theme==='dark'||s.theme==='light')d.setAttribute('data-theme',s.theme);if(s.lang==='ru'||s.lang==='en')d.lang=s.lang;}else{d.setAttribute('data-theme','light');}}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (

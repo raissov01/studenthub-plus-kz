@@ -17,10 +17,14 @@ export default defineConfig({
     serviceWorkers: 'allow', trace: 'retain-on-failure', screenshot: 'only-on-failure',
     launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
   },
-  projects: ['kk', 'ru'].flatMap(lang => [360, 390].map(width => ({
-    name: `${lang}-${width}`, metadata: { lang },
-    use: { viewport: { width, height: 844 }, locale: lang === 'kk' ? 'kk-KZ' : 'ru-RU' },
-  }))),
+  projects: [
+    ...['kk', 'ru'].flatMap(lang => [360, 390].map(width => ({
+      name: `${lang}-${width}`, metadata: { lang }, testIgnore: /desktop\.spec\.ts$/,
+      use: { viewport: { width, height: 844 }, locale: lang === 'kk' ? 'kk-KZ' : 'ru-RU' },
+    }))),
+    // the laptop layout (app/desktop.css): a few key flows only, so the suite's runtime stays close to the phone one
+    ...(realApi ? [] : [{ name: 'kk-1280', metadata: { lang: 'kk' }, testMatch: /desktop\.spec\.ts$/, use: { viewport: { width: 1280, height: 800 }, locale: 'kk-KZ' } }]),
+  ],
   webServer: [
     ...(!realApi ? [{ command: 'npx tsx e2e/server.ts', url: `http://127.0.0.1:${apiPort}/api/content`, reuseExistingServer: false }] : []),
     {

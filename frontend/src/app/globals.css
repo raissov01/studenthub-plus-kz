@@ -1939,13 +1939,12 @@ p.print-review { padding: 8px 10px; border: 1px solid var(--p-sky-ink); border-r
 .bulk-preview { max-height: 40vh; overflow-y: auto; }
 
 /* admin frame: a phone gets the screen alone; from 1024px a left section list and a wider work area.
-   The breakout below widens the work area beyond the 640px app column; when the app shell itself becomes wide
-   (desktop shell), drop the .adm-layout width/margin rules and let it fill its parent. */
+   The desktop shell already gives main a wide page, so the frame just fills its parent. */
 .adm-layout { container-type: inline-size; container-name: adm; min-width: 0; }
 .adm-nav { display: none; }
 .adm-main { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 @media (min-width: 1024px) {
-  .adm-layout { --aw: min(1200px, calc(100vw - 48px)); width: var(--aw); margin-left: calc(50% - var(--aw) / 2);
+  .adm-layout { width: 100%;
     display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 28px; align-items: start; }
   .adm-nav { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto;
     padding: 4px 4px 16px 0; border-right: 1px solid var(--line); }

@@ -126,10 +126,20 @@ function MenuView({ id }: { id: number }) {
   };
   return (
     <div className="cafe cafe-menu">
-      <div className="card">
-        <h2>{nameOf(cafe, lang)} {cafe.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : null}</h2>
-        <p className="small muted">{[cafe.building, lang !== 'kk' ? cafe.placeRu : cafe.placeKk].filter(Boolean).join(', ')}</p>
-        <p className="small"><Icon n="clock" s={16} /> {hoursLabel(cafe, lang)}{cafe.openNow ? '' : ' · ' + tt('қазір тапсырыс қабылдамайды', 'сейчас заказы не принимает')}</p>
+      {/* the café card and the cart: one block, a right rail on a laptop (app/desktop.css); on a phone the cart bar is fixed at the bottom */}
+      <div className="cafe-side">
+        <div className="card">
+          <h2>{nameOf(cafe, lang)} {cafe.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : null}</h2>
+          <p className="small muted">{[cafe.building, lang !== 'kk' ? cafe.placeRu : cafe.placeKk].filter(Boolean).join(', ')}</p>
+          <p className="small"><Icon n="clock" s={16} /> {hoursLabel(cafe, lang)}{cafe.openNow ? '' : ' · ' + tt('қазір тапсырыс қабылдамайды', 'сейчас заказы не принимает')}</p>
+        </div>
+        {sum.count > 0 ? (
+          <div className="cafe-cartbar">
+            <button className="btn block" type="button" id="cafeCart" onClick={() => openSheet(<CheckoutSheet menu={m.data!} cart={cart} setCart={setCart} />)}>
+              <Icon n="cup" s={18} /> {tt(`Себет · ${sum.count}`, `Корзина · ${sum.count}`)} · <span className="num">{money(sum.total)}</span>
+            </button>
+          </div>
+        ) : null}
       </div>
       {groups.map(([title, list]) => (
         <section className="section" key={title}>
@@ -152,13 +162,6 @@ function MenuView({ id }: { id: number }) {
           </div>
         </section>
       ))}
-      {sum.count > 0 ? (
-        <div className="cafe-cartbar">
-          <button className="btn block" type="button" id="cafeCart" onClick={() => openSheet(<CheckoutSheet menu={m.data!} cart={cart} setCart={setCart} />)}>
-            <Icon n="cup" s={18} /> {tt(`Себет · ${sum.count}`, `Корзина · ${sum.count}`)} · <span className="num">{money(sum.total)}</span>
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
