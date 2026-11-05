@@ -42,7 +42,7 @@ function QuickActions() {
   const { tt, go } = useApp();
   const cfg = useConfig();
   const acts: [string, IconName, string][] = [
-    ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
+    ['timetable', 'timetable', tt('Сабақ кестесі', 'Расписание занятий')],
     ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
     ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
     ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
