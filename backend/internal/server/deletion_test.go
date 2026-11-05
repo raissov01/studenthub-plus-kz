@@ -284,6 +284,7 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 	}
 	if _, err := os.Stat(lfFile); !os.IsNotExist(err) {
 		t.Errorf("deleted user's lost & found photo survived: %v", err)
+	}
 	if _, err := os.Stat(filepath.Join(portfolio.CertDir(), certFile)); !os.IsNotExist(err) {
 		t.Errorf("deleted user's certificate file survived: %v", err)
 	}

@@ -245,20 +245,15 @@ function EventsResults() {
   const acc = useAccount();
   const items = useEventItems(ui.evCat);
   const none = !(content.events ?? []).length;
-  return (
-    <>
-      {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
-      {none ? null : <Count n={items.length} />}
-      {none ? <NothingYet icon="calendar" msg={tt('Әзірге іс-шара жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Мероприятий пока нет — сообщим, когда появятся новые.')}
-        notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
-        : items.length
   const clubsOn = useFeature('clubs');
   return (
     <>
       {canCreateEvents(acc.user?.role) ? <button className="btn ghost block" type="button" onClick={() => go('organize')}><Icon n="calendar" s={18} /> {tt('Ұйымдастырушы беті', 'Страница организатора')}</button> : null}
       {clubsOn ? <div className="group"><Row go="clubs" icon="user" title={tt('Университет клубтары', 'Клубы университета')} sub={tt('Үйірмелер, дебат, спорт, өнер, еріктілер', 'Кружки, дебаты, спорт, искусство, волонтёрство')} /></div> : null}
-      <Count n={items.length} />
-      {items.length
+      {none ? null : <Count n={items.length} />}
+      {none ? <NothingYet icon="calendar" msg={tt('Әзірге іс-шара жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Мероприятий пока нет — сообщим, когда появятся новые.')}
+        notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
+        : items.length
         ? <div className="group">{items.map(e => (
           <div className="sr" key={e.id}>
             <Row go={'event:' + e.id} icon="calendar" title={evTitle(e, lang)} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
