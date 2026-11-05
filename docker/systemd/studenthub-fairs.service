@@ -1,0 +1,8 @@
+[Unit]
+Description=Student Hub career fairs: visit summaries (FEATURE_FAIRS)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/studenthub/.env
+# the endpoint answers 404 while its feature switch is off; that is not a failure
+ExecStart=/bin/sh -c 'curl -sS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/fairs || true'

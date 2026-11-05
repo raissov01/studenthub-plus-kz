@@ -195,10 +195,11 @@ fi
 # one-off api container with /app/feeds-collect and exits at once while FEATURE_FEEDS is off) ----------
 if bool "$DEPLOY_TIMERS"; then
   log "Timers"
-  cp systemd/studenthub-cron.service systemd/studenthub-cron.timer systemd/studenthub-notify.service systemd/studenthub-notify.timer \
-    systemd/studenthub-feeds.service systemd/studenthub-feeds.timer /etc/systemd/system/
+  # every unit in docker/systemd (cron, notify, feeds, streak, fairs, feedback); a feature's timer is harmless while
+  # its switch is off (the endpoint answers 404 and the unit ignores it)
+  cp systemd/studenthub-*.service systemd/studenthub-*.timer /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now studenthub-cron.timer studenthub-notify.timer studenthub-feeds.timer
+  for t in systemd/studenthub-*.timer; do systemctl enable --now "$(basename "$t")"; done
   systemctl list-timers 'studenthub-*' --no-pager || true
 fi
 
