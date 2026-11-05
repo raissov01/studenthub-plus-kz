@@ -22,9 +22,8 @@ test('calendar: menu entry, month navigation, a seeded deadline, own deadline su
   await expect(card.getByRole('button', { name: new RegExp(oppTitle) })).toBeVisible();
   await expect(card.getByRole('button', { name: t('Күнтізбе', 'Календарь'), exact: true })).toBeVisible();
 
-  // open from the hamburger menu
-  await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Күнтізбе', 'Календарь'), exact: true }).click();
+  // open from the home card (the calendar is a bottom tab, not a hamburger-menu item)
+  await card.getByRole('button', { name: t('Күнтізбе', 'Календарь'), exact: true }).click();
   await expect(page).toHaveURL(/\/calendar$/);
   const grid = page.getByRole('grid');
   await expect(grid).toBeVisible();

@@ -6,7 +6,6 @@ import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Icon } from '@/components/ui';
 import { useConfig } from '@/lib/config';
-import { useAccount } from '@/lib/account';
 import { SECTIONS, sectionOfView, visibleTabs, type SectionId } from '@/lib/sections';
 import type { IconName } from '@/lib/types';
 
@@ -19,7 +18,6 @@ const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern',
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tt, go, content } = useApp();
   const cfg = useConfig();
-  const role = useAccount().user?.role;
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -56,20 +54,12 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
       ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
       ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as Item] : []),
-      ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
-      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
-      ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
       ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
-      ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
-      ...(cfg.features.clubs ? [['clubs', 'user', tt('Клубтар', 'Клубы')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
-      ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
-      ...(cfg.features.points ? [['points', 'trophy', tt('Ұпайлар', 'Баллы')] as Item] : []),
       ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
-      ...((role === 'admin' || role === 'university_staff') && (cfg.features.surveys || cfg.features.feedback || cfg.features.wellbeing)
-        ? [['voice', 'shield', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
+      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
     ]],
   ];
   return (

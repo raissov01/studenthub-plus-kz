@@ -108,10 +108,15 @@ test('clubs: catalogue filters → club page → join request → club admin app
   const m = await setup(page, lang);
   await onboard(page, lang);
 
-  // entry from the hamburger menu, group «Университет»
+  // clubs live under «Іс-шаралар»; the hamburger menu no longer lists them separately
   await page.goto('/');
   await page.getByRole('button', { name: t('Мәзір', 'Меню') }).first().click();
-  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Клубтар', 'Клубы') }).click();
+  const menu = page.getByRole('dialog', { name: t('Мәзір', 'Меню') });
+  for (const [kk, ru] of [['Клубтар', 'Клубы'], ['Сауалнамалар', 'Опросы'], ['Әл-ауқат', 'Благополучие'], ['Пәтерлес', 'Соседи по жилью'], ['Ұпайлар', 'Баллы'], ['Студент дауысы: басқару', 'Голос студентов: управление']]) {
+    await expect(menu.getByRole('button', { name: t(kk, ru), exact: true })).toHaveCount(0);
+  }
+  await page.keyboard.press('Escape');
+  await page.goto('/clubs');
   await expect(page).toHaveURL(/\/clubs$/);
   const cards = page.locator('#clubList .club-card');
   await expect(cards).toHaveCount(3);

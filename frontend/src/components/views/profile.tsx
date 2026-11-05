@@ -131,7 +131,6 @@ export function Onboarding() {
 /* ---------- profile ---------- */
 export function Profile() {
   const { S, tt, L, I, toast, go } = useApp();
-  const points = useFeature('points');
   const p = S.profile, fill = profileFill(S, I);
   const onPhoto = (f: File | undefined) => {
     if (!f) return;
@@ -173,10 +172,7 @@ export function Profile() {
       <div className="group">
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
         <Row go="gpa" icon="cap" title={tt('Білім туралы', 'Об учёбе')} />
-        <Row go="grades" icon="chart" title={tt('Бағалар', 'Оценки')} sub={tt('АБ, емтихан, сабақтан қалу', 'РК, экзамен, пропуски')} />
-        <Row go="applications" icon="briefcase" title={tt('Менің өтінімдерім', 'Мои отклики')} sub={tt('Сатысы, еске салу, жазба', 'Стадия, напоминание, заметка')} />
         <Row go="portfolio" icon="award" title={tt('Жетістіктер', 'Достижения')} />
-        {points ? <Row go="points" icon="trophy" title={tt('Ұпайлар', 'Баллы')} sub={tt('Деңгей, серия, монеталар және сыйлықтар', 'Уровень, серия, монеты и награды')} /> : null}
         <Row go="mine" icon="clock" title={tt('Іс-әрекет тарихы', 'История действий')} />
         <Row go="saved" icon="bookmark" title={tt('Сақталғандар', 'Сохранённое')} />
         <Row go="settings" icon="gear" title={tt('Параметрлер', 'Параметры')} />

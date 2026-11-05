@@ -128,10 +128,8 @@ test('points: home chip, level, tasks, leaderboards, shop redeem and my codes', 
   await fits(page);
   await page.screenshot({ path: test.info().outputPath('points.png'), fullPage: true });
 
-  // menu entry and dark theme at this width
-  await page.goto('/');
-  await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Ұпайлар', 'Баллы'), exact: true }).click();
+  // dark theme at this width (points are no longer in the hamburger menu; reached from the profile)
+  await page.goto('/points');
   await expect(page).toHaveURL(/\/points$/);
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('studenthub.v1') || '{}');

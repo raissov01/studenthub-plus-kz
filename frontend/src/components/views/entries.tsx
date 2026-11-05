@@ -3,7 +3,6 @@
    every switch off (production today) these render nothing. */
 import { useApp } from '@/components/app';
 import { Row } from '@/components/ui';
-import { RatingEntry } from '@/components/views/ambassador';
 import { AnnouncementsEntry } from '@/components/views/jobs-b2b';
 import { useFeature } from '@/components/views/common';
 import { useAccount } from '@/lib/account';
@@ -26,16 +25,12 @@ export function ServicesCommunity() {
 export function ProfileCommunity() {
   const { tt } = useApp();
   const acc = useAccount();
-  const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
+  const market = useFeature('market'), events = useFeature('events');
   const b2b = useFeature('b2b');
   const u = acc.user;
   const rows = [
-    amb ? (u?.role === 'ambassador' || u?.role === 'admin'
-      ? <Row key="amb" go="ambassador" icon="award" title={tt('Амбассадор кабинеті', 'Кабинет амбассадора')} />
-      : <Row key="amb" go="ambassador:apply" icon="award" title={tt('Амбассадор болу', 'Стать амбассадором')} sub={tt('Өз университетіңіздің командасы', 'Команда вашего университета')} />) : null,
-    amb ? <RatingEntry key="rating" /> : null,
+    // ambassador cabinet, university rating and «my mentoring» are parked for later (team decision 2026-11-05)
     u ? <Row key="sugg" go="suggestions" icon="globe" title={tt('Менің ұсыныстарым', 'Мои предложения')} sub={tt('Ұсынған мүмкіндіктердің күйі', 'Статус предложенных возможностей')} /> : null,
-    mentors && u ? <Row key="mentors" go="mentors:me" icon="cap" title={tt('Менің менторлығым', 'Моё менторство')} /> : null,
     events && canCreateEvents(u?.role) ? <Row key="org" go="organize" icon="calendar" title={tt('Ұйымдастырушы беті', 'Страница организатора')} /> : null,
     market && u ? <Row key="market" go="market:mine" icon="gift" title={tt('Менің заттарым', 'Мои вещи')} /> : null,
     b2b && u?.role === 'university_staff' ? <Row key="uni" go="university" icon="cap" title={tt('Университет кабинеті', 'Кабинет университета')} /> : null,

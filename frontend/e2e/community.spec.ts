@@ -193,8 +193,7 @@ test('roommates: request a listing, the owner accepts, contacts open', async ({ 
     return route.fulfill({ status: 501, json: { error: { code: 'unmocked_rm' } } });
   });
   await onboard(page, lang);
-  await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Пәтерлес', 'Соседи по жилью'), exact: true }).click();
+  await page.goto('/roommates');
   await expect(page).toHaveURL(/\/roommates$/);
   const card = page.getByRole('article').filter({ hasText: 'Сарыарқа ауданы' });
   await expect(card).toContainText(t('Қыздар ғана', 'Только девушки'));
