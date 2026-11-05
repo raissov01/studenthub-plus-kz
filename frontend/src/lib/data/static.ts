@@ -1,6 +1,7 @@
-/* Static demo content moved out of legacy/index.html. Every event, course, figure below is an example for the
-   prototype, not a real offer. Event/payment dates are offsets in days from "today". */
-import type { ClassItem, Course, DocItem, EventItem, LText, Pair, Payment } from '@/lib/types';
+/* Static reference data: vocabularies (specialities, skills, cities, categories), real free courses with their
+   official links, general guidance on documents and admission in Kazakhstan, the national letter-grade scale and
+   interview tips. Nothing here is a sample record: listings (jobs, events, discounts…) come only from the API. */
+import type { Course, DocItem, LText, Pair } from '@/lib/types';
 
 export const SPECS: Record<string, LText> = {
   econ:   { kk: 'Экономика', ru: 'Экономика', en: 'Economics' },
@@ -58,47 +59,6 @@ export const CITIES: Record<string, LText> = {
   remote: { kk: 'Қашықтан', ru: 'Удалённо' }
 };
 export const HOME_CITIES: string[] = Object.keys(CITIES).filter(k => k !== 'remote');
-export const EVENTS: EventItem[] = [
-  { id: 'e1', day: 2, time: '11:00', cat: 'career', cert: false,
-    title: { kk: 'Мансап жәрмеңкесі', ru: 'Ярмарка карьеры' },
-    place: { kk: 'Бас корпус, акт залы', ru: 'Главный корпус, актовый зал' },
-    desc: { kk: '30-дан астам жұмыс беруші, тағылымдама мен жұмыс орындары. Түйіндемеңізді ала келіңіз.', ru: 'Более 30 работодателей, стажировки и вакансии. Возьмите с собой резюме.' } },
-  { id: 'e2', day: 4, time: '15:00', cat: 'youth', cert: false,
-    title: { kk: 'Жастар істері комитетінің жиыны', ru: 'Собрание комитета по делам молодёжи' },
-    place: { kk: '2-корпус, 210-аудитория', ru: '2-й корпус, ауд. 210' },
-    desc: { kk: 'Семестрге арналған жоспар, жаңа жобалар мен еріктілерді тіркеу.', ru: 'План на семестр, новые проекты и запись волонтёров.' } },
-  { id: 'e3', day: 6, time: '10:00', cat: 'volunteer', cert: true,
-    title: { kk: 'Қалалық тазалық акциясы', ru: 'Городская экологическая акция' },
-    place: { kk: 'Жасыл аймақ, кампус маңы', ru: 'Зелёная зона рядом с кампусом' },
-    desc: { kk: 'Ағаш отырғызу және аумақты тазарту. Қатысушыларға еріктілік сертификаты беріледі.', ru: 'Посадка деревьев и уборка территории. Участникам выдаётся волонтёрский сертификат.' } },
-  { id: 'e4', day: 9, time: '17:00', cat: 'sport', cert: false,
-    title: { kk: 'Факультеттер арасындағы волейбол турнирі', ru: 'Турнир по волейболу между факультетами' },
-    place: { kk: 'Спорт кешені', ru: 'Спортивный комплекс' },
-    desc: { kk: 'Командаңызды тіркеңіз немесе жанкүйер болып келіңіз.', ru: 'Зарегистрируйте команду или приходите болеть.' } },
-  { id: 'e5', day: 12, time: '14:00', cat: 'training', cert: true,
-    title: { kk: 'Шеберлік сабағы: түйіндеме және сұхбат', ru: 'Мастер-класс: резюме и собеседование' },
-    place: { kk: 'Кітапхана, коворкинг аймағы', ru: 'Библиотека, зона коворкинга' },
-    desc: { kk: 'HR-маман тәжірибесіз түйіндеме жазуды және сұхбаттан өтуді үйретеді.', ru: 'HR-специалист расскажет, как написать резюме без опыта и пройти собеседование.' } },
-  { id: 'e6', day: 15, time: '10:00', cat: 'conf', cert: true,
-    title: { kk: 'Студенттік ғылыми конференция', ru: 'Студенческая научная конференция' },
-    place: { kk: 'Бас корпус, конференц-зал', ru: 'Главный корпус, конференц-зал' },
-    desc: { kk: 'Баяндама жасауға немесе тыңдаушы ретінде қатысуға болады.', ru: 'Можно выступить с докладом или участвовать слушателем.' } },
-  { id: 'e7', day: 18, time: '18:00', cat: 'holiday', cert: false,
-    title: { kk: 'Студенттік мерекелік кеш', ru: 'Студенческий праздничный вечер' },
-    place: { kk: 'Студенттер сарайы', ru: 'Дворец студентов' },
-    desc: { kk: 'Концерт, байқаулар және факультеттер шоуы.', ru: 'Концерт, конкурсы и шоу факультетов.' } },
-  { id: 'e8', day: 24, time: '16:00', cat: 'career', cert: false,
-    title: { kk: 'Жұмыс берушілермен кездесу: қаржы саласы', ru: 'Встреча с работодателями: финансы' },
-    place: { kk: '2-корпус, 108-аудитория', ru: '2-й корпус, ауд. 108' },
-    desc: { kk: 'Банк және аудит компанияларының өкілдерімен ашық әңгіме.', ru: 'Открытый разговор с представителями банков и аудиторских компаний.' } },
-  { id: 'p1', day: -20, time: '10:00', cat: 'volunteer', cert: true, past: true,
-    title: { kk: 'Еріктілер апталығы', ru: 'Неделя волонтёров' },
-    place: { kk: 'Кампус', ru: 'Кампус' }, desc: { kk: '', ru: '' } },
-  { id: 'p2', day: -45, time: '14:00', cat: 'training', cert: true, past: true,
-    title: { kk: 'Excel бойынша тренинг', ru: 'Тренинг по Excel' },
-    place: { kk: 'Кітапхана', ru: 'Библиотека' }, desc: { kk: '', ru: '' } }
-];
-
 export const EVENT_CATS: Record<string, LText> = {
   career:    { kk: 'Мансап', ru: 'Карьера' },
   youth:     { kk: 'Жастар ұйымы', ru: 'Молодёжь' },
@@ -114,32 +74,12 @@ export const DEAL_CATS: Record<string, LText> = {
   edu: { kk: 'Білім', ru: 'Обучение' }, cowork: { kk: 'Коворкинг', ru: 'Коворкинг' }, print: { kk: 'Басып шығару', ru: 'Печать' }
 };
 
-/* certCost: free | paid | badge (free badge) */
+/* Free courses with a free certificate, linked to their official pages. certCost: free | paid | badge (free badge) */
 export const COURSES: Course[] = [
-  { id: 'c1', title: { kk: 'Excel: деректерді талдау негіздері', ru: 'Excel: основы анализа данных' }, platform: 'Microsoft Learn',
-    url: 'https://learn.microsoft.com/training/', weeks: 3, cert: 'badge', spec: ['econ', 'acc', 'all'], skills: ['excel', 'data'] },
-  { id: 'c2', title: { kk: 'Power BI негіздері', ru: 'Основы Power BI' }, platform: 'Microsoft Learn',
-    url: 'https://learn.microsoft.com/training/', weeks: 4, cert: 'badge', spec: ['econ', 'acc', 'it'], skills: ['powerbi', 'data'] },
-  { id: 'c3', title: { kk: 'Қаржылық модельдеу', ru: 'Финансовое моделирование' }, platform: 'Coursera',
-    url: 'https://www.coursera.org', weeks: 5, cert: 'paid', spec: ['econ', 'acc'], skills: ['excel', 'econ'] },
-  { id: 'c4', title: { kk: 'Бизнеске арналған ағылшын тілі', ru: 'Английский для бизнеса' }, platform: 'Coursera',
-    url: 'https://www.coursera.org', weeks: 6, cert: 'paid', spec: ['all'], skills: ['en'] },
-  { id: 'c5', title: { kk: 'Корей тілі: алғашқы қадам', ru: 'Корейский язык: первый шаг' }, platform: 'Coursera',
-    url: 'https://www.coursera.org', weeks: 5, cert: 'paid', spec: ['all'], skills: [] },
-  { id: 'c6', title: { kk: 'Қаржылық сауаттылық', ru: 'Финансовая грамотность' }, platform: 'Stepik',
-    url: 'https://stepik.org', weeks: 2, cert: 'free', spec: ['all'], skills: ['econ'] },
-  { id: 'c7', title: { kk: 'Бухгалтерлік есеп негіздері', ru: 'Основы бухгалтерского учёта' }, platform: 'Stepik',
-    url: 'https://stepik.org', weeks: 4, cert: 'free', spec: ['econ', 'acc'], skills: ['acc'] },
   { id: 'c8', title: { kk: 'CS50: программалауға кіріспе', ru: 'CS50: введение в программирование' }, platform: 'Harvard (CS50)',
     url: 'https://cs50.harvard.edu/x/', weeks: 10, cert: 'free', spec: ['it', 'all'], skills: ['python'] },
   { id: 'c9', title: { kk: 'Жасанды интеллект негіздері', ru: 'Основы искусственного интеллекта' }, platform: 'Elements of AI',
-    url: 'https://www.elementsofai.com', weeks: 6, cert: 'free', spec: ['all'], skills: ['data'] },
-  { id: 'c10', title: { kk: 'Маркетинг негіздері', ru: 'Основы маркетинга' }, platform: 'Coursera',
-    url: 'https://www.coursera.org', weeks: 4, cert: 'paid', spec: ['econ', 'all'], skills: ['sales'] },
-  { id: 'c11', title: { kk: 'Жобаларды басқару', ru: 'Управление проектами' }, platform: 'Coursera',
-    url: 'https://www.coursera.org', weeks: 6, cert: 'paid', spec: ['all'], skills: ['team'] },
-  { id: 'c12', title: { kk: 'Python-мен деректерді талдау', ru: 'Анализ данных на Python' }, platform: 'Stepik',
-    url: 'https://stepik.org', weeks: 6, cert: 'free', spec: ['it', 'econ'], skills: ['python', 'data'] }
+    url: 'https://www.elementsofai.com', weeks: 6, cert: 'free', spec: ['all'], skills: ['data'] }
 ];
 
 export const DOCS: DocItem[] = [
@@ -173,12 +113,6 @@ export const DOCS: DocItem[] = [
     where: { kk: 'Академиялық ұтқырлық бөлімі', ru: 'Отдел академической мобильности' },
     need: [{ kk: 'Транскрипт', ru: 'Транскрипт' }, { kk: 'Тіл сертификаты', ru: 'Языковой сертификат' }, { kk: 'Learning Agreement', ru: 'Learning Agreement' }, { kk: 'Төлқұжат', ru: 'Загранпаспорт' }],
     online: { kk: 'Бөлімнің бекітілген тізімін тексеріңіз', ru: 'Сверьтесь с утверждённым списком отдела' } }
-];
-
-export const SCHEDULE: ClassItem[] = [
-  { t: '09:00', end: '09:50', name: { kk: 'Микроэкономика', ru: 'Микроэкономика' }, room: '4-214', kind: { kk: 'Дәріс', ru: 'Лекция' } },
-  { t: '10:50', end: '11:40', name: { kk: 'Ағылшын тілі', ru: 'Английский язык' }, room: '4-305', kind: { kk: 'Практика', ru: 'Практика' } },
-  { t: '13:00', end: '13:50', name: { kk: 'Статистика', ru: 'Статистика' }, room: '4-108', kind: { kk: 'Семинар', ru: 'Семинар' } }
 ];
 
 /* Kazakhstan credit system: letter, points, percent range */
@@ -234,30 +168,5 @@ export const ADMISSION: Record<string, { title: LText; items: { h: LText; t: LTe
     ] }
 };
 
-export const PAYMENT: Payment = {
-  year: 1200000, paid: 600000, nextAmount: 300000, nextDue: 24,
-  history: [
-    { day: -52, amount: 300000, via: { kk: 'Kaspi арқылы', ru: 'Через Kaspi' } },
-    { day: -80, amount: 300000, via: { kk: 'Банк бөлімшесі', ru: 'Отделение банка' } }
-  ],
-  change: { from: 1100000, to: 1200000, date: -120, basis: { kk: 'Ғылыми кеңестің шешімі (үлгі)', ru: 'Решение учёного совета (пример)' } }
-};
-
-export const DEMO_DECK: { id: string; demo: true; name: LText; cards: { q: LText; a: LText }[] } = {
-  id: 'deck-demo', demo: true,
-  name: { kk: 'Микроэкономика (үлгі)', ru: 'Микроэкономика (пример)' },
-  cards: [
-    { q: { kk: 'Сұраныс заңы', ru: 'Закон спроса' }, a: { kk: 'Баға өскенде сұраныс көлемі азаяды (басқа жағдайлар өзгермесе).', ru: 'При росте цены величина спроса снижается (при прочих равных).' } },
-    { q: { kk: 'Икемділік', ru: 'Эластичность' }, a: { kk: 'Бір көрсеткіштің өзгерісіне екіншісінің пайыздық жауабы.', ru: 'Процентная реакция одного показателя на изменение другого.' } },
-    { q: { kk: 'Шекті шығын', ru: 'Предельные издержки' }, a: { kk: 'Тағы бір бірлік өнім шығаруға кететін қосымша шығын.', ru: 'Дополнительные затраты на производство ещё одной единицы продукции.' } },
-    { q: { kk: 'Тепе-теңдік баға', ru: 'Равновесная цена' }, a: { kk: 'Сұраныс көлемі ұсыныс көлеміне тең болатын баға.', ru: 'Цена, при которой величина спроса равна величине предложения.' } },
-    { q: { kk: 'Баламалы құн', ru: 'Альтернативная стоимость' }, a: { kk: 'Таңдау жасағанда бас тартылған ең жақсы баламаның құны.', ru: 'Ценность лучшей альтернативы, от которой отказались при выборе.' } }
-  ]
-};
 export const JOB_TAGS: Record<string, Pair> = { noexp: ['Тәжірибесіз', 'Без опыта'], daily: ['Күнделікті төлем', 'Оплата в тот же день'], remote: ['Қашықтан', 'Удалённо'], near: ['Университетке жақын', 'Рядом с вузом'] };
 export const OPP_TYPES: Record<string, Pair> = { mobility: ['Академиялық ұтқырлық', 'Академическая мобильность'], intl: ['Халықаралық бағдарлама', 'Международная программа'], company: ['Компаниядағы тағылымдама', 'Стажировка в компании'], grant: ['Грант / байқау', 'Грант / конкурс'] };
-export const TIERS: { min: number; name: Pair; perks: Pair[] }[] = [
-  { min: 3.67, name: ['Алтын деңгей', 'Золотой уровень'], perks: [['Серіктес курстарына −40%', '−40% на курсы партнёров'], ['Карьералық бағдарламаларға басым тіркелу', 'Приоритетная запись на карьерные программы'], ['Ақылы іс-шараларға тегін кіру', 'Бесплатный вход на платные мероприятия']] },
-  { min: 3.33, name: ['Күміс деңгей', 'Серебряный уровень'], perks: [['Серіктес курстарына −25%', '−25% на курсы партнёров'], ['Кейбір іс-шараларға тегін кіру', 'Бесплатный вход на часть мероприятий']] },
-  { min: 3.0, name: ['Қола деңгей', 'Бронзовый уровень'], perks: [['Серіктес курстарына −10%', '−10% на курсы партнёров']] }
-];

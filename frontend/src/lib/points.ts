@@ -1,17 +1,23 @@
 /* «Ұпайлар / Баллы» client (docs/api/points.md). Every number comes from the server: the device never
    counts coins or XP itself, and a signed-out student has none. Pure helpers are tested in lib/points.test.ts. */
 
-export interface PointsAward { xp: number; coins: number; duplicate?: boolean; capped?: boolean; reason: string }
+export interface PointsAward { xp: number; coins: number; duplicate?: boolean; capped?: boolean; reason: string; milestone?: number }
 export interface PointsTask { id: string; xp: number; coins: number; perDay: number; perWeek?: number; deviceOnly: boolean; done: number; week: number }
 export interface PointsEntry { delta: number; reason: string; note?: string; createdAt: string }
 export interface PointsSummary {
   xp: number; level: number; levelXp: number; nextLevelXp: number; coins: number;
-  streak: { days: number; best: number; freezes: number; maxFreezes: number; freezeCost: number; activeToday: boolean };
+  streak: {
+    days: number; best: number; freezes: number; maxFreezes: number; freezeCost: number; activeToday: boolean;
+    /** spec 08 «kind streak», only while FEATURE_STREAK is on */
+    nextMilestone?: number; lastMilestone?: number; milestones?: number[];
+    pause?: StreakPause; reminder?: { on: boolean; time: string };
+  };
   today: { xp: number; coins: number; xpCap: number; coinsCap: number };
   tasks: PointsTask[];
   settings: { leaderboardOptOut: boolean; studyGroup: string | null };
   recent: PointsEntry[];
 }
+export interface StreakPause { active: boolean; from: string | null; until: string | null; daysLeft: number; usedThisSemester: boolean; maxDays: number }
 export interface PointsReply { award: PointsAward | null; me: PointsSummary }
 export type RewardKind = 'discount' | 'merch' | 'print_quota' | 'priority_event';
 export interface Reward {
@@ -68,4 +74,12 @@ export const pointsChanged = () => { if (typeof window !== 'undefined') window.d
 /** Almaty date of now, the key of the once-a-day «first open» request */
 export function almatyToday(now = new Date()): string {
   return new Date(now.getTime() + 5 * 3600_000).toISOString().slice(0, 10);
+}
+
+/** the reminder times a student may pick (the server accepts 19:00–21:00) */
+export const REMINDER_TIMES = ['19:00', '19:30', '20:00', '20:30', '21:00'];
+
+/** the milestone to celebrate on this device: reached on the server and newer than the last one shown here */
+export function milestoneToShow(last: number | undefined, seen: number): number {
+  return last && last > seen ? last : 0;
 }

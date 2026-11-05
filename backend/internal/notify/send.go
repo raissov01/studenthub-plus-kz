@@ -144,7 +144,7 @@ func (d *Dispatcher) accept(ctx context.Context, userID int64, c Category, text,
 			state = "dropped"
 		}
 		at := now
-		if state == "pending" {
+		if state == "pending" && kind != "order" {
 			at = prefs.QuietEnds(now)
 		}
 		return tx.QueryRow(ctx, `insert into notify_outbox(user_id,category,text,not_before,created_at,kind,delivery_key,notification_id,reply_markup,state,done_at)
@@ -152,6 +152,35 @@ func (d *Dispatcher) accept(ctx context.Context, userID int64, c Category, text,
 			userID, string(c), text, at, now, kind, key, inboxID, opts.ReplyMarkup, state).Scan(&id)
 	})
 	return id, state, err
+}
+
+// Order sends a transactional café order update (CatCafe only): the inbox row is kept as usual, but the
+// message skips quiet hours and the daily cap and is never deferred or retried later. A pickup notice
+// that arrives tomorrow is worse than none; the order screen shows the same state anyway.
+func Order(ctx context.Context, userID int64, text string, opts Opts) (Result, error) {
+	d, err := dispatcher(ctx)
+	if err != nil {
+		return "", err
+	}
+	return d.Order(ctx, userID, text, opts)
+}
+func (d *Dispatcher) Order(ctx context.Context, userID int64, text string, opts Opts) (Result, error) {
+	return d.send(ctx, userID, CatCafe, text, "order", opts)
+}
+
+// OrderIn is Order for another transactional category (CatPrint): same rules, its own inbox label.
+func OrderIn(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
+	d, err := dispatcher(ctx)
+	if err != nil {
+		return "", err
+	}
+	return d.OrderIn(ctx, userID, c, text, opts)
+}
+func (d *Dispatcher) OrderIn(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
+	if !c.transactional() {
+		return "", errors.New("notify: OrderIn takes only a transactional category")
+	}
+	return d.send(ctx, userID, c, text, "order", opts)
 }
 
 // Send persists before dispatch. No category, including moderation, bypasses this path.
@@ -163,12 +192,18 @@ func Send(ctx context.Context, userID int64, c Category, text string, opts Opts)
 	return d.Send(ctx, userID, c, text, opts)
 }
 func (d *Dispatcher) Send(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
-	id, state, err := d.accept(ctx, userID, c, text, "direct", opts)
+	if c.transactional() {
+		return "", errors.New("notify: café and print updates go through Order / OrderIn")
+	}
+	return d.send(ctx, userID, c, text, "direct", opts)
+}
+func (d *Dispatcher) send(ctx context.Context, userID int64, c Category, text, kind string, opts Opts) (Result, error) {
+	id, state, err := d.accept(ctx, userID, c, text, kind, opts)
 	if err != nil {
 		return "", err
 	}
 	if state == "pending" {
-		if _, _, err := d.dispatch(ctx, userID, "direct", id, optsTime(opts)); err != nil {
+		if _, _, err := d.dispatch(ctx, userID, kind, id, optsTime(opts)); err != nil {
 			return "", err
 		}
 		if err := d.Pool.QueryRow(ctx, `select state from notify_outbox where id=$1`, id).Scan(&state); err != nil {
@@ -317,6 +352,9 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 			ids[i] = q.id
 		}
 		deferUntil := prefs.QuietEnds(now)
+		if kind == "order" {
+			deferUntil = now // transactional: no quiet hours, no cap, no deferral
+		}
 		var pause *time.Time
 		if err := tx.QueryRow(ctx, `select coalesce(telegram_id,0),paused_until from users where id=$1`, userID).Scan(&m.chatID, &pause); err != nil {
 			return err
@@ -328,6 +366,11 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 			deferUntil = prefs.QuietEnds(*pause)
 		}
 		if d.Token == "" && len(m.subs) == 0 {
+			if kind == "order" {
+				_, err := tx.Exec(ctx, `update notify_outbox set state='dropped',done_at=$2 where id=any($1)`, ids, now)
+				res.Dropped += len(ids)
+				return err
+			}
 			deferUntil = now.Add(retryBackoff)
 		}
 		if !deferUntil.After(now) {
@@ -339,7 +382,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 				if claimed {
 					deferUntil = nextDay(now, prefs)
 				}
-			} else {
+			} else if kind == "direct" {
 				n, err := sentToday(ctx, tx, userID, now)
 				if err != nil {
 					return err
@@ -366,7 +409,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 				text = telegramText(text, 3799)
 			}
 			partSize := textSize(text) + 2
-			if len(m.ids) > 0 && (kind == "direct" || size+partSize > 3900) {
+			if len(m.ids) > 0 && (kind != "digest" || size+partSize > 3900) {
 				break
 			}
 			m.ids = append(m.ids, q.id)
@@ -375,7 +418,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 			}
 			parts = append(parts, text)
 			size += partSize
-			if kind == "direct" {
+			if kind != "digest" {
 				m.markup = q.markup
 			} else if len(q.markup) > 0 {
 				var markup struct {
@@ -429,7 +472,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, userID int64, kind string, on
 				}
 			}
 			_, err := tx.Exec(finishCtx, `update notify_outbox set state=case when $4 or attempts >= $5 then 'dropped' else 'pending' end,
-    done_at=case when $4 or attempts >= $5 then $2::timestamptz end,claimed_at=null,not_before=$3 where id=any($1)`, m.ids, now, now.Add(retryBackoff), outcome.blocked, maxAttempts)
+    done_at=case when $4 or attempts >= $5 then $2::timestamptz end,claimed_at=null,not_before=$3 where id=any($1)`, m.ids, now, now.Add(retryBackoff), outcome.blocked || kind == "order", maxAttempts)
 			res.Failed++
 			return err
 		}
@@ -474,6 +517,12 @@ func (d *Dispatcher) Flush(ctx context.Context, now time.Time) (*FlushResult, er
 	if err != nil {
 		return nil, err
 	}
+	// an order update still pending (crash between accept and dispatch) is stale by now: inbox only
+	tag, err = d.Pool.Exec(ctx, `update notify_outbox set state='dropped',done_at=$1 where kind='order' and state='pending' and not_before<$2`, now, now.Add(-10*time.Minute))
+	if err != nil {
+		return nil, err
+	}
+	res.Dropped += int(tag.RowsAffected())
 	for _, uid := range users {
 		for _, kind := range []string{"direct", "digest"} {
 			// At most three direct calls and one digest can reserve a slot. One extra pass

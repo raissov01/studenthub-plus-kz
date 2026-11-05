@@ -6,16 +6,20 @@ import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
 import { Icon } from '@/components/ui';
 import { useConfig } from '@/lib/config';
+import { useAccount } from '@/lib/account';
+import { SECTIONS, sectionOfView, visibleTabs, type SectionId } from '@/lib/sections';
 import type { IconName } from '@/lib/types';
 
 export const OPEN_MENU = 'studenthub:menu';
 export const openMenu = () => window.dispatchEvent(new Event(OPEN_MENU));
 
 type Item = [string, IconName, string];
+const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'calendar'], ['courses', 'award'], ['deals', 'tag']];
 
 export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tt, go } = useApp();
+  const { tt, go, content } = useApp();
   const cfg = useConfig();
+  const role = useAccount().user?.role;
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -35,30 +39,37 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   }, [open, onClose]);
 
   if (!open) return null;
+  const clubs = !!(cfg.features as Partial<Record<string, boolean>>).clubs;
   const groups: [string, Item[]][] = [
-    [tt('Мүмкіндіктер', 'Возможности'), [
-      ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
-      ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
-      ['opps:events', 'calendar', tt('Іс-шаралар', 'Мероприятия')],
-      ['opps:courses', 'award', tt('Курстар', 'Курсы')],
-      ['bonus', 'tag', tt('Жеңілдіктер', 'Скидки')],
-    ]],
+    // the sections, each with its own sub-tabs (lib/sections.ts), listed under the name
+    [tt('Мүмкіндіктер', 'Возможности'), SECTION_MENU.map(([id, icon]): Item => [SECTIONS[id].view, icon, tt(...SECTIONS[id].label)])],
     [tt('Оқу', 'Учёба'), [
       ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
       ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
-      ['subjects', 'folder', tt('Пәндер', 'Предметы')],
+      ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
+      ...(cfg.features.courseqa ? [['qa', 'chat', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
     ]],
     [tt('Университет', 'Университет'), [
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
+      ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
+      ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as Item] : []),
+      ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
+      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
+      ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
+      ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
+      ...(cfg.features.roommates ? [['roommates', 'home', tt('Пәтерлес', 'Соседи по жилью')] as Item] : []),
+      ...(cfg.features.clubs ? [['clubs', 'user', tt('Клубтар', 'Клубы')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
       ['calendar', 'calendar', tt('Күнтізбе', 'Календарь')],
       ...(cfg.features.points ? [['points', 'trophy', tt('Ұпайлар', 'Баллы')] as Item] : []),
       ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
+      ...((role === 'admin' || role === 'university_staff') && (cfg.features.surveys || cfg.features.feedback || cfg.features.wellbeing)
+        ? [['voice', 'shield', tt('Студент дауысы: басқару', 'Голос студентов: управление')] as Item] : []),
     ]],
   ];
   return (
@@ -72,11 +83,19 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           {groups.map(([title, items]) => (
             <section key={title} className="drawer-group">
               <h2 className="drawer-title">{title}</h2>
-              {items.map(([to, icon, label]) => (
-                <button key={to} type="button" className="drawer-item" onClick={() => { onClose(); go(to); }}>
-                  <Icon n={icon} s={20} /><span>{label}</span>
-                </button>
-              ))}
+              {items.map(([to, icon, label]) => {
+                const [n, prm] = to.split(':');
+                const sec = sectionOfView(n, prm ?? '');
+                const tabs = sec ? visibleTabs(sec, { jobs: content.jobs, clubs, market: !!cfg.features.market }) : [];
+                const subId = 'dsub-' + to.replace(/\W/g, '-');
+                return (
+                  <button key={to} type="button" className="drawer-item" onClick={() => { onClose(); go(to); }} aria-describedby={tabs.length > 1 ? subId : undefined}>
+                    <Icon n={icon} s={20} />
+                    <span className="drawer-label"><span>{label}</span>
+                      {tabs.length > 1 ? <span className="drawer-sub" id={subId} aria-hidden="true">{tabs.map(t => tt(...t.label)).join(' · ')}</span> : null}</span>
+                  </button>
+                );
+              })}
             </section>
           ))}
         </nav>

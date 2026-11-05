@@ -1,6 +1,8 @@
 import type { RoadmapState } from '@/features/roadmap/logic';
 import type { CalPin, OwnDeadline } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
+import type { ScoreEntry } from '@/lib/scores';
+import type { TrackedApp } from '@/lib/applications';
 
 export type { IconName };
 export type Lang = 'kk' | 'ru' | 'en';
@@ -37,11 +39,38 @@ export interface Job extends Provenance {
   spec: string[];
   desc: LText;
   req: LText[];
+  /** which «Жұмыс» sub-tab: 'parttime' (default when absent), 'youthpractice', 'fulltime' (lib/sections.ts) */
+  subtype?: string;
 }
 export type OppType = 'mobility' | 'intl' | 'company' | 'grant';
+/** AI-structured item of the opportunity feed (GET /api/content, source 'feed', id 'feed-<n>'; docs/feeds.md) */
+export interface FeedMeta {
+  category: string;
+  source_id: string;
+  source_name: string;
+  /** the post the item was read from: always shown, the AI text is only a summary of it */
+  original_url: string;
+  apply_url: string;
+  event_date: string;
+  online: boolean;
+  eligibility: string;
+  funding: 'fully' | 'partly' | 'none' | 'unknown';
+  country: string;
+  /** an admin approved it; false = published automatically from a trusted source */
+  reviewed: boolean;
+  note: LText;
+  extra_sources: { name: string; url: string }[];
+  confidence: number;
+}
 export interface Opportunity extends Provenance {
+  /** 'admin' | 'student' | 'ambassador' | 'feed' ...; absent on sheet / data/*.json records */
+  source?: string;
+  /** present only on opportunity-feed records */
+  feed?: FeedMeta;
   id: string;
   type: OppType;
+  /** optional refinement of `type`: 'workandtravel', 'exchange', 'scholarship', 'competition' (lib/sections.ts oppPlace) */
+  subtype?: string;
   funded: boolean;
   title: LText;
   org: LText;
@@ -80,18 +109,7 @@ export interface Content {
   updated_at: string;
 }
 
-/* ---------- static demo data (lib/data) ---------- */
-export interface EventItem {
-  id: string;
-  day: number;
-  time: string;
-  cat: string;
-  cert: boolean;
-  past?: boolean;
-  title: LText;
-  place: LText;
-  desc: LText;
-}
+/* ---------- static reference data (lib/data) ---------- */
 export interface Course {
   id: string;
   title: LText;
@@ -103,14 +121,20 @@ export interface Course {
   skills: string[];
 }
 export interface DocItem { id: string; title: LText; why: LText; where: LText; need: LText[]; online: LText }
-export interface ClassItem { t: string; end: string; name: LText; room: string; kind: LText }
-export interface Payment {
-  year: number;
-  paid: number;
-  nextAmount: number;
-  nextDue: number;
-  history: { day: number; amount: number; via: LText }[];
-  change: { from: number; to: number; date: number; basis: LText };
+/** a class on a given day (from the student's own timetable): one name for both languages */
+export interface ClassItem { t: string; end: string; name: string; room: string; kind: string }
+/** one weekly class of the student's own timetable («Сабақ кестесі», stored on the device) */
+export interface TimetableEntry {
+  id: string;
+  name: string;
+  /** weekday, Monday = 0 … Sunday = 6 (lib/calendar weekdayMon) */
+  wd: number;
+  /** 'HH:MM' */
+  t: string;
+  end: string;
+  room: string;
+  /** lecture / practice / seminar …, free text, may be empty */
+  kind: string;
 }
 export interface Building {
   id: string;
@@ -158,13 +182,14 @@ export interface Profile {
   about: string;
   phone: string;
   email: string;
-  demo: boolean;
+  /** legacy: true only on old devices that picked the removed sample profile; load() replaces such a profile */
+  demo?: boolean;
 }
 export interface PlanItem { d: number; k: 'learn' | 'test' | 'review' | 'mock'; t: string; done: boolean }
 export interface Plan { id: string; subject: string; exam: string; lectures: number; hard: string; created: string; items: PlanItem[] }
 export interface Card { q: string; a: string }
 /** `subject`: the «Пәндер» subject id (lib/subjects.ts) a deck made from a note belongs to; older decks link by name */
-export interface Deck { id: string; name: string; cards: Card[]; demo?: boolean; subject?: string }
+export interface Deck { id: string; name: string; cards: Card[]; subject?: string }
 export interface ChatMsg { role: 'user' | 'assistant'; content: string }
 export interface AppState {
   v: 1;
@@ -180,13 +205,11 @@ export interface AppState {
   oppDocs: Record<string, Record<string, boolean>>;
   fav: Record<string, number>;
   read: Record<string, number>;
-  events: Record<string, { code: string }>;
   remind: Record<string, boolean>;
   done: Record<string, number>;
   certs: { title: string; org: string; date: string }[];
   plans: Plan[];
   decks: Deck[];
-  hideDemoDeck: boolean;
   chat: ChatMsg[];
   gpaPlan: { n: string; cr: number; g: string }[];
   photo?: string;
@@ -196,4 +219,11 @@ export interface AppState {
   deadlines: OwnDeadline[];
   /** «Күнтізбеге қосу»: opportunities, vacancies and events pinned into the calendar (lib/calendar.ts CalPin); added later */
   calendarPins: CalPin[];
+  /** «Сабақ кестесі»: the student's own weekly timetable (lib/timetable.ts); added later */
+  timetable: TimetableEntry[];
+  /** spec 04 «Бағалар»: own RK/exam scores and absences per subject (lib/scores.ts); added later, load() fills it in */
+  scores: ScoreEntry[];
+  /** spec 06 «Менің өтінімдерім»: applications with stage, follow-up and note (lib/applications.ts); added later,
+      load() fills it in and migrates the old `applied` marks */
+  applications: TrackedApp[];
 }

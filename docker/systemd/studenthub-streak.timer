@@ -1,0 +1,9 @@
+[Unit]
+Description=Student Hub streak reminders every 10 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/10:00 Asia/Almaty
+Persistent=true
+
+[Install]
+WantedBy=timers.target

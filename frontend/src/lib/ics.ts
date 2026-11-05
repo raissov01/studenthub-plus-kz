@@ -1,6 +1,6 @@
 /* «Кестені күнтізбеге қосу» (F5): the class schedule as an iCalendar file built in the browser (RFC 5545).
    CRLF line endings, lines folded at 75 octets without splitting a UTF-8 character, TZID Asia/Almaty with its
-   VTIMEZONE, one VEVENT per class repeating every weekday until the end of the semester, UIDs that stay the same
+   VTIMEZONE, one VEVENT per class repeating weekly on its own weekday(s) until the end of the semester, UIDs that stay the same
    between exports (so importing again updates the events instead of duplicating them). Pure: no DOM here. */
 
 export interface IcsClass {
@@ -12,12 +12,15 @@ export interface IcsClass {
   summary: string;
   location: string;
   description: string;
+  /** the weekdays it repeats on, Monday = 0 … Sunday = 6 (the student's own timetable: one day per class);
+      absent = every weekday */
+  days?: number[];
 }
 
 export const ICS_TZID = 'Asia/Almaty';
 /** Kazakhstan has been UTC+5 all year since 2024-03-01 */
 const OFFSET_MS = 5 * 3600_000;
-/** classes run on weekdays (the sample timetable is the same every weekday) */
+/** default class days when a class does not name its own */
 export const CLASS_DAYS = ['MO', 'TU', 'WE', 'TH', 'FR'] as const;
 
 const pad = (n: number, w = 2) => String(n).padStart(w, '0');
@@ -77,10 +80,13 @@ export function semesterRange(now: Date): { from: Date; until: Date } {
 }
 
 const WD = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-/** the first class day on or after `d` */
-function firstClassDay(d: Date): Date {
+const MON_FIRST = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+/** a class's BYDAY codes: its own weekdays, or Monday–Friday */
+const byDay = (c: IcsClass): string[] => (c.days?.length ? [...new Set(c.days)].filter(d => d >= 0 && d <= 6).sort().map(d => MON_FIRST[d]) : [...CLASS_DAYS]);
+/** the first day on or after `d` whose weekday is one of `days` */
+function firstClassDay(d: Date, days: readonly string[]): Date {
   const x = new Date(d);
-  while (!(CLASS_DAYS as readonly string[]).includes(WD[x.getUTCDay()])) x.setUTCDate(x.getUTCDate() + 1);
+  for (let i = 0; i < 7 && !days.includes(WD[x.getUTCDay()]); i++) x.setUTCDate(x.getUTCDate() + 1);
   return x;
 }
 
@@ -103,7 +109,6 @@ const VTIMEZONE = [
 
 export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: string; lang: 'kk' | 'ru' | 'en' }): string {
   const { from, until } = semesterRange(o.now);
-  const first = firstClassDay(from);
   // UNTIL is in UTC when DTSTART has a TZID (RFC 5545 3.3.10): the semester's last day, 23:59:59 Almaty
   const untilUtc = new Date(until.getTime() + 24 * 3600_000 - 1000 - OFFSET_MS);
   const stamp = utcStamp(o.now);
@@ -118,13 +123,14 @@ export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: s
     ...VTIMEZONE,
   ];
   for (const c of classes) {
+    const days = byDay(c), first = firstClassDay(from, days);
     lines.push(
       'BEGIN:VEVENT',
       `UID:class-${stableHash(c.key)}@studenthub`,
       `DTSTAMP:${stamp}`,
       `DTSTART;TZID=${ICS_TZID}:${local(first, c.start)}`,
       `DTEND;TZID=${ICS_TZID}:${local(first, c.end)}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${CLASS_DAYS.join(',')};UNTIL=${utcStamp(untilUtc)}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${days.join(',')};UNTIL=${utcStamp(untilUtc)}`,
       `SUMMARY:${escText(c.summary)}`,
       `LOCATION:${escText(c.location)}`,
       `DESCRIPTION:${escText(c.description)}`,

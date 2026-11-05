@@ -393,6 +393,14 @@ func plain(s string, max int) string {
 	return s
 }
 
+// CafeAction runs a café staff button ("cafe:a<order id>" accept, "cafe:r<order id>" ready) for the account
+// behind the update; internal/server glue sets it. The café package checks that the account is staff of
+// the order's café. next is the follow-up button (empty data: none) and link an optional URL button.
+var CafeAction func(ctx context.Context, userID int64, value string) (toast string, nextLabel, nextData, linkLabel, link string, err error)
+
+// PrintAction is the print shop's staff button ("print:p<job id>" printing, "print:r<job id>" ready); same contract.
+var PrintAction func(ctx context.Context, userID int64, value string) (toast string, nextLabel, nextData, linkLabel, link string, err error)
+
 func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 	L := s.L()
 	parts := strings.Split(cq.Data, ":")
@@ -426,6 +434,27 @@ func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 	}
 
 	switch action {
+	case "cafe", "print":
+		act := CafeAction
+		if action == "print" {
+			act = PrintAction
+		}
+		if act == nil {
+			return answer("", false)
+		}
+		toast, nextLabel, nextData, linkLabel, link, err := act(ctx, s.user.ID, value)
+		if err != nil {
+			return err
+		}
+		var kb [][]Button
+		if nextData != "" {
+			kb = append(kb, []Button{{Text: nextLabel, CallbackData: nextData}})
+		}
+		if link != "" {
+			kb = append(kb, []Button{{Text: linkLabel, URL: link}})
+		}
+		setKeyboard(kb)
+		return answer(toast, false)
 	case "lang":
 		if value != "kk" && value != "ru" {
 			return answer("", false)

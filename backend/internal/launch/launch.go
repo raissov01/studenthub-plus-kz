@@ -1,4 +1,4 @@
-// Package launch provides server-only launch settings and privacy-preserving monitoring.
+// Package launch provides privacy-preserving monitoring: client error reports and the admin health view.
 package launch
 
 import (
@@ -16,40 +16,15 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/ratelimit"
-	"github.com/raissov01/studenthub-plus-kz/backend/internal/settings"
 )
 
 func Routes(mux httpx.Router) {
 	mux.HandleFunc("POST /api/client-errors", auth.Write(ingest))
-	mux.HandleFunc("GET /api/admin/settings", auth.NeedRole(getSettings, "admin"))
-	mux.HandleFunc("PUT /api/admin/settings", auth.Write(auth.NeedRole(putSettings, "admin")))
 	mux.HandleFunc("GET /api/admin/health", auth.NeedRole(health, "admin"))
 }
 
 func internal(w http.ResponseWriter, r *http.Request) {
 	httpx.Error(w, r, http.StatusServiceUnavailable, "unavailable", httpx.MsgInternal)
-}
-func getSettings(w http.ResponseWriter, r *http.Request, _ *auth.User) {
-	show, err := settings.ShowDemo(r.Context())
-	if err != nil {
-		internal(w, r)
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]bool{"showDemo": show})
-}
-func putSettings(w http.ResponseWriter, r *http.Request, _ *auth.User) {
-	var b struct {
-		ShowDemo *bool `json:"showDemo"`
-	}
-	if err := strictDecode(r, &b); err != nil || b.ShowDemo == nil {
-		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
-		return
-	}
-	if err := settings.SetShowDemo(r.Context(), *b.ShowDemo); err != nil {
-		internal(w, r)
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]bool{"showDemo": *b.ShowDemo})
 }
 func strictDecode(r *http.Request, v any) error {
 	d := json.NewDecoder(http.MaxBytesReader(nil, r.Body, 8192))

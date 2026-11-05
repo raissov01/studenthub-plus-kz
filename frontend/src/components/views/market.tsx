@@ -36,7 +36,7 @@ function MarketCard({ it }: { it: MarketItem }) {
   );
 }
 
-function MarketGrid() {
+export function MarketGrid() {
   const { tt, L, go } = useApp();
   const acc = useAccount();
   const cfg = useConfig();

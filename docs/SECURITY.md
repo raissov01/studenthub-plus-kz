@@ -12,8 +12,9 @@ is listed separately. Rate limits are shared Postgres counters, with an in-memor
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
 
-The only write-guard exception is POST /api/telegram: Telegram's constant-time webhook
-secret check replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
+constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
+signature over the raw body) replaces browser origin/rate checks. All GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -44,27 +45,67 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
+Café (FEATURE_CAFE): money never passes through Student Hub. A Kaspi QR is issued in the café's own
+name through the café's cashier session (kaspi-pos sidecar, internal network, X-Internal-Api-Key);
+the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
+from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
+their café's orders through RLS; every order change is an append-only cafe_order_events row.
+Print shop (FEATURE_PRINT, docs/print.md): the same money rule and the café's Kaspi sidecar, with each
+shop's own cashier session in print_kaspi_sessions; the sidecar's single webhook reaches print jobs through
+the café endpoint (shopkit.RegisterOperations). Uploads are checked by magic bytes (PDF, JPEG, PNG,
+DOCX/XLSX/PPTX without macros), 20 MB each, per-student daily file and byte quotas; files get random
+names, are never public and are served only through 5-minute HMAC links bound to the file and the viewer
+(re-checked at serve time) as attachments with a sandboxing CSP; their bytes are deleted after the shop's
+retention period. No antivirus runs: the risk is documented in docs/print.md. Prices are recomputed from
+print_services/print_goods; a page count the server cannot make (Office files) is declared by the student
+and confirmed or changed by the operator, and a changed price needs the student's approval.
+University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
+answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
+keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
+under 5 hidden (complementary suppression in breakdowns). Anonymous feedback tickets have no author
+(CHECK); the sender keeps a 256-bit device token whose SHA-256 is stored, so the token-holding
+routes are callable without a session. Flagged (threat/profanity) tickets are held for admins.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |
 | ANY | `/api/` | anonymous (404 only) | no | no (fallback) | — |
+| DELETE | `/api/admin/cafes/{id}/kaspi` | admin | yes | yes | cafe |
+| DELETE | `/api/admin/cafes/{id}/staff/{userId}` | admin | yes | yes | cafe |
+| DELETE | `/api/admin/clubs/{id}/admins/{userId}` | admin | yes | yes | clubs |
 | DELETE | `/api/admin/content/{id}` | admin | yes | yes | — |
 | DELETE | `/api/admin/market/bans/{userId}` | admin | yes | yes | market |
+| DELETE | `/api/admin/print/shops/{id}/kaspi` | admin | yes | yes | print |
+| DELETE | `/api/admin/print/shops/{id}/staff/{userId}` | admin | yes | yes | print |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
 | DELETE | `/api/ambassador/pause` | ambassador, admin (active term) | yes | no (no input) | ambassador |
+| DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
+| DELETE | `/api/clubs/{id}/members/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
 | DELETE | `/api/employer/members/{userId}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
+| DELETE | `/api/events/{id}/exhibitors/{employerId}` | ambassador, university_staff (own university), admin | yes | yes | fairs |
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | DELETE | `/api/market/items/{id}` | signed-in | yes | yes | market |
 | DELETE | `/api/me` | signed-in | yes | yes | — |
 | DELETE | `/api/me/push` | signed-in (own rows only, RLS) | yes | yes | webpush |
+| DELETE | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | DELETE | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| DELETE | `/api/print/uploads/{id}` | signed-in (own upload not yet in a job) | yes | yes | print |
+| DELETE | `/api/qa/answers/{id}` | signed-in | yes | yes | courseqa |
+| DELETE | `/api/qa/questions/{id}` | signed-in | yes | yes | courseqa |
 | DELETE | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
+| DELETE | `/api/staff/surveys/{id}` | university_staff (bound university), admin; draft or closed | yes | yes | surveys |
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
+| GET | `/api/admin/cafe/orders` | admin | no | yes | cafe |
+| GET | `/api/admin/cafe/orders/{id}` | admin | no | yes | cafe |
+| GET | `/api/admin/cafes` | admin | no | no (no input) | cafe |
+| GET | `/api/admin/clubs` | admin | no | no (no input) | clubs |
 | GET | `/api/admin/content` | admin | no | yes | — |
 | GET | `/api/admin/content/{id}` | admin | no | yes | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
+| GET | `/api/admin/feedback/recipients` | admin | no | yes | feedback |
+| GET | `/api/admin/feeds` | admin | no | no (no input) | feeds |
+| GET | `/api/admin/feeds/items` | admin | no | yes | feeds |
 | GET | `/api/admin/health` | admin | no | no (no input) | — |
 | GET | `/api/admin/market/items` | admin | no | yes | market |
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
@@ -73,9 +114,11 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/admin/points/redemptions` | admin | no | yes | points |
 | GET | `/api/admin/points/rewards` | admin | no | no (no input) | points |
 | GET | `/api/admin/points/users/{userId}` | admin | no | yes | points |
+| GET | `/api/admin/print/jobs` | admin | no | yes | print |
+| GET | `/api/admin/print/jobs/{id}` | admin | no | yes | print |
+| GET | `/api/admin/print/shops` | admin | no | no (no input) | print |
 | GET | `/api/admin/queue` | admin | no | yes | — |
 | GET | `/api/admin/reports` | admin | no | yes | — |
-| GET | `/api/admin/settings` | admin | no | no (no input) | — |
 | GET | `/api/admin/summary` | admin | no | no (no input) | — |
 | GET | `/api/admin/university-staff` | admin | no | no (no input) | b2b |
 | GET | `/api/admin/users` | admin | no | yes | — |
@@ -87,17 +130,32 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/ambassador/stats` | ambassador (active term); admin (any university) | no | yes | ambassador |
 | GET | `/api/announcements` | anonymous | no | yes | b2b |
 | GET | `/api/applications/my` | signed-in | no | no (no input) | b2b |
+| GET | `/api/cafe/orders/mine` | signed-in (own orders, RLS) | no | no (no input) | cafe |
+| GET | `/api/cafe/orders/{id}` | signed-in (own order or staff of its café, RLS) | no | yes | cafe |
+| GET | `/api/cafe/staff/menu` | signed-in (staff of the café, admin) | no | yes | cafe |
+| GET | `/api/cafe/staff/orders` | signed-in (café staff; own café only, RLS) | no | yes | cafe |
+| GET | `/api/cafes` | anonymous | no | yes | cafe |
+| GET | `/api/cafes/{id}/menu` | anonymous | no | yes | cafe |
 | GET | `/api/certificates/{code}` | anonymous | no | yes | ambassador |
+| GET | `/api/clubs` | anonymous (own membership/admin flags when signed in) | no | yes | clubs |
+| GET | `/api/clubs/my` | signed-in (own rows, RLS) | no | no (no input) | clubs |
+| GET | `/api/clubs/{id}` | anonymous (active clubs; archived and pending posts for club admins, admin) | no | yes | clubs |
+| GET | `/api/clubs/{id}/members` | club admin of this club (RLS), admin | no | yes | clubs |
 | GET | `/api/config` | anonymous | no | no (no input) | — |
 | GET | `/api/content` | anonymous | no | no (no input) | — |
 | GET | `/api/cron` | cron (CRON_SECRET) | no | yes | — |
 | GET | `/api/cron/ambassador` | cron (CRON_SECRET) | no | yes | ambassador |
 | GET | `/api/cron/b2b` | cron (CRON_SECRET) | no | yes | b2b |
 | GET | `/api/cron/events` | cron (CRON_SECRET) | no | yes | events |
+| GET | `/api/cron/fairs` | cron (CRON_SECRET) | no | yes | fairs |
+| GET | `/api/cron/feedback` | cron (CRON_SECRET) | no | yes | feedback |
 | GET | `/api/cron/market` | cron (CRON_SECRET) | no | yes | market |
 | GET | `/api/cron/mentors` | cron (CRON_SECRET) | no | yes | mentors |
 | GET | `/api/cron/notify` | cron (CRON_SECRET) | no | yes | — |
+| GET | `/api/cron/streak` | cron (CRON_SECRET) | no | yes | streak |
 | GET | `/api/discounts/checks` | anonymous | no | no (no input) | — |
+| GET | `/api/employer/fairs` | employer (verified company; own booths) | no | no (no input) | fairs |
+| GET | `/api/employer/fairs/{id}/checkins` | employer (verified company; only fields each student shared, the rest as a count) | no | yes | fairs |
 | GET | `/api/employer/jobs` | employer (own company; owner for membership/close/transfer) | no | no (no input) | b2b |
 | GET | `/api/employer/jobs/{id}/applications` | employer (own company; owner for membership/close/transfer) | no | yes | b2b |
 | GET | `/api/employer/me` | signed-in | no | no (no input) | b2b |
@@ -110,12 +168,21 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/events/{id}/attendees` | anonymous (count); names for organizers and registered students, never university_staff (count 1–4 as "< 5") | no | yes | events |
 | GET | `/api/events/{id}/attendees.csv` | ambassador, university_staff (own university; university_staff: aggregate metric,value CSV only), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/checkin/live` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/events/{id}/exhibitors` | anonymous (visible event; booth QR links and scan counts for organizers) | no | yes | fairs |
 | GET | `/api/events/{id}/feedback` | ambassador, university_staff (own university; university_staff: distribution from 5 answers, no comments), admin; student (approved mentor, own mentoring event) | no | yes | events |
 | GET | `/api/events/{id}/ics` | anonymous | no | yes | events |
+| GET | `/api/events/{id}/my-booths` | signed-in (own scans) | no | yes | fairs |
 | GET | `/api/events/{id}/regs` | ambassador, university_staff (own university; university_staff: counters only, 1–4 as "< 5", empty regs), admin; student (approved mentor, own mentoring event) | no | yes | events |
+| GET | `/api/feedback/mine` | signed-in (own signed tickets) | no | no (no input) | feedback |
+| GET | `/api/feedback/photos/{name}` | university_staff (assigned recipient), admin | no | yes | feedback |
+| GET | `/api/feedback/recipients` | signed-in (own university's active recipients) | no | no (no input) | feedback |
 | GET | `/api/health` | anonymous | no | no (no input) | — |
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
+| GET | `/api/lostfound/mine` | signed-in | no | no (no input) | lostfound |
+| GET | `/api/lostfound/photos/{name}` | anonymous (active post); uploader or admin otherwise | no | yes | lostfound |
+| GET | `/api/lostfound/posts` | anonymous (no author identity in any answer) | no | yes | lostfound |
+| GET | `/api/lostfound/posts/{id}` | anonymous (claims: the two parties; contacts only after confirmation) | no | yes | lostfound |
 | GET | `/api/market/items` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/items/{id}` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/me` | signed-in | no | no (no input) | market |
@@ -133,7 +200,18 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/points/me` | signed-in (own wallet, RLS) | no | no (no input) | points |
 | GET | `/api/points/redemptions` | signed-in (own requests) | no | no (no input) | points |
 | GET | `/api/points/rewards` | signed-in | no | no (no input) | points |
+| GET | `/api/portfolio/certificates` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/portfolio/files/{name}` | anonymous (public file on an enabled portfolio page; 128-bit random names); owner otherwise (403) | no | yes | portfolio |
 | GET | `/api/portfolio/me` | signed-in | no | no (no input) | portfolio |
+| GET | `/api/print/files/{id}` | signed link (HMAC secret from SESSION_SECRET, 5 min, bound to file + viewer; viewer re-checked: the file's student or staff of the job's shop) | no | yes | print |
+| GET | `/api/print/jobs/mine` | signed-in (own jobs, RLS) | no | no (no input) | print |
+| GET | `/api/print/jobs/{id}` | signed-in (own job or staff of its shop, RLS) | no | yes | print |
+| GET | `/api/print/shops` | anonymous | no | no (no input) | print |
+| GET | `/api/print/shops/{id}` | anonymous | no | yes | print |
+| GET | `/api/print/staff/catalog` | signed-in (staff of the shop, admin) | no | yes | print |
+| GET | `/api/print/staff/jobs` | signed-in (print shop staff; own shop only, RLS) | no | yes | print |
+| GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
+| GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
 | GET | `/api/quiz/attempts/{id}` | signed-in (own attempt, RLS) | no | yes | quiz |
 | GET | `/api/quiz/attempts/{id}/retry` | signed-in (own attempt, RLS) | no | yes | quiz |
@@ -150,13 +228,30 @@ the API takes only an action id, a reward id and an idempotency key.
 | GET | `/api/quiz/quizzes/{id}/stats` | signed-in (owner only; aggregates, no player identities) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}` | anonymous (share link: published public/unlisted quizzes by 10-char code, no answer keys) | no | yes | quiz |
 | GET | `/api/quiz/s/{code}/meta` | anonymous (share preview for generateMetadata: title, description, counts, cover; no author, no questions) | no | yes | quiz |
+| GET | `/api/roommates/listings` | signed-in (strict gender rule applied) | no | yes | roommates |
+| GET | `/api/roommates/listings/{id}` | signed-in (strict gender rule applied) | no | yes | roommates |
+| GET | `/api/roommates/me` | signed-in | no | no (no input) | roommates |
+| GET | `/api/roommates/requests` | signed-in | no | no (no input) | roommates |
+| GET | `/api/staff/feedback` | university_staff (assigned recipients), admin; never an anonymous sender | no | yes | feedback |
+| GET | `/api/staff/feedback/{id}` | university_staff (assigned recipient), admin | no | yes | feedback |
+| GET | `/api/staff/surveys` | university_staff (bound university), admin | no | no (no input) | surveys |
+| GET | `/api/staff/surveys/{id}` | university_staff (bound university), admin | no | yes | surveys |
+| GET | `/api/staff/surveys/{id}/results` | university_staff (bound university), admin; aggregates only, groups under 5 hidden | no | yes | surveys |
+| GET | `/api/staff/surveys/{id}/results.csv` | university_staff (bound university), admin; aggregate CSV only, no texts, under 5 hidden | no | yes | surveys |
+| GET | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | no | yes | wellbeing |
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
+| GET | `/api/surveys` | student, ambassador (consented; only surveys whose university/audience match) | no | no (no input) | surveys |
+| GET | `/api/surveys/{id}` | student, ambassador (consented; eligible surveys only, else 404) | no | yes | surveys |
 | GET | `/api/university/me` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/posts` | university_staff (bound university) | no | no (no input) | b2b |
 | GET | `/api/university/stats` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
 | GET | `/api/university/stats.csv` | university_staff (bound university); 1–4 as "< 5", faculties/courses under 5 merged into "other" | no | yes | b2b |
+| GET | `/api/wellbeing/contacts` | anonymous | no | yes | wellbeing |
 | PATCH | `/api/admin/ambassadors/{id}` | admin | yes | yes | ambassador |
+| PATCH | `/api/admin/clubs/{id}` | admin | yes | yes | clubs |
+| PATCH | `/api/admin/feedback/recipients/{id}` | admin | yes | yes | feedback |
 | PATCH | `/api/admin/queue/{id}` | admin | yes | yes | — |
+| PATCH | `/api/clubs/{id}` | club admin of this club (RLS, page fields only), admin | yes | yes | clubs |
 | PATCH | `/api/employer/jobs/{id}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | PATCH | `/api/employer/me` | signed-in | yes | yes | b2b |
 | PATCH | `/api/events/{id}` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
@@ -164,17 +259,30 @@ the API takes only an action id, a reward id and an idempotency key.
 | PATCH | `/api/me` | signed-in | yes | yes | — |
 | PATCH | `/api/mentors/me` | signed-in | yes | yes | mentors |
 | PATCH | `/api/points/settings` | signed-in (consented) | yes | yes | points |
+| PATCH | `/api/points/streak` | signed-in (consented; reminder on/off, 19:00–21:00) | yes | yes | streak |
+| PATCH | `/api/portfolio/certificates/{id}` | signed-in (owner, RLS) | yes | yes | portfolio |
 | PATCH | `/api/portfolio/settings` | signed-in | yes | yes | portfolio |
 | PATCH | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | POST | `/api/admin/ambassadors/expire` | admin | yes | no (no input) | ambassador |
 | POST | `/api/admin/ambassadors/{id}/certificate` | admin | yes | yes | ambassador |
 | POST | `/api/admin/ambassadors/{id}/end` | admin | yes | yes | ambassador |
+| POST | `/api/admin/cafes` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/check` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/login/start` | admin | yes (+ 6/admin/hour) | yes | cafe |
+| POST | `/api/admin/cafes/{id}/kaspi/login/verify` | admin | yes | yes | cafe |
+| POST | `/api/admin/cafes/{id}/staff` | admin | yes | yes | cafe |
+| POST | `/api/admin/clubs` | admin | yes | yes | clubs |
+| POST | `/api/admin/clubs/{id}/admins` | admin | yes | yes | clubs |
 | POST | `/api/admin/content` | admin | yes | yes | — |
 | POST | `/api/admin/content/validate` | admin | yes | yes | — |
 | POST | `/api/admin/content/{id}/hide` | admin | yes | yes | — |
 | POST | `/api/admin/content/{id}/unhide` | admin | yes | yes | — |
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
+| POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
+| POST | `/api/admin/feeds/items/{id}/unpublish` | admin | yes | yes | feeds |
+| POST | `/api/admin/feeds/sources/{id}` | admin | yes | yes | feeds |
+| POST | `/api/admin/lostfound/moderate` | admin | yes | yes | lostfound |
 | POST | `/api/admin/market/bans` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/hide` | admin | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/restore` | admin | yes | yes | market |
@@ -185,12 +293,20 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/admin/points/redemptions/{id}/reject` | admin | yes | yes | points |
 | POST | `/api/admin/points/rewards` | admin | yes | yes | points |
 | POST | `/api/admin/points/users/{userId}/adjust` | admin | yes | yes | points |
+| POST | `/api/admin/print/shops` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/check` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/login/start` | admin | yes (+ 6/admin/hour, shared with cafés) | yes | print |
+| POST | `/api/admin/print/shops/{id}/kaspi/login/verify` | admin | yes | yes | print |
+| POST | `/api/admin/print/shops/{id}/staff` | admin | yes | yes | print |
+| POST | `/api/admin/qa/moderate` | admin | yes | yes | courseqa |
+| POST | `/api/admin/qa/questions/{id}/lock` | admin | yes | yes | courseqa |
 | POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
 | POST | `/api/admin/queue/{id}/reject` | admin | yes | yes | — |
 | POST | `/api/admin/quiz/quizzes/{id}/hide` | admin | yes | yes | quiz |
 | POST | `/api/admin/quiz/quizzes/{id}/restore` | admin | yes | yes | quiz |
 | POST | `/api/admin/reports/dismiss` | admin | yes | yes | — |
 | POST | `/api/admin/role` | admin | yes | yes | — |
+| POST | `/api/admin/roommates/moderate` | admin | yes | yes | roommates |
 | POST | `/api/admin/university-staff` | admin | yes | yes | b2b |
 | POST | `/api/ambassador/apply` | signed-in | yes | yes | ambassador |
 | POST | `/api/ambassador/mentors/match` | ambassador (active team lead, own university) | yes | yes | mentors |
@@ -206,8 +322,25 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/auth/logout` | anonymous | yes | no (no input) | — |
 | POST | `/api/auth/telegram/webapp` | anonymous | yes | yes | — |
 | POST | `/api/auth/telegram/widget` | anonymous | yes | yes | — |
+| POST | `/api/cafe/kaspi/webhook` | kaspi-pos sidecar (HMAC-SHA256 secret CAFE_KASPI_WEBHOOK_SECRET; each delivery stored once) | no | yes | cafe |
+| POST | `/api/cafe/orders` | signed-in (consented; prices recomputed from the menu, client totals ignored; idempotency key; max 2 active orders, daily cap, pay-ahead after no-shows) | yes (+ per-user order limit) | yes | cafe |
+| POST | `/api/cafe/orders/{id}/cancel` | signed-in (own order, only before the café accepts it) | yes | yes | cafe |
+| POST | `/api/cafe/orders/{id}/pay` | signed-in (own unpaid Kaspi order; idempotent: a live QR is returned, one invoice request at a time) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/categories` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/items` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/menu/items/{id}/availability` | signed-in (staff of the item's café, admin) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/accept` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/decline` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/no-show` | signed-in (staff of the order's café; after pickup time + grace) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/picked-up` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/ready` | signed-in (staff of the order's café) | yes | yes | cafe |
+| POST | `/api/cafe/staff/orders/{id}/refunded` | signed-in (manager of the order's café, admin) | yes | yes | cafe |
 | POST | `/api/chat` | anonymous | yes | yes | — |
 | POST | `/api/client-errors` | anonymous | yes | yes | — |
+| POST | `/api/clubs/leader-applications` | signed-in (consented; goes to the moderation queue) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/join` | signed-in (consented; RLS: own pending row, request-mode clubs only) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/posts` | club admin of this club (RLS; moderated) | yes | yes | clubs |
+| POST | `/api/clubs/{id}/requests/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
 | POST | `/api/discounts/{id}/check` | signed-in (consented) | yes | yes | — |
 | POST | `/api/employer/applications/{id}/status` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | POST | `/api/employer/apply` | signed-in | yes | yes | b2b |
@@ -221,18 +354,30 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/employer/rules/accept` | employer (own company; owner for membership/close/transfer) | yes | no (no input) | b2b |
 | POST | `/api/employer/transfer` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | POST | `/api/events` | anonymous | yes | yes | — |
+| POST | `/api/events/booth-checkin` | signed-in (consented; signed static booth token, start−30 min … end+1 h) | yes | yes | fairs |
 | POST | `/api/events/checkin` | anonymous | yes | yes | events |
 | POST | `/api/events/checkin/claim` | signed-in | yes | yes | events |
 | POST | `/api/events/create` | ambassador, university_staff (own university), admin | yes | yes | events |
 | POST | `/api/events/{id}/checkin/manual` | ambassador, university_staff (own university; university_staff: by e-ticket code only), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/checkin/revoke` | ambassador, university_staff (own university; university_staff: refused (needs a user id)), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/checkin/start` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/events/{id}/exhibitors` | ambassador, university_staff (own university), admin (career events only; verified company by BIN) | yes | yes | fairs |
 | POST | `/api/events/{id}/feedback` | signed-in | yes | yes | events |
 | POST | `/api/events/{id}/finish` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
 | POST | `/api/events/{id}/register` | signed-in | yes | yes | events |
 | POST | `/api/events/{id}/teams` | ambassador, university_staff (own university), admin; student (approved mentor, own mentoring event) | yes | yes | events |
+| POST | `/api/feedback/lookup` | anonymous (ticket token is the credential) | yes | yes | feedback |
+| POST | `/api/feedback/tickets` | student, ambassador (consented); 5/day per account; threats need ack and are held | yes | yes | feedback |
+| POST | `/api/feedback/tickets/{id}/messages` | anonymous (ticket token) or signed author | yes | yes | feedback |
+| POST | `/api/feedback/tickets/{id}/read` | anonymous (ticket token) or signed author | yes | yes | feedback |
 | POST | `/api/jobs/{id}/apply` | signed-in | yes | yes | b2b |
 | POST | `/api/jobs/{id}/report` | signed-in | yes | yes | b2b |
+| POST | `/api/lostfound/claims/{id}/decide` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/claims/{id}/returned` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/photos` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts/{id}/claims` | signed-in | yes | yes | lostfound |
+| POST | `/api/lostfound/posts/{id}/close` | signed-in | yes | yes | lostfound |
 | POST | `/api/market/items` | signed-in | yes | yes | market |
 | POST | `/api/market/items/{id}/extend` | signed-in | yes | yes | market |
 | POST | `/api/market/items/{id}/given` | signed-in | yes | yes | market |
@@ -256,8 +401,30 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/points/claim` | signed-in (consented; device-only actions: XP only, no coins, capped; 20/user/hour) | yes (+ per-user claim limit) | yes | points |
 | POST | `/api/points/daily` | signed-in (consented; once per Almaty day) | yes | no (no input) | points |
 | POST | `/api/points/freeze` | signed-in (consented; at most 1 freeze held) | yes | yes | points |
+| POST | `/api/points/pause` | signed-in (consented; once per semester, 1–14 days) | yes | yes | streak |
 | POST | `/api/points/redeem` | signed-in (consented; wallet row locked, coins >= 0 CHECK, idempotency key; 10/user/hour) | yes (+ per-user redeem limit) | yes | points |
+| POST | `/api/portfolio/certificates` | signed-in (consented) | yes | yes | portfolio |
 | POST | `/api/portfolio/slug` | signed-in | yes | no (no input) | portfolio |
+| POST | `/api/print/jobs` | signed-in (consented; repriced on the server; idempotency key; active/daily job caps) | yes (+ per-user job limit) | yes | print |
+| POST | `/api/print/jobs/{id}/cancel` | signed-in (own job, only before printing) | yes | yes | print |
+| POST | `/api/print/jobs/{id}/pay` | signed-in (own unpaid Kaspi job with an agreed price; one invoice request at a time) | yes | yes | print |
+| POST | `/api/print/jobs/{id}/price` | signed-in (own job with a proposed price) | yes | yes | print |
+| POST | `/api/print/quote` | signed-in (own free uploads; prices from the shop's catalogue, client totals ignored) | yes (+ per-user quote limit) | yes | print |
+| POST | `/api/print/staff/goods` | signed-in (manager of the shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/goods/{id}/stock` | signed-in (staff of the goods' shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/decline` | signed-in (staff of the job's shop) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/no-show` | signed-in (staff of the job's shop; after ready + grace) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/picked-up` | signed-in (staff of the job's shop) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/price` | signed-in (staff of the job's shop; unpaid new job; a change needs a reason and the student's approval) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/printing` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/ready` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/refunded` | signed-in (manager of the job's shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/services` | signed-in (manager of the shop, admin) | yes | yes | print |
+| POST | `/api/print/uploads` | signed-in (consented; magic bytes, 20 MB, daily file/byte quota; private file) | yes (+ per-user upload limit) | yes | print |
+| POST | `/api/qa/questions` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/questions/{id}/accept` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/questions/{id}/answers` | signed-in | yes | yes | courseqa |
+| POST | `/api/qa/vote` | signed-in | yes | yes | courseqa |
 | POST | `/api/quiz/generate/cards-from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
 | POST | `/api/quiz/generate/from-files` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
 | POST | `/api/quiz/generate/from-text` | signed-in (consented; AI per-minute limit and daily unit budget) | yes | yes | quiz |
@@ -272,12 +439,31 @@ the API takes only an action id, a reward id and an idempotency key.
 | POST | `/api/quiz/quizzes/{id}/share/reset` | signed-in (owner only) | yes | yes | quiz |
 | POST | `/api/quiz/s/{code}/clone` | signed-in (consented; share code grants read) | yes | yes | quiz |
 | POST | `/api/reports` | signed-in | yes | yes | — |
+| POST | `/api/roommates/gender` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings/{id}/close` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/listings/{id}/requests` | signed-in | yes | yes | roommates |
+| POST | `/api/roommates/requests/{id}/decide` | signed-in | yes | yes | roommates |
+| POST | `/api/staff/feedback/{id}/reply` | university_staff (assigned recipient), admin | yes | yes | feedback |
+| POST | `/api/staff/feedback/{id}/status` | university_staff (assigned recipient), admin | yes | yes | feedback |
+| POST | `/api/staff/surveys` | university_staff (bound university), admin | yes | yes | surveys |
+| POST | `/api/staff/surveys/{id}/close` | university_staff (bound university), admin | yes | yes | surveys |
+| POST | `/api/staff/surveys/{id}/publish` | university_staff (bound university), admin | yes | yes | surveys |
 | POST | `/api/submissions` | signed-in | yes | yes | — |
+| POST | `/api/surveys/{id}/responses` | student, ambassador (consented; once per survey via HMAC marker, 409 after) | yes | yes | surveys |
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
+| PUT | `/api/admin/cafes/{id}` | admin | yes | yes | cafe |
 | PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
+| PUT | `/api/admin/feedback/recipients/{id}/staff` | admin | yes | yes | feedback |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
-| PUT | `/api/admin/settings` | admin | yes | yes | — |
+| PUT | `/api/admin/print/shops/{id}` | admin | yes | yes | print |
+| PUT | `/api/cafe/staff/menu/categories/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
+| PUT | `/api/cafe/staff/menu/items/{id}` | signed-in (manager of the café, admin) | yes | yes | cafe |
 | PUT | `/api/me/notifications` | signed-in | yes | yes | — |
 | PUT | `/api/portfolio/items` | signed-in | yes | yes | portfolio |
+| PUT | `/api/print/staff/goods/{id}` | signed-in (manager of the shop, admin) | yes | yes | print |
+| PUT | `/api/print/staff/services/{id}` | signed-in (manager of the shop, admin) | yes | yes | print |
 | PUT | `/api/quiz/quizzes/{id}` | signed-in (owner only, RLS) | yes | yes | quiz |
+| PUT | `/api/staff/surveys/{id}` | university_staff (bound university), admin; drafts only (published: closing date) | yes | yes | surveys |
+| PUT | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | yes | yes | wellbeing |

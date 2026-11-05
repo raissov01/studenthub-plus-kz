@@ -244,13 +244,13 @@ against the Labour Code of Kazakhstan before launch.
       «қашықтан», requirements, «қалай өтінім беріледі», required yes/no «18-ге толмағандарға сай ма?»; show «тексеруде» for pending jobs;
       close / extend (+30 days) buttons; expired badge.
 - [ ] Applications per job: only `sharedFields`; buttons «Қаралды», «Шақыру» (with message textarea), «Бас тарту»; days waiting.
-- [ ] Job lists: merge `/api/content` jobs (`source: "employer"`) with the `JOBS` demo array; demos keep the «үлгі» label;
+- [ ] Job lists: `/api/content` jobs (`source: "employer"` and others); demo records are never served;
       existing filters (`noexp`, `daily`, `remote`, `near`) work on `tags`; hide `adult_only` jobs for students whose `isAdult` is not true.
 - [ ] `VIEWS.job` for real jobs: «Тексерілген» badge with explanation, address / remote, «Әдетте N күнде жауап береді» and
       «өтінімдердің X%-ына жауап берді» when `response` is not null, «Шағым» button (reason picker).
 - [ ] «Өтінім жіберу» on a real job: sign-in required → checklist of fields (name, course + specialty, skills, experience,
       Telegram username, phone optional, letter ≤ 300) → confirm «осы деректер "<компания>" компаниясына жіберіледі» → send.
-      Demo jobs keep the local `S.applied` behaviour.
+      Non-employer jobs keep the local `S.applied` behaviour.
 - [ ] `VIEWS.mine`: real application statuses (sent / viewed / invited + message / rejected / no_response / withdrawn) and «Кері қайтару».
 - [ ] `#/university` (staff): publish announcement / opportunity (with `docs`, `steps`, `deadline`), list / hide / delete own posts,
       link to the events organizer screens, statistics with «< 5», CSV download.

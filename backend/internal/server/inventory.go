@@ -74,8 +74,9 @@ is listed separately. Rate limits are shared Postgres counters, with an in-memor
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
 
-The only write-guard exception is POST /api/telegram: Telegram's constant-time webhook
-secret check replaces browser origin/rate checks. All six GET cron endpoints mutate data,
+The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
+constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
+signature over the raw body) replaces browser origin/rate checks. All GET cron endpoints mutate data,
 but accept only a nonempty CRON_SECRET bearer token and record successful completion.
 Tests reject missing/wrong secrets and ensure failed attempts do not advance cron state.
 
@@ -106,6 +107,26 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
+Café (FEATURE_CAFE): money never passes through Student Hub. A Kaspi QR is issued in the café's own
+name through the café's cashier session (kaspi-pos sidecar, internal network, X-Internal-Api-Key);
+the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
+from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only
+their café's orders through RLS; every order change is an append-only cafe_order_events row.
+Print shop (FEATURE_PRINT, docs/print.md): the same money rule and the café's Kaspi sidecar, with each
+shop's own cashier session in print_kaspi_sessions; the sidecar's single webhook reaches print jobs through
+the café endpoint (shopkit.RegisterOperations). Uploads are checked by magic bytes (PDF, JPEG, PNG,
+DOCX/XLSX/PPTX without macros), 20 MB each, per-student daily file and byte quotas; files get random
+names, are never public and are served only through 5-minute HMAC links bound to the file and the viewer
+(re-checked at serve time) as attachments with a sandboxing CSP; their bytes are deleted after the shop's
+retention period. No antivirus runs: the risk is documented in docs/print.md. Prices are recomputed from
+print_services/print_goods; a page count the server cannot make (Office files) is declared by the student
+and confirmed or changed by the operator, and a changed price needs the student's approval.
+University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
+answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
+keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group
+under 5 hidden (complementary suppression in breakdowns). Anonymous feedback tickets have no author
+(CHECK); the sender keeps a 256-bit device token whose SHA-256 is stored, so the token-holding
+routes are callable without a session. Flagged (threat/profanity) tickets are held for admins.
 
 | Method | Path | Who may call | Rate limit | Input validation | Feature switch |
 | --- | --- | --- | --- | --- | --- |

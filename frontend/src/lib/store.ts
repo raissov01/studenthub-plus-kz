@@ -5,9 +5,11 @@ import { useSyncExternalStore } from 'react';
 import { emptyRoadmap, type RoadmapState } from '@/features/roadmap/logic';
 import { cleanDeadlines, cleanPins } from '@/lib/calendar';
 import type { AppState } from '@/lib/types';
-import { defaults, UI_INIT, type UiState } from '@/lib/defaults';
+import { defaults, dropDemo, UI_INIT, type UiState } from '@/lib/defaults';
 import { clearTickets } from '@/lib/tickets';
 import { clearStudyData } from '@/lib/studydb';
+import { cleanScores } from '@/lib/scores';
+import { cleanApplications } from '@/lib/applications';
 
 export { defaults, type UiState };
 
@@ -42,9 +44,9 @@ function load(): AppState {
   let s: Partial<AppState> & { ai?: unknown } | null = null;
   try { const raw = lsGet(); if (raw) s = JSON.parse(raw); } catch { s = null; }
   if (!s || typeof s !== 'object') return d;
-  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}), roadmap: cleanRoadmap(s.roadmap), deadlines: cleanDeadlines(s.deadlines), calendarPins: cleanPins(s.calendarPins) }) as AppState & { ai?: unknown };
+  const merged = Object.assign(d, s, { profile: Object.assign(d.profile, s.profile || {}), roadmap: cleanRoadmap(s.roadmap), deadlines: cleanDeadlines(s.deadlines), calendarPins: cleanPins(s.calendarPins), scores: cleanScores(s.scores), applications: cleanApplications(s.applications, s.applied) }) as AppState & { ai?: unknown };
   delete merged.ai; // old client-side API key setting, no longer used
-  return merged;
+  return dropDemo(merged);
 }
 
 /** stored roadmap (absent in data saved before the feature) -> a valid RoadmapState */

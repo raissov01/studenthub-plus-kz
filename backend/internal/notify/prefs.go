@@ -24,12 +24,24 @@ const (
 	CatJobs       Category = "jobs"       // b2b job offers
 	CatCommunity  Category = "community"  // community updates and bot replies
 	CatModeration Category = "moderation" // decisions about submissions and reports
+	// CatCafe: café pre-order updates (internal/cafe). Transactional and never switchable: only Order sends it,
+	// for an order the student placed (accepted, ready) or to the café's own staff (a new order).
+	CatCafe Category = "cafe"
+	// CatPrint: print shop job updates (internal/printshop): ready, a new price to approve, the shop's own staff
+	// (a new job). Transactional like CatCafe and sent only through OrderIn.
+	CatPrint Category = "print"
 )
+
+// transactional categories skip the switches, quiet hours and the daily cap (OrderIn only)
+func (c Category) transactional() bool { return c == CatCafe || c == CatPrint }
 
 // Categories lists every switchable category in display order.
 var Categories = []Category{CatDeadlines, CatDigest, CatEvents, CatMentors, CatMarket, CatJobs, CatCommunity, CatModeration}
 
 func (c Category) valid() bool {
+	if c.transactional() {
+		return true
+	}
 	for _, k := range Categories {
 		if k == c {
 			return true

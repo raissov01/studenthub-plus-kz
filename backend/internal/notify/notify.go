@@ -73,6 +73,50 @@ func HasTelegram(ctx context.Context, q Querier, userID int64) (bool, error) {
 	return ok, err
 }
 
+// Channel posts one HTML message to a channel the bot administers (FEEDS_PUBLISH_CHANNEL, e.g.
+// "@studenthub_kz" or "-100..."). Channel posts have no recipient budget, inbox or quiet hours;
+// the caller keeps its own once-only outbox (feed_items.channel_posted_at). Like transmit it never
+// retries and never logs the URL (it carries the bot token).
+func Channel(ctx context.Context, chat, text string) error {
+	token := config.Str("BOT_TOKEN", "")
+	if token == "" || strings.TrimSpace(chat) == "" {
+		return errors.New("telegram: BOT_TOKEN or channel is not set")
+	}
+	body, err := json.Marshal(map[string]any{"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": false})
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	base := strings.TrimRight(config.Str("TELEGRAM_API_BASE", "https://api.telegram.org"), "/")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/bot"+token+"/sendMessage", bytes.NewReader(body))
+	if err != nil {
+		return errors.New("telegram: bad request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			err = urlErr.Err
+		}
+		return fmt.Errorf("telegram transport: %w", err)
+	}
+	defer res.Body.Close()
+	var response struct {
+		OK          bool   `json:"ok"`
+		Code        int    `json:"error_code"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return fmt.Errorf("telegram: ambiguous response (%s)", res.Status)
+	}
+	if !response.OK {
+		return fmt.Errorf("telegram: %d %s", response.Code, response.Description)
+	}
+	return nil
+}
+
 type delivery struct {
 	text        string
 	link        string // site path of the first item, opened by a click on the push

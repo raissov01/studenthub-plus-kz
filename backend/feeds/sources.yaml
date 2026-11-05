@@ -1,0 +1,162 @@
+# Opportunity feed sources (docs/feeds.md). Every entry was checked on 2026-11-05: the Telegram
+# preview / feed / page answered and had recent posts. Never add a handle or URL you have not opened.
+#
+#   id        stable, lowercase; also the key in feed_sources (renaming = a new source)
+#   kind      tg_public (t.me/s preview, default) | tg_mtproto (user session, optional) | rss | html
+#   handle    Telegram username without @ (tg_*); url for rss / html
+#   category  the usual category, a hint for the AI: hackathon startup grant scholarship internship
+#             mobility exchange competition conference volunteer course other
+#   scope     KZ | international
+#   trust     high (official / the owner's own) | medium | low. Only "high" sources may publish
+#             themselves (FEEDS_AUTOPUBLISH_MIN_CONFIDENCE); everything else goes to the queue.
+#   enabled   initial value only: after the first run the admin switch in /admin/feeds wins.
+#   relevant  every post is on topic: skip the keyword prefilter
+#
+# html select: "tag.class", ".class", "#id", "[attr]" steps separated by spaces (descendant),
+# alternatives separated by commas. item = one element per post; title/link/date/text inside it.
+
+sources:
+  # ---------- Telegram, Kazakhstan ----------
+  - id: tg-astana-hub
+    kind: tg_public
+    handle: astana_hub
+    name: Astana Hub
+    lang: ru
+    category: startup
+    scope: KZ
+    trust: high
+    enabled: true
+    note: International IT-startup technopark; accelerators, hackathons, grants, events.
+
+  - id: tg-hackathon-kz
+    kind: tg_public
+    handle: hackathon_kz
+    name: Hackathon kz
+    lang: ru
+    category: hackathon
+    scope: KZ
+    trust: medium
+    enabled: true
+    note: Announcements of hackathons and IT competitions in Kazakhstan.
+
+  - id: tg-nu-edu-kz
+    kind: tg_public
+    handle: nu_edu_kz
+    name: nuedukz (NU community)
+    lang: kk
+    category: conference
+    scope: KZ
+    trust: low
+    enabled: false
+    note: NU students' channel (2.3K), sparse posts, mostly chatter. Maybe; off by default.
+
+  - id: tg-studywithraissov
+    kind: tg_public
+    handle: studywithme_r
+    name: study with raissov
+    lang: kk
+    category: scholarship
+    scope: KZ
+    trust: high
+    enabled: true
+    note: The project owner's own channel; scholarships, programs and free courses for KZ students.
+
+  - id: tg-omacademy
+    kind: tg_public
+    handle: omacademytc
+    name: OMACADEMY TC
+    lang: kk
+    category: grant
+    scope: KZ
+    trust: low
+    enabled: false
+    note: Grant results and regional (akimat) grants, mostly for applicants after school. Maybe; off by default.
+
+  - id: tg-universitetlar
+    kind: tg_public
+    handle: America_Universitetlari
+    name: Universitetlar
+    lang: uz
+    category: scholarship
+    scope: international
+    trust: low
+    enabled: false
+    note: International scholarships (MEXT, GKS, UK masters) in Uzbek. Maybe; off by default.
+
+  # Read with a user session (no public username). Account: @beknazar_02, the one in FEEDS_TG_SESSION.
+  - id: tg-aitu-career
+    kind: tg_mtproto
+    channel_id: 1698158864
+    account: beknazar_02
+    name: AITU Career and Employment
+    lang: ru
+    category: internship
+    scope: KZ
+    trust: medium
+    enabled: true
+    note: Internships and junior vacancies from Astana IT University's career center. Needs FEEDS_TG_SESSION.
+
+  # ---------- websites, Kazakhstan ----------
+  - id: html-enic-kz
+    kind: html
+    url: https://enic-kazakhstan.edu.kz/novosti
+    name: ENIC Kazakhstan (National Erasmus+ Office host)
+    lang: ru
+    category: mobility
+    scope: KZ
+    trust: high
+    enabled: true
+    select:
+      item: div.news-list div.item
+      title: .title
+      link: a.image
+      date: .date
+      text: .in-blk
+    note: Higher Education Development National Center; academic mobility, Erasmus+, Bologna news.
+
+  - id: rss-the-tech-internships
+    kind: rss
+    url: https://the-tech.kz/tag/stazhirovki/feed/
+    name: THE TECH (стажировки)
+    lang: ru
+    category: internship
+    scope: KZ
+    trust: medium
+    enabled: true
+    relevant: true
+    note: Tag feed of IT internship round-ups in Kazakhstan.
+
+  # ---------- websites, international ----------
+  - id: rss-opportunity-desk
+    kind: rss
+    url: https://opportunitydesk.org/feed/
+    name: Opportunity Desk
+    lang: en
+    category: scholarship
+    scope: international
+    trust: medium
+    enabled: true
+    relevant: true
+
+  - id: rss-scholars4dev
+    kind: rss
+    url: https://www.scholars4dev.com/feed/
+    name: Scholars4Dev
+    lang: en
+    category: scholarship
+    scope: international
+    trust: medium
+    enabled: true
+    relevant: true
+
+  - id: rss-opportunities-corners
+    kind: rss
+    url: https://opportunitiescorners.com/feed/
+    name: Opportunities Corners
+    lang: en
+    category: scholarship
+    scope: international
+    trust: low
+    enabled: false
+    relevant: true
+    note: Many fully funded summits of uneven quality; off by default, enable if the queue wants more.

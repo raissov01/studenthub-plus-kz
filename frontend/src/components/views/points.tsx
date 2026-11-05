@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { copyText, useApp } from '@/components/app';
 import { Icon, Row, SectionHead, Seg } from '@/components/ui';
+import { StreakExtras, useMilestoneSheet } from '@/components/views/streak';
 import { AdminOnly, ErrorLine, Feature, Loading, ReasonSheet, SignInCard, errCode, errText, hasAccount, useFeature, useLoad } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import {
@@ -34,7 +35,7 @@ export function reasonLabel(reason: string, tt: TT): string {
   const base = reason.replace(/_revoked$/, '');
   const map: Record<string, string> = {
     daily_open: tt('Күнделікті кіру', 'Ежедневный вход'), quiz: tt('Квиз', 'Квиз'), event_checkin: tt('Іс-шара', 'Мероприятие'),
-    roadmap_step: tt('Даму жоспары', 'План развития'), freeze_purchase: tt('Серия қорғанысы', 'Защита серии'),
+    roadmap_step: tt('Даму жоспары', 'План развития'), survey: tt('Сауалнама', 'Опрос'), freeze_purchase: tt('Серия қорғанысы', 'Защита серии'),
     redeem: tt('Сыйлыққа өтінім', 'Заявка на награду'), redeem_refund: tt('Өтінім қабылданбады — қайтарылды', 'Заявка отклонена — возврат'),
     admin_adjust: tt('Әкімші түзетуі', 'Корректировка администратора'),
   };
@@ -88,6 +89,7 @@ export function PointsChip() {
     window.addEventListener(POINTS_CHANGED, load);
     return () => { live = false; window.removeEventListener(POINTS_CHANGED, load); };
   }, [ready, uid, lang, tt, toast]);
+  useMilestoneSheet(ready ? s : null, uid);
   if (!ready || !s) return null;
   const label = tt(`Ұпайлар: ${s.level}-деңгей, ${s.streak.days} күн қатарынан, ${s.coins} монета`,
     `Баллы: уровень ${s.level}, ${s.streak.days} ${daysWord(s.streak.days, tt)} подряд, ${s.coins} ${coinsWord(s.coins, tt)}`);
@@ -141,6 +143,8 @@ function PointsHome() {
   const [tab, setTab] = useState('top');
   const s = fresh ?? me.data;
   const apply = useCallback((v: PointsSummary) => { setFresh(v); pointsChanged(); }, []);
+  const uid = useAccount().user?.id ?? 0;
+  useMilestoneSheet(s, uid);
   if (!s) return me.err ? <ErrorLine err={me.err} /> : <Loading />;
   return (
     <div className="pts">
@@ -221,8 +225,8 @@ function StreakCard({ s, onChange }: { s: PointsSummary; onChange: (v: PointsSum
         <p className="small">{st.activeToday
           ? tt('Бүгін белсенді болдыңыз — серия сақталды.', 'Сегодня вы были активны — серия сохранена.')
           : tt('Серияны сақтау үшін бүгін бір тапсырма орындаңыз.', 'Чтобы сохранить серию, выполните сегодня одно задание.')}</p>
-        <p className="tiny muted num">{tt(`Ең ұзын серия: ${st.best} күн. Қорғаныс: ${st.freezes}/${st.maxFreezes} — бір күн өткізіп алсаңыз, серия үзілмейді.`,
-          `Лучшая серия: ${st.best} ${daysWord(st.best, tt)}. Защита: ${st.freezes}/${st.maxFreezes} — один пропущенный день не прервёт серию.`)}</p>
+        <p className="tiny muted num">{tt(`Ең ұзын серия: ${st.best} күн. Қорғаныс: ${st.freezes}/${st.maxFreezes} — ${st.maxFreezes > 1 ? 'әрқайсысы бір өткізілген күнді жабады' : 'бір күн өткізіп алсаңыз, серия үзілмейді'}.`,
+          `Лучшая серия: ${st.best} ${daysWord(st.best, tt)}. Защита: ${st.freezes}/${st.maxFreezes} — ${st.maxFreezes > 1 ? 'каждая закрывает один пропущенный день' : 'один пропущенный день не прервёт серию'}.`)}</p>
         {canBuy ? (
           <button className="btn secondary" type="button" onClick={buy} disabled={busy || s.coins < st.freezeCost}>
             <Icon n="shield" s={18} /> {tt(`Қорғаныс сатып алу — ${st.freezeCost} монета`, `Купить защиту — ${st.freezeCost} ${coinsWord(st.freezeCost, tt)}`)}
@@ -230,6 +234,7 @@ function StreakCard({ s, onChange }: { s: PointsSummary; onChange: (v: PointsSum
         ) : null}
         <ErrorLine err={err} />
       </div>
+      <StreakExtras s={s} onChange={onChange} />
     </section>
   );
 }

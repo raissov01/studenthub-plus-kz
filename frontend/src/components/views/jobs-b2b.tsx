@@ -2,7 +2,7 @@
 /* Student side of the employer cabinets (prompt 10), as small pieces the job screens mount: the verified-employer
    badge and response rate on job rows, the employer block / apply flow / report on a real job's page, «Менің
    өтінімдерім» with real statuses and withdraw, the «Университеттен ресми» badge and the announcements list.
-   Demo jobs keep the old local «Өтінім жіберу» (S.applied); only database jobs (source = "employer") use the API. */
+   Other jobs (admin, Sheets) keep the local «Өтінім жіберу» mark (S.applied); only database jobs (source = "employer") use the API. */
 import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';

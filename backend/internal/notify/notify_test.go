@@ -585,3 +585,55 @@ func TestEmailOnlyUserNeverMessaged(t *testing.T) {
 		t.Fatalf("Telegram was called for an email-only user (%d -> %d, chat 0: %v)", before, after, zero)
 	}
 }
+
+// Café order updates are transactional: past the daily cap and inside quiet hours they still go out at once,
+// they never wait in the outbox, and they do not eat the student's direct budget.
+func TestCafeOrderSkipsCapAndQuietHours(t *testing.T) {
+	uid, tg := newUser(t)
+	noon := at(12, 0)
+	for i := range 3 {
+		send(t, uid, CatEvents, "direct "+string(rune('a'+i)), noon)
+	}
+	if got := send(t, uid, CatEvents, "capped", noon); got != Queued {
+		t.Fatalf("4th direct: %s", got)
+	}
+	r, err := Order(WithKey(ctx(), "cafe:test:1"), uid, "<b>Дайын</b> №123", Opts{Now: noon, Link: "/cafe/orders?id=1"})
+	if err != nil || r != Sent {
+		t.Fatalf("order past the cap: %s %v", r, err)
+	}
+	night := at(23, 30)
+	if r, err := Order(ctx(), uid, "Тапсырыс қабылданды №124", Opts{Now: night, Key: "cafe:test:2"}); err != nil || r != Sent {
+		t.Fatalf("order in quiet hours: %s %v", r, err)
+	}
+	msgs := sent(tg)
+	if len(msgs) != 5 || !strings.Contains(msgs[3], "Дайын") {
+		t.Fatalf("telegram: %v", msgs)
+	}
+	if n := count(t, `select count(*) from notify_sends where user_id=$1 and kind='direct'`, uid); n != 3 {
+		t.Fatalf("direct budget changed: %d", n)
+	}
+	if n := count(t, `select count(*) from notifications where user_id=$1 and category='cafe' and link='/cafe/orders?id=1'`, uid); n != 1 {
+		t.Fatalf("inbox row: %d", n)
+	}
+	// the same key is one message
+	if _, err := Order(ctx(), uid, "<b>Дайын</b> №123", Opts{Now: noon, Key: "cafe:test:2"}); err != nil || len(sent(tg)) != 5 {
+		t.Fatalf("duplicate key resent: %v", sent(tg))
+	}
+	if _, err := Send(ctx(), uid, CatCafe, "x", Opts{}); err == nil {
+		t.Fatal("café category through Send")
+	}
+}
+
+func TestCafeOrderWithoutBotIsInboxOnly(t *testing.T) {
+	uid, tg := newUser(t)
+	t.Setenv("BOT_TOKEN", "")
+	if r, err := Order(ctx(), uid, "Дайын №5", Opts{Now: at(12, 0), Key: "cafe:test:nobot"}); err != nil || r != Off {
+		t.Fatalf("%s %v", r, err)
+	}
+	if len(sent(tg)) != 0 || count(t, `select count(*) from notify_outbox where user_id=$1 and state='pending'`, uid) != 0 {
+		t.Fatal("order message left pending or sent")
+	}
+	if count(t, `select count(*) from notifications where user_id=$1 and category='cafe'`, uid) != 1 {
+		t.Fatal("no inbox row")
+	}
+}

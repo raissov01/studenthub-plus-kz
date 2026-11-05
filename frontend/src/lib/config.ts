@@ -25,6 +25,30 @@ export interface Config {
     quiz: boolean;
     /** «Ұпайлар / Баллы»: XP, streak, coins and the rewards shop (FEATURE_POINTS) */
     points: boolean;
+    /** «Кофе / Кофейня»: campus café pre-ordering (FEATURE_CAFE) */
+    cafe: boolean;
+    /** «Полиграфия»: campus print / copy shop, uploads and the queue (FEATURE_PRINT) */
+    print: boolean;
+    /** «Сауалнамалар / Опросы» (FEATURE_SURVEYS) */
+    surveys: boolean;
+    /** anonymous suggestions and complaints + staff inbox (FEATURE_FEEDBACK) */
+    feedback: boolean;
+    /** «Әл-ауқат / Благополучие» (FEATURE_WELLBEING) */
+    wellbeing: boolean;
+    /** «Табылған заттар» (FEATURE_LOSTFOUND) */
+    lostfound: boolean;
+    /** «Пән бойынша сұрақ-жауап» (FEATURE_COURSEQA) */
+    courseqa: boolean;
+    /** «Пәтерлес» (FEATURE_ROOMMATES) */
+    roommates: boolean;
+    /** «Клубтар»: university clubs catalogue, club pages, join requests (FEATURE_CLUBS) */
+    clubs: boolean;
+    /** automatic opportunity feed from Telegram channels and websites (FEATURE_FEEDS, docs/feeds.md) */
+    feeds: boolean;
+    /** spec 08 «kind streak»: evening reminder, milestones, session pause, 2 freezes (FEATURE_STREAK, needs points) */
+    streak?: boolean;
+    /** spec 10 career-fair booths: exhibitors, booth QR check-in, next-day summary (FEATURE_FAIRS, needs events) */
+    fairs?: boolean;
   };
 }
 
@@ -34,7 +58,7 @@ export const CONFIG: Config = {
   marketSeason: null,
   emailAuth: false,
   webPush: { enabled: false, publicKey: '' },
-  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false },
+  features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, print: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false, streak: false, fairs: false },
 };
 
 export type FeatureName = keyof Config['features'];

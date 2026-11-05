@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
-import { test, expect, onboard, fits, label, deviceState } from './fixtures';
+import { test, expect, onboard, fits, label, deviceState, seedTimetable } from './fixtures';
 
 const almatyToday = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
 const plusDays = (d: string, n: number) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400_000).toISOString().slice(0, 10);
@@ -26,10 +26,10 @@ const AI_ANSWER = [
 test('study core: subject page from the menu, Cornell note survives reload, export, AI cards, spaced repetition', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
+  await seedTimetable(page, [0, 1, 2, 3, 4, 5, 6]); // every day, so the home «next class» card has one in the morning
 
-  await test.step('subject page from the hamburger menu', async () => {
-    await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-    await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Пәндер', 'Предметы'), exact: true }).click();
+  await test.step('subject page (no menu entry: the section is reachable by its address only)', async () => {
+    await page.goto('/subjects');
     await expect(page).toHaveURL(/\/subjects$/);
     await expect(page.locator('#subjectList .row')).toHaveCount(3);
     await fits(page);
@@ -123,19 +123,19 @@ test('study core: subject page from the menu, Cornell note survives reload, expo
     await expect(page.locator('#reviewLeft')).toContainText('1');
     await expect.poll(async () => (await idbAll(page, 'srs')).map(x => x.due)).toEqual([plusDays(almatyToday(), 2)]);
 
-    // the home «next class» card links to its subject page (morning, so a class is still ahead)
+    // the subjects section has no entry points any more: the home «next class» card shows no subject link
     const morning = new Date(); morning.setHours(8, 0, 0, 0);
     await page.clock.setFixedTime(morning);
     await page.goto('/');
     await expect(page.locator('#homeReview')).toHaveText(t('Бүгін қайталау: 1 карточка', 'Повторить сегодня: 1 карточка'));
-    await page.getByRole('button', { name: t('Пән беті: конспект, карточка, емтихан', 'Страница предмета: конспекты, карточки, экзамен') }).click();
-    await expect(page).toHaveURL(/\/subjects\?id=/);
+    await expect(page.locator('#ncSubject')).toHaveCount(0);
   });
 });
 
 test('notes: search, a lecture template from the notes list, and offline opening', async ({ page, context, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
+  await seedTimetable(page);
   await page.goto('/notes');
   await page.getByRole('button', { name: t('Жаңа конспект', 'Новый конспект') }).click();
   const sheet = page.getByRole('dialog');

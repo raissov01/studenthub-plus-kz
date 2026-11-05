@@ -1,23 +1,35 @@
-import { test, expect, onboard, deviceState, fits, label } from './fixtures';
-import { defaults, demoProfile } from '../src/lib/defaults';
+import { test, expect, onboard, deviceState, fits, label, DEMO_TEXT } from './fixtures';
+import { defaults } from '../src/lib/defaults';
 import { experiencedJob, job } from './content';
 
-test('demo profile appears only after explicit selection', async ({ page, lang }) => {
+test('a device that kept the removed sample profile and sample events starts clean, without errors', async ({ page, lang }) => {
+  const old = {
+    ...defaults(lang), onboarded: true,
+    profile: { ...defaults(lang).profile, name: lang === 'ru' ? 'Куралай' : 'Құралай', spec: 'econ', course: 2, gpa: 3.13, demo: true },
+    events: { e1: { code: 'EV-E1-1234' } }, hideDemoDeck: false,
+    decks: [{ id: 'deck-demo', name: 'Микроэкономика (үлгі)', cards: [] }],
+    calendarPins: [{ ref: 'event:e1', kind: 'event', title: { kk: 'Мансап жәрмеңкесі', ru: 'Ярмарка карьеры' }, date: '2026-11-07', time: '11:00', prio: 'mid', done: 0 }],
+  };
+  await page.addInitScript(s => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('studenthub.v1', JSON.stringify(s)); sessionStorage.setItem('seeded', '1'); } }, old);
   await page.goto('/');
   const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeVisible(); // the sample profile was never theirs: onboarding again
   await expect(page.locator('body')).not.toContainText(/Құралай|Куралай/);
-  await expect(page.locator('html')).toHaveAttribute('lang', 'kk');
-  if (lang === 'ru') await dialog.getByRole('tab', { name: 'Русский', exact: true }).click();
-  await dialog.getByRole('button', { name: label(lang, 'Үлгі профильмен қарау', 'Посмотреть с примером профиля'), exact: true }).click();
-  await expect(dialog).not.toBeVisible();
-  expect((await deviceState(page)).profile).toEqual(demoProfile(lang));
-  await page.reload();
-  await expect(page.locator('body')).toContainText(lang === 'kk' ? 'Құралай' : 'Куралай');
+  await expect(dialog.getByRole('button', { name: label(lang, 'Үлгі профильмен қарау', 'Посмотреть с примером профиля') })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  for (const path of ['/calendar', '/cards', '/profile', '/mine', '/notifications']) {
+    await page.goto(path);
+    await expect(page.locator('#main')).toBeVisible();
+    await expect(page.locator('#main')).not.toContainText(/Құралай|Куралай|Мансап жәрмеңкесі|Ярмарка карьеры/);
+    await expect(page.locator('#main')).not.toContainText(DEMO_TEXT);
+  }
+  // an old link to a sample event lands on the events list
+  await page.goto('/event/e1');
+  await expect(page).toHaveURL(/\/events$/);
 });
 
 test('legacy storage migrates without losing personal data; GPA and phone can be cleared', async ({ page, lang }) => {
-  const stored = { ...defaults(lang), onboarded: true, profile: { ...demoProfile(lang), demo: false, name: 'Ескі Профиль', phone: '+77001234567' }, saved: { existing: 42 }, fav: { old: 24 }, gpaPlan: [{ n: 'Custom', cr: 3, g: 'A' }] };
+  const stored = { ...defaults(lang), onboarded: true, profile: { ...defaults(lang).profile, name: 'Ескі Профиль', spec: 'econ', course: 2, gpa: 3.1, credits: 60, en: 'B1', city: 'astana', skills: ['excel', 'comm'], phone: '+77001234567' }, saved: { existing: 42 }, fav: { old: 24 }, gpaPlan: [{ n: 'Custom', cr: 3, g: 'A' }] };
   await page.addInitScript(s => {
     if (!localStorage.getItem('studenthub.v1')) localStorage.setItem('studygo.v1', JSON.stringify(s));
   }, stored);

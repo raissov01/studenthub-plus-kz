@@ -17,10 +17,10 @@ import { CONFIG } from '@/lib/config';
 import { awardText, pointsChanged, type PointsReply } from '@/lib/points';
 
 /** where an item's «link» leads in the app */
-const LINKS: Record<RoadmapLink, { view: string; oppType?: string }> = {
-  internships: { view: 'opps:intern', oppType: 'all' },
-  mobility: { view: 'search:mobility' },
-  grants: { view: 'search:grant' },
+const LINKS: Record<RoadmapLink, { view: string }> = {
+  internships: { view: 'opps:intern' },
+  mobility: { view: 'opps:intern?t=mobility' },
+  grants: { view: 'opps:intern?t=grants' },
   courses: { view: 'opps:courses' },
   events: { view: 'opps:events' },
   jobs: { view: 'opps:jobs' },
@@ -31,7 +31,6 @@ const LINKS: Record<RoadmapLink, { view: string; oppType?: string }> = {
 
 function openLink(app: App, link: RoadmapLink) {
   const l = LINKS[link];
-  if (l.oppType) app.setUi({ oppType: l.oppType });
   app.go(l.view);
 }
 

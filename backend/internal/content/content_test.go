@@ -19,9 +19,12 @@ import (
 
 var root = filepath.Join("..", "..")
 
+// fixtures: stable sample records for the tests (testdata/README.md); production data/*.json may be empty
+var fixtures = filepath.Join("testdata", "data")
+
 func readJSONFile(t *testing.T, kind string) []any {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(root, "data", kind+".json"))
+	b, err := os.ReadFile(filepath.Join(fixtures, kind+".json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,9 +266,17 @@ func TestValidation(t *testing.T) {
 
 func TestTemplates(t *testing.T) {
 	for _, kind := range Kinds {
-		t.Run(kind+".csv round-trips to data/"+kind+".json", func(t *testing.T) {
+		t.Run(kind+" CSV round-trips to the JSON records", func(t *testing.T) {
 			data := readJSONFile(t, kind)
-			headers, items := RowsToObjects(ParseCSV(readTemplate(t, kind)))
+			var records []map[string]any
+			for _, r := range data {
+				records = append(records, r.(map[string]any))
+			}
+			csv, err := TemplateCSV(kind, records)
+			if err != nil {
+				t.Fatal(err)
+			}
+			headers, items := RowsToObjects(ParseCSV(csv))
 			if !reflect.DeepEqual(headers, Columns[kind]) {
 				t.Fatalf("headers %q", headers)
 			}
@@ -275,16 +286,26 @@ func TestTemplates(t *testing.T) {
 			}
 			assertJSONEqual(t, r.records, data)
 		})
-		t.Run(kind+".csv is in sync with cmd/json-to-csv", func(t *testing.T) {
+		t.Run(kind+".csv is in sync with data/"+kind+".json (cmd/json-to-csv)", func(t *testing.T) {
+			b, err := os.ReadFile(filepath.Join(root, "data", kind+".json"))
+			if err != nil {
+				t.Fatal(err)
+			}
 			var records []map[string]any
-			for _, r := range readJSONFile(t, kind) {
-				records = append(records, r.(map[string]any))
+			if err := json.Unmarshal(b, &records); err != nil {
+				t.Fatal(err)
+			}
+			for _, r := range records {
+				if r["is_demo"] == true {
+					t.Fatalf("data/%s.json holds a demo record: %v", kind, r["id"])
+				}
 			}
 			got, err := TemplateCSV(kind, records)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != readTemplate(t, kind) {
+			headers, _ := RowsToObjects(ParseCSV(readTemplate(t, kind)))
+			if got != readTemplate(t, kind) || !reflect.DeepEqual(headers, Columns[kind]) {
 				t.Fatal("template differs from generated CSV")
 			}
 		})
@@ -378,7 +399,7 @@ func newLoader(s *sheets, env func(string) string, warn func(string)) *Loader {
 	if warn == nil {
 		warn = func(string) {}
 	}
-	l := &Loader{Env: env, Warn: warn, DataDir: filepath.Join(root, "data")}
+	l := &Loader{Env: env, Warn: warn, DataDir: fixtures}
 	if s != nil {
 		l.Client = s.srv.Client()
 	}
@@ -387,7 +408,7 @@ func newLoader(s *sheets, env func(string) string, warn func(string)) *Loader {
 
 func filterJSON(t *testing.T, kind, today string) []Record {
 	t.Helper()
-	recs, err := readDataFile(filepath.Join(root, "data", kind+".json"))
+	recs, err := readDataFile(filepath.Join(fixtures, kind+".json"))
 	if err != nil {
 		t.Fatal(err)
 	}

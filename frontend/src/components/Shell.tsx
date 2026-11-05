@@ -34,7 +34,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const v = viewOfPath(pathname) ?? 'home';
   const meta = screenMeta(v, { I, S, ui });
   const name = meta.name;
-  // /jobs, /internships, /events, /courses, /discounts are the «Іздеу» screen with a category: same header and tab
+  // the sections (/jobs, /internships, /events, /courses, /discounts): reached from the menu, so the menu button
+  // stays and the «Іздеу» tab lights up; the header names the section
   const searchScreen = name === 'opps' || name === 'bonus';
   const root = ROOTS.includes(name) || searchScreen;
 
@@ -147,7 +148,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="top-title" id="title">
             {name === 'home'
               ? <span className="brand"><Logo />Student Hub</span>
-              : searchScreen ? screenMeta('search', { I, S, ui }).title : meta.title}
+              : meta.title}
           </div>
           {hydrated && acc.loaded && !hasAccount(acc) && root ? (
             <button className="btn top-signin" id="signin-btn" type="button" onClick={() => openSheet(acc.user ? <ConsentSheet /> : <SignInSheet />)}>

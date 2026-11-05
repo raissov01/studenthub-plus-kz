@@ -1,0 +1,8 @@
+[Unit]
+Description=Student Hub anonymous feedback: SLA reminders to staff (FEATURE_FEEDBACK)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/studenthub/.env
+# the endpoint answers 404 while its feature switch is off; that is not a failure
+ExecStart=/bin/sh -c 'curl -sS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:8110/api/cron/feedback || true'

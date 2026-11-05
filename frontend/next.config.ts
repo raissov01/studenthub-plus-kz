@@ -28,7 +28,8 @@ const csp = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://telegram.org https://oauth.telegram.org",
   `connect-src 'self' ${siteWs}${devWs} https://fonts.googleapis.com https://fonts.gstatic.com`,
-  "frame-src https://telegram.org https://oauth.telegram.org",
+  // blob: = the in-app certificate viewer (a PDF the student picked or downloaded with the session, typed application/pdf)
+  "frame-src https://telegram.org https://oauth.telegram.org blob:",
   "worker-src 'self' blob:",
   "media-src 'self' blob:",
 ].join('; ');

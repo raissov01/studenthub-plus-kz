@@ -22,7 +22,7 @@ func contentEvents(ctx context.Context) (map[string][]content.Record, error) {
 		rows, err := tx.Query(ctx, `select jsonb_build_object('id', id, 'title_kk', title_kk, 'title_ru', title_ru,
     'desc_kk', desc_kk, 'desc_ru', desc_ru, 'cat', cat, 'starts_at', starts_at, 'ends_at', ends_at,
     'university', university, 'place_text', place_text, 'building_id', building_id, 'is_demo', is_demo)
-   from events where status='published' and ends_at > now() order by starts_at, id`)
+   from events where status='published' and not is_demo and ends_at > now() order by starts_at, id`)
 		if err != nil {
 			return err
 		}

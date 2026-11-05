@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { cleanDeadlines, cleanPins } from "./calendar";
 import {
-  CAL_KINDS, compareTasks, groupTasks, isClassDay, KIND_STYLE, kindColor, prioClass, taskGroup, type TaskLike,
+  CAL_KINDS, compareTasks, groupTasks, KIND_STYLE, kindColor, prioClass, taskGroup, type TaskLike,
 } from "./caltasks";
 
 const T = (title: string, date: string, prio: TaskLike["prio"] = "mid", done = 0, time = ""): TaskLike => ({ title, date, time, prio, done });
@@ -52,11 +52,6 @@ test("tasks group into overdue / today / tomorrow / this week / later / done (we
   assert.deepEqual(groups[3].items.map(t => t.title), ["done new", "done old"]);
 });
 
-test("classes are on weekdays only", () => {
-  assert.equal(isClassDay("2026-11-06"), true); // Friday
-  assert.equal(isClassDay("2026-11-07"), false); // Saturday
-  assert.equal(isClassDay("2026-11-08"), false); // Sunday
-});
 
 test("old saved deadlines gain a priority and done flag; undated tasks are kept", () => {
   const out = cleanDeadlines([

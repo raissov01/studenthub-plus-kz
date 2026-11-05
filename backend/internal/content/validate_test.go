@@ -45,6 +45,7 @@ func TestValidateRecordMirrorsSheetRules(t *testing.T) {
 	}{
 		{"no title", func(m map[string]any) { m["title"] = map[string]any{"ru": "Грант"} }, false, "title_kk"},
 		{"bad type", func(m map[string]any) { m["type"] = "lottery" }, false, "type"},
+		{"bad subtype", func(m map[string]any) { m["subtype"] = "lottery" }, false, "subtype"},
 		{"bad city", func(m map[string]any) { m["city"] = "moscow" }, false, "city"},
 		{"http link", func(m map[string]any) { m["source_url"] = "http://fund.kz" }, false, "source_url"},
 		{"no link", func(m map[string]any) { delete(m, "source_url") }, false, "source_url"},
@@ -114,7 +115,7 @@ func TestSheetRowsCannotUseAdminPrefix(t *testing.T) {
 // An extra source can neither replace nor duplicate a sheet / data/*.json id.
 func TestExtraIDsDeduplicated(t *testing.T) {
 	now := time.Date(2026, 10, 28, 6, 0, 0, 0, time.UTC)
-	l := &Loader{Env: func(string) string { return "" }, DataDir: "../../data", Warn: func(string) {}}
+	l := &Loader{Env: func(string) string { return "" }, DataDir: "testdata/data", Warn: func(string) {}}
 	RegisterExtra("test-dup", func(ctx context.Context) (map[string][]Record, error) {
 		return map[string][]Record{
 			"opportunities": {RawRecord(json.RawMessage(`{"id":"o1","source":"admin"}`), "")},
@@ -136,5 +137,37 @@ func TestExtraIDsDeduplicated(t *testing.T) {
 	}
 	if n != 1 || strings.Count(string(b), `"adm-7"`) != 1 {
 		t.Fatalf("o1 x%d, adm-7 x%d", n, strings.Count(string(b), `"adm-7"`))
+	}
+}
+
+// The optional subtype (section sub-tab) is kept when known and left out of the JSON when absent.
+func TestValidateRecordSubtype(t *testing.T) {
+	job := func() map[string]any {
+		return map[string]any{
+			"title": map[string]any{"kk": "Жұмыс"}, "pay": 1000.0, "per": "hour", "source_url": "https://job.kz",
+			"contact": map[string]any{}, "deadline": "2026-12-31", "city": "astana",
+		}
+	}
+	m := job()
+	m["subtype"] = "youthpractice"
+	rec, fe := ValidateRecord("jobs", m, false)
+	if fe != nil {
+		t.Fatal(fe)
+	}
+	if j := rec.(*Job); j.Subtype != "youthpractice" {
+		t.Fatalf("subtype = %q", j.Subtype)
+	}
+	rec, fe = ValidateRecord("jobs", job(), false)
+	if fe != nil {
+		t.Fatal(fe)
+	}
+	b, _ := json.Marshal(rec)
+	if strings.Contains(string(b), "subtype") {
+		t.Fatalf("absent subtype must stay out of the JSON: %s", b)
+	}
+	m = job()
+	m["subtype"] = "intern"
+	if _, fe = ValidateRecord("jobs", m, false); fe == nil {
+		t.Fatal("unknown job subtype accepted")
 	}
 }

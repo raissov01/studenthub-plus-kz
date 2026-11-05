@@ -40,7 +40,7 @@ api-ді қайта қос. Фронтендті қайта жинау кере�
 
 ## Кесте
 
-`push_subscriptions` (`backend/migrations/20261105000047_push_subscriptions.sql`): `user_id`, `endpoint`
+`push_subscriptions` (`backend/migrations/20261105000070_push_subscriptions.sql`): `user_id`, `endpoint`
 (unique), `p256dh`, `auth`, `ua` («Chrome 131»), `created_at`, `last_ok`, `failures`. RLS: студент тек өз жолын
 оқиды және өшіреді (деректер экспорты `pushSubscriptions`); жазуды сервер жасайды. Аккаунт өшсе — cascade.
 `notify_outbox.channel` — хабарлама қай арнамен кетті: `push` не `telegram`.

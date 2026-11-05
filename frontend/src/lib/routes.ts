@@ -1,6 +1,8 @@
 /* View ids (the legacy router's vocabulary: 'job:j1', 'opps:intern', 'map:near', ...) <-> real URL paths.
    Shared by the server (catch-all route, metadata) and the client (navigation, header, legacy #/ links). */
 
+import { viewOfSearchCat } from '@/lib/sections';
+
 export const parseView = (v: string): [string, string] => {
   const i = v.indexOf(':');
   return i < 0 ? [v, ''] : [v.slice(0, i), v.slice(i + 1)];
@@ -12,15 +14,19 @@ export const PLAIN = [
   'exam', 'cards', 'study', 'match', 'edit', 'gpa', 'docs', 'admission', 'pay', 'portfolio', 'settings', 'map', 'bonus',
   'roadmap', 'privacy', 'admin', 'market', 'mentors', 'ambassador', 'checkin', 'organize',
   'employer', 'university', 'announcements', 'suggest', 'suggestions', 'calendar', 'points',
-  'subjects', 'notes', 'review',
+  'subjects', 'notes', 'review', 'timetable', 'cafe', 'print', 'surveys', 'feedback', 'wellbeing',
+  'voice', 'lostfound', 'qa', 'roommates', 'clubs', 'club', 'grades', 'applications',
+  'booth',
 ] as const;
 /** screens that need an id */
-export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer'] as const;
+export const WITH_ID = ['quiz', 'job', 'opp', 'event', 'plan', 'deck', 'doc', 'match', 'market', 'mentors', 'ambassador', 'admin', 'certificate', 'organize', 'employer', 'cafe', 'print'] as const;
 /** fixed sub-screens served by the catch-all route (market/<id>, organize/<id>, certificate/<code> have their own dynamic routes) */
 export const SUB_SCREENS = [
   'admin:health', 'admin:queue', 'admin:reports', 'admin:mentors', 'admin:ambassadors', 'admin:market',
   'ambassador:apply', 'ambassador:mentors', 'ambassador:rating', 'mentors:become', 'mentors:me',
-  'admin:employers', 'admin:staff', 'admin:content', 'admin:points',
+  'admin:employers', 'admin:staff', 'admin:content', 'admin:points', 'admin:cafe', 'cafe:staff', 'cafe:orders', 'admin:clubs',
+  'admin:print', 'print:staff', 'print:jobs',
+  'admin:feeds',
 ] as const;
 /** screens whose parameter is a sub-path ('employer:jobs/12/edit' <-> /employer/jobs/12/edit); served by app/employer/[...rest],
     app/admin/content/[...rest] ('admin:content/new?kind=jobs' <-> /admin/content/new?kind=jobs: a query string rides along)
@@ -30,7 +36,7 @@ export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
 export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 /** device-local study screens whose item id rides in the query ('notes:n1' <-> /notes?id=n1), so the one saved
     page (/notes, /subjects, /review) opens every note, subject and review session offline */
-export const QUERY_ID = ['subjects', 'notes', 'review'] as const;
+export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys', 'lostfound', 'qa', 'roommates', 'club', 'grades'] as const;
 
 const FIXED: Record<string, string> = {
   home: '/',
@@ -46,8 +52,6 @@ const FIXED: Record<string, string> = {
   'map:near': '/map/near',
 };
 const SEGMENT: Record<string, string> = { opp: 'opportunity' };
-/** search categories that kept their own old URL; the others are /search?k=<category> */
-const SEARCH_PATH: Record<string, string> = { jobs: '/jobs', intern: '/internships', events: '/events', courses: '/courses', deals: '/discounts' };
 const FIXED_BACK: Record<string, string> = Object.fromEntries(
   Object.entries(FIXED).filter(([v]) => v !== 'opps' && v !== 'map:campus').map(([v, p]) => [p, v]),
 );
@@ -55,9 +59,19 @@ const SEGMENT_BACK: Record<string, string> = Object.fromEntries(Object.entries(S
 
 export function pathOf(v: string): string {
   if (v in FIXED) return FIXED[v];
+  // a section with its sub-tab: 'opps:intern?t=mobility' -> /internships?t=mobility
+  const q = v.indexOf('?');
+  if (q > 0 && /^(opps|bonus)(:|\?)/.test(v)) return pathOf(v.slice(0, q)) + v.slice(q);
   const [n, prm] = parseView(v);
-  if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
+  // the old search categories now live in the sections ('search:grant' -> /internships?t=grants)
+  if (n === 'search') { const sv = viewOfSearchCat(prm); return sv ? pathOf(sv) : '/search'; }
   if (n === 'opps') return FIXED['opps:jobs'];
+  // café: a menu is /cafe?id=<café>, an order /cafe/orders?id=<order> ('cafe:o12'): static pages, the id rides in the query
+  if (n === 'cafe' && /^\d+$/.test(prm)) return '/cafe?id=' + prm;
+  if (n === 'cafe' && /^o\d+$/.test(prm)) return '/cafe/orders?id=' + prm.slice(1);
+  // print shop: a shop is /print?id=<shop>, a job /print/jobs?id=<job> ('print:j7')
+  if (n === 'print' && /^\d+$/.test(prm)) return '/print?id=' + prm;
+  if (n === 'print' && /^j\d+$/.test(prm)) return '/print/jobs?id=' + prm.slice(1);
   if ((QUERY_ID as readonly string[]).includes(n) && prm) return '/' + n + '?id=' + encodeURIComponent(prm);
   if ((MULTI_SEGMENT as readonly string[]).includes(n) && prm) {
     const q = prm.indexOf('?');

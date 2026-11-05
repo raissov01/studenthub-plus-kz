@@ -7,13 +7,15 @@ import { useSearchParams } from 'next/navigation';
 import { useApp, type App } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { NewNoteSheet } from '@/components/views/notes';
-import { SCHEDULE } from '@/lib/data/static';
+import { SubjectScoreRow } from '@/components/views/grades';
 import { buildPlan } from '@/lib/domain';
 import { diffDays, plural } from '@/lib/format';
 import { almatyYmd } from '@/lib/calendar';
 import { noteTitle, TEMPLATE_LABEL } from '@/lib/notes';
 import { dueQueue } from '@/lib/srs';
 import { saveSubject, useStudy, type StudySnap } from '@/lib/studydb';
+import { useFeature } from '@/components/views/common';
+import { qaBoard } from '@/lib/community';
 import { belongs, mentions, nextSlot, subjectsFrom, type Subject } from '@/lib/subjects';
 import type { AppState, Deck } from '@/lib/types';
 import { apiLang } from '@/lib/i18n';
@@ -29,14 +31,14 @@ export function useQueryId(): string | null {
   return fromRouter ?? fromBar;
 }
 
-/** every subject the student sees, in timetable order, own ones last */
+/** every subject the student sees, in timetable order (the student's own timetable), own ones last */
 export function useSubjects(): { list: Subject[]; study: StudySnap } {
   const { S } = useApp();
   const study = useStudy();
-  return { list: subjectsFrom(SCHEDULE, study.subjects, apiLang(S.lang)), study };
+  return { list: subjectsFrom(S.timetable, study.subjects), study };
 }
 
-/** the student's own decks of a subject: made for it, or named after it (the demo deck is only a sample) */
+/** the student's own decks of a subject: made for it, or named after it */
 export const subjectDecks = (S: AppState, s: Subject): Deck[] =>
   S.decks.filter(d => belongs(s, d, d.name));
 
@@ -66,7 +68,13 @@ function SubjectList() {
   };
   return (
     <>
-      <p className="small muted">{tt('Пәндер сабақ кестесінен алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
+      {S.timetable.length
+        ? <p className="small muted">{tt('Пәндер сіздің сабақ кестеңізден алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из вашего расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
+        : (
+          <Empty icon="clock" action={<button className="btn secondary" type="button" id="subjAddTimetable" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>}>
+            {tt('Сабақ кестеңізді қосыңыз — пәндер одан өздігінен шығады. Немесе пәнді төменнен қолмен қосыңыз.', 'Добавьте своё расписание — предметы появятся из него сами. Или добавьте предмет вручную ниже.')}
+          </Empty>
+        )}
       <div className="group" id="subjectList">
         {list.map(s => {
           const nx = nextSlot(s, new Date());
@@ -96,6 +104,7 @@ function SubjectPage({ id }: { id: string }) {
   const app = useApp();
   const { S, I, tt, L, go, setUi, update, openSheet, toast } = app;
   const { list, study } = useSubjects();
+  const qaOn = useFeature('courseqa');
   const s = list.find(x => x.id === id);
   if (!study.ready) return <p className="small muted" role="status">{tt('Жүктелуде…', 'Загрузка…')}</p>;
   if (!s) {
@@ -137,11 +146,13 @@ function SubjectPage({ id }: { id: string }) {
         {nx ? (
           <>
             <span className="row-sub">
-              {tt('Келесі сабақ', 'Следующая пара')}: <b className="num">{nx.today ? tt('бүгін', 'сегодня') : `${app.wd[nx.at.getDay()]}`} {nx.slot.t}–{nx.slot.end}</b>, {L(nx.slot.kind)}
+              {tt('Келесі сабақ', 'Следующая пара')}: <b className="num">{nx.today ? tt('бүгін', 'сегодня') : `${app.wd[nx.at.getDay()]}`} {nx.slot.t}–{nx.slot.end}</b>{nx.slot.kind ? `, ${nx.slot.kind}` : ''}
             </span>
-            <button className="btn ghost" type="button" onClick={() => { setUi({ mapQ: nx.slot.room, mapSel: null }); go('map:campus'); }}>
-              <Icon n="pin" s={18} /> {tt(`${nx.slot.room} аудитория — картада`, `Аудитория ${nx.slot.room} на карте`)}
-            </button>
+            {nx.slot.room ? (
+              <button className="btn ghost" type="button" onClick={() => { setUi({ mapQ: nx.slot.room, mapSel: null }); go('map:campus'); }}>
+                <Icon n="pin" s={18} /> {tt(`${nx.slot.room} аудитория — картада`, `Аудитория ${nx.slot.room} на карте`)}
+              </button>
+            ) : null}
           </>
         ) : <span className="row-sub">{tt('Бұл пән кестеде жоқ.', 'Этого предмета нет в расписании.')}</span>}
       </section>
@@ -188,6 +199,14 @@ function SubjectPage({ id }: { id: string }) {
         {total > 0 && due === 0 ? <p className="tiny muted">{tt('Бүгінге қайталайтын карточка жоқ.', 'На сегодня повторять нечего.')}</p> : null}
       </section>
 
+      {qaOn ? (
+        <section className="section" aria-labelledby="subjQa">
+          <SectionHead title={<span id="subjQa">{tt('Сұрақ-жауап', 'Вопросы и ответы')}</span>} />
+          <Row go={qaBoard(s.name)} icon="chat" title={tt('Курстастардан сұрау', 'Спросить однокурсников')}
+            sub={tt('Осы пән бойынша сұрақтар мен жауаптар', 'Вопросы и ответы по этому предмету')} />
+        </section>
+      ) : null}
+
       <section className="section" aria-labelledby="subjExam">
         <SectionHead title={<span id="subjExam">{tt('Емтихан', 'Экзамен')}</span>} />
         <div className="card">
@@ -204,6 +223,7 @@ function SubjectPage({ id }: { id: string }) {
 
       <section className="section" aria-labelledby="subjGrade">
         <SectionHead title={<span id="subjGrade">{tt('Баға', 'Оценка')}</span>} />
+        <SubjectScoreRow id={s.id} />
         {grade
           ? <Row go="gpa" icon="chart" title={tt(`Күтілетін баға: ${grade.g}`, `Ожидаемая оценка: ${grade.g}`)} sub={tt(`${grade.cr} кредит · GPA есебі`, `${grade.cr} кредитов · расчёт GPA`)} />
           : <Row onClick={() => { update(x => { x.gpaPlan.push({ n: s.name, cr: 5, g: 'B' }); }); go('gpa'); }} icon="chart"

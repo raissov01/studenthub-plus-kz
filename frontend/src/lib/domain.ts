@@ -1,5 +1,5 @@
 /* Domain logic ported from the legacy app: matching, qualification, plans, résumé, notifications, search. */
-import { COURSES, DEMO_DECK, EVENTS, CITIES, DEAL_CATS, LEVELS, OPP_TYPES, SKILLS, SPECS } from '@/lib/data/static';
+import { COURSES, CITIES, DEAL_CATS, LEVELS, OPP_TYPES, SKILLS, SPECS } from '@/lib/data/static';
 import { DAY, T0, dOff, daysToYmd, diffDays, money, type I18n } from '@/lib/format';
 import type { AppState, Content, Deck, IconName, Job, LText, Opportunity, Plan, PlanItem, Profile } from '@/lib/types';
 
@@ -73,19 +73,17 @@ export function matchJob(j: Job, p: Profile) {
   return { pct: total ? Math.round(100 * got / total) : 0, have, miss, specNeed, specOk: j.spec.includes(p.spec), hasExp };
 }
 
-export interface Cert { title: string; org: string; date: Date; src: 'event' | 'course' | 'manual'; i?: number }
+export interface Cert { title: string; org: string; date: Date; src: 'course' | 'manual'; i?: number }
 export function certificates(S: AppState, I: I18n): Cert[] {
   const list: Cert[] = [];
-  EVENTS.filter(e => e.past && e.cert && S.events[e.id]).forEach(e => list.push({ title: I.L(e.title), org: I.tt('Университеттің студенттер ісі бөлімі', 'Отдел по делам студентов'), date: dOff(e.day), src: 'event' }));
   COURSES.filter(c => S.done[c.id]).forEach(c => list.push({ title: I.L(c.title), org: c.platform, date: new Date(S.done[c.id]), src: 'course' }));
   S.certs.forEach((c, i) => list.push({ title: c.title, org: c.org, date: new Date(c.date), src: 'manual', i }));
   return list.sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
-export function allDecks(S: AppState, I: I18n): Deck[] {
-  const out: Deck[] = [];
-  if (!S.hideDemoDeck) out.push({ id: DEMO_DECK.id, demo: true, name: I.L(DEMO_DECK.name), cards: DEMO_DECK.cards.map(c => ({ q: I.L(c.q), a: I.L(c.a) })) });
-  return out.concat(S.decks);
+/** the student's flashcard decks (there is no sample deck) */
+export function allDecks(S: AppState): Deck[] {
+  return S.decks;
 }
 
 /** exam plan generator: learn chunks with a test after every two, then review hard topics and a mock exam */
@@ -157,7 +155,6 @@ export function resumeText(lang: 'kk' | 'ru' | 'en', S: AppState, I: I18n) {
   langs.push(`${l(SKILLS.en)} — ${p.en}`);
   const skills = p.skills.filter(k => !['kz', 'ru', 'en'].includes(k) && SKILLS[k]).map(k => l(SKILLS[k]));
   const certs = certificates(S, I).map(c => `• ${c.title} — ${c.org}, ${c.date.getFullYear()}`);
-  const acts = EVENTS.filter(e => e.past && S.events[e.id]).map(e => `• ${l(e.title)}, ${dOff(e.day).getFullYear()}`);
   const exp = (p.exp || '').split('\n').map(s => s.trim()).filter(Boolean).map(s => '• ' + s);
   const gpaLine = p.gpa == null ? '' : `GPA: ${p.gpa.toFixed(2)} / 4.0`;
   const grad = { kk: `бітіру жылы: ${gradYear(p)}`, ru: `год выпуска: ${gradYear(p)}`, en: `expected graduation: ${gradYear(p)}` }[lang];
@@ -166,13 +163,12 @@ export function resumeText(lang: 'kk' | 'ru' | 'en', S: AppState, I: I18n) {
   if (skills.length) out.push('', H[3], skills.join(' · '));
   out.push('', H[4], langs.join(' · '));
   if (certs.length) out.push('', H[5], ...certs);
-  if (acts.length) out.push('', H[6], ...acts);
   return out.filter((x, i, a) => !(x === '' && a[i - 1] === '')).join('\n').replace(/^\n+/, '');
 }
 
 export function profileFill(S: AppState, I: I18n) {
   const p = S.profile;
-  const checks = [!!p.name, !!p.email, !!(p.about || '').trim(), !!(p.exp || '').trim(), p.skills.length >= 3, p.credits > 0, certificates(S, I).length > 0, !p.demo, !!p.en];
+  const checks = [!!p.name, !!p.email, !!(p.about || '').trim(), !!(p.exp || '').trim(), p.skills.length >= 3, p.credits > 0, certificates(S, I).length > 0, !!p.en];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);
 }
 
@@ -184,57 +180,47 @@ export function hue(id: string) {
 }
 
 /* ---------- notifications: derived from the student's own data, so they stay truthful ---------- */
-/** demo: built from a sample record — the list marks it «үлгі» (11-025) */
-export interface Notif { id: string; k: string; icon: IconName; tone: number; go?: string; act?: 'deal'; data?: string; h: number; title: string; text: string; demo?: boolean }
+export interface Notif { id: string; k: string; icon: IconName; tone: number; go?: string; act?: 'deal'; data?: string; h: number; title: string; text: string }
 export function notifs(S: AppState, I: I18n, C: Content): Notif[] {
   const { tt, L } = I;
   const p = S.profile, out: Notif[] = [];
   C.jobs.filter(j => j.spec.includes('all') || j.spec.includes(p.spec)).slice(0, 2).forEach((j, i) => out.push({
-    id: 'nj-' + j.id, k: 'jobs', icon: 'briefcase', tone: 0, go: 'job:' + j.id, h: 2 + i * 5, demo: !!j.is_demo,
+    id: 'nj-' + j.id, k: 'jobs', icon: 'briefcase', tone: 0, go: 'job:' + j.id, h: 2 + i * 5,
     title: tt('Жаңа жұмыс мүмкіндігі', 'Новая вакансия для вас'), text: tt(`${plainOrg(L(j.org))}: «${L(j.title)}», сізге сәйкес келеді`, `${plainOrg(L(j.org))}: «${L(j.title)}» подходит вам`),
-  }));
-  EVENTS.filter(e => !e.past).sort((a, b) => a.day - b.day).slice(0, 2).forEach((e, i) => out.push({
-    id: 'ne-' + e.id, k: 'events', icon: 'calendar', tone: 1, go: 'event:' + e.id, h: 20 + i * 14, demo: true, // EVENTS are the sample list
-    title: S.events[e.id] ? tt('Сіз тіркелген іс-шара жақында', 'Скоро ваше мероприятие') : tt('Іс-шара есігінде', 'Скоро мероприятие'),
-    text: `${L(e.title)}, ${I.fDate(dOff(e.day))}, ${e.time}`,
   }));
   Object.keys(S.applied).forEach(id => {
     const j = C.jobs.find(x => x.id === id);
     if (!j) return;
-    out.push(j.is_demo
-      // a sample job has no employer behind it: nothing is sent and no reply will come
-      ? { id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, demo: true, title: tt('Өтінім белгіленді', 'Отклик отмечен'), text: tt(`«${L(j.title)}» — үлгі вакансия: өтінім тек осы құрылғыда сақталды, жұмыс берушіге жіберілмейді`, `«${L(j.title)}» — пример вакансии: отклик сохранён только на этом устройстве и работодателю не отправляется`) }
-      : { id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, title: tt('Өтінім жіберілді', 'Отклик отправлен'), text: tt(`«${L(j.title)}» бойынша жұмыс берушінің жауабын күтіңіз`, `Ждите ответа работодателя по вакансии «${L(j.title)}»`) });
+    out.push({ id: 'na-' + id, k: 'jobs', icon: 'check', tone: 0, go: 'job:' + id, h: 1, title: tt('Өтінім жіберілді', 'Отклик отправлен'), text: tt(`«${L(j.title)}» бойынша жұмыс берушінің жауабын күтіңіз`, `Ждите ответа работодателя по вакансии «${L(j.title)}»`) });
   });
   C.discounts.slice(0, 2).forEach((d, i) => out.push({
-    id: 'nd-' + d.id, k: 'deals', icon: 'tag', tone: 2, act: 'deal', data: d.id, h: 26 + i * 22, demo: !!d.is_demo,
+    id: 'nd-' + d.id, k: 'deals', icon: 'tag', tone: 2, act: 'deal', data: d.id, h: 26 + i * 22,
     title: tt('Жеңілдік жаңартылды', 'Скидка обновлена'), text: `${plainOrg(L(d.name))}: ${d.pct}, ${L(d.what).toLowerCase()}`,
   }));
   openOpps(C.opportunities).filter(o => oppLeft(o) <= 21).slice(0, 1).forEach(o => out.push({
-    id: 'no-' + o.id, k: 'jobs', icon: 'clock', tone: 3, go: 'opp:' + o.id, h: 30, demo: !!o.is_demo,
+    id: 'no-' + o.id, k: 'jobs', icon: 'clock', tone: 3, go: 'opp:' + o.id, h: 30,
     title: tt('Өтінім мерзімі жақын', 'Скоро дедлайн'), text: `${L(o.title)}: ${I.daysLeftTxt(oppLeft(o)).toLowerCase()}`,
   }));
-  out.push({ id: 'nm-study', k: 'study', icon: 'book', tone: 4, go: 'materials', h: 72, title: tt('Жаңа оқу материалы', 'Новые учебные материалы'), text: tt('Емтиханға дайындық пен карточкалар бөлімін қараңыз', 'Загляните в подготовку к экзаменам и карточки') });
   return out.sort((a, b) => a.h - b.h);
 }
 export const unreadCount = (S: AppState, I: I18n, C: Content) => notifs(S, I, C).filter(n => !S.read[n.id]).length;
 
 /* ---------- one list for jobs, internships and deals ---------- */
-export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; demo: boolean; noFav?: boolean; detail?: string; truncateDetail?: boolean }
+export interface SearchItem { k: string; id: string; go?: string; act?: 'deal' | 'course'; org: string; title: string; meta: string; badge: [string, string] | null; fav: boolean; noFav?: boolean; detail?: string; truncateDetail?: boolean }
 export function searchItems(S: AppState, I: I18n, C: Content): SearchItem[] {
   const { tt, L } = I;
   const items: SearchItem[] = [];
   C.jobs.forEach((j, i) => items.push({
     k: 'jobs', id: j.id, go: 'job:' + j.id, org: L(j.org), title: L(j.title), meta: `${L(CITIES[j.city])} · ${tt('Жұмыс', 'Работа')}`,
-    badge: j.today ? [tt('Бүгін', 'Сегодня'), 'new'] : i < 6 ? [tt('Жаңа', 'Новое'), 'new'] : null, fav: !!S.fav[j.id], demo: j.is_demo, detail: tt('Өтінім: ', 'Отклик: ') + jobApplyText(j, I),
+    badge: j.today ? [tt('Бүгін', 'Сегодня'), 'new'] : i < 6 ? [tt('Жаңа', 'Новое'), 'new'] : null, fav: !!S.fav[j.id], detail: tt('Өтінім: ', 'Отклик: ') + jobApplyText(j, I),
   }));
   openOpps(C.opportunities).forEach(o => {
     const left = oppLeft(o);
     items.push({
-      k: oppKind(o), id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title), meta: typeLabel(o.type, I),
-      badge: left <= 14 ? [I.daysLeftTxt(left), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null, fav: !!S.saved[o.id], demo: o.is_demo,
+      k: oppKind(o), id: o.id, go: 'opp:' + o.id, org: L(o.org), title: L(o.title), meta: o.feed ? `${typeLabel(o.type, I)} · ${tt('ИИ', 'ИИ')}: ${o.feed.source_name}` : typeLabel(o.type, I),
+      badge: left <= 14 ? [I.daysLeftTxt(left), 'warn'] : o.funded ? [tt('Қаржыландырылады', 'С финансированием'), 'pick'] : null, fav: !!S.saved[o.id],
     });
   });
-  C.discounts.forEach(d => items.push({ k: 'deals', id: d.id, act: 'deal', org: L(d.name), title: L(d.what), meta: L(DEAL_CATS[d.cat]), badge: [d.pct, 'deal'], fav: !!S.fav[d.id], demo: d.is_demo, detail: tt('Шарт: ', 'Условие: ') + L(d.cond), truncateDetail: true }));
+  C.discounts.forEach(d => items.push({ k: 'deals', id: d.id, act: 'deal', org: L(d.name), title: L(d.what), meta: L(DEAL_CATS[d.cat]), badge: [d.pct, 'deal'], fav: !!S.fav[d.id], detail: tt('Шарт: ', 'Условие: ') + L(d.cond), truncateDetail: true }));
   return items;
 }

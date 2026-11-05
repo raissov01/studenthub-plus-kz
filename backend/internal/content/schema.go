@@ -31,15 +31,22 @@ var (
 		"kokshetau", "other", "remote"}
 )
 
+// Optional refinements that pick the section sub-tab (frontend lib/sections.ts, docs/CONTENT.md).
+// Empty = the default place: a job goes to «Подработка», an opportunity follows its type.
+var (
+	OppSubtypes = []string{"exchange", "workandtravel", "scholarship", "competition"}
+	JobSubtypes = []string{"parttime", "youthpractice", "fulltime"}
+)
+
 var commonTail = []string{"source_url", "posted_at", "verified_at", "verified_by",
 	"contact_phone", "contact_email", "contact_site", "is_demo", "deadline", "no_deadline"}
 
 // Columns is the sheet header row of each list, in template order.
 var Columns = map[string][]string{
-	"opportunities": append([]string{"id", "status", "type", "funded", "title_kk", "title_ru", "org_kk", "org_ru",
+	"opportunities": append([]string{"id", "status", "type", "subtype", "funded", "title_kk", "title_ru", "org_kk", "org_ru",
 		"req_course", "req_gpa", "req_en", "req_skills", "spec", "desc_kk", "desc_ru",
 		"docs_kk", "docs_ru", "steps_kk", "steps_ru", "city"}, commonTail...),
-	"jobs": append([]string{"id", "status", "today", "title_kk", "title_ru", "org_kk", "org_ru", "city", "pay", "per", "hours",
+	"jobs": append([]string{"id", "status", "subtype", "today", "title_kk", "title_ru", "org_kk", "org_ru", "city", "pay", "per", "hours",
 		"sched_kk", "sched_ru", "tags", "skills", "spec", "desc_kk", "desc_ru", "req_kk", "req_ru"}, commonTail...),
 	"discounts": append([]string{"id", "status", "cat", "pct", "name_kk", "name_ru", "what_kk", "what_ru", "cond_kk", "cond_ru",
 		"city"}, commonTail...),
@@ -71,6 +78,7 @@ type OppReq struct {
 type Opportunity struct {
 	ID         string   `json:"id"`
 	Type       string   `json:"type"`
+	Subtype    string   `json:"subtype,omitempty"` // OppSubtypes; absent = by type
 	Funded     bool     `json:"funded"`
 	Title      Bi       `json:"title"`
 	Org        Bi       `json:"org"`
@@ -91,7 +99,8 @@ type Opportunity struct {
 
 type Job struct {
 	ID         string   `json:"id"`
-	Today      bool     `json:"today,omitempty"` // present only when true
+	Subtype    string   `json:"subtype,omitempty"` // JobSubtypes; absent = parttime
+	Today      bool     `json:"today,omitempty"`   // present only when true
 	Title      Bi       `json:"title"`
 	Org        Bi       `json:"org"`
 	City       string   `json:"city"`
@@ -215,6 +224,7 @@ func RecordToRow(kind string, r map[string]any) ([]string, error) {
 	case "opportunities":
 		req := r["req"]
 		base["type"] = val(r["type"])
+		base["subtype"] = or(r["subtype"])
 		base["funded"] = b(r["funded"])
 		base["req_course"] = num(field(req, "course"))
 		base["req_gpa"] = num(field(req, "gpa"))
@@ -227,6 +237,7 @@ func RecordToRow(kind string, r map[string]any) ([]string, error) {
 		biList("docs", r["docs"])
 		biList("steps", r["steps"])
 	case "jobs":
+		base["subtype"] = or(r["subtype"])
 		base["today"] = b(r["today"])
 		base["pay"] = num(r["pay"])
 		base["per"] = val(r["per"])
@@ -545,6 +556,7 @@ var builders = map[string]func(Item) Record{
 		id := idOf(row)
 		title := bi(row, "title", true)
 		typ := oneOf(row, "type", OppTypes, true)
+		subtype := oneOf(row, "subtype", OppSubtypes, false)
 		var req OppReq
 		req.Course = number(row, "req_course", numOpts{integer: true, min: 1, max: 7})
 		req.GPA = number(row, "req_gpa", numOpts{min: 0, max: 4})
@@ -554,7 +566,7 @@ var builders = map[string]func(Item) Record{
 		}
 		city := oneOf(row, "city", Cities, true)
 		c := common(row)
-		r := &Opportunity{ID: id, Type: typ, Funded: boolean(row, "funded"), Title: title}
+		r := &Opportunity{ID: id, Type: typ, Subtype: subtype, Funded: boolean(row, "funded"), Title: title}
 		r.Org = bi(row, "org", false)
 		r.Req = req
 		r.Spec = specOf(row)
@@ -567,6 +579,7 @@ var builders = map[string]func(Item) Record{
 	},
 	"jobs": func(row Item) Record {
 		id := idOf(row)
+		subtype := oneOf(row, "subtype", JobSubtypes, false)
 		today := boolean(row, "today")
 		title := bi(row, "title", true)
 		city := oneOf(row, "city", Cities, true)
@@ -577,7 +590,7 @@ var builders = map[string]func(Item) Record{
 			fail(`per = shift болса "hours" 0-ден үлкен болуы керек`)
 		}
 		c := common(row)
-		r := &Job{ID: id, Today: today, Title: title, City: city, Pay: *pay, Per: per}
+		r := &Job{ID: id, Subtype: subtype, Today: today, Title: title, City: city, Pay: *pay, Per: per}
 		r.Org = bi(row, "org", false)
 		if hours != nil {
 			r.Hours = *hours

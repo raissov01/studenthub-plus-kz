@@ -1,9 +1,9 @@
 'use client';
 /* Renders the screen for a view id ('home', 'opps:jobs', 'job:j1', ...). */
 import { Ai, Cards, Chat, DeckView, Exam, Interview, Match, PlanView, Resume, Study } from '@/components/views/ai';
-import { EventView, JobView, OppView } from '@/components/views/detail';
+import { JobView, OppView } from '@/components/views/detail';
 import { Home, Materials, Notifications, Saved, Services } from '@/components/views/home';
-import { Search } from '@/components/views/search';
+import { Search, SectionScreen } from '@/components/views/search';
 import { MapView } from '@/components/views/map';
 import { Mine } from '@/components/views/opps';
 import { Admission, DocView, Docs, Edit, Gpa, Pay, Portfolio, Profile, Settings } from '@/components/views/profile';
@@ -21,14 +21,28 @@ import { Announcements } from '@/components/views/jobs-b2b';
 import { AdminEmployers, AdminStaff, EmployerCabinet } from '@/components/views/employer';
 import { UniversityCabinet } from '@/components/views/university';
 import { AdminContent } from '@/components/views/admin-content';
+import { AdminFeeds } from '@/components/views/feeds';
 import { MySuggestionsPage, SuggestPage } from '@/components/views/suggest';
 import { CalendarView } from '@/components/views/calendar';
 import { AdminPoints, Points } from '@/components/views/points';
+import { CafeScreen } from '@/components/views/cafe';
+import { AdminCafe } from '@/components/views/cafe-admin';
+import { PrintScreen } from '@/components/views/print';
+import { AdminPrint } from '@/components/views/print-admin';
 import { SubjectsScreen } from '@/components/views/subjects';
+import { TimetableScreen } from '@/components/views/timetable';
 import { NotesScreen } from '@/components/views/notes';
 import { ReviewScreen } from '@/components/views/review';
+import { FeedbackScreen, SurveysScreen, VoiceStaff, WellbeingScreen } from '@/components/views/voice';
+import { LostFoundScreen } from '@/components/views/lostfound';
+import { QAScreen } from '@/components/views/qa';
+import { RoommatesScreen } from '@/components/views/roommates';
+import { AdminClubs, ClubScreen, ClubsScreen } from '@/components/views/clubs';
+import { GradesScreen } from '@/components/views/grades';
+import { ApplicationsScreen } from '@/components/views/applications';
+import { BoothScreen } from '@/components/views/fairs';
 import { parseView } from '@/lib/routes';
-import { catOfView } from '@/lib/search';
+import { sectionOfView } from '@/lib/sections';
 
 export function Screen({ v }: { v: string }) {
   const [name, prm] = parseView(v);
@@ -39,12 +53,12 @@ export function Screen({ v }: { v: string }) {
     case 'services': return <Services />;
     case 'materials': return <Materials />;
     case 'saved': return <Saved />;
-    // the old «Мүмкіндіктер» and discounts URLs are the search screen with their category selected
-    case 'opps': case 'bonus': return <Search fixed={catOfView(name, prm)} />;
+    // the sections (/jobs, /internships, /events, /courses, /discounts), each with its own sub-tabs
+    case 'opps': case 'bonus': { const sec = sectionOfView(name, prm) ?? 'jobs'; return <SectionScreen key={sec} section={sec} />; }
     case 'mine': return <Mine />;
     case 'job': return <JobView id={prm} />;
     case 'opp': return <OppView id={prm} />;
-    case 'event': return /^\d+$/.test(prm) ? <DbEventView id={prm} /> : <EventView id={prm} />;
+    case 'event': return /^\d+$/.test(prm) ? <DbEventView id={prm} /> : <NotFound />;
     case 'ai': return <Ai />;
     case 'chat': return <Chat />;
     case 'resume': return <Resume />;
@@ -77,6 +91,10 @@ export function Screen({ v }: { v: string }) {
       if (prm === 'employers') return <AdminEmployers />;
       if (prm === 'staff') return <AdminStaff />;
       if (prm === 'points') return <AdminPoints />;
+      if (prm === 'cafe' || prm.startsWith('cafe?')) return <AdminCafe />;
+      if (prm === 'print' || prm.startsWith('print?')) return <AdminPrint />;
+      if (prm === 'clubs') return <AdminClubs />;
+      if (prm === 'feeds') return <AdminFeeds />;
       if (prm === 'content' || prm.startsWith('content/') || prm.startsWith('content?')) return <AdminContent prm={prm} />;
       return <NotFound />;
     case 'ambassador': return prm === 'mentors' ? <AmbassadorMentors /> : <Ambassador prm={prm} />;
@@ -92,9 +110,24 @@ export function Screen({ v }: { v: string }) {
     case 'suggestions': return <MySuggestionsPage />;
     case 'calendar': return <CalendarView />;
     case 'points': return <Points />;
+    case 'cafe': return <CafeScreen prm={prm} />;
+    case 'print': return <PrintScreen prm={prm} />;
     case 'subjects': return <SubjectsScreen />;
+    case 'timetable': return <TimetableScreen />;
     case 'notes': return <NotesScreen />;
     case 'review': return <ReviewScreen />;
+    case 'surveys': return <SurveysScreen />;
+    case 'feedback': return <FeedbackScreen />;
+    case 'wellbeing': return <WellbeingScreen />;
+    case 'voice': return <VoiceStaff />;
+    case 'lostfound': return <LostFoundScreen />;
+    case 'qa': return <QAScreen />;
+    case 'roommates': return <RoommatesScreen />;
+    case 'clubs': return <ClubsScreen />;
+    case 'club': return <ClubScreen />;
+    case 'grades': return <GradesScreen />;
+    case 'applications': return <ApplicationsScreen />;
+    case 'booth': return <BoothScreen />;
     default: return <Home />;
   }
 }

@@ -20,13 +20,15 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 │   ├── tools/                контраст, экран суреттері, квиз тексерулері
 │   └── next.config.ts        output: 'standalone', CSP, /api rewrite (тек dev/test)
 ├── backend/                  Go модулі github.com/raissov01/studenthub-plus-kz/backend
-│   ├── cmd/                  server, migrate, routes (SECURITY.md), e2etest, json-to-csv
+│   ├── cmd/                  server, migrate, routes (SECURITY.md), e2etest, json-to-csv, cafe-seed (тек dev)
+│   ├── cmd/                  server, migrate, feeds-collect, routes (SECURITY.md), e2etest, json-to-csv
 │   ├── internal/             auth, content, bot, notify, quiz, events, market, b2b, … (бұрынғы pkg/)
 │   ├── migrations/           *.sql, аты бойынша ретпен, әрқайсысы бір рет (cmd/migrate)
 │   ├── data/                 jobs/opportunities/discounts.json — Google Sheets істемесе API-дің қоры
+│   ├── feeds/sources.yaml    мүмкіндіктер ағынының дереккөздері (docs/feeds.md)
 │   └── templates/sheets/     Google Sheets үлгі CSV-лері
 ├── docker/
-│   ├── backend.Dockerfile    Go → статикалық бинарлар (server + migrate), alpine, non-root
+│   ├── backend.Dockerfile    Go → статикалық бинарлар (server + migrate + feeds-collect), alpine, non-root
 │   ├── frontend.Dockerfile   Next standalone, node:22-alpine, non-root
 │   ├── docker-compose.yml    PRODUCTION (ортақ VPS): postgres + api + web
 │   ├── docker-compose.local.yml      ноутбукта бүкіл стек, бастапқы кодтан
@@ -40,6 +42,8 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 │   ├── vps-apply.sh          серверде орындалатын бөлігі (build жоқ)
 │   ├── swarm-init.sh, swarm-deploy.sh
 │   └── systemd/              cron/notify timer-лері (хостта, API-ді 127.0.0.1:8110 арқылы шақырады)
+├── services/
+│   └── kaspi-pos/            кофейня Kaspi sidecar (ресми емес клиент, upstream 175577e), docs/cafe.md
 ├── scripts/
 │   └── detect-smart-deploy.sh   diff → қай сервис қозғалады
 ├── docs/
@@ -70,13 +74,18 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 | Апта сайынғы әкімшілік тізім | [operations/admin-weekly.md](./operations/admin-weekly.md) |
 | Аккаунттар, сессиялар, env | [ACCOUNTS.md](./ACCOUNTS.md) |
 | Telegram бот | [BOT.md](./BOT.md) |
+| Кофейня: алдын ала тапсырыс, Kaspi (кофейняның өз шоты), пилот runbook | [cafe.md](./cafe.md) |
+| Полиграфия: файл жүктеу, сервер бағасы, кезек, оператор тақтасы, пилот runbook және полиграфияға сұрақтар | [print.md](./print.md) |
 | Контент (Google Sheets, data/*.json) | [CONTENT.md](./CONTENT.md) |
+| Мүмкіндіктер ағыны (Telegram, сайттар, ИИ сүзгісі) | [feeds.md](./feeds.md) |
 | PWA, офлайн | [PWA.md](./PWA.md) |
 | Браузер хабарламалары (Web Push) | [PUSH.md](./PUSH.md) |
 | Тілдер (kk / ru / en), ағылшын сөздігі | [I18N.md](./I18N.md) |
 | Қауіпсіздік тақырыптары | [HEADERS.md](./HEADERS.md) |
 | API маршруттарының аудиті (генерацияланады) | [SECURITY.md](./SECURITY.md) |
 | Аналитика | [ANALYTICS.md](./ANALYTICS.md) |
+| Сауалнама, анонимді өтініш, әл-ауқат (анонимдік схемасы) | [UNIVOICE.md](./UNIVOICE.md) |
+| Клубтар (FEATURE_CLUBS), ресми сеид | [clubs.md](./clubs.md), [clubs-seed.md](./clubs-seed.md) |
 | Браузерлік тесттер | [E2E.md](./E2E.md) |
 | API модульдері | [api/](./api/) |
 | Промпттар / ТЗ, паритет | [prompts/](./prompts/), [PARITY.md](./PARITY.md) |

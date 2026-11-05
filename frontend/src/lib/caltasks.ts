@@ -81,6 +81,3 @@ export function groupTasks<T extends TaskLike>(tasks: T[], today: Ymd): { key: T
     items: m.get(k)!.sort(k === 'done' ? (a, b) => b.done - a.done || compareTasks(a, b) : compareTasks),
   }));
 }
-
-/** a class of the sample weekday timetable lands on Monday–Friday only */
-export const isClassDay = (d: Ymd) => weekdayMon(d) < 5;

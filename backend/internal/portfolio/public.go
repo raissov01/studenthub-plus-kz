@@ -86,10 +86,11 @@ type Badge struct {
 
 // Self is «Өзі көрсеткен».
 type Self struct {
-	Certificates []SelfItem `json:"certificates"`
-	Experience   []SelfItem `json:"experience"`
-	Skills       []SelfItem `json:"skills"`
-	Badges       []Badge    `json:"badges"`
+	Certificates []SelfItem   `json:"certificates"`
+	Files        []PublicCert `json:"files"` // certificate files the student marked public (PDF / image)
+	Experience   []SelfItem   `json:"experience"`
+	Skills       []SelfItem   `json:"skills"`
+	Badges       []Badge      `json:"badges"`
 }
 
 type SelfItem struct {
@@ -120,7 +121,7 @@ var errHidden = errors.New("portfolio: no page")
 func Build(ctx context.Context, userID int64, preview bool) (*Page, error) {
 	p := &Page{NoIndex: true, Site: siteURL()}
 	p.Verified = Verified{Events: []VerifiedEvent{}, Certificates: []VerifiedCert{}, Badges: []Badge{}}
-	p.SelfReported = Self{Certificates: []SelfItem{}, Experience: []SelfItem{}, Skills: []SelfItem{}, Badges: []Badge{}}
+	p.SelfReported = Self{Certificates: []SelfItem{}, Files: []PublicCert{}, Experience: []SelfItem{}, Skills: []SelfItem{}, Badges: []Badge{}}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
 		var s Settings
 		var name, univ, username *string
@@ -235,6 +236,13 @@ func Build(ctx context.Context, userID int64, preview bool) (*Page, error) {
 					p.SelfReported.Badges = append(p.SelfReported.Badges, b)
 				}
 			}
+		}
+		if s.ShowCerts {
+			files, err := publicCerts(ctx, tx, userID)
+			if err != nil {
+				return err
+			}
+			p.SelfReported.Files = files
 		}
 		if s.SyncConsentAt != nil && (s.ShowCerts || s.ShowExperience || s.ShowSkills) {
 			items, err := ownItems(ctx, tx, `select kind, title, org, period, descr, url from portfolio_items

@@ -2,9 +2,9 @@
 /* Events from the database (prompt 05): list cards, the event page with registration and e-ticket, QR check-in
    for students (/checkin), and the organizer screens (/organize, /organize/new, /organize/<id>) with the live
    rotating QR, a ticket scanner, the fallback list, teams, finish, CSV and feedback. */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { Chip, DemoBadge, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
+import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
   toLocalInput, useFeature, useLoad, useNeedAccount,
@@ -15,6 +15,7 @@ import { rememberEvent, rememberMine, savedTicket, savedTickets, withMy } from '
 import { BUILDINGS } from '@/lib/data/campus';
 import { CalendarActions, eventPinTarget } from '@/components/views/calendar';
 import { awardText, pointsChanged } from '@/lib/points';
+import { FairSection } from '@/components/views/fairs';
 import {
   ALL_EVENT_CATS, canCreateEvents, isPast, CHECKIN_KEY, checkinToken, CLAIM_KEY, evDesc, evTitle,
   type Attendance, type CheckinResult, type DbEvent, type FeedbackSummary, type LiveView, type RegRow, type RegsResp,
@@ -33,7 +34,6 @@ export function DbEventCard({ e }: { e: DbEvent }) {
           <span className="row-sub">{wd[d.getDay()]}, {hhmm(e.starts_at)}{e.place_text ? `. ${e.place_text}` : ''}</span>
           <span className="badges" style={{ marginTop: 6 }}>
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
-            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun">{tt('Сертификат', 'Сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'cancelled' ? <span className="badge b-bad">{tt('Өтпейді', 'Отменено')}</span> : null}
@@ -104,7 +104,6 @@ function DbEvent_({ id }: { id: string }) {
         <div className="detail-head" style={{ minWidth: 0 }}><h1>{evTitle(e, lang)}</h1>
           <div className="badges">
             <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
-            <DemoBadge show={!!e.is_demo} />
             {e.gives_cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}
             {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
             {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}
@@ -123,6 +122,7 @@ function DbEvent_({ id }: { id: string }) {
       {e.status !== 'cancelled' && !isPast(e.ends_at) ? <CalendarActions item={'event:' + e.id} target={eventPinTarget(e.id, { kk: e.title_kk, ru: e.title_ru }, e.starts_at)} /> : null}
       {!att.data?.attendees ? <p className="tiny muted">{tt('Қатысушылардың аты тек тіркелгендерге көрінеді.', 'Имена участников видны только записавшимся.')}</p> : null}
       {evDesc(e, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evDesc(e, lang)}</p> : null}
+      <FairSection id={e.id} cat={e.cat} manage={!!e.can_manage} />
       {e.can_manage ? <button className="btn secondary block" type="button" onClick={() => go('organize:' + e.id)}><Icon n="gear" s={18} /> {tt('Іс-шараны басқару', 'Управлять мероприятием')}</button> : null}
       {my?.status === 'registered' ? (
         <>
@@ -280,12 +280,12 @@ function Checkin_() {
 }
 
 /* ---------- portfolio: verified attendance ---------- */
-export function VerifiedAttendance() {
+export function VerifiedAttendance({ empty = null }: { empty?: ReactNode } = {}) {
   const { tt, lang, I } = useApp();
   const acc = useAccount();
   const on = useFeature('events');
   const { data } = useLoad<{ attendance: Attendance[] }>(on && acc.user ? '/api/events/my/attendance' : null);
-  if (!on || !acc.user || !data?.attendance.length) return null;
+  if (!on || !acc.user || !data?.attendance.length) return <>{empty}</>;
   return (
     <div className="group">
       {data.attendance.map(a => (
@@ -297,7 +297,7 @@ export function VerifiedAttendance() {
 }
 
 /** «Менің тізімім» → my DB registrations */
-export function MyDbEvents() {
+export function MyDbEvents({ empty = null }: { empty?: ReactNode } = {}) {
   const acc = useAccount();
   const on = useFeature('events');
   const online = useOnline();
@@ -312,7 +312,7 @@ export function MyDbEvents() {
   // without network (or before /api/me answers offline): the tickets kept on this device
   const fromCache = !fetched && on && (!online || code === 'offline' || code === 'network');
   const list = (fetched ?? (fromCache ? savedTickets().map(t => t.event) : [])).filter(e => e.status !== 'finished' && !isPast(e.ends_at));
-  if (!list.length) return null;
+  if (!list.length) return <>{empty}</>;
   return (
     <div className="list">
       {list.map(e => (
@@ -400,14 +400,15 @@ function initForm(e?: DbEvent): FormState {
   };
 }
 
-function EventForm({ edit, onSaved }: { edit?: DbEvent; onSaved?: () => void }) {
+/** create / edit an event; with clubId (a club admin on the club page) the event belongs to that club and its university */
+export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?: () => void; clubId?: number }) {
   const { tt, lang, L, toast, go } = useApp();
   const acc = useAccount();
   const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), university: edit?.university ?? acc.user?.university ?? '' }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF(x => ({ ...x, [k]: v }));
-  const admin = acc.user?.role === 'admin';
+  const admin = acc.user?.role === 'admin' && !clubId;
   const titleOk = f.title_kk.trim().length >= 3 && (!admin || !!edit || f.university.trim().length >= 2);
   const save = async (status?: 'draft' | 'published') => {
     if (!titleOk || busy) return;
@@ -419,6 +420,7 @@ function EventForm({ edit, onSaved }: { edit?: DbEvent; onSaved?: () => void }) 
       gives_cert: f.gives_cert, teams_enabled: f.teams_enabled,
     };
     if (status) body.status = status;
+    if (!edit && clubId) body.club_id = clubId;
     if (!edit && admin && f.university.trim()) body.university = f.university.trim();
     setBusy(true); setErr('');
     try {

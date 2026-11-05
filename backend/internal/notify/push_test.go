@@ -192,7 +192,7 @@ func TestPushFailureWithoutBotRetriesThenDrops(t *testing.T) {
 	f.status["/down"] = 201
 	f.mu.Unlock()
 	res, err := d.Flush(ctx(), at(13, 1))
-	if err != nil || res.Sent != 1 || f.count("/down") != 2 || channel(t, uid) != "push" {
+	if err != nil || res.Sent < 1 || f.count("/down") != 2 || channel(t, uid) != "push" {
 		t.Fatalf("flush %+v %v hits=%d", res, err, f.count("/down"))
 	}
 	// all subscriptions gone and no bot: the retry is dropped (inbox row remains)
@@ -201,7 +201,7 @@ func TestPushFailureWithoutBotRetriesThenDrops(t *testing.T) {
 	if r := dsend(t, d, uid, CatEvents, "Nobody home", Opts{Now: at(14, 0)}); r != Queued {
 		t.Fatalf("gone: %s", r)
 	}
-	if res, err := d.Flush(ctx(), at(15, 1)); err != nil || res.Dropped != 1 {
+	if res, err := d.Flush(ctx(), at(15, 1)); err != nil || count(t, `select count(*) from notify_outbox where user_id=$1 and state='dropped' and text='Nobody home'`, uid) != 1 {
 		t.Fatalf("flush %+v %v", res, err)
 	}
 	if n := count(t, `select count(*) from notifications where user_id=$1 and text='Nobody home'`, uid); n != 1 {
@@ -219,7 +219,8 @@ func TestPushRespectsQuietHoursCategoriesAndCap(t *testing.T) {
 	if r := dsend(t, d, uid, CatEvents, "Түнде", Opts{Now: at(23, 0)}); r != Queued || f.count("/rules") != 0 {
 		t.Fatalf("quiet: %s hits=%d", r, f.count("/rules"))
 	}
-	if res, err := d.Flush(ctx(), at(8, 0).AddDate(0, 0, 1)); err != nil || res.Sent != 1 || f.count("/rules") != 1 {
+	// Flush is global: other tests' users may be due too, so check this user's push only
+	if res, err := d.Flush(ctx(), at(8, 0).AddDate(0, 0, 1)); err != nil || res.Sent < 1 || f.count("/rules") != 1 {
 		t.Fatalf("morning flush %+v %v", res, err)
 	}
 	// category off: nothing pushed

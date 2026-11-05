@@ -1,30 +1,29 @@
 'use client';
 /* «Күнтізбе» (/calendar): a Google-Calendar-like month grid (Monday first, Almaty days), a week list and a
    «Тапсырмалар» to-do list. It shows application deadlines (opportunities, vacancies), events, exam plans, the
-   sample class timetable as a «Сабақтар» layer, the student's own deadlines and the items pinned with
+   student's own class timetable (lib/timetable.ts) as a «Сабақтар» layer, the student's own deadlines and the items pinned with
    «Күнтізбеге қосу» (PinButton, used on detail pages and list rows). Every kind has its own colour, icon and label;
    own deadlines and pins carry a priority. The student's own events («Іс-шара қосу») carry a colour of their choice and
    show as titled chips inside the month cells. Date logic: lib/calendar.ts; grouping and kind colours: lib/caltasks.ts;
    year grid, cell packing, agenda order and event colours: lib/calview.ts. */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useApp } from '@/components/app';
-import { ConfirmSheet, DemoBadge, Empty, Icon, SectionHead } from '@/components/ui';
+import { ConfirmSheet, Empty, Icon, SectionHead } from '@/components/ui';
 import {
   addDays, almatyHm, almatyYmd, byDay, daysBetween, googleCalendarUrl, isHm, isPriority, isYmd, monthGrid, monthKey, monthOf, MONTHS,
   PRIORITIES, shiftMonth, WEEK_SHORT, weekdayMon, weekdaySun, type CalPin, type OwnDeadline, type PinKind, type Priority, type Ymd,
 } from '@/lib/calendar';
 import {
-  CAL_KINDS, GROUP_LABEL, groupTasks, isClassDay, KIND_STYLE, kindColor, PRIO_LABEL, prioClass, type CalKind,
+  CAL_KINDS, GROUP_LABEL, groupTasks, KIND_STYLE, kindColor, PRIO_LABEL, prioClass, type CalKind,
 } from '@/lib/caltasks';
 import {
   DEFAULT_EV_COLOR, EV_COLORS, evColorName, evColorVars, isEvColor, monthCounts, packCell, sortAgenda, timeRange, yearGrid, yearOptions,
 } from '@/lib/calview';
-import { EVENTS, SCHEDULE } from '@/lib/data/static';
 import { typeLabel } from '@/lib/domain';
 import { buildOneIcs } from '@/lib/ics';
 import { pathOf } from '@/lib/routes';
-import { dOff, type I18n } from '@/lib/format';
-import type { AppState, Content } from '@/lib/types';
+import { type I18n } from '@/lib/format';
+import type { AppState, Content, TimetableEntry } from '@/lib/types';
 import { apiLang } from '@/lib/i18n';
 
 export type { CalKind } from '@/lib/caltasks';
@@ -43,7 +42,6 @@ export interface CalItem {
   sub: string;
   go?: string;
   saved: boolean;
-  demo: boolean;
   own?: OwnDeadline;
   pin?: CalPin;
   /** own deadlines and pinned items only */
@@ -70,20 +68,24 @@ function ownItem(d: OwnDeadline, I: I18n): CalItem {
   return {
     key: 'own:' + d.id, kind: 'own', date: d.date, time: d.time, title: d.title,
     sub: ev ? d.place || d.note : d.note || I.tt('Менің дедлайным', 'Мой дедлайн'),
-    saved: true, demo: false, own: d, prio: ev ? undefined : d.prio, done: d.done,
+    saved: true, own: d, prio: ev ? undefined : d.prio, done: d.done,
     ...(ev ? { color: d.color, end: d.end || undefined, place: d.place } : {}),
   };
 }
 
-/** the sample weekday timetable (lib/data/static SCHEDULE) on the weekdays from..to */
-export function classItems(I: I18n, from: Ymd, to: Ymd): CalItem[] {
+/** the student's own weekly timetable on the days from..to (each class on its weekday) */
+export function classItems(list: TimetableEntry[], from: Ymd, to: Ymd): CalItem[] {
   const out: CalItem[] = [];
+  if (!list.length) return out;
   for (let d = from; d <= to; d = addDays(d, 1)) {
-    if (!isClassDay(d)) continue;
-    SCHEDULE.forEach((c, i) => out.push({
-      key: `class:${d}:${i}`, kind: 'class', date: d, time: c.t, end: c.end, title: I.L(c.name),
-      sub: `${I.L(c.kind)} · ${c.room} · ${c.t}–${c.end}`, saved: true, demo: true, done: 0,
-    }));
+    const wd = weekdayMon(d);
+    for (const c of list) {
+      if (c.wd !== wd) continue;
+      out.push({
+        key: `class:${d}:${c.id}`, kind: 'class', date: d, time: c.t, end: c.end, title: c.name,
+        sub: [c.kind, c.room, `${c.t}–${c.end}`].filter(Boolean).join(' · '), saved: true, done: 0,
+      });
+    }
   }
   return out;
 }
@@ -103,14 +105,14 @@ export function calItems(S: AppState, I: I18n, C: Content): CalItem[] {
     if (!o.deadline || !isYmd(o.deadline.slice(0, 10))) continue;
     add({
       key: 'opp:' + o.id, kind: 'opp', date: o.deadline.slice(0, 10), time: '', title: L(o.title),
-      sub: `${typeLabel(o.type, I)} · ${tt('өтінім мерзімі', 'приём заявок до')}`, go: 'opp:' + o.id, saved: !!S.saved[o.id], demo: !!o.is_demo,
+      sub: `${typeLabel(o.type, I)} · ${tt('өтінім мерзімі', 'приём заявок до')}`, go: 'opp:' + o.id, saved: !!S.saved[o.id],
     });
   }
   for (const j of C.jobs) {
     if (!j.deadline || !isYmd(j.deadline.slice(0, 10)) || j.deadline.slice(0, 10) < today) continue;
     add({
       key: 'job:' + j.id, kind: 'job', date: j.deadline.slice(0, 10), time: '', title: L(j.title),
-      sub: `${L(j.org)} · ${tt('өтінім мерзімі', 'отклик до')}`, go: 'job:' + j.id, saved: !!S.fav[j.id], demo: !!j.is_demo,
+      sub: `${L(j.org)} · ${tt('өтінім мерзімі', 'отклик до')}`, go: 'job:' + j.id, saved: !!S.fav[j.id],
     });
   }
   for (const e of C.events ?? []) {
@@ -118,24 +120,32 @@ export function calItems(S: AppState, I: I18n, C: Content): CalItem[] {
     add({
       key: 'event:' + e.id, kind: 'event', date: almatyYmd(e.starts_at), time: almatyHm(e.starts_at),
       title: (S.lang !== 'kk' ? e.title_ru || e.title_kk : e.title_kk) || '', sub: [tt('Іс-шара', 'Мероприятие'), e.place_text].filter(Boolean).join(' · '),
-      go: 'event:' + e.id, saved: false, demo: !!e.is_demo,
+      go: 'event:' + e.id, saved: false,
     });
   }
-  // pinned items that are not in the feed (a sample event, a closed vacancy): their saved copy
+  // pinned items that are not in the feed (a closed vacancy, a finished event): their saved copy
   for (const p of pins.values()) {
     out.push({
       key: p.ref, kind: p.kind, date: p.date, time: p.time, title: p.title[apiLang(S.lang)] || p.title.kk,
-      sub: kindLabel(p.kind, I), go: p.ref, saved: true, demo: false, pin: p, prio: p.prio, done: p.done,
+      sub: kindLabel(p.kind, I), go: p.ref, saved: true, pin: p, prio: p.prio, done: p.done,
     });
   }
   for (const pl of S.plans ?? []) {
     if (!pl.exam || Number.isNaN(Date.parse(pl.exam))) continue;
     out.push({
       key: 'exam:' + pl.id, kind: 'exam', date: almatyYmd(pl.exam), time: '', title: pl.subject || tt('Емтихан', 'Экзамен'),
-      sub: tt('Емтихан · дайындық жоспары', 'Экзамен · план подготовки'), go: 'plan:' + pl.id, saved: true, demo: false, done: 0,
+      sub: tt('Емтихан · дайындық жоспары', 'Экзамен · план подготовки'), go: 'plan:' + pl.id, saved: true, done: 0,
     });
   }
   for (const d of S.deadlines ?? []) if (d.date) out.push(ownItem(d, I));
+  // spec 06: the follow-up date of an application (lib/applications.ts)
+  for (const a of S.applications ?? []) {
+    if (!a.followUp || a.stage === 'rejected' || a.stage === 'withdrawn') continue;
+    out.push({
+      key: 'follow:' + a.ref, kind: 'job', date: a.followUp, time: '', title: L(a.title) || a.ref.slice(a.ref.indexOf(':') + 1),
+      sub: tt('Өтінім · хабарласу', 'Отклик · связаться'), go: 'applications', saved: true, done: 0,
+    });
+  }
   return out;
 }
 
@@ -159,9 +169,8 @@ export function taskItems(S: AppState, I: I18n, C: Content): CalItem[] {
 /* ---------- pins ---------- */
 export interface PinTarget { ref: string; kind: PinKind; title: { kk: string; ru: string }; date: Ymd; time: string }
 
-const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/** what «Күнтізбеге қосу» would pin for a view id ('opp:x', 'job:x', 'event:12', 'event:e1'); null = no date to pin */
+/** what «Күнтізбеге қосу» would pin for a view id ('opp:x', 'job:x', 'event:12'); null = no date to pin */
 export function pinTarget(ref: string, C: Content): PinTarget | null {
   const i = ref.indexOf(':');
   const kind = ref.slice(0, i), id = ref.slice(i + 1);
@@ -175,10 +184,6 @@ export function pinTarget(ref: string, C: Content): PinTarget | null {
     const e = (C.events ?? []).find(x => String(x.id) === id);
     if (e && !Number.isNaN(Date.parse(e.starts_at))) {
       return { ref, kind, title: { kk: e.title_kk, ru: e.title_ru || e.title_kk }, date: almatyYmd(e.starts_at), time: almatyHm(e.starts_at) };
-    }
-    const s = EVENTS.find(x => x.id === id);
-    if (s && !s.past) {
-      return { ref, kind, title: { kk: s.title.kk, ru: s.title.ru || s.title.kk }, date: ymdLocal(dOff(s.day)), time: isHm(s.time) ? s.time : '' };
     }
   }
   return null;
@@ -554,7 +559,7 @@ function AgendaRow({ it }: { it: CalItem }) {
       </span>
       <button className="cal-tl-main" type="button" onClick={open}>
         <span className="row-title">{it.title}</span>
-        {sub ? <span className="row-sub">{ev && it.place ? <Icon n="pin" s={13} /> : null}{sub}{it.demo && it.kind !== 'class' ? <> <DemoBadge show /></> : null}</span> : null}
+        {sub ? <span className="row-sub">{ev && it.place ? <Icon n="pin" s={13} /> : null}{sub}</span> : null}
         <span className="badges">
           <span className="cal-kind-tag">{ev ? <i className="cal-sw-dot" aria-hidden="true" /> : <Icon n={KIND_STYLE[it.kind].icon} s={12} />}{itemKindLabel(it, I)}</span>
           <PrioTag p={it.prio} />
@@ -677,7 +682,7 @@ function YearView({ y, dates, onOpen }: { y: number; dates: Map<Ymd, unknown[]>;
 type CalViewKind = 'month' | 'week' | 'year' | 'tasks';
 
 export function CalendarView() {
-  const { S, I, tt, lang, ui, setUi, openSheet, content } = useApp();
+  const { S, I, tt, lang, ui, setUi, openSheet, content, go } = useApp();
   const today = todayYmd();
   const sel = isYmd(ui.calSel) ? ui.calSel : today;
   const month = /^\d{4}-\d{2}$/.test(ui.calMonth) ? { y: +ui.calMonth.slice(0, 4), m: +ui.calMonth.slice(5, 7) - 1 } : monthOf(sel);
@@ -738,8 +743,8 @@ export function CalendarView() {
     const da = new Date(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10)), db = new Date(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10));
     return a.slice(0, 7) === b.slice(0, 7) ? `${da.getDate()}–${I.fDate(db)}` : `${I.fDate(da)} – ${I.fDate(db)}`;
   })();
-  const gridClasses = classesOn && !week && !year ? byDay(classItems(I, weeks[0][0].ymd, weeks[weeks.length - 1][6].ymd)) : null;
-  const withClasses = (d: Ymd, list: CalItem[], on: boolean) => (on && isClassDay(d) ? [...list, ...classItems(I, d, d)] : list);
+  const gridClasses = classesOn && !week && !year ? byDay(classItems(S.timetable, weeks[0][0].ymd, weeks[weeks.length - 1][6].ymd)) : null;
+  const withClasses = (d: Ymd, list: CalItem[], on: boolean) => (on ? [...list, ...classItems(S.timetable, d, d)] : list);
   const setView = (v: CalViewKind) => setUi({ calView: v });
   const nav = (n: number) => (week ? pick(addDays(sel, 7 * n)) : year ? moveMonth(12 * n) : moveMonth(n));
   const navLabel = (n: number) => (week ? (n < 0 ? tt('Алдыңғы апта', 'Предыдущая неделя') : tt('Келесі апта', 'Следующая неделя'))
@@ -773,9 +778,13 @@ export function CalendarView() {
               <button className="chip" type="button" aria-pressed={ui.calSaved} onClick={() => setUi({ calSaved: !ui.calSaved })}>
                 <Icon n="heart" s={16} /> {tt('Сақталғандар мен менікі', 'Сохранённое и моё')}
               </button>
-              {year ? null : (
+              {year ? null : S.timetable.length ? (
                 <button className="chip cal-classes-chip" type="button" aria-pressed={classesOn} onClick={() => setUi({ calClasses: classesOn ? 'off' : 'on' })}>
                   <Icon n="book" s={16} /> {tt('Сабақтар', 'Занятия')}
+                </button>
+              ) : (
+                <button className="chip cal-classes-chip" type="button" id="calAddTimetable" onClick={() => go('timetable')}>
+                  <Icon n="plus" s={16} /> {tt('Сабақ кестесін қосу', 'Добавить расписание')}
                 </button>
               )}
             </div>

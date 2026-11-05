@@ -10,7 +10,11 @@ test('eight core paths: onboarding → search → opportunity → roadmap → AI
   });
   await test.step('2. Search query, category and filter sheet', async () => {
     await page.getByRole('navigation').getByRole('button', { name: t('Іздеу', 'Поиск'), exact: true }).click();
-    await page.getByRole('group', { name: t('Санат', 'Категория'), exact: true }).getByRole('button', { name: t('Жұмыс', 'Работа'), exact: true }).click();
+    // «Іздеу» has no category chips any more: a section opens from the menu with its own sub-tabs
+    await expect(page.locator('.search-cats')).toHaveCount(0);
+    await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
+    await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Жұмыс', 'Работа'), exact: true }).click();
+    await expect(page.getByRole('tab', { name: t('Подработка', 'Подработка'), exact: true })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toBeVisible();
     await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toHaveCount(0);
     await expect(page.getByText(job.apply![lang], { exact: false })).toBeVisible();
@@ -33,7 +37,8 @@ test('eight core paths: onboarding → search → opportunity → roadmap → AI
     await fits(page);
   });
   await test.step('3. Opportunity detail, unknown GPA, share and save', async () => {
-    await page.getByRole('group', { name: t('Санат', 'Категория'), exact: true }).getByRole('button', { name: t('Тағылымдама', 'Стажировки'), exact: true }).click();
+    await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
+    await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Тағылымдама', 'Стажировки'), exact: true }).click();
     await page.locator('.fav-card > .card', { hasText: opportunity.title[lang] }).click(); // the row also has «Күнтізбеге қосу: <title>»
     await expect(page.getByRole('heading', { name: opportunity.title[lang], exact: true })).toBeVisible();
     await page.getByRole('button', { name: t('Тексеру', 'Проверить'), exact: true }).click();

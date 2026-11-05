@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Atom</title>
+  <entry>
+    <title>Hackathon Astana 2026</title>
+    <id>tag:example.org,2026:42</id>
+    <link rel="alternate" href="/events/42"/>
+    <published>2026-11-02T09:00:00+05:00</published>
+    <summary type="html">&lt;p&gt;Registration until 25.11.2026 &lt;a href="https://reg.example.org/42"&gt;here&lt;/a&gt;&lt;/p&gt;</summary>
+  </entry>
+</feed>

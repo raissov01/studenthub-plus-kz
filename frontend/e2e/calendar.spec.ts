@@ -1,5 +1,5 @@
-import { test, expect, onboard, fits, label, deviceState } from './fixtures';
-import { OPP_DEADLINE } from './content';
+import { test, expect, onboard, fits, label, deviceState, seedTimetable, withContent } from './fixtures';
+import { event, EVENT_DAY, OPP_DEADLINE } from './content';
 
 const almatyToday = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
 const plusDays = (d: string, n: number) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400_000).toISOString().slice(0, 10);
@@ -303,22 +303,19 @@ test('tab bar: «Күнтізбе» replaces notifications, which open from the 
   await expect(page.locator('#title')).toHaveText(t('Хабарламалар', 'Уведомления'));
 });
 
-test('pin an event into the calendar from its page: toast «Ашу», kind colour and label, saved-only filter, unpin', async ({ page, lang }) => {
+test('pin an event into the calendar from the events list: toast «Ашу», kind colour and label, saved-only filter, unpin', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
-  const evTitle = t('Мансап жәрмеңкесі', 'Ярмарка карьеры');
+  const evTitle = t(event.title_kk, event.title_ru!);
+  await withContent(page, { events: [event] });
   await onboard(page, lang);
-  await page.goto('/event/e1');
-  await expect(page.getByRole('heading', { name: evTitle })).toBeVisible();
-  const pin = page.getByRole('button', { name: t('Күнтізбеге қосу', 'В календарь'), exact: true });
+  await page.goto('/events');
+  const pin = page.getByRole('button', { name: t('Күнтізбеге қосу: ', 'Добавить в календарь: ') + evTitle });
   await expect(pin).toHaveAttribute('aria-pressed', 'false');
-  // the Google Calendar / .ics export stays next to it
-  await expect(page.getByRole('link', { name: t('Google Calendar-ға қосу', 'Добавить в Google Calendar') })).toBeVisible();
   await fits(page);
   await pin.click();
-  const pinned = page.getByRole('button', { name: t('Күнтізбеде', 'В календаре'), exact: true });
-  await expect(pinned).toHaveAttribute('aria-pressed', 'true');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
   const pins = (await deviceState(page)).calendarPins;
-  expect(pins).toMatchObject([{ ref: 'event:e1', kind: 'event', time: '11:00', prio: 'mid', done: 0, title: { kk: 'Мансап жәрмеңкесі', ru: 'Ярмарка карьеры' } }]);
+  expect(pins).toMatchObject([{ ref: 'event:501', kind: 'event', date: EVENT_DAY, time: '11:00', prio: 'mid', done: 0, title: { kk: event.title_kk, ru: event.title_ru } }]);
   const date: string = pins[0].date;
 
   // «Ашу» in the toast jumps to that day
@@ -349,15 +346,17 @@ test('pin an event into the calendar from its page: toast «Ашу», kind colou
   await expect(sheet).toHaveCount(0);
   await expect(row).toHaveClass(/prio-high/);
 
-  // unpin from the event page
-  await page.goto('/event/e1');
-  await page.getByRole('button', { name: t('Күнтізбеде', 'В календаре'), exact: true }).click();
+  // unpin from the list
+  await page.goto('/events');
+  await pin.click();
   await expect(page.locator('.toast')).toContainText(t('Күнтізбеден алынды', 'Убрано из календаря'));
   await expect(pin).toHaveAttribute('aria-pressed', 'false');
   expect((await deviceState(page)).calendarPins).toEqual([]);
   await page.goto('/calendar');
   await page.getByRole('grid').locator(`button[data-ymd="${date}"]`).click();
-  await expect(page.locator('.cal-day .cal-item', { hasText: evTitle })).toHaveCount(0);
+  // the event itself stays on its day (it is in the feed), just no longer pinned
+  await expect(row).toHaveCount(1);
+  await expect(row).not.toContainText(t('Күнтізбеде', 'В календаре'));
 });
 
 test('pin from a list row: an internship card in search toggles its calendar pin', async ({ page, lang }) => {
@@ -441,8 +440,9 @@ test('«Тапсырмалар»: quick-add with a date and priority, check off 
 
 test('«Сабақтар» layer: off in the month grid by default, on in the week list, toggled by its chip', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
-  const cls = t('Микроэкономика', 'Микроэкономика');
+  const cls = 'Микроэкономика';
   await onboard(page, lang);
+  await seedTimetable(page); // Monday–Friday, three classes a day
   await page.goto('/calendar');
   const today = almatyToday();
   let weekday = today;

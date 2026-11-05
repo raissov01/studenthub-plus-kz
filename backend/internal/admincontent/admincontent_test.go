@@ -89,10 +89,10 @@ func item(t *testing.T, w *httptest.ResponseRecorder) Item {
 	return out.Item
 }
 
-// published /api/content, with the real data/*.json as the base lists
+// published /api/content, with the content test fixtures (internal/content/testdata) as the base lists
 func published(t *testing.T) map[string][]map[string]any {
 	t.Helper()
-	l := &content.Loader{Env: func(string) string { return "" }, DataDir: "../../data", Warn: func(string) {}}
+	l := &content.Loader{Env: func(string) string { return "" }, DataDir: "../content/testdata/data", Warn: func(string) {}}
 	b, _ := json.Marshal(l.Load(ctx(), Now()))
 	var out map[string][]map[string]any
 	_ = json.Unmarshal(b, &out)
@@ -167,7 +167,7 @@ func TestCreateAppearsInContentExactShape(t *testing.T) {
 	}
 	// exactly the data/opportunities.json keys plus source
 	var sample []map[string]any
-	b, _ := os.ReadFile("../../data/opportunities.json")
+	b, _ := os.ReadFile("../content/testdata/data/opportunities.json")
 	_ = json.Unmarshal(b, &sample)
 	for k := range sample[0] {
 		if _, ok := got[k]; !ok {

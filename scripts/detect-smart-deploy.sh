@@ -7,6 +7,7 @@
 #   frontend   -> rebuild + restart web          backend    -> rebuild + restart api
 #   migrations -> run /app/migrate (and api)     stack      -> re-apply docker-compose.yml / stack.yml
 #   nginx      -> install nginx.host.conf        timers     -> install docker/systemd units
+#   kaspi      -> rebuild + restart the café kaspi-pos sidecar (services/kaspi-pos; only where its profile is on)
 #   docs / tests / tooling only -> skip the deploy entirely
 #   anything unknown -> safe fallback: full deploy (web + api + stack + nginx + timers)
 set -euo pipefail
@@ -40,6 +41,7 @@ MIGRATION_FILES=()
 STACK_FILES=()
 NGINX_FILES=()
 TIMER_FILES=()
+KASPI_FILES=()
 DOC_FILES=()
 TOOLING_FILES=()
 UNKNOWN_FILES=()
@@ -52,7 +54,10 @@ for file in "${CHANGED_FILES[@]}"; do
     # tests and developer tooling: never part of a running image's behaviour
     frontend/e2e/*|frontend/tools/*|frontend/playwright.config.ts|frontend/playwright.real.config.ts|*.test.ts|\
     backend/*_test.go|backend/internal/testdb/*|backend/cmd/e2etest/*|backend/cmd/routes/*|backend/cmd/json-to-csv/*|\
-    backend/templates/*|backend/sqlc.yaml|\
+    backend/templates/*|backend/sqlc.yaml|backend/cmd/cafe-seed/*|\
+    services/kaspi-pos/test/*|services/kaspi-pos/docs/*|services/kaspi-pos/*.md|services/kaspi-pos/UPSTREAM|\
+    services/kaspi-pos/.env.example|services/kaspi-pos/webhooks*.example.json|services/kaspi-pos/.prettierrc|\
+    services/kaspi-pos/.editorconfig|services/kaspi-pos/eslint.config.js|services/kaspi-pos/.gitignore|\
     .github/*|.claude/*|scripts/*|.gitignore|frontend/.gitignore|backend/.gitignore|\
     docker/*.sh|docker/docker-compose.local.yml|docker/docker-compose.override.yml|docker/nginx.local.conf|docker/*.example|docker/local.env.example)
       TOOLING_FILES+=("$file") ;;
@@ -66,6 +71,8 @@ for file in "${CHANGED_FILES[@]}"; do
       NGINX_FILES+=("$file") ;;
     docker/systemd/*)
       TIMER_FILES+=("$file") ;;
+    services/kaspi-pos/*)
+      KASPI_FILES+=("$file") ;;
     *)
       UNKNOWN_FILES+=("$file") ;;
   esac
@@ -82,6 +89,7 @@ RUN_MIGRATIONS=false
 APPLY_STACK=false
 DEPLOY_NGINX=false
 DEPLOY_TIMERS=false
+DEPLOY_KASPI=false
 SKIP_DEPLOY=false
 SAFE_FALLBACK_FULL_DEPLOY=false
 
@@ -94,6 +102,7 @@ fi
 [[ ${#STACK_FILES[@]} -gt 0 ]] && APPLY_STACK=true
 [[ ${#NGINX_FILES[@]} -gt 0 ]] && DEPLOY_NGINX=true
 [[ ${#TIMER_FILES[@]} -gt 0 ]] && DEPLOY_TIMERS=true
+[[ ${#KASPI_FILES[@]} -gt 0 ]] && DEPLOY_KASPI=true
 
 if [[ ${#UNKNOWN_FILES[@]} -gt 0 ]]; then
   SAFE_FALLBACK_FULL_DEPLOY=true
@@ -102,10 +111,11 @@ if [[ ${#UNKNOWN_FILES[@]} -gt 0 ]]; then
   APPLY_STACK=true
   DEPLOY_NGINX=true
   DEPLOY_TIMERS=true
+  DEPLOY_KASPI=true
 fi
 
 if [[ "$DEPLOY_FRONTEND" == false && "$DEPLOY_BACKEND" == false && "$APPLY_STACK" == false \
-      && "$DEPLOY_NGINX" == false && "$DEPLOY_TIMERS" == false ]]; then
+      && "$DEPLOY_NGINX" == false && "$DEPLOY_TIMERS" == false && "$DEPLOY_KASPI" == false ]]; then
   SKIP_DEPLOY=true
 fi
 
@@ -128,6 +138,7 @@ Smart deploy analysis
 - Stack apply: $APPLY_STACK
 - Host nginx: $DEPLOY_NGINX
 - Timers: $DEPLOY_TIMERS
+- Café kaspi-pos sidecar: $DEPLOY_KASPI
 - Skip deploy: $SKIP_DEPLOY
 - Safe fallback full deploy: $SAFE_FALLBACK_FULL_DEPLOY
 SUM
@@ -150,6 +161,7 @@ print_bucket "Migration-affecting files" MIGRATION_FILES
 print_bucket "Stack runtime files" STACK_FILES
 print_bucket "Host nginx files" NGINX_FILES
 print_bucket "Timer units" TIMER_FILES
+print_bucket "Café kaspi-pos sidecar" KASPI_FILES
 print_bucket "Docs-only files" DOC_FILES
 print_bucket "Tests / tooling (no deploy)" TOOLING_FILES
 print_bucket "Unknown files (safe fallback = full deploy)" UNKNOWN_FILES
@@ -163,6 +175,7 @@ if [[ -n "$GITHUB_OUTPUT_FILE" ]]; then
     echo "apply_stack=$APPLY_STACK"
     echo "deploy_nginx=$DEPLOY_NGINX"
     echo "deploy_timers=$DEPLOY_TIMERS"
+    echo "deploy_kaspi=$DEPLOY_KASPI"
     echo "safe_fallback_full_deploy=$SAFE_FALLBACK_FULL_DEPLOY"
     echo "changed_files_b64=$(join_lines CHANGED_FILES | to_base64)"
     echo "summary_b64=$(printf '%s\n' "$SUMMARY" | to_base64)"
@@ -178,5 +191,6 @@ if [[ -n "$ENV_OUTPUT_FILE" ]]; then
     echo "APPLY_STACK=$APPLY_STACK"
     echo "DEPLOY_NGINX=$DEPLOY_NGINX"
     echo "DEPLOY_TIMERS=$DEPLOY_TIMERS"
+    echo "DEPLOY_KASPI=$DEPLOY_KASPI"
   } > "$ENV_OUTPUT_FILE"
 fi

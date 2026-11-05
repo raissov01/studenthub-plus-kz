@@ -11,6 +11,7 @@
 #   APPLY_STACK       re-apply the whole compose file / stack
 #   DEPLOY_NGINX      install nginx.host.conf as /etc/nginx/conf.d/studenthub.conf (nginx -t, rollback on failure)
 #   DEPLOY_TIMERS     install docker/systemd/*.service|*.timer and enable the timers
+#   DEPLOY_KASPI      restart the café kaspi-pos sidecar with KASPI_TAG (only when ./.env has COMPOSE_PROFILES=cafe-kaspi)
 #   SWITCH_FROM_SYSTEMD=1   one-time switch from the old systemd binary + docker-run Postgres (docs/deployment/vps.md)
 #   HEAD_SHA          recorded in DEPLOYED_SHA after a healthy deploy (the next smart deploy diffs against it)
 set -euo pipefail
@@ -29,6 +30,8 @@ RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 APPLY_STACK="${APPLY_STACK:-false}"
 DEPLOY_NGINX="${DEPLOY_NGINX:-false}"
 DEPLOY_TIMERS="${DEPLOY_TIMERS:-false}"
+DEPLOY_KASPI="${DEPLOY_KASPI:-false}"
+KASPI_TAG="${KASPI_TAG:-}"
 SWITCH_FROM_SYSTEMD="${SWITCH_FROM_SYSTEMD:-0}"
 API_TAG="${API_TAG:-}"
 WEB_TAG="${WEB_TAG:-}"
@@ -58,11 +61,22 @@ if id studenthub >/dev/null 2>&1; then
 fi
 [[ -n "$API_TAG" ]] && set_kv API_TAG "$API_TAG"
 [[ -n "$WEB_TAG" ]] && set_kv WEB_TAG "$WEB_TAG"
+[[ -n "$KASPI_TAG" ]] && set_kv KASPI_TAG "$KASPI_TAG"
 API_TAG="$(get_kv API_TAG)"; WEB_TAG="$(get_kv WEB_TAG)"
 [[ -n "$API_TAG" && -n "$WEB_TAG" ]] || die "API_TAG / WEB_TAG unknown: run a full deploy first (bash docker/deploy.sh)"
 docker image inspect "studenthub-api:$API_TAG" >/dev/null 2>&1 || die "image studenthub-api:$API_TAG not loaded"
 docker image inspect "studenthub-web:$WEB_TAG" >/dev/null 2>&1 || die "image studenthub-web:$WEB_TAG not loaded"
 mkdir -p "$APP_ROOT/uploads/market" "$APP_ROOT/uploads/quiz"
+# café Kaspi sidecar: only where the operator switched its compose profile on (docs/cafe.md)
+KASPI_ON=false
+if get_kv COMPOSE_PROFILES | grep -q 'cafe-kaspi'; then
+  KASPI_ON=true
+  KASPI_TAG="$(get_kv KASPI_TAG)"
+  [[ -n "$KASPI_TAG" ]] || die "COMPOSE_PROFILES has cafe-kaspi but KASPI_TAG is unknown: deploy with DEPLOY_KASPI=true first"
+  docker image inspect "studenthub-kaspi-pos:$KASPI_TAG" >/dev/null 2>&1 || die "image studenthub-kaspi-pos:$KASPI_TAG not loaded"
+  [[ -f "$APP_ROOT/kaspi-pos.env" || -n "$(get_kv KASPI_POS_ENV_FILE)" ]] || die "$APP_ROOT/kaspi-pos.env missing (docker/.env.example)"
+fi
+mkdir -p "$APP_ROOT/uploads/market" "$APP_ROOT/uploads/quiz" "$APP_ROOT/uploads/certs"
 
 echo "mode=$MODE api=studenthub-api:$API_TAG web=studenthub-web:$WEB_TAG"
 echo "deploy_frontend=$DEPLOY_FRONTEND deploy_backend=$DEPLOY_BACKEND run_migrations=$RUN_MIGRATIONS apply_stack=$APPLY_STACK nginx=$DEPLOY_NGINX timers=$DEPLOY_TIMERS"
@@ -123,9 +137,11 @@ if [[ "$MODE" == compose ]]; then
   else
     if bool "$DEPLOY_BACKEND"; then log "api -> $API_TAG"; dc up -d --no-deps api; fi
     if bool "$DEPLOY_FRONTEND"; then log "web -> $WEB_TAG"; dc up -d --no-deps web; fi
+    if bool "$DEPLOY_KASPI" && [[ "$KASPI_ON" == true ]]; then log "kaspi-pos -> $KASPI_TAG"; dc up -d --no-deps kaspi-pos; fi
   fi
   wait_healthy studenthub-api
   wait_healthy studenthub-web
+  if [[ "$KASPI_ON" == true ]]; then wait_healthy studenthub-kaspi-pos; else echo "kaspi-pos: profile cafe-kaspi off, not running"; fi
 elif [[ "$MODE" == swarm ]]; then
   docker info --format '{{.Swarm.LocalNodeState}}' | grep -q active || die "Swarm is not active: run docker/swarm-init.sh first (optional variant)"
   set -a; . ./.env; set +a
@@ -175,12 +191,15 @@ if bool "$DEPLOY_NGINX" && [[ "$MODE" == compose ]]; then
   fi
 fi
 
-# ---------- timers (host systemd; they curl the API on 127.0.0.1:8110 with CRON_SECRET) ----------
+# ---------- timers (host systemd; cron/notify curl the API on 127.0.0.1:8110 with CRON_SECRET, feeds runs a
+# one-off api container with /app/feeds-collect and exits at once while FEATURE_FEEDS is off) ----------
 if bool "$DEPLOY_TIMERS"; then
   log "Timers"
-  cp systemd/studenthub-cron.service systemd/studenthub-cron.timer systemd/studenthub-notify.service systemd/studenthub-notify.timer /etc/systemd/system/
+  # every unit in docker/systemd (cron, notify, feeds, streak, fairs, feedback); a feature's timer is harmless while
+  # its switch is off (the endpoint answers 404 and the unit ignores it)
+  cp systemd/studenthub-*.service systemd/studenthub-*.timer /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now studenthub-cron.timer studenthub-notify.timer
+  for t in systemd/studenthub-*.timer; do systemctl enable --now "$(basename "$t")"; done
   systemctl list-timers 'studenthub-*' --no-pager || true
 fi
 

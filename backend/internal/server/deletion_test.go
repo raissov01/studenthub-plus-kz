@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/community"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/market"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/me"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/portfolio"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/quiz"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
@@ -89,11 +91,25 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 			t.Fatal(err)
 		}
 	}
+	lfFile := filepath.Join(community.PhotoDir(), strings.Repeat("e", 32)+".jpg")
+	if err := os.MkdirAll(community.PhotoDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lfFile, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	quizFile := strings.Repeat("f", 32) + ".jpg"
 	if err := os.MkdirAll(quiz.UploadDir(), 0700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(quiz.UploadDir(), quizFile), []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	certFile := strings.Repeat("e", 32) + ".pdf"
+	if err := os.MkdirAll(portfolio.CertDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(portfolio.CertDir(), certFile), []byte("%PDF-1.4 fixture"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
@@ -145,6 +161,7 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into market_season_sends(user_id,season) values ($1,'launch')`, uid)
 		exec(`insert into portfolio_settings(user_id,slug) values ($1,'launchuser')`, uid)
 		exec(`insert into portfolio_items(user_id,kind,title) values ($1,'skill','fixture')`, uid)
+		exec(`insert into portfolio_certificates(user_id,title,file_name,mime,bytes) values ($1,'fixture',$2,'application/pdf',16)`, uid, certFile)
 		company = id(`insert into employers(owner_user_id,name,bin,website,contact_name,verified_by,status)
     values ($1,'Launch company','123456789012','https://example.org','Company contact',$1,'verified') returning id`, uid)
 		exec(`insert into employer_members(employer_id,user_id,role,added_by) values ($1,$2,'owner',$2),($1,$3,'member',$2)`, company, uid, other)
@@ -155,6 +172,9 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into university_staff(user_id,university,granted_by) values ($1,'LAUNCH',$1),($2,'LAUNCH',$1)`, uid, other)
 		exec(`insert into university_posts(university,author_id,kind,payload) values ('LAUNCH',$1,'announcement','{}')`, uid)
 		exec(`insert into admin_content(kind,record,status,created_by,updated_by) values ('jobs','{}','hidden',$1,$1)`, uid)
+		exec(`insert into feed_sources(id,kind,handle,name) values ('del-fixture','tg_public','del_fixture','Fixture')`)
+		feedPost := id(`insert into feed_posts(source_id,external_id,url,text) values ('del-fixture','1','https://t.me/del_fixture/1','fixture') returning id`)
+		exec(`insert into feed_items(post_id,source_id,status,category,data,title_norm,decided_by) values ($1,'del-fixture','rejected','other','{}','fixture',$2)`, feedPost, uid)
 		exec(`insert into notify_prefs(user_id) values ($1)`, uid)
 		exec(`insert into notify_outbox(user_id,category,text,not_before) values ($1,'events','fixture',now())`, uid)
 		exec(`insert into notify_sends(user_id,category) values ($1,'events')`, uid)
@@ -176,8 +196,50 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into xp_events(user_id,delta,reason,ref_type,ref_id,day) values ($1,10,'quiz','quiz','1',current_date)`, uid)
 		exec(`insert into coin_ledger(user_id,delta,reason,ref_type,ref_id,actor_id,note,day)
     values ($1,5,'admin_adjust','admin_adjust','delete-fixture-1',$1,'fixture',current_date),($2,5,'admin_adjust','admin_adjust','delete-fixture-2',$1,'fixture',current_date)`, uid, other)
+		exec(`insert into event_exhibitors(event_id,employer_id,booth,qr_secret,added_by) values ($1,$2,'A1',decode('00112233445566778899aabbccddeeff','hex'),$3)`, event, company, uid)
+		exec(`insert into booth_checkins(event_id,employer_id,user_id) values ($1,$2,$3)`, event, company, uid)
 		reward := id(`insert into rewards(kind,title_kk,title_ru,cost,created_by) values ('merch','Fixture','Fixture',5,$1) returning id`, uid)
 		exec(`insert into reward_redemptions(user_id,reward_id,cost,idem_key,status,decided_by) values ($1,$3,5,'deletefixture1','approved',$1),($2,$3,5,'deletefixture2','approved',$1)`, uid, other, reward)
+		cafe := id(`insert into cafes(name_kk,name_ru,created_by) values ('Fixture café','Fixture café',$1) returning id`, uid)
+		exec(`insert into cafe_staff(cafe_id,user_id,role,added_by) values ($1,$2,'manager',$2),($1,$3,'barista',$2)`, cafe, uid, other)
+		order := id(`insert into cafe_orders(cafe_id,user_id,items,total,pickup_at,pickup_code,payment_method,idem_key)
+    values ($1,$2,'[{"itemId":1}]',50000,now(),'123','pickup','deletefixture1') returning id`, cafe, uid)
+		exec(`insert into cafe_order_events(order_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, order, uid)
+		exec(`insert into cafe_kaspi_sessions(cafe_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, cafe, uid)
+		// print shop: staff, a job with its file and audit, the shop's Kaspi session
+		shop := id(`insert into print_shops(name_kk,name_ru,created_by) values ('Fixture print','Fixture print',$1) returning id`, uid)
+		exec(`insert into print_staff(shop_id,user_id,role,added_by) values ($1,$2,'manager',$2),($1,$3,'operator',$2)`, shop, uid, other)
+		pjob := id(`insert into print_jobs(shop_id,user_id,lines,total,pickup_code,payment_method,idem_key)
+    values ($1,$2,'[{"kind":"goods"}]',30000,'123','pickup','deletefixture1') returning id`, shop, uid)
+		exec(`insert into print_files(user_id,job_id,file_name,display_name,kind,bytes,sha256) values ($1,$2,$3,'fixture.pdf','pdf',10,repeat('a',64))`, uid, pjob, strings.Repeat("f", 32)+".pdf")
+		exec(`insert into print_job_events(job_id,actor_id,actor_kind,kind) values ($1,$2,'student','created')`, pjob, uid)
+		exec(`insert into print_kaspi_sessions(shop_id,ciphertext,phone_hash,created_by) values ($1,'v1:x:y',repeat('a',64),$2)`, shop, uid)
+		// university voice: surveys, feedback tickets, wellbeing contacts
+		survey := id(`insert into surveys(university,title,questions,marker_salt,created_by,anonymous) values ('LAUNCH','Fixture survey','[]',decode(repeat('ab',32),'hex'),$1,false) returning id`, uid)
+		exec(`with r as (insert into survey_responses(survey_id,answers) values ($1,'{}') returning id) insert into survey_response_owners(response_id,user_id) select id,$2 from r`, survey, uid)
+		rec := id(`insert into feedback_recipients(university,key,name_kk,name_ru) values ('LAUNCH','dean','Деканат','Деканат') returning id`)
+		exec(`insert into feedback_recipient_staff(recipient_id,user_id) values ($1,$2)`, rec, uid)
+		exec(`insert into feedback_tickets(recipient_id,category,body,anonymous,author_id,sla_due_at,created_at,updated_at) values ($1,'question','Fixture signed ticket',false,$2,now(),now(),now())`, rec, uid)
+		anon := id(`insert into feedback_tickets(recipient_id,category,body,anonymous,token_hash,sla_due_at,created_at,updated_at) values ($1,'question','Fixture anonymous ticket',true,decode(repeat('cd',32),'hex'),now(),now(),now()) returning id`, rec)
+		exec(`insert into feedback_messages(ticket_id,from_staff,staff_id,body,created_at) values ($1,true,$2,'Fixture reply',now())`, anon, uid)
+		exec(`insert into wellbeing_contacts(university,name,place,updated_by) values ('LAUNCH','Fixture psychologist','Room 1',$1)`, uid)
+		// community: lost & found, course Q&A, roommates
+		lf := id(`insert into lostfound_posts(user_id,kind,category,title,happened_on,university) values ($1,'found','keys','Fixture keys',current_date,'LAUNCH') returning id`, other)
+		exec(`insert into lostfound_posts(user_id,kind,category,title,happened_on,university) values ($1,'lost','bag','Fixture bag',current_date,'LAUNCH')`, uid)
+		exec(`insert into lostfound_claims(post_id,claimant_id,message) values ($1,$2,'Fixture claim message')`, lf, uid)
+		exec(`insert into lostfound_photos(name,user_id,bytes) values ($1,$2,7)`, strings.Repeat("e", 32)+".jpg", uid)
+		q := id(`insert into qa_questions(user_id,university,subject_key,subject_name,title) values ($1,'LAUNCH','fixture','Fixture','Fixture question?') returning id`, other)
+		exec(`insert into qa_answers(question_id,user_id,body) values ($1,$2,'Fixture answer')`, q, uid)
+		exec(`insert into qa_questions(user_id,university,subject_key,subject_name,title,anonymous) values ($1,'LAUNCH','fixture','Fixture','My fixture question?',true)`, uid)
+		exec(`insert into qa_votes(user_id,target_kind,target_id) values ($1,'question',$2)`, uid, q)
+		exec(`insert into roommate_genders(user_id,gender) values ($1,'f')`, uid)
+		rl := id(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'have_room','flat','Fixture',0,50000,current_date,'LAUNCH') returning id`, other)
+		exec(`insert into roommate_listings(user_id,kind,housing,district,budget_min,budget_max,move_in,university) values ($1,'looking','flat','Fixture',0,50000,current_date,'LAUNCH')`, uid)
+		exec(`insert into roommate_requests(listing_id,from_user) values ($1,$2)`, rl, uid)
+		club := id(`insert into clubs(name_kk,university,created_by) values ('Fixture club','LAUNCH',$1) returning id`, uid)
+		exec(`insert into club_admins(club_id,user_id,granted_by) values ($1,$2,$2),($1,$3,$2)`, club, uid, other)
+		exec(`insert into club_members(club_id,user_id,status,decided_by) values ($1,$2,'member',$2),($1,$3,'member',$2)`, club, uid, other)
+		exec(`insert into club_posts(club_id,author_id,body_kk,status) values ($1,$2,'fixture','published')`, club, uid)
 		return nil
 	})
 	if err != nil {
@@ -233,6 +295,12 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		if _, err := os.Stat(filepath.Join(market.UploadDir(), name)); !os.IsNotExist(err) {
 			t.Errorf("deleted user's file survived: %s %v", name, err)
 		}
+	}
+	if _, err := os.Stat(lfFile); !os.IsNotExist(err) {
+		t.Errorf("deleted user's lost & found photo survived: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(portfolio.CertDir(), certFile)); !os.IsNotExist(err) {
+		t.Errorf("deleted user's certificate file survived: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(quiz.UploadDir(), quizFile)); !os.IsNotExist(err) {
 		t.Errorf("deleted user's quiz media survived: %v", err)

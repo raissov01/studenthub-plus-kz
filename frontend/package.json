@@ -10,7 +10,7 @@
     "api": "cd ../backend && go run ./cmd/server",
     "db:migrate": "cd ../backend && go run ./cmd/migrate",
     "test:go": "cd ../backend && go test ./...",
-    "test:ts": "tsx --test src/features/roadmap/logic.test.ts src/features/feedback/logic.test.ts src/lib/ics.test.ts src/lib/admincontent.test.ts src/lib/client-errors.test.ts src/lib/inbox.test.ts src/lib/profile.test.ts src/lib/calendar.test.ts src/lib/caltasks.test.ts src/lib/points.test.ts src/lib/srs.test.ts src/lib/notes.test.ts src/lib/subjects.test.ts src/lib/calview.test.ts src/lib/i18n/en.test.ts",
+    "test:ts": "tsx --test src/features/roadmap/logic.test.ts src/features/feedback/logic.test.ts src/lib/ics.test.ts src/lib/admincontent.test.ts src/lib/client-errors.test.ts src/lib/inbox.test.ts src/lib/profile.test.ts src/lib/calendar.test.ts src/lib/caltasks.test.ts src/lib/points.test.ts src/lib/srs.test.ts src/lib/notes.test.ts src/lib/subjects.test.ts src/lib/calview.test.ts src/lib/timetable.test.ts src/lib/cafe.test.ts src/lib/print.test.ts src/lib/voice.test.ts src/lib/community.test.ts src/lib/clubs.test.ts src/lib/certfiles.test.ts src/lib/sections.test.ts src/lib/scores.test.ts src/lib/applications.test.ts src/lib/i18n/en.test.ts",
     "e2e": "playwright test",
     "e2e:real": "playwright test --config=playwright.real.config.ts",
     "typecheck": "tsc --noEmit"
@@ -19,15 +19,13 @@
     "next": "16.4.3",
     "qrcode-generator": "^2.0.4",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "three": "^0.170.0"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.170.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tsx": "^4.19.2",

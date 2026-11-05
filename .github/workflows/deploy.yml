@@ -84,13 +84,22 @@ jobs:
           ssh vps "docker image inspect studenthub-web:$TAG >/dev/null 2>&1" || docker save "studenthub-web:$TAG" | gzip -1 | ssh vps 'gunzip | docker load'
           echo "WEB_TAG=$TAG" >> "$GITHUB_ENV"
 
+      - name: Build and ship the café kaspi-pos sidecar
+        if: steps.detect.outputs.deploy_kaspi == 'true'
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build -t "studenthub-kaspi-pos:$TAG" services/kaspi-pos/
+          ssh vps "docker image inspect studenthub-kaspi-pos:$TAG >/dev/null 2>&1" || docker save "studenthub-kaspi-pos:$TAG" | gzip -1 | ssh vps 'gunzip | docker load'
+          echo "KASPI_TAG=$TAG" >> "$GITHUB_ENV"
+
       - name: Apply on the server
         if: steps.detect.outputs.skip_deploy != 'true'
         run: |
           ssh vps "mkdir -p $APP_ROOT/docker/systemd"
           scp -q docker/docker-compose.yml docker/stack.yml docker/nginx.host.conf docker/nginx.conf docker/vps-apply.sh "vps:$APP_ROOT/docker/"
           scp -q docker/systemd/* "vps:$APP_ROOT/docker/systemd/"
-          ssh vps "cd $APP_ROOT/docker && MODE=compose HEAD_SHA=${GITHUB_SHA::12} API_TAG=${API_TAG:-} WEB_TAG=${WEB_TAG:-} \
+          ssh vps "cd $APP_ROOT/docker && MODE=compose HEAD_SHA=${GITHUB_SHA::12} API_TAG=${API_TAG:-} WEB_TAG=${WEB_TAG:-} KASPI_TAG=${KASPI_TAG:-} \
+            DEPLOY_KASPI=${{ steps.detect.outputs.deploy_kaspi }} \
             DEPLOY_FRONTEND=${{ steps.detect.outputs.deploy_frontend }} DEPLOY_BACKEND=${{ steps.detect.outputs.deploy_backend }} \
             RUN_MIGRATIONS=${{ steps.detect.outputs.run_migrations }} APPLY_STACK=${{ steps.detect.outputs.apply_stack }} \
             DEPLOY_NGINX=${{ steps.detect.outputs.deploy_nginx }} DEPLOY_TIMERS=${{ steps.detect.outputs.deploy_timers }} \
