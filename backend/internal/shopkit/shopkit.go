@@ -252,3 +252,16 @@ func LinkButton(text, path string) []Button {
 	}
 	return []Button{{Text: text, URL: site + path}}
 }
+
+// AuditStaff writes the audit_log row of a shop staff change (staff_grant / staff_revoke): who changed whose
+// access to which shop ("cafe" / "print") with which role, and the optional reason.
+func AuditStaff(ctx context.Context, tx pgx.Tx, actorID int64, action string, targetID int64, shop string, shopID int64, role, reason string) error {
+	reason = strings.TrimSpace(reason)
+	if utf8.RuneCountInString(reason) > 500 {
+		reason = string([]rune(reason)[:500])
+	}
+	_, err := tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, reason, meta)
+		values ($1, $2, $3, nullif($4, ''), jsonb_build_object('shop', $5::text, 'shopId', $6::bigint, 'role', $7::text))`,
+		actorID, action, targetID, reason, shop, shopID, role)
+	return err
+}

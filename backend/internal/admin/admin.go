@@ -1,5 +1,6 @@
-// Package admin serves the admin-only endpoints: overview, role changes (always with a
-// reason, always audited) and a minimal user search. The admin check reads the role from
+// Package admin serves the super admin's endpoints: overview and dashboard, role and scoped-role changes
+// (always with a reason, always audited), the user directory with block / unblock / deletion on request, the
+// audit log, CSV exports and the University voice overview. The admin check reads the role from
 // the database on every request, so revoking admin takes effect immediately.
 package admin
 
@@ -32,11 +33,24 @@ var (
 
 // Routes wires /api/admin/*.
 func Routes(mux httpx.Router) {
-	mux.HandleFunc("GET /api/admin/summary", auth.NeedRole(summary, "admin"))
-	mux.HandleFunc("GET /api/admin/users", auth.NeedRole(users, "admin"))
-	mux.HandleFunc("GET /api/admin/analytics", auth.NeedRole(analyticsReport, "admin"))
+	get := func(pattern string, h auth.Handler) { mux.HandleFunc(pattern, auth.NeedRole(h, "admin")) }
 	// Write runs first (origin, rate limit), then the role check.
-	mux.HandleFunc("POST /api/admin/role", auth.Write(auth.NeedRole(setRole, "admin")))
+	post := func(pattern string, h auth.Handler) { mux.HandleFunc(pattern, auth.Write(auth.NeedRole(h, "admin"))) }
+	get("GET /api/admin/summary", summary)
+	get("GET /api/admin/users", users)
+	get("GET /api/admin/users/{id}", userDetail)
+	get("GET /api/admin/analytics", analyticsReport)
+	get("GET /api/admin/dashboard", dashboard)
+	get("GET /api/admin/grants", grants)
+	get("GET /api/admin/audit", auditLog)
+	get("GET /api/admin/voice", voice)
+	get("GET /api/admin/export/{file}", export)
+	post("POST /api/admin/role", setRole)
+	post("POST /api/admin/users/{id}/block", block)
+	post("POST /api/admin/users/{id}/unblock", unblock)
+	post("POST /api/admin/users/{id}/delete", deleteUser)
+	post("POST /api/admin/grants", grantScope)
+	post("POST /api/admin/grants/revoke", revokeScope)
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
@@ -95,7 +109,6 @@ type userRow struct {
 	CreatedAt  time.Time  `json:"createdAt"`
 }
 
-// users: ?q= matches name, username or email (substring) or an exact id / telegram id. Max 20 rows.
 // analyticsReport returns anonymous usage numbers for the last ?days= days (default 30).
 func analyticsReport(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	days, err := strconv.Atoi(r.URL.Query().Get("days"))
@@ -108,42 +121,6 @@ func analyticsReport(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, rep)
-}
-
-func users(w http.ResponseWriter, r *http.Request, _ *auth.User) {
-	ctx := r.Context()
-	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	if utf8.RuneCountInString(q) > 64 {
-		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
-		return
-	}
-	num, _ := strconv.ParseInt(strings.TrimPrefix(q, "@"), 10, 64)
-	like := "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(strings.TrimPrefix(q, "@")) + "%"
-	out := []userRow{}
-	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select id, telegram_id, email, tg_username, name, role::text, university, consent_at, created_at
-			from users
-			where deleted_at is null and ($1 = '' or id = $2 or telegram_id = $2
-				or name ilike $3 or tg_username ilike $3 or email ilike $3)
-			order by consent_at is null, created_at desc limit 20`, q, num, like)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var u userRow
-			if err := rows.Scan(&u.ID, &u.TelegramID, &u.Email, &u.Username, &u.Name, &u.Role, &u.University, &u.ConsentAt, &u.CreatedAt); err != nil {
-				return err
-			}
-			out = append(out, u)
-		}
-		return rows.Err()
-	})
-	if err != nil {
-		fail(w, r, "users", err)
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"users": out})
 }
 
 func setRole(w http.ResponseWriter, r *http.Request, actor *auth.User) {
