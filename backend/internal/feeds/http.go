@@ -19,14 +19,20 @@ import (
 // Routes wires the admin side (/api/admin/feeds*), behind FEATURE_FEEDS and role admin. Pending
 // items are approved / rejected / edited through the shared queue (/api/admin/queue/{submission}).
 func Routes(mux httpx.Router) {
-	admin := func(h auth.Handler) http.Handler { return features.Require(Feature, auth.NeedRole(h, "admin")) }
+	// moderators read the feed and unpublish items; switching sources on and off stays with admins
+	mod := func(h auth.Handler) http.Handler {
+		return features.Require(Feature, auth.NeedScope(h, auth.ScopeModerator))
+	}
+	modWrite := func(h auth.Handler) http.Handler {
+		return features.Require(Feature, auth.Write(auth.NeedScope(h, auth.ScopeModerator)))
+	}
 	write := func(h auth.Handler) http.Handler {
 		return features.Require(Feature, auth.Write(auth.NeedRole(h, "admin")))
 	}
-	mux.Handle("GET /api/admin/feeds", admin(overview))
-	mux.Handle("GET /api/admin/feeds/items", admin(listItems))
+	mux.Handle("GET /api/admin/feeds", mod(overview))
+	mux.Handle("GET /api/admin/feeds/items", mod(listItems))
 	mux.Handle("POST /api/admin/feeds/sources/{id}", write(setSource))
-	mux.Handle("POST /api/admin/feeds/items/{id}/unpublish", write(unpublish))
+	mux.Handle("POST /api/admin/feeds/items/{id}/unpublish", modWrite(unpublish))
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {

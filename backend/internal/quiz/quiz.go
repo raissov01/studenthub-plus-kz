@@ -97,8 +97,8 @@ func Routes(mux httpx.Router) {
 	h("GET /api/quiz/live/ws", liveWS)
 	h("GET /api/quiz/live/history", auth.Need(liveHistory))
 	// admin
-	h("POST /api/admin/quiz/quizzes/{id}/hide", auth.Write(auth.NeedRole(adminHide, "admin")))
-	h("POST /api/admin/quiz/quizzes/{id}/restore", auth.Write(auth.NeedRole(adminRestore, "admin")))
+	h("POST /api/admin/quiz/quizzes/{id}/hide", auth.Write(auth.NeedScope(adminHide, auth.ScopeModerator)))
+	h("POST /api/admin/quiz/quizzes/{id}/restore", auth.Write(auth.NeedScope(adminRestore, auth.ScopeModerator)))
 }
 
 var msgs = map[string]httpx.Msg{

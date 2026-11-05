@@ -87,13 +87,54 @@ var (
 // Routes wires the admin queue and the report endpoints; wrap applies the feature switch.
 func Routes(mux httpx.Router, wrap func(http.Handler) http.Handler) {
 	h := func(pattern string, fn http.HandlerFunc) { mux.Handle(pattern, wrap(fn)) }
-	h("GET /api/admin/queue", auth.NeedRole(listQueue, "admin"))
-	h("POST /api/admin/queue/{id}/approve", auth.Write(auth.NeedRole(decide(true), "admin")))
-	h("POST /api/admin/queue/{id}/reject", auth.Write(auth.NeedRole(decide(false), "admin")))
-	h("PATCH /api/admin/queue/{id}", auth.Write(auth.NeedRole(editPending, "admin")))
+	h("GET /api/admin/queue", auth.NeedScope(listQueue, auth.ScopeModerator))
+	h("POST /api/admin/queue/{id}/approve", auth.Write(auth.NeedScope(decide(true), auth.ScopeModerator)))
+	h("POST /api/admin/queue/{id}/reject", auth.Write(auth.NeedScope(decide(false), auth.ScopeModerator)))
+	h("PATCH /api/admin/queue/{id}", auth.Write(auth.NeedScope(editPending, auth.ScopeModerator)))
 	h("POST /api/reports", auth.Write(auth.Need(report)))
-	h("GET /api/admin/reports", auth.NeedRole(listReports, "admin"))
-	h("POST /api/admin/reports/dismiss", auth.Write(auth.NeedRole(dismiss, "admin")))
+	h("GET /api/admin/reports", auth.NeedScope(listReports, auth.ScopeModerator))
+	h("POST /api/admin/reports/dismiss", auth.Write(auth.NeedScope(dismiss, auth.ScopeModerator)))
+}
+
+// AdminOnlyKinds are the queue kinds whose approval grants a role or a right over other people (an
+// ambassador term, a mentor, a verified company, a club leader) or concerns a mentoring pair: only an admin
+// sees and decides them. A moderator works the rest of the queue.
+var AdminOnlyKinds = []string{"ambassador_application", "ambassador_renewal", "mentor_application", "mentor_report",
+	"employer_verification", "club_leader"}
+
+// hiddenKinds: the kinds this caller may not see (none for an admin).
+func hiddenKinds(u *auth.User) []string {
+	if u.Role == "admin" {
+		return []string{}
+	}
+	return AdminOnlyKinds
+}
+
+var MsgAdminKind = httpx.Msg{KK: "Бұл өтінімді тек әкімші қарайды.", RU: "Эту заявку рассматривает только администратор."}
+
+// kindAllowed answers 403 when the submission's kind is admin-only and the caller is not an admin.
+func kindAllowed(ctx context.Context, w http.ResponseWriter, r *http.Request, u *auth.User, id int64) bool {
+	if u.Role == "admin" {
+		return true
+	}
+	var kind string
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `select kind from submissions where id = $1`, id).Scan(&kind)
+	})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return true // the handler answers 404 / 409 as before
+	case err != nil:
+		fail(w, r, "queue kind", err)
+		return false
+	}
+	for _, k := range AdminOnlyKinds {
+		if k == kind {
+			httpx.Error(w, r, http.StatusForbidden, "admin_only_kind", MsgAdminKind)
+			return false
+		}
+	}
+	return true
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
@@ -120,7 +161,7 @@ type Author struct {
 	University *string `json:"university"`
 }
 
-func listQueue(w http.ResponseWriter, r *http.Request, _ *auth.User) {
+func listQueue(w http.ResponseWriter, r *http.Request, viewer *auth.User) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	kind := strings.TrimSpace(q.Get("kind"))
@@ -151,8 +192,8 @@ func listQueue(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 		rows, err := tx.Query(ctx, `select s.id, s.kind, s.payload, s.submitted_by, s.university, s.status::text, s.reason,
 				s.created_at, s.reviewed_at, s.reviewed_by, u.id, u.name, u.tg_username, u.role::text, u.university
 			from submissions s left join users u on u.id = s.submitted_by
-			where s.status = $1::submission_status and ($2 = '' or s.kind = $2) and `+cursor+`
-			order by `+order+` limit $3`, status, kind, limit, afterID)
+			where s.status = $1::submission_status and ($2 = '' or s.kind = $2) and `+cursor+` and s.kind <> all($5)
+			order by `+order+` limit $3`, status, kind, limit, afterID, hiddenKinds(viewer))
 		if err != nil {
 			return err
 		}
@@ -180,7 +221,7 @@ func listQueue(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 		if err := rows.Err(); err != nil {
 			return err
 		}
-		crows, err := tx.Query(ctx, `select kind, count(*) from submissions where status = 'pending' group by kind`)
+		crows, err := tx.Query(ctx, `select kind, count(*) from submissions where status = 'pending' and kind <> all($1) group by kind`, hiddenKinds(viewer))
 		if err != nil {
 			return err
 		}
@@ -226,6 +267,9 @@ func decide(approve bool) auth.Handler {
 		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil || id <= 0 {
 			httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+			return
+		}
+		if !kindAllowed(r.Context(), w, r, admin, id) {
 			return
 		}
 		var body struct {
@@ -288,6 +332,9 @@ func editPending(w http.ResponseWriter, r *http.Request, admin *auth.User) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+		return
+	}
+	if !kindAllowed(ctx, w, r, admin, id) {
 		return
 	}
 	var body struct {

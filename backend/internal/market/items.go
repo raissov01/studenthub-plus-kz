@@ -196,7 +196,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	var viewerID int64
 	admin := false
 	if v != nil {
-		viewerID, admin = v.ID, v.Role == "admin"
+		viewerID, admin = v.ID, v.Can(auth.ScopeModerator)
 	}
 	var it itemOut
 	err := db.Tx(ctx, func(tx pgx.Tx) error {

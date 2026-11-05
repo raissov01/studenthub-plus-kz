@@ -45,6 +45,18 @@ type User struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	SessionVersion int        `json:"-"`
 	DeletedAt      *time.Time `json:"-"`
+	// Scopes are the scoped admin rights of admin_grants ("moderator"); Blocked is a user_blocks row.
+	// Both are read with the session on every request (lookup); ScanUser leaves them empty.
+	Scopes  []string `json:"scopes"`
+	Blocked bool     `json:"blocked"`
+}
+
+// Scope names of admin_grants.
+const ScopeModerator = "moderator"
+
+// Can reports whether the user holds the scoped admin right; an admin holds every scope.
+func (u *User) Can(scope string) bool {
+	return u != nil && (u.Role == "admin" || slices.Contains(u.Scopes, scope))
 }
 
 // NeedsConsent is true until the student accepts the consent screen.
@@ -71,6 +83,10 @@ var (
 	MsgTGOld   = httpx.Msg{KK: "Кіру сілтемесінің мерзімі өтті. Қайта кіріңіз.", RU: "Срок входа истёк. Войдите снова."}
 	MsgOff     = httpx.Msg{KK: "Кіру уақытша қолжетімсіз.", RU: "Вход временно недоступен."}
 	MsgDeleted = httpx.Msg{KK: "Бұл аккаунт бұғатталған.", RU: "Этот аккаунт заблокирован."}
+	MsgBlocked = httpx.Msg{
+		KK: "Аккаунтыңыз әкімші шешімімен шектелген: жазу, жариялау және тапсырыс беру уақытша жабық. Сұрақ болса, қолдауға жазыңыз.",
+		RU: "Ваш аккаунт ограничен администратором: писать, публиковать и оформлять заказы временно нельзя. По вопросам напишите в поддержку.",
+	}
 	MsgTGTaken = httpx.Msg{
 		KK: "Бұл Telegram басқа Student Hub аккаунтына байланған. Аккаунттар біріктірілмейді: шығып, Telegram арқылы кіріңіз немесе аккаунттардың бірін өшіріңіз.",
 		RU: "Этот Telegram уже привязан к другому аккаунту Student Hub. Аккаунты не объединяются: выйдите и войдите через Telegram или удалите один из аккаунтов.",
@@ -116,7 +132,10 @@ func lookup(r *http.Request) *cached {
 		if err != nil {
 			return err
 		}
-		return tx.QueryRow(r.Context(), `select exists(select 1 from revoked_sessions where sid = $1)`, c.sid()).Scan(&revoked)
+		return tx.QueryRow(r.Context(), `select exists(select 1 from revoked_sessions where sid = $1),
+				exists(select 1 from user_blocks where user_id = app_user_id()),
+				array(select scope from admin_grants where user_id = app_user_id() order by scope)`, c.sid()).
+			Scan(&revoked, &u.Blocked, &u.Scopes)
 	})
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, db.ErrNoDB) {
@@ -127,6 +146,7 @@ func lookup(r *http.Request) *cached {
 	if revoked || u.DeletedAt != nil || u.SessionVersion != c.Version || !c.validFor(u.Role, now) {
 		return &cached{}
 	}
+	recordActive(r.Context(), u.ID, now)
 	return &cached{u: u, claims: c, bearer: bearer}
 }
 
@@ -185,6 +205,18 @@ func Need(h Handler) http.HandlerFunc {
 	}
 }
 
+// NeedScope answers 401 when signed out and 403 unless the user is an admin or holds the scoped admin
+// right (admin_grants), re-read from the database with the session.
+func NeedScope(h Handler, scope string) http.HandlerFunc {
+	return Need(func(w http.ResponseWriter, r *http.Request, u *User) {
+		if !u.Can(scope) {
+			httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
+			return
+		}
+		h(w, r, u)
+	})
+}
+
 // NeedRole answers 401 when signed out and 403 unless the user's current role is one of roles.
 func NeedRole(h Handler, roles ...string) http.HandlerFunc {
 	return Need(func(w http.ResponseWriter, r *http.Request, u *User) {
@@ -210,7 +242,12 @@ func Write(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		r = attach(r)
-		if u := Current(r); u != nil && !allow(w, r, "w:u:"+strconv.FormatInt(u.ID, 10), limit) {
+		u := Current(r)
+		if u != nil && !allow(w, r, "w:u:"+strconv.FormatInt(u.ID, 10), limit) {
+			return
+		}
+		if u != nil && u.Blocked && !blockExempt(r) {
+			httpx.Error(w, r, http.StatusForbidden, "account_restricted", MsgBlocked)
 			return
 		}
 		h(w, r)

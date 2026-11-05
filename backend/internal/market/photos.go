@@ -340,7 +340,7 @@ func servePhoto(w http.ResponseWriter, r *http.Request) {
 	public := status != nil && (*status == "active" || *status == "reserved")
 	if !public {
 		u := auth.Current(r)
-		if u == nil || (u.ID != owner && u.Role != "admin") {
+		if u == nil || (u.ID != owner && !u.Can(auth.ScopeModerator)) {
 			notFound(w, r)
 			return
 		}
