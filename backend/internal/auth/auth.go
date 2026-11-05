@@ -497,20 +497,42 @@ func startSession(w http.ResponseWriter, r *http.Request, u *User, webapp bool) 
 	httpx.JSON(w, http.StatusOK, resp)
 }
 
-// bootstrapAdmin makes ADMIN_TELEGRAM_IDS admins on login. The grant is audited when the
-// role actually changes, so it is logged once.
+// bootstrapAdmin makes ADMIN_TELEGRAM_IDS (Telegram id) and ADMIN_EMAILS (verified email, case-insensitive)
+// admins on login. The grant is audited when the role actually changes, so it is logged once.
 func bootstrapAdmin(ctx context.Context, tx pgx.Tx, u *User) error {
-	if u.Role == "admin" || u.TelegramID == nil ||
-		!slices.Contains(config.List("ADMIN_TELEGRAM_IDS", ""), strconv.FormatInt(*u.TelegramID, 10)) {
+	if u.Role == "admin" {
+		return nil
+	}
+	source := ""
+	switch {
+	case u.TelegramID != nil && slices.Contains(config.List("ADMIN_TELEGRAM_IDS", ""), strconv.FormatInt(*u.TelegramID, 10)):
+		source = "ADMIN_TELEGRAM_IDS bootstrap"
+	case u.Email != nil && u.EmailVerified && adminEmail(*u.Email):
+		source = "ADMIN_EMAILS bootstrap"
+	default:
 		return nil
 	}
 	if _, err := tx.Exec(ctx, `update users set role = 'admin' where id = $1`, u.ID); err != nil {
 		return err
 	}
 	_, err := tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, reason, meta)
-		values (null, 'role_grant', $1, 'ADMIN_TELEGRAM_IDS bootstrap', jsonb_build_object('from', $2::text, 'to', 'admin'))`, u.ID, u.Role)
+		values (null, 'role_grant', $1, $3, jsonb_build_object('from', $2::text, 'to', 'admin'))`, u.ID, u.Role, source)
 	u.Role = "admin"
 	return err
+}
+
+// adminEmail: email is listed in ADMIN_EMAILS (comma list, compared trimmed and lower-cased).
+func adminEmail(email string) bool {
+	e := strings.ToLower(strings.TrimSpace(email))
+	if e == "" {
+		return false
+	}
+	for _, x := range config.List("ADMIN_EMAILS", "") {
+		if strings.ToLower(strings.TrimSpace(x)) == e {
+			return true
+		}
+	}
+	return false
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

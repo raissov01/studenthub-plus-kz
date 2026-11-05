@@ -20,12 +20,33 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/features"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/me"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/moderation"
 )
 
+func init() { me.HasConsole = HasConsole }
+
+// HasConsole: any panel at all (the role, a scoped grant, or a staff / admin / member row somewhere).
+func HasConsole(ctx context.Context, u *auth.User) (bool, error) {
+	if u.Role == "admin" || u.Role == "university_staff" || len(u.Scopes) > 0 {
+		return true, nil
+	}
+	var ok bool
+	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `select exists (select 1 from cafe_staff where user_id = $1)
+			or exists (select 1 from print_staff where user_id = $1)
+			or exists (select 1 from club_admins where user_id = $1)
+			or exists (select 1 from feedback_recipient_staff where user_id = $1)
+			or exists (select 1 from employer_members m join employers e on e.id = m.employer_id where m.user_id = $1 and e.status <> 'closed')
+			or exists (select 1 from ambassador_terms where user_id = $1 and status = 'active')
+			or exists (select 1 from mentors where user_id = $1 and status in ('approved', 'paused'))`, u.ID).Scan(&ok)
+	})
+	return ok, err
+}
+
 // Routes wires /api/console/*.
 func Routes(mux httpx.Router) {
-	mux.HandleFunc("GET /api/console/me", auth.Need(me))
+	mux.HandleFunc("GET /api/console/me", auth.Need(myPanels))
 	shopRoutes(mux)
 }
 
@@ -99,7 +120,7 @@ type Panels struct {
 	Mentor     bool           `json:"mentor"`
 }
 
-func me(w http.ResponseWriter, r *http.Request, u *auth.User) {
+func myPanels(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	p, err := PanelsFor(r.Context(), u)
 	if err != nil {
 		fail(w, r, "panels", err)
