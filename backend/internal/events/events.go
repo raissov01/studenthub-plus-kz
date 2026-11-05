@@ -30,8 +30,9 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/notify"
 )
 
-// Cats are the event categories (the legacy EVENTS demo list plus mentoring and other).
-var Cats = []string{"career", "youth", "volunteer", "sport", "training", "conf", "holiday", "mentoring", "other"}
+// Cats are the event categories (the legacy EVENTS demo list plus mentoring and other; contest and hackathon
+// feed the «Байқаулар» and «Хакатондар» sub-tabs of «Іс-шаралар», see frontend lib/sections.ts).
+var Cats = []string{"career", "youth", "volunteer", "sport", "training", "conf", "holiday", "mentoring", "other", "contest", "hackathon"}
 
 // ManagerRoles may create and manage events of their own university; admin manages all.
 var ManagerRoles = []string{"ambassador", "university_staff"}

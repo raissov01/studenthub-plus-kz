@@ -79,8 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const go = useCallback((v: string, opts: GoOpts = {}) => {
     const [n, prm] = parseView(v);
     // screens whose legacy parameter only selected a filter
-    if (n === 'search' && prm) setUi({ sk: prm });
-    if (n === 'opps' && prm) setUi({ oppTab: prm });
+    if (n === 'opps' && prm) setUi({ oppTab: prm.replace(/\?.*$/, '') });
     if (n === 'match' && prm) setUi({ matchId: prm });
     let replace = !!opts.replace;
     if (sheetOpen.current) { closeSheetDom(); replace = true; }

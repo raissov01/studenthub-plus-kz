@@ -1,1 +1,1 @@
-id,status,type,funded,title_kk,title_ru,org_kk,org_ru,req_course,req_gpa,req_en,req_skills,spec,desc_kk,desc_ru,docs_kk,docs_ru,steps_kk,steps_ru,city,source_url,posted_at,verified_at,verified_by,contact_phone,contact_email,contact_site,is_demo,deadline,no_deadline
+id,status,type,subtype,funded,title_kk,title_ru,org_kk,org_ru,req_course,req_gpa,req_en,req_skills,spec,desc_kk,desc_ru,docs_kk,docs_ru,steps_kk,steps_ru,city,source_url,posted_at,verified_at,verified_by,contact_phone,contact_email,contact_site,is_demo,deadline,no_deadline

@@ -19,7 +19,7 @@ const META: Record<string, Meta> = {
   services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
   materials: { title: (_, x) => t('Оқу материалдары', 'Учебные материалы')(x), tab: 'home' },
   saved: { title: (_, x) => t('Сақталғандар', 'Сохранённое')(x), tab: 'profile' },
-  // the search screen under the old URLs; the header shows «Іздеу», the page <title> names the category
+  // the sections at the old URLs (lib/sections.ts); the header and the page <title> name the section
   opps: {
     title: (prm, x) => ({
       intern: t('Тағылымдама', 'Стажировки')(x), events: t('Іс-шаралар', 'Мероприятия')(x), courses: t('Курстар', 'Курсы')(x),

@@ -63,7 +63,7 @@ const OLD_COURSES: Record<string, [string, string, string]> = {
 };
 
 export interface UiState {
-  oppTab: string; q: string; jf: Record<string, boolean>; city: string; sortPay: boolean; oppType: string;
+  oppTab: string; q: string; jf: Record<string, boolean>; city: string; sortPay: boolean;
   evCat: string; courseMine: boolean; dealCat: string; mapQ: string; admTab: string; resumeLang: string | null;
   iv: number; chatBusy: boolean; chatErr: string; chatDraft: string; mapSel: string | null; mapNear: boolean;
   geoAuto: boolean; nearCat: string; sq: string; sk: string; nk: string; sqFocus: boolean; matchId: string;
@@ -75,7 +75,7 @@ export interface UiState {
   study: null | { id: string; mode: string; queue: { q: string; a: string }[]; total: number; firstOk: number; wrong: string[]; flipped: boolean };
 }
 export const UI_INIT: UiState = {
-  oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, oppType: 'all', evCat: 'all', courseMine: false,
+  oppTab: 'jobs', q: '', jf: {}, city: 'all', sortPay: false, evCat: 'all', courseMine: false,
   dealCat: 'all', mapQ: '', admTab: 'bach', resumeLang: null, iv: 0, chatBusy: false, chatErr: '', chatDraft: '',
   mapSel: null, mapNear: false, geoAuto: false, nearCat: 'all', sq: '', sk: 'all', nk: 'all', sqFocus: false,
   matchId: '', oppCheck: {}, target: 3.5, nextCr: 60, study: null,

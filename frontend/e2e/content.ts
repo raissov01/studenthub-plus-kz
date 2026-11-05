@@ -38,5 +38,10 @@ export const event: ContentEvent = {
   id: 501, title_kk: 'Мансап күні', title_ru: 'День карьеры', desc_kk: 'Жұмыс берушілермен кездесу', desc_ru: 'Встреча с работодателями',
   cat: 'career', starts_at: `${EVENT_DAY}T06:00:00Z`, ends_at: `${EVENT_DAY}T08:00:00Z`, university: 'E2E', place_text: 'Акт залы', building_id: null,
 };
-export const content: Content = { jobs: [job, experiencedJob], opportunities: [opportunity], discounts: [discount], events: [], places: [], source: 'e2e', updated_at: '2026-01-02' };
+// One item per section sub-tab that is not the default (lib/sections.ts): a youth-practice job, a Work & Travel
+// programme and a competition stored as an opportunity (it moves to «Іс-шаралар / Байқаулар»).
+export const youthJob: AnyJob = { ...job, id: 'e2e-youth', subtype: 'youthpractice', title: { kk: 'Жастар практикасы: әкімдік', ru: 'Молодёжная практика: акимат' } };
+export const watOpp: Opportunity = { ...opportunity, id: 'e2e-wat', deadline: null, type: 'intl', subtype: 'workandtravel', title: { kk: 'Work and Travel АҚШ', ru: 'Work and Travel США' } };
+export const contestOpp: Opportunity = { ...opportunity, id: 'e2e-contest', deadline: null, type: 'grant', subtype: 'competition', title: { kk: 'Ғылыми жобалар байқауы', ru: 'Конкурс научных проектов' } };
+export const content: Content = { jobs: [job, experiencedJob, youthJob], opportunities: [opportunity, watOpp, contestOpp], discounts: [discount], events: [], places: [], source: 'e2e', updated_at: '2026-01-02' };
 export const config = { botUsername: 'StudentHubTestBot', emailAuth: true, features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: true } };

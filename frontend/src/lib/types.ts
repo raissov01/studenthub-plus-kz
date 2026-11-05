@@ -37,11 +37,15 @@ export interface Job extends Provenance {
   spec: string[];
   desc: LText;
   req: LText[];
+  /** which «Жұмыс» sub-tab: 'parttime' (default when absent), 'youthpractice', 'fulltime' (lib/sections.ts) */
+  subtype?: string;
 }
 export type OppType = 'mobility' | 'intl' | 'company' | 'grant';
 export interface Opportunity extends Provenance {
   id: string;
   type: OppType;
+  /** optional refinement of `type`: 'workandtravel', 'exchange', 'scholarship', 'competition' (lib/sections.ts oppPlace) */
+  subtype?: string;
   funded: boolean;
   title: LText;
   org: LText;

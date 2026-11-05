@@ -2,7 +2,6 @@
 /* Shell screens: home, notifications, saved, the search result row, and the two hubs reached from home tiles. */
 import { useRef } from 'react';
 import { useApp } from '@/components/app';
-import { Hero3D } from '@/components/views/hero3d';
 import { NewsCarousel } from '@/components/views/news-carousel';
 import { Chip, Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
 import { ServicesCommunity } from '@/components/views/entries';
@@ -14,7 +13,6 @@ import { CafeShortcut } from '@/components/views/cafe';
 import { PinButton, saveFile, UpcomingDeadlines } from '@/components/views/calendar';
 import { useAccount } from '@/lib/account';
 import { CourseSheet, DealSheet } from '@/components/views/sheets';
-import { useTelegram } from '@/lib/telegram';
 import { classWhere } from '@/lib/campus';
 import { classesOn, nextClass, weekdayOf } from '@/lib/timetable';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
@@ -23,7 +21,6 @@ import { buildScheduleIcs } from '@/lib/ics';
 import type { ClassItem, IconName } from '@/lib/types';
 import { HomeReviewDue } from '@/components/views/review';
 
-const firstName = (name: string, fb: string) => (name || '').trim().split(/\s+/)[0] || fb;
 const Mark = ({ id, label }: { id: string; label: string }) => (
   <span className={`mk mk-${hue(id)}`} aria-hidden="true">{plainOrg(label).charAt(0).toUpperCase()}</span>
 );
@@ -96,8 +93,6 @@ export function ScheduleIcsButton() {
 export function Home() {
   const { S, tt, L, I, wd, go, setUi, content } = useApp();
   const today = classesOn(S.timetable, weekdayOf(new Date()));
-  const tg = useTelegram();
-  const who = tg.name || firstName(S.profile.name, tt('студент', 'студент'));
   const now = new Date();
   const news = [
     ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), kind: tt('Іс-шара', 'Мероприятие'), title: S.lang === 'ru' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
@@ -133,8 +128,6 @@ export function Home() {
           onChange={e => setUi({ sq: e.target.value })} />
       </form>
 
-      <Hero3D who={who} />
-      <PointsChip />
       <CafeShortcut />
 
       {news.length ? (
@@ -168,6 +161,8 @@ export function Home() {
           </details>
         ) : null}
       </section>
+
+      <PointsChip />
     </>
   );
 }

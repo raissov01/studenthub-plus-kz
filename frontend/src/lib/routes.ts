@@ -1,6 +1,8 @@
 /* View ids (the legacy router's vocabulary: 'job:j1', 'opps:intern', 'map:near', ...) <-> real URL paths.
    Shared by the server (catch-all route, metadata) and the client (navigation, header, legacy #/ links). */
 
+import { viewOfSearchCat } from '@/lib/sections';
+
 export const parseView = (v: string): [string, string] => {
   const i = v.indexOf(':');
   return i < 0 ? [v, ''] : [v.slice(0, i), v.slice(i + 1)];
@@ -47,8 +49,6 @@ const FIXED: Record<string, string> = {
   'map:near': '/map/near',
 };
 const SEGMENT: Record<string, string> = { opp: 'opportunity' };
-/** search categories that kept their own old URL; the others are /search?k=<category> */
-const SEARCH_PATH: Record<string, string> = { jobs: '/jobs', intern: '/internships', events: '/events', courses: '/courses', deals: '/discounts' };
 const FIXED_BACK: Record<string, string> = Object.fromEntries(
   Object.entries(FIXED).filter(([v]) => v !== 'opps' && v !== 'map:campus').map(([v, p]) => [p, v]),
 );
@@ -56,8 +56,12 @@ const SEGMENT_BACK: Record<string, string> = Object.fromEntries(Object.entries(S
 
 export function pathOf(v: string): string {
   if (v in FIXED) return FIXED[v];
+  // a section with its sub-tab: 'opps:intern?t=mobility' -> /internships?t=mobility
+  const q = v.indexOf('?');
+  if (q > 0 && /^(opps|bonus)(:|\?)/.test(v)) return pathOf(v.slice(0, q)) + v.slice(q);
   const [n, prm] = parseView(v);
-  if (n === 'search') return SEARCH_PATH[prm] || (prm && prm !== 'all' ? '/search?k=' + encodeURIComponent(prm) : '/search');
+  // the old search categories now live in the sections ('search:grant' -> /internships?t=grants)
+  if (n === 'search') { const sv = viewOfSearchCat(prm); return sv ? pathOf(sv) : '/search'; }
   if (n === 'opps') return FIXED['opps:jobs'];
   // café: a menu is /cafe?id=<café>, an order /cafe/orders?id=<order> ('cafe:o12'): static pages, the id rides in the query
   if (n === 'cafe' && /^\d+$/.test(prm)) return '/cafe?id=' + prm;

@@ -1,44 +1,35 @@
-/* The one search screen: categories, which URL each one lives at, and the active-filter list.
-   Old URLs (/jobs, /internships, /events, /courses, /discounts) render the same screen with their category. */
+/* Filters of «Іздеу» and of the sections (lib/sections.ts): which filters are on, the patch that clears them,
+   and the query match. «Іздеу» (/search) searches everything; its only filter is the scope (ui.sk), picked in the
+   filter sheet. Each section has its own filters (jobs: flags, city, order; events: category; ...). */
 import type { UiState } from '@/lib/defaults';
+import { isSectionId, type SectionId } from '@/lib/sections';
 
-export type SearchCat = 'all' | 'jobs' | 'intern' | 'grant' | 'mobility' | 'events' | 'courses' | 'deals' | 'market';
-export const SEARCH_CATS: SearchCat[] = ['all', 'jobs', 'intern', 'grant', 'mobility', 'events', 'courses', 'deals', 'market'];
-export const isSearchCat = (k: string | null | undefined): k is SearchCat => !!k && (SEARCH_CATS as string[]).includes(k);
+/** whose filters: «Іздеу» ('all'), a section, or the «Тегін беремін» tab ('market', no filters) */
+export type FilterCat = 'all' | SectionId | 'market';
 
-/** the old screens' view ids -> their category ('opps:intern' -> 'intern', 'bonus' -> 'deals') */
-export function catOfView(name: string, prm: string): SearchCat | undefined {
-  if (name === 'bonus') return 'deals';
-  if (name === 'opps') return isSearchCat(prm) && ['jobs', 'intern', 'events', 'courses'].includes(prm) ? prm : 'jobs';
-  return undefined;
+/** the scope of «Іздеу»: everything or one section */
+export type Scope = 'all' | SectionId;
+export const SCOPES: Scope[] = ['all', 'jobs', 'intern', 'events', 'courses', 'deals'];
+export const isScope = (k: string | null | undefined): k is Scope => k === 'all' || isSectionId(k);
+
+/** a search item's kind (lib/domain searchItems + events, courses) -> the section it belongs to */
+export function scopeOfKind(k: string): SectionId {
+  if (k === 'intern' || k === 'grant' || k === 'mobility') return 'intern';
+  return isSectionId(k) ? k : 'jobs';
 }
 
-export const SEARCH_LABELS: Record<SearchCat, [string, string]> = {
-  all: ['Барлығы', 'Все'],
-  jobs: ['Жұмыс', 'Работа'],
-  intern: ['Тағылымдама', 'Стажировки'],
-  grant: ['Грант / байқау', 'Гранты / конкурсы'],
-  mobility: ['Ұтқырлық', 'Мобильность'],
-  events: ['Іс-шара', 'События'],
-  courses: ['Курстар', 'Курсы'],
-  deals: ['Жеңілдіктер', 'Скидки'],
-  market: ['Тегін заттар', 'Отдам даром'],
-};
-
-/** opportunity types shown under the «Тағылымдама» category (grants and mobility have their own) */
-export const INTERN_TYPES = ['intl', 'company'];
 export const JOB_FLAGS = ['today', 'noexp', 'daily', 'remote', 'near'] as const;
 
-/** One active filter of a category: what it is and the patch that clears it. */
+/** One active filter: what it is and the patch that clears it. */
 export interface ActiveFilter { key: string; clear: Partial<UiState> }
-export function activeFilters(cat: SearchCat, ui: UiState): ActiveFilter[] {
+export function activeFilters(cat: FilterCat, ui: UiState): ActiveFilter[] {
   const out: ActiveFilter[] = [];
-  if (cat === 'jobs') {
+  if (cat === 'all') {
+    if (isScope(ui.sk) && ui.sk !== 'all') out.push({ key: 'scope', clear: { sk: 'all' } });
+  } else if (cat === 'jobs') {
     for (const k of JOB_FLAGS) if (ui.jf[k]) out.push({ key: 'jf:' + k, clear: { jf: { ...ui.jf, [k]: false } } });
     if (ui.city !== 'all') out.push({ key: 'city', clear: { city: 'all' } });
     if (ui.sortPay) out.push({ key: 'sortPay', clear: { sortPay: false } });
-  } else if (cat === 'intern') {
-    if (INTERN_TYPES.includes(ui.oppType)) out.push({ key: 'oppType', clear: { oppType: 'all' } });
   } else if (cat === 'events') {
     if (ui.evCat !== 'all') out.push({ key: 'evCat', clear: { evCat: 'all' } });
   } else if (cat === 'courses') {
@@ -49,11 +40,11 @@ export function activeFilters(cat: SearchCat, ui: UiState): ActiveFilter[] {
   return out;
 }
 
-/** clears every filter of the category at once */
-export function clearAll(cat: SearchCat): Partial<UiState> {
+/** clears every filter of the screen at once */
+export function clearAll(cat: FilterCat): Partial<UiState> {
   switch (cat) {
+    case 'all': return { sk: 'all' };
     case 'jobs': return { jf: {}, city: 'all', sortPay: false };
-    case 'intern': return { oppType: 'all' };
     case 'events': return { evCat: 'all' };
     case 'courses': return { courseMine: false };
     case 'deals': return { dealCat: 'all' };

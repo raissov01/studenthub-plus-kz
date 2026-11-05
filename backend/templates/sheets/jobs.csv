@@ -1,1 +1,1 @@
-id,status,today,title_kk,title_ru,org_kk,org_ru,city,pay,per,hours,sched_kk,sched_ru,tags,skills,spec,desc_kk,desc_ru,req_kk,req_ru,source_url,posted_at,verified_at,verified_by,contact_phone,contact_email,contact_site,is_demo,deadline,no_deadline
+id,status,subtype,today,title_kk,title_ru,org_kk,org_ru,city,pay,per,hours,sched_kk,sched_ru,tags,skills,spec,desc_kk,desc_ru,req_kk,req_ru,source_url,posted_at,verified_at,verified_by,contact_phone,contact_email,contact_site,is_demo,deadline,no_deadline

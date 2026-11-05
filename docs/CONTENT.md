@@ -144,6 +144,7 @@ Sheets парақтарына ортақ ережелер:
 | Баған | Міндетті | Сипаттама |
 |---|---|---|
 | `type` | иә | `mobility` (академиялық ұтқырлық), `intl` (халықаралық бағдарлама), `company` (тағылымдама), `grant` (грант / байқау) |
+| `subtype` | жоқ | `exchange`, `workandtravel`, `scholarship`, `competition` — қай ішкі қойындыда шығатынын нақтылайды (төмендегі «Бөлімдер мен ішкі қойындылар»). Бос болса — `type` бойынша |
 | `funded` | жоқ | Қаржыландырылса `TRUE` |
 | `title_kk`, `title_ru` | `title_kk` — иә | Атауы |
 | `org_kk`, `org_ru` | жоқ | Ұйым |
@@ -160,6 +161,7 @@ Sheets парақтарына ортақ ережелер:
 
 | Баған | Міндетті | Сипаттама |
 |---|---|---|
+| `subtype` | жоқ | `parttime` (подработка), `youthpractice` (жастар практикасы), `fulltime` (тұрақты жұмыс). Бос болса — `parttime` |
 | `today` | жоқ | «Бүгінгі жұмыс» болса `TRUE` |
 | `title_kk`, `title_ru` | `title_kk` — иә | Лауазымы |
 | `org_kk`, `org_ru` | жоқ | Жұмыс беруші |
@@ -183,6 +185,38 @@ Sheets парақтарына ортақ ережелер:
 | `what_kk`, `what_ru` | жоқ | Неге жеңілдік беріледі |
 | `cond_kk`, `cond_ru` | жоқ | Шарты |
 
+## Бөлімдер мен ішкі қойындылар (қай жазба қайда шығады)
+
+Сайттағы үлкен бөлімдердің әрқайсысының өз ішкі қойындылары бар (`frontend/src/lib/sections.ts`). URL ескі күйінде
+қалды, ішкі қойынды `?t=` параметрінде: `/jobs?t=youth`, `/internships?t=mobility`. Жазба қай қойындыға түсетінін
+оның өрістері шешеді; `subtype` міндетті емес, бос болса әдепкі орын қолданылады — ескі жазбалар өзгеріссіз жұмыс істейді.
+
+| Бөлім (URL) | Ішкі қойынды (`?t=`) | Не түседі |
+|---|---|---|
+| Жұмыс (`/jobs`) | Подработка (`parttime`, әдепкі) | `jobs`: `subtype` бос немесе `parttime`; жұмыс берушілер мен университеттің вакансиялары да осында |
+| | Жастар практикасы (`youth`) | `jobs`: `subtype = youthpractice` |
+| | Тұрақты жұмыс (`fulltime`) | `jobs`: `subtype = fulltime` (мұндай жазба болмаса, қойынды көрінбейді) |
+| Тағылымдама (`/internships`) | Компаниядағы тағылымдама (`company`, әдепкі) | `opportunities`: `type = company` |
+| | Академиялық ұтқырлық (`mobility`) | `type = mobility` (бұрынғы «Ұтқырлық / Мобильдік» санаты) |
+| | Work & Travel (`wat`) | `subtype = workandtravel` (кез келген `type`, әдетте `intl`) |
+| | Алмасу және саяхат (`exchange`) | `type = intl` (`subtype` бос немесе `exchange`) |
+| | Гранттар мен стипендиялар (`grants`) | `type = grant` (`subtype` бос немесе `scholarship`) |
+| Іс-шаралар (`/events`) | Барлығы (`all`, әдепкі) | барлық іс-шара + `subtype = competition` мүмкіндіктер |
+| | Байқаулар (`contests`) | іс-шара `cat = contest` + мүмкіндік `subtype = competition` (мысалы `grant` түріндегі ғылыми жобалар байқауы) |
+| | Хакатондар (`hackathons`) | іс-шара `cat = hackathon` |
+| | Клубтар (`clubs`) | клубтар бөліміне сілтеме, тек `FEATURE_CLUBS` қосулы болса |
+| | Конференциялар мен форумдар (`conf`) | іс-шара `cat = conf` немесе `career` |
+| Курстар (`/courses`) | — | курстар (ішкі қойынды жоқ) |
+| Жеңілдіктер (`/discounts`) | Жеңілдіктер (`deals`, әдепкі) | `discounts` |
+| | Тегін беремін (`free`) | «Отдам даром» нарығы, тек `FEATURE_MARKET` қосулы болса |
+
+Бұрынғы «Грант / байқау» санаты екіге бөлінді: гранттар мен стипендиялар — «Тағылымдама» ішінде, байқаулар —
+«Іс-шаралар» ішінде. Айыратын өріс — `subtype = competition`. Ескі `/search?k=<санат>` сілтемелері тиісті бөлімге
+апарады (`k=grant` → `/internships?t=grants`, `k=mobility` → `/internships?t=mobility`, `k=market` → `/discounts?t=free`).
+«Іздеу» (`/search`) бәрін бірге іздейді; санат чиптері жоқ, бөлімді сүзгі парағынан таңдауға болады.
+
+Іс-шара санаттарына `contest` және `hackathon` қосылды (`backend/internal/events/events.go` `Cats`).
+
 ## Әзірлеушіге
 
 - Тексеру ережелері бір жерде: `backend/internal/content/schema.go` (Sheets жолы) және `backend/internal/content/validate.go`
@@ -191,4 +225,5 @@ Sheets парақтарына ортақ ережелер:
 - CSV шаблондары `backend/data/*.json` файлдарынан жасалады: `cd backend && go run ./cmd/json-to-csv`.
 - Тесттер өндірістік `backend/data/*.json`-ға сүйенбейді: олардың тұрақты жазбалары `backend/internal/content/testdata/data/`-да.
 - Тесттер: `cd backend && go test ./internal/content ./internal/admincontent` (дерекқор тесттері `postgres://postgres:dev@localhost:54329/studenthub` керек етеді).
-- `type`, `city`, `cat` мәндерінің тізімі `backend/internal/content/schema.go`-да; фронттағы тізімдермен сәйкес болуы керек.
+- `type`, `subtype`, `city`, `cat` мәндерінің тізімі `backend/internal/content/schema.go`-да; фронттағы тізімдермен
+  (`lib/data/static.ts`, `lib/sections.ts`) сәйкес болуы керек.

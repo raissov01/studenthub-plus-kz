@@ -80,7 +80,7 @@
  "city":"almaty","source":"admin"}
 ```
 
-Жұмыс (`jobs`): `id, today? (тек true болса), title, org, city, pay, per, hours, sched, tags, skills, spec, desc, req[], source_url, posted_at, verified_at, verified_by, contact, is_demo, deadline, source`.
+Жұмыс (`jobs`): `id, subtype? (берілсе ғана), today? (тек true болса), title, org, city, pay, per, hours, sched, tags, skills, spec, desc, req[], source_url, posted_at, verified_at, verified_by, contact, is_demo, deadline, source`.
 Жеңілдік (`discounts`): `id, cat, pct, name, what, cond, source_url, posted_at, verified_at, verified_by, contact, is_demo, deadline, city, source`.
 Жасырылған, өшірілген және мерзімі өткен жазбалар шықпайды. `/api/content` кэші — 10 минутқа дейін.
 
@@ -158,6 +158,7 @@
 | Өріс | Міндетті | Ереже | kk | ru |
 |---|---|---|---|---|
 | `type` | иә | `mobility` / `intl` / `company` / `grant` | Түрін таңдаңыз | Выберите тип |
+| `subtype` | жоқ | `exchange` / `workandtravel` / `scholarship` / `competition` (ішкі қойынды, `docs/CONTENT.md`) | мәні белгісіз | — |
 | `funded` | жоқ | bool | — | — |
 | `org.kk`, `org.ru` | жоқ | мәтін | — | — |
 | `req.course` | жоқ | бүтін сан 1–7 | Курс 1–7 аралығында | Курс от 1 до 7 |
@@ -172,6 +173,7 @@
 
 | Өріс | Міндетті | Ереже | kk | ru |
 |---|---|---|---|---|
+| `subtype` | жоқ | `parttime` / `youthpractice` / `fulltime`; бос = `parttime` | мәні белгісіз | — |
 | `today` | жоқ | bool («Бүгінгі жұмыс») | — | — |
 | `org.kk/ru`, `sched.kk/ru`, `desc.kk/ru` | жоқ | мәтін | — | — |
 | `pay` | иә | сан ≥ 0 (теңге) | Төлемді жазыңыз | Укажите оплату |
