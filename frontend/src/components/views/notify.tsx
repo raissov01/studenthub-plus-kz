@@ -7,6 +7,7 @@ import { useApp } from '@/components/app';
 import { ErrorLine, errText, hasAccount, Loading, useLoad } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
+import { PushToggle } from '@/components/views/push';
 
 type Cat = 'deadlines' | 'digest' | 'events' | 'mentors' | 'market' | 'jobs' | 'moderation' | 'community';
 export interface NotifyPrefs {
@@ -67,6 +68,7 @@ function NotifySection_() {
       {acc.user && !acc.user.telegramId
         ? <p className="note">{tt('Аккаунтқа Telegram байланыспаған, сондықтан бот хабарлама жібере алмайды. Жоғарыдағы «Аккаунт» бөлімінде Telegram-ды байланыстырыңыз.', 'К аккаунту не привязан Telegram, поэтому бот не может присылать сообщения. Привяжите Telegram в разделе «Аккаунт» выше.')}</p>
         : null}
+      <PushToggle />
       {!prefs ? (err ? <ErrorLine err={err} /> : <Loading />) : (
         <>
           <div className="group">

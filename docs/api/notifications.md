@@ -23,6 +23,11 @@
 - All categories are switchable: `deadlines`, `digest`, `events`, `mentors`, `market`,
   `jobs`, `community`, `moderation`. A disabled category is inbox-only. Every queued item
   is rechecked before reservation, so disabling a category also cancels pending delivery.
+- **Channels: Web Push first, the bot as fallback** (`FEATURE_WEBPUSH`, [../PUSH.md](../PUSH.md)). An account
+  with a browser subscription gets the reservation delivered as a push; when no push service
+  accepts it, the same reservation goes to Telegram if the account has the bot, otherwise it is
+  retried an hour later. Categories, quiet hours and both budgets are shared by the channels;
+  `notify_outbox.channel` records which one delivered.
   Re-enabling a category does not replay previously suppressed receipts.
 
 ### Moderation decision

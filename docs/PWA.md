@@ -79,6 +79,8 @@ Student Hub бір рет интернетпен ашылғаннан кейін
 - Жаңа worker белсенді болғанда `studenthub-` префиксті, бірақ ағымдағы емес кэштердің бәрі өшеді.
 - Worker тек production build-те тіркеледі (`next dev`-те жоқ) және тек `https:` немесе `localhost`-та.
 
+Push хабарламалары (`push`, `notificationclick`, `pushsubscriptionchange`) да осы worker-де — [PUSH.md](./PUSH.md).
+
 Worker-ді толық өшіру керек болса: `frontend/src/components/AppRoot.tsx`-тен `<PwaRegister />` алып таста және `frontend/public/sw.js`-ті
 өзін-өзі өшіретін нұсқамен ауыстыр (`self.registration.unregister()` + кэштерді өшіру) — файлды жай өшірсең,
 орнатылған worker-лер ескі кэшпен жұмыс істей береді.

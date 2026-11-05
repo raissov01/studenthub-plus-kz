@@ -128,10 +128,10 @@ func unsubscribe(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true, "removed": removed})
 }
 
-// testText is the test notification in the UI language (en from the Accept-Language header).
+// testText is the test notification in the UI language (en: ?lang=en, which the English UI adds).
 func testText(r *http.Request) (title, body string) {
 	switch {
-	case strings.HasPrefix(strings.ToLower(r.Header.Get("Accept-Language")), "en"):
+	case r.URL.Query().Get("lang") == "en" || strings.HasPrefix(strings.ToLower(r.Header.Get("Accept-Language")), "en"):
 		return "Student Hub", "Browser notifications are on. This is a test."
 	case httpx.Lang(r) == "ru":
 		return "Student Hub", "Уведомления в браузере включены. Это проверка."

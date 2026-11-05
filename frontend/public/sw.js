@@ -9,10 +9,12 @@
      anything sent with an Authorization header, non-GET requests, other sites except Google Fonts
    Versions: VERSION (below) for changes to this file's logic, BUILD (from ?v=, set per deploy by the page) for
    everything else. Old caches are deleted when a new worker activates. A new worker waits until the student
-   taps «Жаңарту» (message SKIP_WAITING); it never takes over a page on its own. */
+   taps «Жаңарту» (message SKIP_WAITING); it never takes over a page on its own.
+   Web Push (docs/PUSH.md): «push» shows the notification the server sent ({title, body, url, icon, tag});
+   «notificationclick» focuses an open Student Hub window on that url, or opens one. */
 'use strict';
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev';
 const PREFIX = 'studenthub-';
 const PAGES = `${PREFIX}pages-${VERSION}-${BUILD}`;
@@ -80,6 +82,55 @@ self.addEventListener('message', event => {
       await storeAssets(assets);
     })());
   }
+});
+
+/* ---------- Web Push (docs/PUSH.md) ---------- */
+/** only a same-site path may be opened from a notification */
+const pushUrl = u => (typeof u === 'string' && /^\/(?![/\\])/.test(u) ? u : '/notifications');
+
+self.addEventListener('push', event => {
+  let m = {};
+  try { m = event.data ? event.data.json() : {}; } catch { m = { body: event.data ? event.data.text() : '' }; }
+  const title = typeof m.title === 'string' && m.title ? m.title : 'Student Hub';
+  const options = {
+    body: typeof m.body === 'string' ? m.body : '',
+    icon: pushUrl(m.icon) === m.icon ? m.icon : '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: pushUrl(m.url) },
+  };
+  // the same tag replaces an earlier copy (a retried delivery never shows twice)
+  if (typeof m.tag === 'string' && m.tag) options.tag = m.tag;
+  // every push must show a notification (Safari revokes the subscription otherwise)
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = new URL(pushUrl(event.notification.data && event.notification.data.url), ORIGIN);
+  event.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const same = open.filter(c => new URL(c.url).origin === ORIGIN);
+    const exact = same.find(c => new URL(c.url).pathname + new URL(c.url).search === target.pathname + target.search);
+    if (exact) return exact.focus();
+    if (same.length) {
+      const c = await same[0].focus();
+      if (c && 'navigate' in c) { try { return await c.navigate(target.href); } catch { /* not controlled: open a window */ } }
+    }
+    return self.clients.openWindow(target.href);
+  })());
+});
+
+// The browser rotated the subscription: hand the new one to the server (same session cookie, same origin).
+self.addEventListener('pushsubscriptionchange', event => {
+  event.waitUntil((async () => {
+    try {
+      let sub = event.newSubscription;
+      const key = event.oldSubscription && event.oldSubscription.options && event.oldSubscription.options.applicationServerKey;
+      if (!sub && key) sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      if (!sub) return;
+      await fetch('/api/me/push', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+    } catch { /* the settings switch shows «off» and the student turns it on again */ }
+  })());
 });
 
 /* ---------- routing ---------- */
