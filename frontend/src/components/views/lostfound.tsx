@@ -80,7 +80,7 @@ function LFListView() {
       {!data && !err ? <Loading /> : data?.posts.length ? (
         <div className="group" aria-label={tt('Хабарландырулар', 'Объявления')}>{data.posts.map(p => <LFCard key={p.id} p={p} />)}</div>
       ) : data ? (
-        <Empty icon="search">{tt('Әзірге ештеңе жоқ. Бір нәрсе жоғалтсаңыз не тапсаңыз — бірінші болып жазыңыз.', 'Пока ничего нет. Если что-то потеряли или нашли — напишите первым.')}</Empty>
+        <Empty icon="lostfound">{tt('Әзірге ештеңе жоқ. Бір нәрсе жоғалтсаңыз не тапсаңыз — бірінші болып жазыңыз.', 'Пока ничего нет. Если что-то потеряли или нашли — напишите первым.')}</Empty>
       ) : null}
       <p className="note">{tt('Құжат пен картаны тапсаңыз: фотосын салмаңыз, нөмірін жазбаңыз, деканатқа не күзетке тапсырыңыз. Иесі өзі белгісін айтады.',
         'Нашли документ или карту: не выкладывайте фото и номер, сдайте в деканат или охрану. Владелец сам назовёт примету.')}</p>
@@ -326,7 +326,7 @@ function LFMine() {
         <Row key={p.id} go={'lostfound:' + p.id} icon={p.kind === 'lost' ? 'search' : 'gift'} title={p.title}
           sub={[kindLabel(p.kind, tt), p.status === 'active' ? tt('Белсенді', 'Активно') : tt('Жабық', 'Закрыто')].join(' · ')}
           end={p.pendingClaims ? <span className="badge b-ok">{p.pendingClaims}</span> : undefined} />
-      ))}</div> : <Empty icon="search">{tt('Хабарландыру жоқ.', 'Объявлений нет.')}</Empty>}
+      ))}</div> : <Empty icon="lostfound">{tt('Хабарландыру жоқ.', 'Объявлений нет.')}</Empty>}
       <SectionHead title={tt('Менің хабарламаларым', 'Мои сообщения')} />
       {data.claims.length ? <div className="group">{data.claims.map(c => (
         <Row key={c.id} go={'lostfound:' + c.postId} icon="chat" title={c.postTitle ?? tt('Жабылған хабарландыру', 'Закрытое объявление')}

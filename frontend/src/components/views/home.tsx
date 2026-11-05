@@ -97,7 +97,7 @@ export function Home() {
   const today = classesOn(S.timetable, weekdayOf(new Date()));
   const now = new Date();
   const news = [
-    ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'calendar' as IconName, id: String(e.id), kind: tt('Іс-шара', 'Мероприятие'), title: S.lang !== 'kk' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
+    ...(content.events ?? []).slice(0, 3).map(e => ({ go: 'event:' + e.id, icon: 'ticket' as IconName, id: String(e.id), kind: tt('Іс-шара', 'Мероприятие'), title: S.lang !== 'kk' ? e.title_ru || e.title_kk : e.title_kk, sub: `${I.fDate(new Date(e.starts_at))}, ${e.place_text || ''}` })),
     ...content.opportunities.slice(0, 3).map(o => {
       const left = oppLeft(o);
       const sub = Number.isFinite(left) ? tt(`Өтінім мерзімі: ${I.fDate(dOff(left))}`, `Приём заявок до ${I.fDate(dOff(left))}`) : tt('Мерзімі шектелмеген', 'Без срока');
@@ -108,7 +108,7 @@ export function Home() {
   const clubsOn = useFeature('clubs');
   const clubs = useLoad<{ clubs: Club[] }>(clubsOn ? '/api/clubs' : null);
   const rec = recruitingPick(clubs.data?.clubs ?? []);
-  if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'user' as IconName, id: 'club' + rec.id, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
+  if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'users' as IconName, id: 'club' + rec.id, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
   const focused = useRef(false);
   const desktop = useDesktop();
   return (
@@ -263,9 +263,9 @@ export function Services() {
       <Row go="map" icon="map" title={tt('Кампус картасы', 'Карта кампуса')} sub={tt('15 нысан: корпустар, жатақханалар, аудитория іздеу', '15 зданий: корпуса, общежития, поиск аудитории')} />
       <Row go="map:near" icon="pin" title={tt('Жақын маңда', 'Рядом с кампусом')} sub={tt('Аялдама, асхана, дәріхана, басып шығару, банкомат', 'Остановки, столовые, аптеки, печать, банкоматы')} />
       <Row go="docs" icon="file" title={tt('Анықтамалар мен құжаттар', 'Справки и документы')} sub={tt('Оқу орнынан анықтама, транскрипт, 073/у', 'Справка с места учёбы, транскрипт, 073/у')} />
-      <Row go="gpa" icon="chart" title={tt('GPA және шәкіртақы', 'GPA и стипендия')} sub={tt('Калькулятор, мақсатты GPA', 'Калькулятор, целевой GPA')} />
+      <Row go="gpa" icon="calc" title={tt('GPA және шәкіртақы', 'GPA и стипендия')} sub={tt('Калькулятор, мақсатты GPA', 'Калькулятор, целевой GPA')} />
       <Row go="pay" icon="tenge" title={tt('Оқу ақысы', 'Оплата обучения')} sub={tt('Қайдан тексеру, төлем мерзімін еске салу', 'Где проверить, напоминание о сроке оплаты')} />
-      <Row go="opps:events" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} sub={tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы')} />
+      <Row go="opps:events" icon="ticket" title={tt('Іс-шаралар', 'Мероприятия')} sub={tt('Форумдар, жәрмеңкелер, клубтар', 'Форумы, ярмарки, клубы')} />
       <Row go="admission" icon="cap" title={tt('Түсу', 'Поступление')} sub={tt('Бакалавриат, магистратура, докторантура', 'Бакалавриат, магистратура, докторантура')} />
       <ServicesCommunity />
     </div>
@@ -290,7 +290,7 @@ export function Saved() {
   return items.length
     ? <div className="group">{items.map(it => <SearchRow key={it.k + it.id} it={it} />)}</div>
     : (
-      <Empty icon="heart" action={<button className="btn secondary" type="button" onClick={() => go('search')}>{tt('Іздеуге өту', 'Перейти к поиску')}</button>}>
+      <Empty icon="bookmark" action={<button className="btn secondary" type="button" onClick={() => go('search')}>{tt('Іздеуге өту', 'Перейти к поиску')}</button>}>
         {tt('Әзірге ештеңе сақталмаған. Іздеудегі жүрекшені басыңыз.', 'Пока ничего не сохранено. Нажмите на сердечко в поиске.')}
       </Empty>
     );

@@ -344,18 +344,18 @@ export function ModerationLinks() {
       <div className="group">
         <Row go="admin:content" icon="file" title={tt('Контент', 'Контент')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
         <Row go="admin:queue" icon="shield" title={tt('Модерация кезегі', 'Очередь модерации')} end={pending ? <b className="num">{pending}</b> : undefined} />
-        <Row go="admin:reports" icon="bell" title={tt('Шағымдар', 'Жалобы')} />
-        {amb ? <Row go="admin:ambassadors" icon="award" title={tt('Амбассадорлар', 'Амбассадоры')} /> : null}
-        {mentors ? <Row go="admin:mentors" icon="cap" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
+        <Row go="admin:reports" icon="flag" title={tt('Шағымдар', 'Жалобы')} />
+        {amb ? <Row go="admin:ambassadors" icon="badge" title={tt('Амбассадорлар', 'Амбассадоры')} /> : null}
+        {mentors ? <Row go="admin:mentors" icon="mentor" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
         {market ? <Row go="admin:market" icon="gift" title={tt('Тегін заттар', 'Отдам даром')} /> : null}
         {events ? <Row go="organize" icon="calendar" title={tt('Іс-шаралар', 'Мероприятия')} /> : null}
         {b2b ? <Row go="admin:employers" icon="briefcase" title={tt('Жұмыс берушілер', 'Работодатели')} /> : null}
-        {b2b ? <Row go="admin:staff" icon="cap" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
-        {clubs ? <Row go="admin:clubs" icon="user" title={tt('Клубтар', 'Клубы')} sub={tt('Клубтар, жетекшілер, архив', 'Клубы, руководители, архив')} /> : null}
+        {b2b ? <Row go="admin:staff" icon="building" title={tt('Университет қызметкерлері', 'Сотрудники университетов')} /> : null}
+        {clubs ? <Row go="admin:clubs" icon="users" title={tt('Клубтар', 'Клубы')} sub={tt('Клубтар, жетекшілер, архив', 'Клубы, руководители, архив')} /> : null}
         {feeds ? <FeedsAdminRow /> : null}
         {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
         {cafe ? <Row go="admin:cafe" icon="cup" title={tt('Кофейнялар', 'Кофейни')} sub={tt('Мәзір, қызметкерлер, Kaspi, тапсырыстар журналы', 'Меню, сотрудники, Kaspi, журнал заказов')} /> : null}
-        {print ? <Row go="admin:print" icon="file" title={tt('Полиграфиялар', 'Полиграфии')} sub={tt('Прайс, қызметкерлер, Kaspi, тапсырыстар журналы', 'Прайс, сотрудники, Kaspi, журнал заказов')} /> : null}
+        {print ? <Row go="admin:print" icon="printer" title={tt('Полиграфиялар', 'Полиграфии')} sub={tt('Прайс, қызметкерлер, Kaspi, тапсырыстар журналы', 'Прайс, сотрудники, Kaspi, журнал заказов')} /> : null}
       </div>
     </section>
   );

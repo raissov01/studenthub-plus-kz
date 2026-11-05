@@ -14,7 +14,7 @@ export const OPEN_MENU = 'studenthub:menu';
 export const openMenu = () => window.dispatchEvent(new Event(OPEN_MENU));
 
 export type Item = [string, IconName, string];
-const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'calendar'], ['courses', 'award'], ['deals', 'tag']];
+const SECTION_MENU: [SectionId, IconName][] = [['jobs', 'briefcase'], ['intern', 'globe'], ['events', 'ticket'], ['courses', 'course'], ['deals', 'tag']];
 
 /** the menu's groups of destinations, shared by the phone menu and the laptop sidebar (components/SideNav.tsx) */
 export function useNavGroups(): [string, Item[]][] {
@@ -31,21 +31,21 @@ export function useNavGroups(): [string, Item[]][] {
       ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
-      ['timetable', 'clock', tt('Сабақ кестесі', 'Расписание занятий')],
-      ...(cfg.features.courseqa ? [['qa', 'chat', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
+      ['timetable', 'timetable', tt('Сабақ кестесі', 'Расписание занятий')],
+      ...(cfg.features.courseqa ? [['qa', 'qa', tt('Сұрақ-жауап', 'Вопросы и ответы')] as Item] : []),
     ]],
     [tt('Университет', 'Университет'), [
-      ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
+      ['services', 'building', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
       ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
-      ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as Item] : []),
-      ...(cfg.features.lostfound ? [['lostfound', 'search', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
+      ...(cfg.features.print ? [['print', 'printer', tt('Полиграфия', 'Полиграфия')] as Item] : []),
+      ...(cfg.features.lostfound ? [['lostfound', 'lostfound', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
     ]],
     [tt('Менікі', 'Моё'), [
-      ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
+      ['saved', 'bookmark', tt('Сақталғандар', 'Сохранённое')],
       ['settings', 'gear', tt('Параметрлер', 'Параметры')],
-      ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
-      ...(hasConsole ? [['admin', 'chart', tt('Басқару панелі', 'Панель управления')] as Item] : []),
+      ...(cfg.features.feedback ? [['feedback', 'feedback', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
+      ...(hasConsole ? [['admin', 'dashboard', tt('Басқару панелі', 'Панель управления')] as Item] : []),
     ]],
   ];
 }

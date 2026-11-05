@@ -137,7 +137,7 @@ function FilterSheet({ cat, panel }: { cat: FilterCat; panel?: boolean }) {
 }
 
 /* ---------- result lists ---------- */
-function NoResults({ icon, msg, cat }: { icon: 'search' | 'globe' | 'calendar' | 'book' | 'tag'; msg: string; cat: FilterCat }) {
+function NoResults({ icon, msg, cat }: { icon: 'search' | 'globe' | 'calendar' | 'ticket' | 'book' | 'course' | 'tag'; msg: string; cat: FilterCat }) {
   const { ui, tt, setUi } = useApp();
   const q = ui.sq.trim();
   const filtered = activeFilters(cat, ui).length > 0;
@@ -164,7 +164,7 @@ function useEventItems(cat: string, tab = 'all') {
 }
 
 /** a category with nothing published at all (not a filter miss): say so and offer to be told when items appear */
-function NothingYet({ icon, msg, notify }: { icon: 'briefcase' | 'globe' | 'calendar' | 'tag'; msg: string; notify?: [NotifyCat, [string, string]] }) {
+function NothingYet({ icon, msg, notify }: { icon: 'briefcase' | 'globe' | 'calendar' | 'ticket' | 'tag'; msg: string; notify?: [NotifyCat, [string, string]] }) {
   return (
     <div className="nothing-yet" data-empty="true">
       <Empty icon={icon} action={notify ? <NotifyToggle cat={notify[0]} label={notify[1]} /> : null}>{msg}</Empty>
@@ -257,15 +257,15 @@ function EventsResults({ tab }: { tab: string }) {
       {items.length
         ? <div className="group">{items.map(e => (
           <div className="sr" key={e.id}>
-            <Row go={'event:' + e.id} icon="calendar" title={evTitle(e, lang)} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
+            <Row go={'event:' + e.id} icon="ticket" title={evTitle(e, lang)} sub={`${I.fDate(new Date(e.starts_at))}${e.place_text ? ', ' + e.place_text : ''}`} />
             <span className="sr-end"><PinButton item={'event:' + e.id} /></span>
           </div>
         ))}</div> : null}
       {contests.length ? <div className="list">{contests.map(o => <OppCard key={o.id} o={o} />)}</div> : null}
       {n ? null : tab === 'all'
-        ? <NothingYet icon="calendar" msg={tt('Әзірге іс-шара жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Мероприятий пока нет — сообщим, когда появятся новые.')}
+        ? <NothingYet icon="ticket" msg={tt('Әзірге іс-шара жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Мероприятий пока нет — сообщим, когда появятся новые.')}
           notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
-        : <NoResults icon="calendar" cat="events" msg={tt('Іс-шара табылмады.', 'Событий не найдено.')} />}
+        : <NoResults icon="ticket" cat="events" msg={tt('Іс-шара табылмады.', 'Событий не найдено.')} />}
     </>
   );
 }
@@ -289,7 +289,7 @@ function CoursesResults() {
               sub={<>{c.platform}, {weeksTxt(c.weeks, tt)}<span className="badges">{S.done[c.id] ? <span className="badge b-ok"><Icon n="check" s={12} /> {tt('Аяқталды', 'Пройден')}</span> : null}<span className={`badge ${certLbl[c.cert][1]}`}>{certLbl[c.cert][0]}</span></span></>} />
           ))}
         </div>
-      ) : <NoResults icon="book" cat="courses" msg={tt('Курс табылмады.', 'Курсы не найдены.')} />}
+      ) : <NoResults icon="course" cat="courses" msg={tt('Курс табылмады.', 'Курсы не найдены.')} />}
       <p className="note">{tt('Оқудың өзі тегін. Сертификат құнын курс бетінен тексеріңіз.', 'Само обучение бесплатное. Стоимость сертификата уточняйте на странице курса.')}</p>
     </>
   );

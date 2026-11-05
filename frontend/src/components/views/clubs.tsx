@@ -53,7 +53,7 @@ function Catalogue() {
   if (!q.data) return <Loading />;
   const all = q.data.clubs;
   const applyBtn = <button className="btn ghost" type="button" id="clubLeaderApply" onClick={apply}><Icon n="award" s={18} /> {tt('Клуб жетекшісімін', 'Я руководитель клуба')}</button>;
-  if (!all.length) return <Empty icon="user" action={applyBtn}>{tt(EMPTY_KK, EMPTY_RU)}</Empty>;
+  if (!all.length) return <Empty icon="users" action={applyBtn}>{tt(EMPTY_KK, EMPTY_RU)}</Empty>;
   const list = filterClubs(all, f, lang);
   const mine = all.filter(c => c.my?.admin || c.my?.status === 'member');
   const dirs = usedDirections(all);
@@ -63,7 +63,7 @@ function Catalogue() {
       {mine.length ? (
         <section className="section">
           <SectionHead title={tt('Менің клубтарым', 'Мои клубы')} />
-          <div className="group">{mine.map(c => <Row key={c.id} go={'club:' + c.id} icon="user" title={clubName(c, lang)}
+          <div className="group">{mine.map(c => <Row key={c.id} go={'club:' + c.id} icon="users" title={clubName(c, lang)}
             sub={c.my?.admin ? tt('Сіз жетекшісіз', 'Вы руководитель') : tt('Мүшесіз', 'Вы участник')} />)}</div>
         </section>
       ) : null}
@@ -163,9 +163,9 @@ function ClubPage({ id }: { id: string }) {
           : c.room ? <Row icon="pin" title={c.room} chev={false} /> : null}
         {clubLeader(c, lang) || c.leader_contact ? <Row icon="user" title={clubLeader(c, lang) || tt('Жетекші', 'Руководитель')}
           sub={c.leader_contact ? c.leader_contact + (manage && !c.leader_contact_public ? ' · ' + tt('тек сізге көрінеді', 'видно только вам') : '') : undefined} chev={false} /> : null}
-        <Row icon="user" title={tt(`Мүшелер: ${c.members}`, `Участников: ${c.members}`)} chev={false} />
+        <Row icon="users" title={tt(`Мүшелер: ${c.members}`, `Участников: ${c.members}`)} chev={false} />
         {tg ? <Row icon="send" title="Telegram" sub={tg.replace('https://', '')} href={tg} /> : null}
-        {ig ? <Row icon="share" title="Instagram" sub={ig.replace(/^https:\/\/(www\.)?/, '')} href={ig} /> : null}
+        {ig ? <Row icon="camera" title="Instagram" sub={ig.replace(/^https:\/\/(www\.)?/, '')} href={ig} /> : null}
       </div>
 
       {c.status === 'active' ? (
@@ -254,7 +254,7 @@ function ManagePanel({ d, onChange }: { d: ClubDetail; onChange: () => void }) {
     <section className="section" aria-label={tt('Клубты басқару', 'Управление клубом')}>
       <SectionHead title={tt('Клубты басқару', 'Управление клубом')} />
       <div className="group">
-        <Row icon="user" title={tt('Өтінімдер мен мүшелер', 'Заявки и участники')} end={d.pending_requests ? <b className="num" id="clubPendingCount">{d.pending_requests}</b> : undefined}
+        <Row icon="users" title={tt('Өтінімдер мен мүшелер', 'Заявки и участники')} end={d.pending_requests ? <b className="num" id="clubPendingCount">{d.pending_requests}</b> : undefined}
           onClick={() => openSheet(<MembersSheet clubId={c.id} onChange={onChange} />)} />
         <Row icon="edit" title={tt('Клуб бетін өзгерту', 'Изменить страницу клуба')} onClick={() => openSheet(<ClubEditSheet c={c} onDone={onChange} />)} />
         <Row icon="chat" title={tt('Жаңалық жариялау', 'Опубликовать новость')} sub={tt('Модерациядан кейін шығады', 'Появится после модерации')}
@@ -491,7 +491,7 @@ function AdminClubsList() {
               {c.status === 'active' ? tt('Архивке', 'В архив') : tt('Қалпына келтіру', 'Восстановить')}</button>
           </div>
         </div>
-      ))}</div> : <Empty icon="user">{tt(EMPTY_KK, EMPTY_RU)}</Empty>}
+      ))}</div> : <Empty icon="users">{tt(EMPTY_KK, EMPTY_RU)}</Empty>}
     </>
   );
 }

@@ -173,7 +173,7 @@ export function Profile() {
         <Row go="edit" icon="user" title={tt('Жеке ақпарат', 'Личные данные')} />
         <Row go="gpa" icon="cap" title={tt('Білім туралы', 'Об учёбе')} />
         <Row go="portfolio" icon="award" title={tt('Жетістіктер', 'Достижения')} />
-        <Row go="mine" icon="clock" title={tt('Іс-әрекет тарихы', 'История действий')} />
+        <Row go="mine" icon="history" title={tt('Іс-әрекет тарихы', 'История действий')} />
         <Row go="saved" icon="bookmark" title={tt('Сақталғандар', 'Сохранённое')} />
         <Row go="settings" icon="gear" title={tt('Параметрлер', 'Параметры')} />
       </div>
@@ -233,7 +233,7 @@ export function Gpa() {
       <section className="section">
         <SectionHead title={tt('Осы сессиядағы пәндер', 'Дисциплины этой сессии')} more={<button className="link-btn" type="button" onClick={() => update(s => { s.gpaPlan.push({ n: '', cr: 5, g: 'B' }); })}>+ {tt('Пән қосу', 'Добавить')}</button>} />
         {plan.length ? null : (
-          <Empty icon="chart" action={<button className="btn secondary" type="button" id="gpaAdd" onClick={() => update(s => { s.gpaPlan.push({ n: '', cr: 5, g: 'B' }); })}><Icon n="plus" s={18} /> {tt('Пән қосу', 'Добавить предмет')}</button>}>
+          <Empty icon="calc" action={<button className="btn secondary" type="button" id="gpaAdd" onClick={() => update(s => { s.gpaPlan.push({ n: '', cr: 5, g: 'B' }); })}><Icon n="plus" s={18} /> {tt('Пән қосу', 'Добавить предмет')}</button>}>
             {tt('Осы сессиядағы пәндеріңізді, кредитін және күтілетін бағаңызды қосыңыз — сессиядан кейінгі GPA есептеледі.', 'Добавьте предметы этой сессии, их кредиты и ожидаемую оценку — посчитаем GPA после сессии.')}
           </Empty>
         )}
@@ -370,7 +370,7 @@ export function Settings() {
   return (
     <>
       <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><LangSeg /></section>
-      {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', tt('Ашық', 'Светлая')], ['dark', tt('Қараңғы', 'Тёмная')]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
+      {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', <><Icon n="sun" s={16} /> {tt('Ашық', 'Светлая')}</>], ['dark', <><Icon n="moon" s={16} /> {tt('Қараңғы', 'Тёмная')}</>]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
       <AccountSection />
       <NotifySection />
       <section className="section"><h2>{tt('Деректер', 'Данные')}</h2>

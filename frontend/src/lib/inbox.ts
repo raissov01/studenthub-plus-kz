@@ -36,18 +36,18 @@ type TT = (kk: string, ru: string) => string;
 const CATS: Record<InboxCategory, { kk: string; ru: string; icon: IconName; tone: number }> = {
   deadlines: { kk: 'Мерзім', ru: 'Дедлайн', icon: 'clock', tone: 3 },
   digest: { kk: 'Топтама', ru: 'Подборка', icon: 'spark', tone: 4 },
-  events: { kk: 'Іс-шара', ru: 'Мероприятие', icon: 'calendar', tone: 1 },
-  mentors: { kk: 'Менторлар', ru: 'Менторы', icon: 'user', tone: 2 },
-  market: { kk: 'Маркет', ru: 'Маркет', icon: 'tag', tone: 2 },
+  events: { kk: 'Іс-шара', ru: 'Мероприятие', icon: 'ticket', tone: 1 },
+  mentors: { kk: 'Менторлар', ru: 'Менторы', icon: 'mentor', tone: 2 },
+  market: { kk: 'Маркет', ru: 'Маркет', icon: 'bag', tone: 2 },
   jobs: { kk: 'Жұмыс', ru: 'Работа', icon: 'briefcase', tone: 0 },
-  community: { kk: 'Қауымдастық', ru: 'Сообщество', icon: 'bell', tone: 4 },
+  community: { kk: 'Қауымдастық', ru: 'Сообщество', icon: 'users', tone: 4 },
   moderation: { kk: 'Модерация', ru: 'Модерация', icon: 'shield', tone: 3 },
 };
 /** label, icon and colour of a category; an unknown one (a newer server) reads as a plain notice */
 export function inboxCategory(c: string, tt: TT): { label: string; icon: IconName; tone: number } {
   // café order updates (transactional, not a switchable category)
   if (c === 'cafe') return { label: tt('Кофейня', 'Кофейня'), icon: 'cup', tone: 3 };
-  if (c === 'print') return { label: tt('Полиграфия', 'Полиграфия'), icon: 'file', tone: 1 };
+  if (c === 'print') return { label: tt('Полиграфия', 'Полиграфия'), icon: 'printer', tone: 1 };
   const x = (CATS as Record<string, (typeof CATS)[InboxCategory] | undefined>)[c];
   return x ? { label: tt(x.kk, x.ru), icon: x.icon, tone: x.tone } : { label: tt('Хабарлама', 'Уведомление'), icon: 'bell', tone: 4 };
 }
