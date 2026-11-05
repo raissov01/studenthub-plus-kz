@@ -9,7 +9,7 @@ import { PrintCatalog } from '@/components/views/print';
 import { AuditTrail, KaspiPanel, StaffPanel } from '@/components/views/shop-common';
 import { api } from '@/lib/account';
 import { hoursLabel, tengeToTiyn } from '@/lib/cafe';
-import { KINDS, money, paymentLabel, priceStateLabel, statusLabel, type FileKind, type Job, type Shop } from '@/lib/print';
+import { KINDS, money, paymentLabel, priceStateLabel, statusLabel, type FileKind, type Job, type Separator, type Shop } from '@/lib/print';
 
 export function AdminPrint() {
   return <AdminOnly><Feature name="print"><AdminPrintBody /></Feature></AdminOnly>;
@@ -31,7 +31,7 @@ function AdminPrintBody() {
 const emptyShop = {
   nameKk: '', nameRu: '', building: '', placeKk: '', placeRu: '', openTime: '08:30', closeTime: '18:00', openDays: [1, 2, 3, 4, 5],
   slotMinutes: 15, leadMinutes: 20, minOrder: 0, accepts: [...KINDS] as FileKind[], retentionDays: 3, active: false, paymentMode: 'pickup' as Shop['paymentMode'],
-  noteKk: '', noteRu: '', kaspiMerchantRef: '', kaspiOrgId: null as number | null,
+  noteKk: '', noteRu: '', kaspiMerchantRef: '', kaspiOrgId: null as number | null, separator: 'none' as Separator,
 };
 
 function Shops() {
@@ -81,7 +81,7 @@ function ShopForm({ s, onDone }: { s?: Shop; onDone: () => void }) {
         nameKk: f.nameKk.trim(), nameRu: f.nameRu.trim(), building: f.building.trim(), placeKk: f.placeKk.trim(), placeRu: f.placeRu.trim(),
         openTime: f.openTime, closeTime: f.closeTime, openDays: f.openDays, slotMinutes: f.slotMinutes, leadMinutes: f.leadMinutes, minOrder: mo,
         accepts: f.accepts, retentionDays: f.retentionDays, active: f.active, paymentMode: f.paymentMode, noteKk: f.noteKk.trim(), noteRu: f.noteRu.trim(),
-        kaspiMerchantRef: (f.kaspiMerchantRef || '').trim(), kaspiOrgId: f.kaspiOrgId,
+        kaspiMerchantRef: (f.kaspiMerchantRef || '').trim(), kaspiOrgId: f.kaspiOrgId, separator: f.separator ?? 'none',
       };
       try {
         await api(s ? `/api/admin/print/shops/${s.id}` : '/api/admin/print/shops', { method: s ? 'PUT' : 'POST', body, lang });
@@ -122,6 +122,13 @@ function ShopForm({ s, onDone }: { s?: Shop; onDone: () => void }) {
           <option value="both">{tt('Kaspi не касса', 'Kaspi или касса')}</option>
           <option value="kaspi">{tt('Тек Kaspi (алдын ала)', 'Только Kaspi (предоплата)')}</option>
         </select></div>
+      <div className="field"><label htmlFor="ps_sep">{tt('Стектерді бөлу', 'Разделение стопок')}</label>
+        <select className="input" id="ps_sep" value={f.separator ?? 'none'} onChange={e => setF(x => ({ ...x, separator: e.target.value as Separator }))}>
+          <option value="none">{tt('Қағазсыз: принтердің «Offset / Сдвиг» (әдепкі)', 'Без бумаги: «Offset / Сдвиг» принтера (по умолчанию)')}</option>
+          <option value="slip">{tt('Кесетін парақшалар: бір A4-те 4 тапсырыс', 'Вкладыши: 4 заказа на одном A4')}</option>
+          <option value="full">{tt('Әр тапсырыс алдында толық парақ', 'Полный лист перед каждым заказом')}</option>
+        </select>
+        <span className="tiny muted">{tt('Студенттің құжатына ешқашан ештеңе басылмайды.', 'В документ студента ничего не впечатывается.')}</span></div>
       {text('noteKk', tt('Студенттерге ескертпе (қаз.)', 'Заметка для студентов (каз.)'), 300)}
       {text('noteRu', tt('Студенттерге ескертпе (орыс.)', 'Заметка для студентов (рус.)'), 300)}
       {text('kaspiMerchantRef', tt('Kaspi Pay-дегі атауы / БСН (құпия емес)', 'Название / БИН в Kaspi Pay (не секрет)'))}

@@ -122,6 +122,7 @@ type shopInput struct {
 	NoteRU           string   `json:"noteRu"`
 	KaspiMerchantRef string   `json:"kaspiMerchantRef"`
 	KaspiOrgID       *int64   `json:"kaspiOrgId"`
+	Separator        string   `json:"separator"` // "" = none
 }
 
 // ValidShop checks the admin form.
@@ -149,7 +150,8 @@ func ValidShop(in shopInput) bool {
 		len(in.Accepts) >= 1 && in.RetentionDays >= 1 && in.RetentionDays <= 30 &&
 		(in.PaymentMode == "pickup" || in.PaymentMode == "kaspi" || in.PaymentMode == "both") &&
 		utf8.RuneCountInString(in.NoteKK) <= 300 && utf8.RuneCountInString(in.NoteRU) <= 300 &&
-		utf8.RuneCountInString(in.KaspiMerchantRef) <= 120 && (in.KaspiOrgID == nil || *in.KaspiOrgID >= 0)
+		utf8.RuneCountInString(in.KaspiMerchantRef) <= 120 && (in.KaspiOrgID == nil || *in.KaspiOrgID >= 0) &&
+		(in.Separator == "" || in.Separator == "none" || in.Separator == "slip" || in.Separator == "full")
 }
 
 func saveShop(w http.ResponseWriter, r *http.Request, u *auth.User) {
@@ -157,6 +159,9 @@ func saveShop(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	if err := httpx.Decode(r, &in, 8<<10); err != nil || !ValidShop(in) {
 		httpx.Error(w, r, http.StatusBadRequest, "bad_shop", MsgShopData)
 		return
+	}
+	if in.Separator == "" {
+		in.Separator = "none"
 	}
 	days := make([]int16, len(in.OpenDays))
 	for i, d := range in.OpenDays {
@@ -168,16 +173,16 @@ func saveShop(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if pid, ok := pathID(r, "id"); ok {
 			return tx.QueryRow(ctx, `update print_shops set name_kk = $2, name_ru = $3, building = $4, place_kk = $5, place_ru = $6, open_time = $7::time,
 				close_time = $8::time, open_days = $9, slot_minutes = $10, lead_minutes = $11, min_order = $12, accepts = $13, retention_days = $14,
-				active = $15, payment_mode = $16, note_kk = $17, note_ru = $18, kaspi_merchant_ref = $19, kaspi_org_id = $20, updated_at = now()
-				where id = $1 returning id`,
+				active = $15, payment_mode = $16, note_kk = $17, note_ru = $18, kaspi_merchant_ref = $19, kaspi_org_id = $20, separator = $21,
+				updated_at = now() where id = $1 returning id`,
 				pid, in.NameKK, in.NameRU, in.Building, in.PlaceKK, in.PlaceRU, in.OpenTime, in.CloseTime, days, in.SlotMinutes, in.LeadMinutes,
-				in.MinOrder, in.Accepts, in.RetentionDays, in.Active, in.PaymentMode, in.NoteKK, in.NoteRU, in.KaspiMerchantRef, in.KaspiOrgID).Scan(&id)
+				in.MinOrder, in.Accepts, in.RetentionDays, in.Active, in.PaymentMode, in.NoteKK, in.NoteRU, in.KaspiMerchantRef, in.KaspiOrgID, in.Separator).Scan(&id)
 		}
 		return tx.QueryRow(ctx, `insert into print_shops (name_kk, name_ru, building, place_kk, place_ru, open_time, close_time, open_days, slot_minutes,
-				lead_minutes, min_order, accepts, retention_days, active, payment_mode, note_kk, note_ru, kaspi_merchant_ref, kaspi_org_id, created_by)
-			values ($1, $2, $3, $4, $5, $6::time, $7::time, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) returning id`,
+				lead_minutes, min_order, accepts, retention_days, active, payment_mode, note_kk, note_ru, kaspi_merchant_ref, kaspi_org_id, created_by, separator)
+			values ($1, $2, $3, $4, $5, $6::time, $7::time, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) returning id`,
 			in.NameKK, in.NameRU, in.Building, in.PlaceKK, in.PlaceRU, in.OpenTime, in.CloseTime, days, in.SlotMinutes, in.LeadMinutes,
-			in.MinOrder, in.Accepts, in.RetentionDays, in.Active, in.PaymentMode, in.NoteKK, in.NoteRU, in.KaspiMerchantRef, in.KaspiOrgID, u.ID).Scan(&id)
+			in.MinOrder, in.Accepts, in.RetentionDays, in.Active, in.PaymentMode, in.NoteKK, in.NoteRU, in.KaspiMerchantRef, in.KaspiOrgID, u.ID, in.Separator).Scan(&id)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		httpx.Error(w, r, http.StatusNotFound, "not_found", httpx.MsgNotFound)

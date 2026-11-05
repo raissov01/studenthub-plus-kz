@@ -74,6 +74,7 @@ var (
 	MsgItem       = httpx.Msg{KK: "Мәзірдегі бір тағам қазір жоқ. Себетті жаңартыңыз.", RU: "Одной позиции из корзины сейчас нет. Обновите корзину."}
 	MsgOptions    = httpx.Msg{KK: "Опцияларды қайта таңдаңыз.", RU: "Выберите опции заново."}
 	MsgTooMuch    = httpx.Msg{KK: "Тапсырыс тым үлкен.", RU: "Слишком большой заказ."}
+	MsgCodes      = httpx.Msg{KK: "Кофейняда ашық тапсырыс тым көп. Бірнеше минуттан соң қайталаңыз.", RU: "В кофейне слишком много открытых заказов. Повторите через несколько минут."}
 	MsgActive     = httpx.Msg{KK: "Сізде алынбаған 2 тапсырыс бар. Алдымен оларды алыңыз не болдырмаңыз.", RU: "У вас уже 2 незабранных заказа. Сначала заберите или отмените их."}
 	MsgDaily      = httpx.Msg{KK: "Бүгінгі тапсырыс шегіне жеттіңіз.", RU: "Вы достигли лимита заказов на сегодня."}
 	MsgPayAhead   = httpx.Msg{KK: "Бірнеше тапсырыс алынбай қалды, сондықтан енді алдын ала Kaspi арқылы төлеу керек.", RU: "Несколько заказов не были забраны, поэтому теперь нужна предоплата через Kaspi."}
@@ -432,8 +433,12 @@ func Price(menu map[int64]Item, in []LineInput) ([]Line, int64, error) {
 	return lines, total, nil
 }
 
-// pickupCode is the three digits the student shows at the counter.
-func pickupCode() string { return shopkit.PickupCode() }
+// pickupCode is the three digits the student shows at the counter, unique among the café's open orders (the
+// caller holds the café row lock; cafe_orders_open_code is the database's guard). Today's closed orders' codes
+// are avoided while any other is free.
+func pickupCode(ctx context.Context, tx pgx.Tx, cafeID int64, now time.Time) (string, error) {
+	return shopkit.UniqueCode(ctx, tx, 3, "cafe_orders", "cafe_id", cafeID, []string{"new", "accepted", "ready"}, now)
+}
 
 // tenge formats tiyn as «1 250 ₸».
 func tenge(tiyn int64) string { return shopkit.Tenge(tiyn) }

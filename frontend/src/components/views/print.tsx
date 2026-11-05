@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useLoad, useNeedAccount } from '@/components/views/common';
+import { CounterSearch, HandoverSheet, OffsetTip, PickupQr, PrintPlan } from '@/components/views/print-counter';
 import { KaspiPay, beep } from '@/components/views/shop-common';
 import { useQueryId } from '@/components/views/subjects';
 import { api, apiUpload, useAccount } from '@/lib/account';
@@ -15,7 +16,7 @@ import { hoursLabel, tengeToTiyn } from '@/lib/cafe';
 import { newKey } from '@/lib/points';
 import {
   acceptAttr, blocker, bytesLabel, checkFile, colorAt, defaultOpts, duplexAt, fileError, fixOpts, isActive, isImage, lineDetail, money,
-  newArrivals, paymentLabel, priceList, priceStateLabel, quoteBody, rangeOK, shouldPoll, sizesOf, statusLabel, stepIndex, workable,
+  newArrivals, paymentLabel, priceList, priceStateLabel, quoteBody, rangeOK, shouldPoll, sizesOf, sortReady, statusLabel, stepIndex, workable,
   type Catalog, type FileOpts, type Goods, type Job, type PaymentMethod, type Quote, type Service, type Shop, type Upload,
 } from '@/lib/print';
 
@@ -440,6 +441,7 @@ function JobView({ id }: { id: number }) {
         <b className="cafe-code num" id="printCode">{j.pickupCode}</b>
         <span className="cafe-status"><JobBadge j={j} /></span>
         <span className="small">{nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)}{(lang !== 'kk' ? j.placeRu : j.placeKk) ? ', ' + (lang !== 'kk' ? j.placeRu : j.placeKk) : ''} · <b className="num">{j.pickupAt ? hhmm(j.pickupAt) : tt('мүмкіндігінше тез', 'как можно скорее')}</b></span>
+        {j.pickupToken ? <PickupQr token={j.pickupToken} /> : null}
         {j.ahead != null && j.status === 'new' ? <span className="small" id="printAhead">{j.ahead === 0 ? tt('Сіз кезекте біріншісіз', 'Вы первый в очереди') : tt(`Алдыңызда ${j.ahead} тапсырыс`, `Перед вами заказов: ${j.ahead}`)}</span> : null}
       </div>
       {step >= 0 ? (
@@ -530,7 +532,7 @@ function JobHistory() {
 
 /* ---------- the operator's queue board (tablet) ---------- */
 
-interface Board { shopId: number; shops: Shop[]; jobs: Job[] }
+interface Board { shopId: number; shops: Shop[]; jobs: Job[]; counts?: Record<string, number> }
 
 function PrintBoard() {
   const { tt, lang, openSheet, closeSheet, toast } = useApp();
@@ -542,6 +544,8 @@ function PrintBoard() {
   const [tab, setTab] = useState('queue');
   const [col, setCol] = useState('new');
   const [sound, setSound] = useState(false);
+  const [picked, setPicked] = useState<Set<number>>(() => new Set());
+  const [readyBy, setReadyBy] = useState<'queue' | 'code'>('queue');
   const seen = useRef<Set<number> | null>(null);
   const soundRef = useRef(sound);
   useEffect(() => { soundRef.current = sound; }, [sound]);
@@ -580,11 +584,26 @@ function PrintBoard() {
       action={tt('Бас тарту', 'Отклонить')} onSubmit={async reason => { await act(j, 'decline', { reason }); closeSheet(); }} />,
   );
   const reprice = (j: Job) => openSheet(<PriceSheet j={j} onDone={() => { closeSheet(); void load(); }} />);
+  const handover = (j: Job) => openSheet(<HandoverSheet j={j} onDone={() => { toast(tt(`№${j.pickupCode} берілді`, `№${j.pickupCode} выдан`)); void load(); }} />);
+  const separator = me?.separator ?? 'none';
+  const bulk = async (action: 'printing' | 'ready', ids: number[]) => {
+    const r = await api<{ results: { id: number; ok: boolean; error?: string }[] }>('/api/print/staff/jobs/bulk', { method: 'POST', body: { action, ids }, lang });
+    const bad = r.results.filter(x => !x.ok);
+    toast(bad.length ? tt(`${r.results.length - bad.length} жылжыды, ${bad.length} болмады`, `Перемещено: ${r.results.length - bad.length}, не вышло: ${bad.length}`) : tt('Дайын', 'Готово'));
+    closeSheet();
+    setPicked(new Set());
+    await load();
+  };
+  const plan = (ids: Set<number>) => openSheet(<PrintPlan jobs={board.jobs} picked={ids} separator={separator} onBulk={bulk} />);
+  const toggle = (id: number) => setPicked(cur => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const ready = sortReady(board.jobs.filter(j => j.status === 'ready'), readyBy);
+  const count = (k: string, n: number) => board.counts?.[k] ?? n;
   const cols: [string, string, Job[]][] = [
     ['new', tt('Жаңа', 'Новые'), board.jobs.filter(j => j.status === 'new')],
     ['printing', tt('Басып жатыр', 'Печатаются'), board.jobs.filter(j => j.status === 'printing')],
-    ['ready', tt('Дайын', 'Готовы'), board.jobs.filter(j => j.status === 'ready')],
+    ['ready', tt('Дайын', 'Готовы'), ready],
   ];
+  const pickedNow = new Set([...picked].filter(id => board.jobs.some(j => j.id === id && (j.status === 'new' || j.status === 'printing'))));
   const manual = board.jobs.filter(j => j.refundManual);
   return (
     <div className="cafe cafe-staff print">
@@ -613,13 +632,28 @@ function PrintBoard() {
               ))}
             </div>
           ) : null}
-          <div className="cafe-colpick"><Seg items={cols.map(([k, l, list]) => [k, `${l} ${list.length}`])} cur={col} onPick={setCol} /></div>
+          <OffsetTip />
+          <CounterSearch shopId={board.shopId} onChanged={() => void load()} />
+          {pickedNow.size ? (
+            <div className="card print-batchbar" role="region" aria-label={tt('Таңдалғандар', 'Выбранные')}>
+              <span className="small"><b className="num">{pickedNow.size}</b> {tt('таңдалды', 'выбрано')}</span>
+              <button className="btn" type="button" id="printPlanBtn" onClick={() => plan(pickedNow)}>{tt('Басу реті', 'Порядок печати')}</button>
+              <button className="btn ghost" type="button" onClick={() => setPicked(new Set())}>{tt('Тазалау', 'Сбросить')}</button>
+            </div>
+          ) : null}
+          <div className="cafe-colpick"><Seg items={cols.map(([k, l, list]) => [k, `${l} ${count(k, list.length)}`])} cur={col} onPick={setCol} /></div>
           <div className="cafe-board">
             {cols.map(([k, label, list]) => (
               <section key={k} className={`cafe-col${col === k ? ' cur' : ''}`} aria-label={label}>
-                <h3 className="cafe-col-h">{label} <span className="badge b-line num">{list.length}</span></h3>
+                <h3 className="cafe-col-h">{label} <span className="badge b-line num">{count(k, list.length)}</span>
+                  {k === 'new' && list.some(workable) ? <button className="link-btn small" type="button" onClick={() => setPicked(new Set(list.filter(workable).map(j => j.id)))}>{tt('Барлығын таңдау', 'Выбрать все')}</button> : null}
+                  {k === 'ready' && list.length > 1 ? <button className="link-btn small" type="button" aria-pressed={readyBy === 'code'} onClick={() => setReadyBy(readyBy === 'code' ? 'queue' : 'code')}>
+                    {readyBy === 'code' ? tt('Код бойынша', 'По коду') : tt('Кезек бойынша', 'По очереди')}</button> : null}
+                </h3>
+                {count(k, list.length) > list.length ? <p className="tiny muted">{tt(`Алғашқы ${list.length} көрсетілді — қалғанын кодпен іздеңіз`, `Показаны первые ${list.length} — остальные ищите по коду`)}</p> : null}
                 {!list.length ? <p className="small muted">{tt('Бос', 'Пусто')}</p> : list.map(j => (
-                  <Ticket key={j.id} j={j} act={act} decline={decline} reprice={reprice} />
+                  <Ticket key={j.id} j={j} act={act} decline={decline} reprice={reprice} handover={handover}
+                    picked={pickedNow.has(j.id)} toggle={toggle} plan={() => plan(new Set([j.id]))} />
                 ))}
               </section>
             ))}
@@ -630,17 +664,23 @@ function PrintBoard() {
   );
 }
 
-function Ticket({ j, act, decline, reprice }: { j: Job; act: (j: Job, a: string, body?: unknown) => Promise<void>; decline: (j: Job) => void; reprice: (j: Job) => void }) {
+function Ticket({ j, act, decline, reprice, handover, picked, toggle, plan }: {
+  j: Job; act: (j: Job, a: string, body?: unknown) => Promise<void>; decline: (j: Job) => void; reprice: (j: Job) => void;
+  handover: (j: Job) => void; picked: boolean; toggle: (id: number) => void; plan: () => void;
+}) {
   const { tt, lang } = useApp();
   const ok = workable(j);
   const why = blocker(j, tt);
   return (
     <article className="card cafe-ticket print-ticket" data-status={j.status} data-price={j.priceState}>
       <div className="cafe-ticket-top">
+        {(j.status === 'new' || j.status === 'printing') && ok ? (
+          <input type="checkbox" className="print-pick" checked={picked} onChange={() => toggle(j.id)} aria-label={tt(`№${j.pickupCode}: басуға таңдау`, `№${j.pickupCode}: выбрать для печати`)} />
+        ) : null}
         <b className="cafe-ticket-code num">№{j.pickupCode}</b>
         <span className="num cafe-ticket-time"><Icon n="clock" s={16} /> {j.pickupAt ? hhmm(j.pickupAt) : tt('тез', 'скорее')}</span>
       </div>
-      {j.customer ? <span className="small muted">{j.customer}</span> : null}
+      {j.customer ? <span className="small print-who">{j.customer}</span> : null}
       <ul className="cafe-ticket-items">
         {j.lines.filter(l => l.kind !== 'minimum').map((l, i) => {
           const f = l.kind === 'file' ? j.files.find(x => x.id === l.fileId) : undefined;
@@ -664,12 +704,13 @@ function Ticket({ j, act, decline, reprice }: { j: Job; act: (j: Job, a: string,
         {j.status === 'new' && j.priceState === 'proposed' ? <button className="btn ghost" type="button" onClick={() => reprice(j)}>{tt('Бағаны өзгерту', 'Изменить цену')}</button> : null}
         {j.status === 'new' && ok ? <>
           <button className="btn" type="button" onClick={() => void act(j, 'printing')}>{tt('Басып жатырмын', 'Печатаю')}</button>
+          {j.files.length ? <button className="btn ghost" type="button" onClick={plan}>PDF</button> : null}
           {j.paymentMethod === 'pickup' ? <button className="btn ghost" type="button" onClick={() => reprice(j)}>{tt('Баға', 'Цена')}</button> : null}
         </> : null}
         {j.status === 'new' ? <button className="btn ghost" type="button" onClick={() => decline(j)}>{tt('Бас тарту', 'Отклонить')}</button> : null}
         {j.status === 'printing' ? <button className="btn" type="button" onClick={() => void act(j, 'ready')}>{tt('Дайын', 'Готово')}</button> : null}
         {j.status === 'ready' ? <>
-          <button className="btn" type="button" onClick={() => void act(j, 'picked-up')}>{tt('Берілді', 'Выдан')}</button>
+          <button className="btn" type="button" onClick={() => handover(j)}>{tt('Берілді', 'Выдан')}</button>
           <button className="btn ghost" type="button" onClick={() => void act(j, 'no-show')}>{tt('Келмеді', 'Не пришёл')}</button>
         </> : null}
       </div>

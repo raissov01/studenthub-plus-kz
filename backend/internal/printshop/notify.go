@@ -166,8 +166,8 @@ func notifyStudent(ctx context.Context, jobID int64, kind string) {
 		if place != "" {
 			where += ", " + place
 		}
-		text = pick(lang, fmt.Sprintf("<b>Дайын — алып кетіңіз</b> · №%s\n%s. Кодты айтыңыз.", j.PickupCode, where),
-			fmt.Sprintf("<b>Готово — заберите</b> · №%s\n%s. Назовите код.", j.PickupCode, where))
+		text = pick(lang, fmt.Sprintf("<b>Дайын — алып кетіңіз</b> · №%s\n%s. Кодты айтыңыз не қосымшадағы QR-ды көрсетіңіз.", j.PickupCode, where),
+			fmt.Sprintf("<b>Готово — заберите</b> · №%s\n%s. Назовите код или покажите QR в приложении.", j.PickupCode, where))
 		if j.PaymentMethod == "pickup" {
 			text += pick(lang, fmt.Sprintf("\nТөлем кассада: %s.", shopkit.Tenge(j.Total)), fmt.Sprintf("\nОплата на кассе: %s.", shopkit.Tenge(j.Total)))
 		}

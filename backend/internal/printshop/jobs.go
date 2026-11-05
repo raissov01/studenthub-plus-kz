@@ -51,8 +51,9 @@ type Job struct {
 	ClosedAt      *time.Time `json:"closedAt"`
 	FilesDeleted  bool       `json:"filesDeleted"`
 	Files         []Upload   `json:"files"`
-	// the student's view: jobs ahead in the shop's queue (0 = next)
-	Ahead *int `json:"ahead,omitempty"`
+	// the student's view: jobs ahead in the shop's queue (0 = next), the signed counter QR of an open job
+	Ahead       *int   `json:"ahead,omitempty"`
+	PickupToken string `json:"pickupToken,omitempty"`
 	// staff and admin views
 	Customer *string `json:"customer,omitempty"`
 	UserID   *int64  `json:"userId,omitempty"`
@@ -143,6 +144,12 @@ func loadJob(ctx context.Context, tx pgx.Tx, id int64) (*Job, error) {
 	}
 	return j, withFiles(ctx, tx, []*Job{j}, 0)
 }
+
+// codeDigits: four-digit pickup codes (1000–9999), see migrations/20261106000100_pickup_counter.sql.
+const codeDigits = 4
+
+// openStatuses: a job still at the counter (its pickup code is reserved).
+var openStatuses = []string{"new", "printing", "ready"}
 
 // active: the job still holds one of the student's places.
 func active(status string) bool { return status == "new" || status == "printing" || status == "ready" }
@@ -300,10 +307,18 @@ func createJob(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if quoted.Review {
 			state = "review"
 		}
+		// unique among the shop's open jobs (and today's closed ones while possible): the shop row is locked
+		code, err := shopkit.UniqueCode(ctx, tx, codeDigits, "print_jobs", "shop_id", shop.ID, openStatuses, now)
+		if errors.Is(err, shopkit.ErrNoCode) {
+			return refuse(http.StatusServiceUnavailable, "codes_exhausted", MsgCodes)
+		}
+		if err != nil {
+			return err
+		}
 		var id int64
 		if err := tx.QueryRow(ctx, `insert into print_jobs (shop_id, user_id, lines, total, price_state, pickup_at, pickup_code, note, payment_method, idem_key)
 			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
-			shop.ID, u.ID, string(raw), quoted.Total, state, in.PickupAt, shopkit.PickupCode(), in.Note, in.Payment, in.Key).Scan(&id); err != nil {
+			shop.ID, u.ID, string(raw), quoted.Total, state, in.PickupAt, code, in.Note, in.Payment, in.Key).Scan(&id); err != nil {
 			return err
 		}
 		fileIDs := make([]int64, 0, len(in.Files))
@@ -334,6 +349,7 @@ func createJob(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		}
 	}
 	signAll(j, u.ID)
+	j.forStudent(u.ID)
 	httpx.JSON(w, status, map[string]any{"job": j, "duplicate": !created})
 }
 
@@ -423,7 +439,15 @@ func getJob(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		}
 	}
 	j.Ahead = ahead(ctx, j)
+	j.forStudent(u.ID)
 	httpx.JSON(w, http.StatusOK, map[string]any{"job": j})
+}
+
+// forStudent adds what only the job's own student sees: the counter QR while the job is open.
+func (j *Job) forStudent(viewer int64) {
+	if j.userID != nil && *j.userID == viewer && active(j.Status) {
+		j.PickupToken = PickupToken(j.ID, j.PickupCode)
+	}
 }
 
 // ---------- student actions ----------
@@ -475,6 +499,7 @@ func respondJob(w http.ResponseWriter, r *http.Request, u *auth.User, id int64) 
 		return
 	}
 	j.Ahead = ahead(r.Context(), j)
+	j.forStudent(u.ID)
 	httpx.JSON(w, http.StatusOK, map[string]any{"job": j})
 }
 

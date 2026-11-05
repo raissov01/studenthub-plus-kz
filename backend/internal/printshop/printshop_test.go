@@ -628,7 +628,7 @@ func TestUploadPriceCounterQueueReadyPickedUp(t *testing.T) {
 		t.Fatalf("foreign file: %d %s", w.Code, w.Body)
 	}
 	j := place(t, f, student, "pickup", file)
-	if j.Total != 10*1500*2+2*50000 || j.Status != "new" || j.PriceState != "final" || len(j.Files) != 1 || len(j.PickupCode) != 3 {
+	if j.Total != 10*1500*2+2*50000 || j.Status != "new" || j.PriceState != "final" || len(j.Files) != 1 || len(j.PickupCode) != 4 {
 		t.Fatalf("job: %+v", j)
 	}
 	// the file is now in the job: it cannot be placed twice or deleted alone
@@ -698,7 +698,11 @@ func TestUploadPriceCounterQueueReadyPickedUp(t *testing.T) {
 	if w := do(t, "POST", fmt.Sprintf("/api/print/staff/jobs/%d/no-show", j.ID), f.operator, nil); w.Code != 409 {
 		t.Fatalf("early no-show: %d", w.Code)
 	}
-	w = do(t, "POST", fmt.Sprintf("/api/print/staff/jobs/%d/picked-up", j.ID), f.operator, nil)
+	// the handover needs the student's code (or QR); a wrong one is refused
+	if w := do(t, "POST", fmt.Sprintf("/api/print/staff/jobs/%d/picked-up", j.ID), f.operator, nil); w.Code != 409 || !strings.Contains(w.Body.String(), "code_mismatch") {
+		t.Fatalf("handover without a code: %d %s", w.Code, w.Body)
+	}
+	w = do(t, "POST", fmt.Sprintf("/api/print/staff/jobs/%d/picked-up", j.ID), f.operator, map[string]any{"code": j.PickupCode})
 	done := decode[jobReply](t, w).Job
 	if w.Code != 200 || done.Status != "picked_up" || done.PaymentStatus != "paid" {
 		t.Fatalf("picked up: %d %s", w.Code, w.Body)

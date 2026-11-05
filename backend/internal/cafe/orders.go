@@ -237,10 +237,17 @@ func createOrder(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if err != nil {
 			return err
 		}
+		code, err := pickupCode(ctx, tx, c.ID, now)
+		if errors.Is(err, shopkit.ErrNoCode) {
+			return refuse(http.StatusServiceUnavailable, "codes_exhausted", MsgCodes)
+		}
+		if err != nil {
+			return err
+		}
 		var id int64
 		if err := tx.QueryRow(ctx, `insert into cafe_orders (cafe_id, user_id, items, total, pickup_at, pickup_code, note, payment_method, idem_key)
 			values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
-			c.ID, u.ID, string(raw), total, in.PickupAt, pickupCode(), in.Note, in.Payment, in.Key).Scan(&id); err != nil {
+			c.ID, u.ID, string(raw), total, in.PickupAt, code, in.Note, in.Payment, in.Key).Scan(&id); err != nil {
 			return err
 		}
 		if err := event(ctx, tx, id, uid(u), "student", "created", map[string]any{"total": total, "payment": in.Payment, "pickupAt": in.PickupAt.UTC()}); err != nil {

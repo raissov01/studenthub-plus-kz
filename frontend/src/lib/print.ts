@@ -26,7 +26,7 @@ export interface Shop {
   id: number; nameKk: string; nameRu: string; building: string; placeKk: string; placeRu: string; openTime: string; closeTime: string;
   openDays: number[]; slotMinutes: number; leadMinutes: number; minOrder: number; accepts: FileKind[]; retentionDays: number;
   active: boolean; paymentMode: 'pickup' | 'kaspi' | 'both'; noteKk: string; noteRu: string; openNow: boolean; payments: PaymentMethod[];
-  kaspiMerchantRef?: string; kaspiOrgId?: number | null; myRole?: string;
+  separator?: Separator; kaspiMerchantRef?: string; kaspiOrgId?: number | null; myRole?: string;
   kaspi?: { configured: boolean; loggedIn: boolean; broken: boolean; phoneMasked: string; orgName: string; lastError: string | null; updatedAt: string | null };
   staff?: { userId: number; name: string | null; username: string | null; role: 'operator' | 'manager' }[];
 }
@@ -50,7 +50,7 @@ export interface Job {
   priceState: PriceState; proposedTotal: number | null; adjustReason: string | null; pickupAt: string | null; pickupCode: string; note: string;
   status: JobStatus; paymentMethod: PaymentMethod; paymentStatus: PaymentStatus; refundManual: boolean;
   pay: { url: string; qr: string; expiresAt: string | null } | null; cancelReason: string | null; queuedAt: string; createdAt: string;
-  printingAt: string | null; readyAt: string | null; closedAt: string | null; filesDeleted: boolean; files: Upload[]; ahead?: number;
+  printingAt: string | null; readyAt: string | null; closedAt: string | null; filesDeleted: boolean; files: Upload[]; ahead?: number; pickupToken?: string;
   customer?: string; userId?: number;
   events?: { id: number; actorId: number | null; actorKind: string; kind: string; detail: Record<string, unknown>; createdAt: string }[];
 }
@@ -231,3 +231,89 @@ export function priceList(s: Service, tt: TT, lang: 'kk' | 'ru' | 'en'): string[
       return [`${money(p.price ?? 0)} / ${lang !== 'kk' ? p.unitRu : p.unitKk}`];
   }
 }
+
+/* ---------- the counter (docs/print.md «Беру»): print order = stack order, lookup by code or QR ---------- */
+
+export type Separator = 'none' | 'slip' | 'full';
+
+/** 0-based page indices of «1-5, 8» inside a file of n pages ('' = all); null when malformed or out of range */
+export function rangePages(range: string, n: number): number[] | null {
+  if (n < 1) return null;
+  const s = range.replace(/\s+/g, '');
+  if (!s) return Array.from({ length: n }, (_, i) => i);
+  const seen = new Set<number>();
+  for (const part of s.split(',')) {
+    const m = /^(\d{1,4})(?:-(\d{1,4}))?$/.exec(part);
+    if (!m) return null;
+    const a = Number(m[1]), b = m[2] ? Number(m[2]) : a;
+    if (a < 1 || b < a || b > n) return null;
+    for (let i = a; i <= b; i++) seen.add(i - 1);
+  }
+  return [...seen].sort((x, y) => x - y);
+}
+
+/** one print job for the printer: consecutive file lines of a job that share paper size, colour and duplex */
+export interface Segment { size: string; color: boolean; duplex: boolean; lines: { line: Line; file?: Upload }[] }
+
+/** a file the browser cannot put into the print-ready PDF (an Office file): the operator prints it from its app */
+export const manualKind = (k?: FileKind) => !!k && k !== 'pdf' && !isImage(k);
+
+export function segments(j: Pick<Job, 'lines' | 'files'>): Segment[] {
+  const out: Segment[] = [];
+  for (const line of j.lines) {
+    if (line.kind !== 'file') continue;
+    const file = j.files.find(f => f.id === line.fileId);
+    const size = line.size ?? 'A4', color = !!line.color, duplex = !!line.duplex;
+    const last = out[out.length - 1];
+    if (last && last.size === size && last.color === color && last.duplex === duplex) last.lines.push({ line, file });
+    else out.push({ size, color, duplex, lines: [{ line, file }] });
+  }
+  return out;
+}
+
+/** «A4 · ч/б · 2 жақты» — what to set in the print dialog */
+export function segmentLabel(s: Pick<Segment, 'size' | 'color' | 'duplex'>, tt: TT): string {
+  return [s.size, s.color ? tt('түрлі түсті', 'цветная') : tt('ақ-қара', 'ч/б'), s.duplex ? tt('2 жақты', '2-сторонняя') : tt('1 жақты', '1-сторонняя')].join(' · ');
+}
+
+/** what the operator checks against the top of the stack: printed pages in all, copies, the first file */
+export function stackSummary(j: Pick<Job, 'lines' | 'files'>): { pages: number; sheets: number; copies: number; files: number; first: string } {
+  let pages = 0, sheets = 0, copies = 0, files = 0, first = '';
+  for (const l of j.lines) {
+    if (l.kind !== 'file') continue;
+    files++;
+    pages += (l.pages ?? 0) * (l.copies ?? 1);
+    sheets += (l.sheets ?? l.pages ?? 0) * (l.copies ?? 1);
+    copies = Math.max(copies, l.copies ?? 1);
+    if (!first) first = j.files.find(f => f.id === l.fileId)?.name ?? l.nameKk;
+  }
+  return { pages, sheets, copies, files, first };
+}
+
+/** what a scan or the search box holds: the job's QR token, or a 3–4 digit code («№4821» and spaces allowed) */
+export function parseCounterInput(raw: string): { token: string } | { code: string } | null {
+  const s = raw.trim().replace(/^№\s*/, '');
+  if (/^PJ-\d{1,18}-\d{3,4}-[0-9a-f]{20}$/.test(s)) return { token: s };
+  if (/^\d{3,4}$/.test(s)) return { code: s };
+  return null;
+}
+
+/** the «Дайын» pile: in queue order (as printed) or by code (as the operator keeps the tray sorted) */
+export function sortReady<T extends Pick<Job, 'pickupCode' | 'queuedAt' | 'id'>>(jobs: T[], by: 'queue' | 'code'): T[] {
+  const list = [...jobs];
+  if (by === 'code') return list.sort((a, b) => Number(a.pickupCode) - Number(b.pickupCode) || a.id - b.id);
+  return list.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt) || a.id - b.id);
+}
+
+/** the batch in the order it will come out of the printer: the board's queue order, whatever order it was ticked in */
+export function batchOrder<T extends Pick<Job, 'id' | 'queuedAt'>>(jobs: T[], picked: Set<number>): T[] {
+  return jobs.filter(j => picked.has(j.id)).sort((a, b) => a.queuedAt.localeCompare(b.queuedAt) || a.id - b.id);
+}
+
+/** pages of a print-ready copy run: with duplex an odd count gets a blank back, so the next copy starts on a new sheet */
+export function paddedPages(pages: number, duplex: boolean): number {
+  return duplex && pages % 2 === 1 ? pages + 1 : pages;
+}
+
+/** slips are four to an A4 sheet */
+export const slipSheets = (n: number) => Math.ceil(n / 4);

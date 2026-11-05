@@ -28,6 +28,7 @@ func staffRoutes(h func(string, http.HandlerFunc)) {
 	}
 	h("POST /api/print/staff/jobs/{id}/price", auth.Write(auth.Need(adjustPrice)))
 	h("POST /api/print/staff/jobs/{id}/refunded", auth.Write(auth.Need(markRefunded)))
+	counterRoutes(h)
 	h("GET /api/print/staff/catalog", auth.Need(staffCatalog))
 	h("POST /api/print/staff/services", auth.Write(auth.Need(saveService)))
 	h("PUT /api/print/staff/services/{id}", auth.Write(auth.Need(saveService)))
@@ -124,6 +125,7 @@ func staffJobs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	now := Now()
 	shops := []*Shop{}
 	jobs := []*Job{}
+	counts := map[string]int{}
 	err = db.WithUser(ctx, u.ID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `select `+shopCols+`, st.role from print_shops s join print_staff st on st.shop_id = s.id and st.user_id = app_user_id() order by s.id`)
 		if err != nil {
@@ -143,33 +145,47 @@ func staffJobs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if err := rows.Err(); err != nil {
 			return err
 		}
-		// the queue in order; a closed job stays visible for today
-		rows, err = tx.Query(ctx, `select `+jobCols+`, coalesce(u.name, '') `+jobFrom+` left join users u on u.id = j.user_id
-			where j.shop_id = $1 and j.status = any($2) and (j.status in ('new', 'printing', 'ready') or j.closed_at >= $3)
-			order by j.queued_at, j.id limit 200`, shopID, statuses, shopkit.DayStart(now))
+		// the queue in order (the print order is the stack order); a closed job stays visible for today. Each
+		// column holds at most boardCap jobs, so a long «Дайын» pile never pushes the new jobs out of view.
+		rows, err = tx.Query(ctx, `select `+jobCols+jobFrom+`
+			where j.id in (select id from (select id, row_number() over (partition by status order by queued_at, id) as n from print_jobs
+				where shop_id = $1 and status = any($2) and (status in ('new', 'printing', 'ready') or closed_at >= $3)) x where x.n <= $4)
+			order by j.queued_at, j.id`, shopID, statuses, shopkit.DayStart(now), boardCap)
 		if err != nil {
 			return err
 		}
-		jobs, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (*Job, error) {
-			var name string
-			j, err := scanJob(row, &name)
-			if err != nil {
-				return nil, err
-			}
-			short := shopkit.ShortName(name)
-			j.Customer, j.Pay = &short, nil
-			return j, nil
-		})
+		jobs, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (*Job, error) { return scanJob(row) })
 		if err != nil {
+			return err
+		}
+		rows, err = tx.Query(ctx, `select status, count(*) from print_jobs where shop_id = $1 and status = any($2)
+			and (status in ('new', 'printing', 'ready') or closed_at >= $3) group by status`, shopID, statuses, shopkit.DayStart(now))
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var st string
+			var n int
+			if err := rows.Scan(&st, &n); err != nil {
+				rows.Close()
+				return err
+			}
+			counts[st] = n
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
 			return err
 		}
 		return withFiles(ctx, tx, jobs, u.ID)
 	})
+	if err == nil {
+		err = forStaff(ctx, jobs)
+	}
 	if err != nil {
 		fail(w, r, "board", err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"shopId": shopID, "shops": shops, "jobs": jobs, "serverTime": now.UTC()})
+	httpx.JSON(w, http.StatusOK, map[string]any{"shopId": shopID, "shops": shops, "jobs": jobs, "counts": counts, "serverTime": now.UTC()})
 }
 
 // ---------- transitions ----------
@@ -189,8 +205,14 @@ var transitions = map[string]transition{
 	"decline":   {from: []string{"new", "printing"}, to: "cancelled", event: "declined", at: "closed_at"},
 }
 
-// Act moves a job of the staff member's shop. Exported for the bot buttons.
+// Act moves a job of the staff member's shop. Exported for the bot buttons (printing, ready: no handover there).
 func Act(ctx context.Context, u *auth.User, jobID int64, action, reason string) (*Job, error) {
+	return act(ctx, u, jobID, action, reason, "")
+}
+
+// act: a handover (picked-up) needs proof — the code the student said, or the QR from their screen — that
+// matches this job, so the operator cannot hand one student's stack to another by a slip of the finger.
+func act(ctx context.Context, u *auth.User, jobID int64, action, reason, proof string) (*Job, error) {
 	t, ok := transitions[action]
 	if !ok {
 		return nil, refuse(http.StatusNotFound, "not_found", httpx.MsgNotFound)
@@ -223,6 +245,9 @@ func Act(ctx context.Context, u *auth.User, jobID int64, action, reason string) 
 		}
 		if !allowed {
 			return refuse(http.StatusConflict, "bad_state", MsgState)
+		}
+		if action == "picked-up" && !proofMatches(cur, proof) {
+			return refuse(http.StatusConflict, "code_mismatch", MsgMismatch)
 		}
 		if action != "decline" && !workable(cur) {
 			if cur.PriceState != "final" {
@@ -295,6 +320,8 @@ func staffAction(action string) auth.Handler {
 		}
 		var body struct {
 			Reason string `json:"reason"`
+			Code   string `json:"code"`  // picked-up: the code the student said
+			Token  string `json:"token"` // picked-up: the QR from the student's screen
 		}
 		_ = httpx.Decode(r, &body, 2<<10)
 		body.Reason = strings.TrimSpace(body.Reason)
@@ -302,7 +329,15 @@ func staffAction(action string) auth.Handler {
 			httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
 			return
 		}
-		j, err := Act(r.Context(), u, id, action, body.Reason)
+		proof := strings.TrimSpace(body.Code)
+		if body.Token != "" {
+			proof = strings.TrimSpace(body.Token)
+		}
+		if len(proof) > 80 {
+			httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+			return
+		}
+		j, err := act(r.Context(), u, id, action, body.Reason, proof)
 		if err != nil {
 			reply(w, r, "staff "+action, err)
 			return

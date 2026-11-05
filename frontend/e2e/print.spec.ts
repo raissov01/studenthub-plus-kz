@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { PDFDocument } from 'pdf-lib';
 import { test, expect, onboard, fits, label } from './fixtures';
 import { config } from './content';
 import type { Lang } from '../src/lib/types';
@@ -176,6 +177,7 @@ test('print: the operator board confirms or changes a price, prints and hands ov
   await signedIn(page, lang);
   const actions: string[] = [];
   const prices: unknown[] = [];
+  const handovers: unknown[] = [];
   let cur = job({ priceState: 'review', customer: 'Аружан Т.', lines: [{ ...job().lines[0], pagesDeclared: true }] });
   await page.route('**/api/print/**', async route => {
     const req = route.request();
@@ -189,6 +191,7 @@ test('print: the operator board confirms or changes a price, prints and hands ov
     const m = /^\/api\/print\/staff\/jobs\/701\/(printing|ready|picked-up|no-show|decline)$/.exec(path);
     if (m && req.method() === 'POST') {
       actions.push(m[1]);
+      if (m[1] === 'picked-up') handovers.push(req.postDataJSON());
       cur = { ...cur, status: m[1] === 'printing' ? 'printing' : m[1] === 'ready' ? 'ready' : 'picked_up' };
       return route.fulfill({ json: { job: cur } });
     }
@@ -216,10 +219,116 @@ test('print: the operator board confirms or changes a price, prints and hands ov
   await page.getByRole('tab', { name: new RegExp(t('Басып жатыр', 'Печатаются')) }).click();
   await page.locator('.print-ticket').getByRole('button', { name: t('Дайын', 'Готово'), exact: true }).click();
   await page.getByRole('tab', { name: new RegExp(t('Дайын', 'Готовы') + ' ') }).click();
+  // the handover needs the code the student says
   await page.locator('.print-ticket').getByRole('button', { name: t('Берілді', 'Выдан') }).click();
+  const hand = page.getByRole('dialog');
+  await expect(hand).toContainText('Аружан Т.');
+  await hand.locator('#hsCode').fill('№482');
+  await hand.getByRole('button', { name: t('Берілді', 'Выдан') }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
   expect(actions).toEqual(['printing', 'ready', 'picked-up']);
+  expect(handovers).toEqual([{ code: '482' }]);
   // the price list at the counter
   await page.getByRole('tab', { name: t('Прайс', 'Прайс') }).click();
   await expect(page.locator('.cafe-switch input').first()).toBeChecked();
   await fits(page);
+});
+
+test('print: the counter finds a stack by code or QR, prints a batch in queue order, and the student shows a QR', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await signedIn(page, lang);
+  const token = 'PJ-702-4821-0123456789abcdef0123';
+  const a = job({ id: 701, pickupCode: '1207', customer: 'Аружан Т.', queuedAt: '2026-11-05T06:01:00Z' });
+  const b = job({ id: 702, pickupCode: '4821', customer: 'Нұрлан Қ.', queuedAt: '2026-11-05T06:00:00Z', status: 'ready', readyAt: '2026-11-05T06:10:00Z' });
+  const c = job({ id: 703, pickupCode: '0450', customer: 'Әлия С.', queuedAt: '2026-11-05T06:02:00Z' });
+  const d = job({ id: 704, pickupCode: '0999', customer: 'Ерлан Б.', queuedAt: '2026-11-05T05:59:00Z', status: 'ready' });
+  const e = job({ id: 705, pickupCode: '0200', customer: 'Дана М.', queuedAt: '2026-11-05T06:03:00Z', status: 'ready' });
+  const lookups: string[] = [];
+  const handovers: unknown[] = [];
+  const bulks: unknown[] = [];
+  let picked = false;
+  await page.route('**/api/print/**', async route => {
+    const req = route.request();
+    const url = new URL(req.url());
+    const path = url.pathname;
+    if (path === '/api/print/staff/jobs') {
+      return route.fulfill({ json: { shopId: 4, shops: [{ ...shop, myRole: 'operator', separator: 'slip' }], jobs: [d, b, a, c, e].filter(j => !(picked && j.id === 702)),
+        counts: { new: 2, ready: picked ? 2 : 3 } } });
+    }
+    if (path === '/api/print/staff/lookup') {
+      const q = url.searchParams.get('q') ?? '';
+      lookups.push(q);
+      return route.fulfill({ json: { jobs: q === '4821' || q === token ? [b] : [], valid: true, byToken: q === token } });
+    }
+    if (path === '/api/print/staff/jobs/702/picked-up') {
+      handovers.push(req.postDataJSON());
+      picked = true;
+      return route.fulfill({ json: { job: { ...b, status: 'picked_up' } } });
+    }
+    if (path === '/api/print/staff/jobs/bulk') {
+      bulks.push(req.postDataJSON());
+      return route.fulfill({ json: { results: [{ id: 701, ok: true }, { id: 703, ok: true }] } });
+    }
+    if (path === '/api/print/jobs/702') return route.fulfill({ json: { job: { ...b, customer: undefined, pickupToken: token } } });
+    if (path === '/api/print/files/91') {
+      const d = await PDFDocument.create();
+      for (let i = 0; i < 10; i++) d.addPage([595, 842]);
+      return route.fulfill({ body: Buffer.from(await d.save()), contentType: 'application/pdf' });
+    }
+    return route.fulfill({ status: 501, json: { error: { code: 'unmocked_print' } } });
+  });
+  await onboard(page, lang);
+  await page.goto('/print/staff');
+  // the zero-paper tip, once
+  await expect(page.getByText(t('Стектерді қағазсыз бөлу', 'Разделять стопки без бумаги'))).toBeVisible();
+  await page.getByRole('button', { name: t('Түсінікті', 'Понятно') }).click();
+  await expect(page.getByText(t('Стектерді қағазсыз бөлу', 'Разделять стопки без бумаги'))).toHaveCount(0);
+  // a code nobody has, then the right one: the name and the pages to check against the stack
+  const search = page.locator('#pcSearch');
+  await search.fill('7777');
+  await search.press('Enter');
+  await expect(page.getByText(t('№7777 табылмады. Кодты қайта сұраңыз.', '№7777 не найден. Спросите код ещё раз.'))).toBeVisible();
+  await search.fill('№4821');
+  await search.press('Enter');
+  const found = page.locator('.print-handover');
+  await expect(found).toContainText('Нұрлан Қ.');
+  await expect(found).toContainText(t('20 бет', '20 стр.'));
+  await expect(found).toContainText('Курстық.pdf');
+  await fits(page);
+  await found.getByRole('button', { name: t('Төледі — берілді', 'Оплатил — выдан') }).click();
+  await expect(page.locator('.print-handover')).toHaveCount(0);
+  expect(handovers).toEqual([{ code: '4821' }]);
+  // a USB scanner types the QR into the same box
+  await search.fill(token);
+  await search.press('Enter');
+  await expect(page.locator('.print-handover')).toContainText('Нұрлан Қ.');
+  expect(lookups).toEqual(['7777', '4821', token]);
+  // the ready pile sorts by code on demand
+  await page.getByRole('tab', { name: new RegExp(t('Дайын', 'Готовы') + ' ') }).click();
+  const readyCol = page.locator('.cafe-col').nth(2);
+  await expect(readyCol.locator('.cafe-ticket-code')).toHaveText(['№0999', '№0200']);
+  await readyCol.getByRole('button', { name: t('Кезек бойынша', 'По очереди') }).click();
+  await expect(readyCol.locator('.cafe-ticket-code')).toHaveText(['№0200', '№0999']);
+  // a batch ticked out of order prints in queue order; slips come four to a sheet; one bulk move
+  await page.getByRole('tab', { name: new RegExp(t('Жаңа', 'Новые')) }).click();
+  await page.getByRole('checkbox', { name: t('№0450: басуға таңдау', '№0450: выбрать для печати') }).check();
+  await page.getByRole('checkbox', { name: t('№1207: басуға таңдау', '№1207: выбрать для печати') }).check();
+  await page.locator('#printPlanBtn').click();
+  const plan = page.getByRole('dialog');
+  await expect(plan.locator('.print-plan-item b.num')).toHaveText(['№1207', '№0450']);
+  await expect(plan.getByRole('button', { name: new RegExp(t('Кесетін парақшалар', 'Вкладыши для разрезания')) })).toContainText('1');
+  // slips for the batch and one job's print-ready PDF are built in this browser (10 pages, duplex, 2 copies = 20)
+  await plan.getByRole('button', { name: new RegExp(t('Кесетін парақшалар', 'Вкладыши для разрезания')) }).click();
+  await expect(plan.locator('#printSlipsPdf')).toHaveAttribute('href', /^blob:/);
+  await expect(plan.locator('#printSlipsPdf')).toContainText('1');
+  await plan.getByRole('button', { name: /PDF · A4/ }).first().click();
+  await expect(plan.getByRole('link', { name: new RegExp(t('PDF жүктеу · 20 бет', 'Скачать PDF · 20 стр.')) })).toHaveAttribute('href', /^blob:/);
+  await fits(page);
+  await plan.getByRole('button', { name: t('Барлығы: басып жатырмын', 'Все: печатаю') }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(bulks).toEqual([{ action: 'printing', ids: [701, 703] }]);
+  // the student's screen carries the QR the operator scans
+  await page.goto('/print/jobs?id=702');
+  await expect(page.locator('#printQr svg')).toBeVisible();
+  await expect(page.locator('#printCode')).toHaveText('4821');
 });

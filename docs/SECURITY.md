@@ -210,6 +210,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/print/shops/{id}` | anonymous | no | yes | print |
 | GET | `/api/print/staff/catalog` | signed-in (staff of the shop, admin) | no | yes | print |
 | GET | `/api/print/staff/jobs` | signed-in (print shop staff; own shop only, RLS) | no | yes | print |
+| GET | `/api/print/staff/lookup` | signed-in (print shop staff; own shop only, RLS; code or HMAC-signed QR) | yes (per-staff lookup limit) | yes | print |
 | GET | `/api/qa/questions` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/qa/questions/{id}` | anonymous (author names: signed-in; anonymous authors: admin only) | no | yes | courseqa |
 | GET | `/api/quiz/attempts` | signed-in (own attempts, RLS) | no | yes | quiz |
@@ -412,9 +413,10 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/print/quote` | signed-in (own free uploads; prices from the shop's catalogue, client totals ignored) | yes (+ per-user quote limit) | yes | print |
 | POST | `/api/print/staff/goods` | signed-in (manager of the shop, admin) | yes | yes | print |
 | POST | `/api/print/staff/goods/{id}/stock` | signed-in (staff of the goods' shop, admin) | yes | yes | print |
+| POST | `/api/print/staff/jobs/bulk` | signed-in (staff; each job re-checked as one action, RLS; ≤ 40; printing/ready only) | yes | yes | print |
 | POST | `/api/print/staff/jobs/{id}/decline` | signed-in (staff of the job's shop) | yes | yes | print |
 | POST | `/api/print/staff/jobs/{id}/no-show` | signed-in (staff of the job's shop; after ready + grace) | yes | yes | print |
-| POST | `/api/print/staff/jobs/{id}/picked-up` | signed-in (staff of the job's shop) | yes | yes | print |
+| POST | `/api/print/staff/jobs/{id}/picked-up` | signed-in (staff of the job's shop; the student's code or signed QR must match the job) | yes | yes | print |
 | POST | `/api/print/staff/jobs/{id}/price` | signed-in (staff of the job's shop; unpaid new job; a change needs a reason and the student's approval) | yes | yes | print |
 | POST | `/api/print/staff/jobs/{id}/printing` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
 | POST | `/api/print/staff/jobs/{id}/ready` | signed-in (staff of the job's shop; agreed price, paid or pay at counter) | yes | yes | print |
