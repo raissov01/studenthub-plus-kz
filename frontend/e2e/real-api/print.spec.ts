@@ -125,6 +125,10 @@ test('print: PDF upload → server price → pay at the counter → operator pri
   await response(s, '/api/print/uploads', () => s.locator('#printFile').setInputFiles({ name: 'scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nbroken\n') }));
   const scan = s.getByRole('article', { name: 'scan.pdf' });
   await scan.getByLabel(t('Файлдағы бет саны', 'Страниц в файле')).fill('5');
+  // the last order's options at this shop come back (duplex: 5 × 15 ₸); one tap restores one-sided (5 × 20 ₸)
+  await expect(scan.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') })).toBeChecked();
+  await expect(s.locator('#printTotal')).toHaveText(/75\s₸/);
+  await scan.getByRole('checkbox', { name: t('Екі жақты', 'Двусторонняя') }).uncheck();
   await expect(s.locator('#printTotal')).toHaveText(/100\s₸/);
   await s.getByRole('radio', { name: new RegExp(t('Kaspi арқылы', 'Через Kaspi')) }).check();
   await response(s, '/api/print/jobs', () => s.locator('#printSubmit').click());
