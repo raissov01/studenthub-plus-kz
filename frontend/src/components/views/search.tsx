@@ -5,7 +5,7 @@
    - A section (/jobs, /internships, /events, /courses, /discounts): its own sub-tabs (lib/sections.ts), sticky under
      the header together with the search box; the sub-tab rides in ?t= so a link or «back» lands on the same tab.
    Old /search?k=<category> links land on the section that now holds the category. */
-import { Suspense, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Chip, Empty, Heart, Icon, Row } from '@/components/ui';
@@ -490,9 +490,20 @@ function SectionBody({ section }: { section: SectionId }) {
   const sp = useSearchParams();
   const clubs = !!(cfg.features as Partial<Record<string, boolean>>).clubs;
   const tabs = visibleTabs(section, { jobs: content.jobs, clubs, market: !!cfg.features.market });
-  const tab = pickTab(tabs, sp.get('t'));
+  // The tab lives in state, updated at once on a click or key. useSearchParams catches up with
+  // history.replaceState only after a deferred router update, so reading the tab straight from it lets a quick second key
+  // see the previous tab. A URL change is adopted when it is the live URL: an outside navigation (menu, «back») or our
+  // own write catching up; a stale in-between value (two quick keys) is skipped.
+  const urlT = sp.get('t');
+  const [st, setSt] = useState({ urlT, tab: urlT });
+  if (st.urlT !== urlT) {
+    const live = new URLSearchParams(window.location.search).get('t');
+    setSt(live === urlT ? { urlT, tab: urlT } : { ...st, urlT });
+  }
+  const tab = pickTab(tabs, st.tab);
   const pick = (id: string) => {
     if (id === tab) return;
+    setSt(s => ({ ...s, tab: id }));
     // the tab rides in the URL without a navigation: the page stays static, «back» from an item returns here
     try { window.history.replaceState(null, '', pathOf(sectionView(section, id))); } catch { /* ignore */ }
   };
