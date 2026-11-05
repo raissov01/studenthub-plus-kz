@@ -43,7 +43,7 @@ test('fresh student, empty feed: empty states with a next step, no demo text on 
   await clean();
   await snap('search-jobs');
   for (const [path, kk, ru] of [
-    ['/internships', 'Әзірге тағылымдама жоқ', 'Стажировок пока нет'],
+    ['/internships', 'Әзірге бағдарлама жоқ', 'Программ пока нет'],
     ['/events', 'Әзірге іс-шара жоқ', 'Мероприятий пока нет'],
     ['/discounts', 'Әзірге серіктес жеңілдігі жоқ', 'Скидок партнёров пока нет'],
   ]) {

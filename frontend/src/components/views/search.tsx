@@ -456,7 +456,9 @@ function SubTabs({ section, tabs, cur, onPick }: { section: SectionId; tabs: Sec
     el?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   }, [cur]);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const i = tabs.findIndex(t => t.id === cur);
+    // count from the focused tab, not from `cur`: a second key press can arrive before the re-render
+    const focused = (e.target as HTMLElement).id.replace(`st-${section}-`, '');
+    const i = Math.max(0, tabs.findIndex(t => t.id === (tabs.some(x => x.id === focused) ? focused : cur)));
     let n = -1;
     if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
     else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
