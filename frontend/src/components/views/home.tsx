@@ -111,7 +111,7 @@ export function Home() {
   const clubsOn = useFeature('clubs');
   const clubs = useLoad<{ clubs: Club[] }>(clubsOn ? '/api/clubs' : null);
   const rec = recruitingPick(clubs.data?.clubs ?? []);
-  if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'user' as IconName, id: 'club' + rec.id, demo: false, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang === 'ru' ? 'ru' : 'kk'), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
+  if (rec) news.splice(Math.min(1, news.length), 0, { go: 'club:' + rec.id, icon: 'user' as IconName, id: 'club' + rec.id, kind: tt('Клуб', 'Клуб'), title: clubName(rec, S.lang === 'ru' ? 'ru' : 'kk'), sub: tt('Мүше қабылдап жатыр', 'Идёт набор') });
   const focused = useRef(false);
   return (
     <>

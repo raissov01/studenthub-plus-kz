@@ -2,17 +2,12 @@
 /* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { ConfirmSheet, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
-import { AddCertSheet, StudentQrSheet } from '@/components/views/sheets';
-import { ADMISSION, CITIES, DOCS, GRADES, HOME_CITIES, LEVELS, SKILLS, SPECS } from '@/lib/data/static';
-import { certificates, profileFill, studentCode } from '@/lib/domain';
-import { ConfirmSheet, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
+import { ConfirmSheet, Empty, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
 import { StudentQrSheet } from '@/components/views/sheets';
 import { CertificatesSection } from '@/components/views/cert-files';
-import { ADMISSION, CITIES, DOCS, EVENTS, GRADES, HOME_CITIES, LEVELS, PAYMENT, SKILLS, SPECS, TIERS } from '@/lib/data/static';
-import { profileFill, studentCode } from '@/lib/domain';
+import { ADMISSION, CITIES, DOCS, GRADES, HOME_CITIES, LEVELS, SKILLS, SPECS } from '@/lib/data/static';
+import { certificates, profileFill, studentCode } from '@/lib/domain';
 import { dOff, money } from '@/lib/format';
-import { demoProfile } from '@/lib/defaults';
 import { getState, resetState, update } from '@/lib/store';
 import { DeadlineSheet } from '@/components/views/calendar';
 import { track } from '@/features/analytics/track';
@@ -341,10 +336,7 @@ export function Pay() {
 }
 
 export function Portfolio() {
-  const { S, I, tt, L, go, openSheet } = useApp();
-  const certs = certificates(S, I);
-  const { S, I, tt, L, go } = useApp();
-  const attended = EVENTS.filter(e => e.past && S.events[e.id]);
+  const { S, tt, L, go } = useApp();
   const p = S.profile;
   const exp = (p.exp || '').split('\n').filter(s => s.trim());
   return (

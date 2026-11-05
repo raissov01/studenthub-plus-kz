@@ -31,9 +31,7 @@ export const MULTI_SEGMENT = ['employer', 'admin', 'quiz'] as const;
 export const ROOTS = ['home', 'search', 'calendar', 'profile'];
 /** device-local study screens whose item id rides in the query ('notes:n1' <-> /notes?id=n1), so the one saved
     page (/notes, /subjects, /review) opens every note, subject and review session offline */
-export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys'] as const;
-export const QUERY_ID = ['subjects', 'notes', 'review', 'lostfound', 'qa', 'roommates'] as const;
-export const QUERY_ID = ['subjects', 'notes', 'review', 'club'] as const;
+export const QUERY_ID = ['subjects', 'notes', 'review', 'surveys', 'lostfound', 'qa', 'roommates', 'club'] as const;
 
 const FIXED: Record<string, string> = {
   home: '/',

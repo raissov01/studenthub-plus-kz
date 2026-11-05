@@ -329,8 +329,7 @@ function UnbanForm() {
 export function ModerationLinks() {
   const { tt } = useApp();
   const amb = useFeature('ambassador'), mentors = useFeature('mentors'), market = useFeature('market'), events = useFeature('events');
-  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe');
-  const b2b = useFeature('b2b'), points = useFeature('points'), clubs = useFeature('clubs');
+  const b2b = useFeature('b2b'), points = useFeature('points'), cafe = useFeature('cafe'), clubs = useFeature('clubs');
   const q = useLoad<{ pendingByKind: Record<string, number> }>('/api/admin/queue?status=pending&limit=1');
   const pending = Object.values(q.data?.pendingByKind ?? {}).reduce((a, b) => a + b, 0);
   return (
