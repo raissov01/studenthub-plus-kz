@@ -11,6 +11,11 @@ read/action with no parameters means there is no application input to validate; 
 is listed separately. Rate limits are shared Postgres counters, with an in-memory fallback
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
+“moderator” is a scoped admin right (admin_grants, granted and revoked only by an admin with a reason,
+audited) re-read with the session on every request; it opens the moderation endpoints, never user
+management, exports, shop money or role-granting queue kinds (ambassador, mentor, employer verification,
+club leader). A blocked account (user_blocks) gets 403 account_restricted from auth.Write on every write
+except sign-in/out, password and email settings, DELETE /api/me and the anonymous analytics/error beacons.
 
 The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
 constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256
@@ -72,14 +77,16 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/admin/cafes/{id}/kaspi` | admin | yes | yes | cafe |
 | DELETE | `/api/admin/cafes/{id}/staff/{userId}` | admin | yes | yes | cafe |
 | DELETE | `/api/admin/clubs/{id}/admins/{userId}` | admin | yes | yes | clubs |
-| DELETE | `/api/admin/content/{id}` | admin | yes | yes | — |
-| DELETE | `/api/admin/market/bans/{userId}` | admin | yes | yes | market |
+| DELETE | `/api/admin/content/{id}` | admin, moderator (admin_grants) | yes | yes | — |
+| DELETE | `/api/admin/market/bans/{userId}` | admin, moderator (admin_grants) | yes | yes | market |
 | DELETE | `/api/admin/print/shops/{id}/kaspi` | admin | yes | yes | print |
 | DELETE | `/api/admin/print/shops/{id}/staff/{userId}` | admin | yes | yes | print |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
 | DELETE | `/api/ambassador/pause` | ambassador, admin (active term) | yes | no (no input) | ambassador |
 | DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
 | DELETE | `/api/clubs/{id}/members/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
+| DELETE | `/api/console/cafe/{id}/team/{userId}` | manager of the café (baristas only), admin; not self; audited | yes | yes | cafe |
+| DELETE | `/api/console/print/{id}/team/{userId}` | manager of the shop (operators only), admin; not self; audited | yes | yes | print |
 | DELETE | `/api/employer/members/{userId}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | DELETE | `/api/events/{id}/exhibitors/{employerId}` | ambassador, university_staff (own university), admin | yes | yes | fairs |
 | DELETE | `/api/events/{id}/register` | signed-in | yes | yes | events |
@@ -96,18 +103,22 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/university/posts/{id}` | university_staff (bound university) | yes | yes | b2b |
 | GET | `/api/admin/ambassadors` | admin | no | yes | ambassador |
 | GET | `/api/admin/analytics` | admin | no | yes | — |
+| GET | `/api/admin/audit` | admin | no | yes | — |
 | GET | `/api/admin/cafe/orders` | admin | no | yes | cafe |
 | GET | `/api/admin/cafe/orders/{id}` | admin | no | yes | cafe |
 | GET | `/api/admin/cafes` | admin | no | no (no input) | cafe |
 | GET | `/api/admin/clubs` | admin | no | no (no input) | clubs |
-| GET | `/api/admin/content` | admin | no | yes | — |
-| GET | `/api/admin/content/{id}` | admin | no | yes | — |
+| GET | `/api/admin/content` | admin, moderator (admin_grants) | no | yes | — |
+| GET | `/api/admin/content/{id}` | admin, moderator (admin_grants) | no | yes | — |
+| GET | `/api/admin/dashboard` | admin; counts only | no | no (no input) | — |
 | GET | `/api/admin/employers` | admin | no | yes | b2b |
+| GET | `/api/admin/export/{file}` | admin; CSV with BOM, formula cells neutralised, feedback without text/author; every export audited | no | yes | — |
 | GET | `/api/admin/feedback/recipients` | admin | no | yes | feedback |
-| GET | `/api/admin/feeds` | admin | no | no (no input) | feeds |
-| GET | `/api/admin/feeds/items` | admin | no | yes | feeds |
+| GET | `/api/admin/feeds` | admin, moderator (admin_grants) | no | no (no input) | feeds |
+| GET | `/api/admin/feeds/items` | admin, moderator (admin_grants) | no | yes | feeds |
+| GET | `/api/admin/grants` | admin | no | no (no input) | — |
 | GET | `/api/admin/health` | admin | no | no (no input) | — |
-| GET | `/api/admin/market/items` | admin | no | yes | market |
+| GET | `/api/admin/market/items` | admin, moderator (admin_grants) | no | yes | market |
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/pairs` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/requests/{id}/candidates` | admin | no | yes | mentors |
@@ -117,11 +128,13 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/print/jobs` | admin | no | yes | print |
 | GET | `/api/admin/print/jobs/{id}` | admin | no | yes | print |
 | GET | `/api/admin/print/shops` | admin | no | no (no input) | print |
-| GET | `/api/admin/queue` | admin | no | yes | — |
-| GET | `/api/admin/reports` | admin | no | yes | — |
+| GET | `/api/admin/queue` | admin, moderator (admin_grants; role-granting kinds admin only) | no | yes | — |
+| GET | `/api/admin/reports` | admin, moderator (admin_grants) | no | yes | — |
 | GET | `/api/admin/summary` | admin | no | no (no input) | — |
 | GET | `/api/admin/university-staff` | admin | no | no (no input) | b2b |
-| GET | `/api/admin/users` | admin | no | yes | — |
+| GET | `/api/admin/users` | admin (personal data) | no | yes | — |
+| GET | `/api/admin/users/{id}` | admin (personal data) | no | yes | — |
+| GET | `/api/admin/voice` | admin; counts only, no ticket texts or answers | no | no (no input) | — |
 | GET | `/api/ambassador/application` | signed-in | no | no (no input) | ambassador |
 | GET | `/api/ambassador/me` | ambassador, admin (active term) | no | no (no input) | ambassador |
 | GET | `/api/ambassador/mentors` | ambassador (active team lead, own university) | no | yes | mentors |
@@ -142,6 +155,9 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/clubs/{id}` | anonymous (active clubs; archived and pending posts for club admins, admin) | no | yes | clubs |
 | GET | `/api/clubs/{id}/members` | club admin of this club (RLS), admin | no | yes | clubs |
 | GET | `/api/config` | anonymous | no | no (no input) | — |
+| GET | `/api/console/cafe/{id}/stats` | staff of the café (today's board numbers); its manager, admin (+ revenue by day, Kaspi status, team) | no | yes | cafe |
+| GET | `/api/console/me` | signed-in (own panels and their counts only) | no | no (no input) | — |
+| GET | `/api/console/print/{id}/stats` | staff of the shop (today's board numbers); its manager, admin (+ revenue by day, Kaspi status, team) | no | yes | print |
 | GET | `/api/content` | anonymous | no | no (no input) | — |
 | GET | `/api/cron` | cron (CRON_SECRET) | no | yes | — |
 | GET | `/api/cron/ambassador` | cron (CRON_SECRET) | no | yes | ambassador |
@@ -180,14 +196,14 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/jobs` | anonymous | no | yes | b2b |
 | GET | `/api/jobs/{id}` | anonymous | no | yes | b2b |
 | GET | `/api/lostfound/mine` | signed-in | no | no (no input) | lostfound |
-| GET | `/api/lostfound/photos/{name}` | anonymous (active post); uploader or admin otherwise | no | yes | lostfound |
+| GET | `/api/lostfound/photos/{name}` | anonymous (active post); uploader, admin or moderator otherwise | no | yes | lostfound |
 | GET | `/api/lostfound/posts` | anonymous (no author identity in any answer) | no | yes | lostfound |
 | GET | `/api/lostfound/posts/{id}` | anonymous (claims: the two parties; contacts only after confirmation) | no | yes | lostfound |
 | GET | `/api/market/items` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/items/{id}` | anonymous (contacts: signed-in 18+, owner, admin) | no | yes | market |
 | GET | `/api/market/me` | signed-in | no | no (no input) | market |
 | GET | `/api/market/mine` | signed-in | no | no (no input) | market |
-| GET | `/api/market/photos/{name}` | anonymous (active/reserved); owner or admin otherwise | no | yes | market |
+| GET | `/api/market/photos/{name}` | anonymous (active/reserved); owner, admin or moderator otherwise | no | yes | market |
 | GET | `/api/me` | anonymous | no | no (no input) | — |
 | GET | `/api/me/export` | signed-in | no | no (no input) | — |
 | GET | `/api/me/inbox` | signed-in (own rows only, RLS) | no | yes | — |
@@ -250,7 +266,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | PATCH | `/api/admin/ambassadors/{id}` | admin | yes | yes | ambassador |
 | PATCH | `/api/admin/clubs/{id}` | admin | yes | yes | clubs |
 | PATCH | `/api/admin/feedback/recipients/{id}` | admin | yes | yes | feedback |
-| PATCH | `/api/admin/queue/{id}` | admin | yes | yes | — |
+| PATCH | `/api/admin/queue/{id}` | admin, moderator (admin_grants; role-granting kinds admin only) | yes | yes | — |
 | PATCH | `/api/clubs/{id}` | club admin of this club (RLS, page fields only), admin | yes | yes | clubs |
 | PATCH | `/api/employer/jobs/{id}` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | PATCH | `/api/employer/me` | signed-in | yes | yes | b2b |
@@ -273,19 +289,21 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/cafes/{id}/staff` | admin | yes | yes | cafe |
 | POST | `/api/admin/clubs` | admin | yes | yes | clubs |
 | POST | `/api/admin/clubs/{id}/admins` | admin | yes | yes | clubs |
-| POST | `/api/admin/content` | admin | yes | yes | — |
-| POST | `/api/admin/content/validate` | admin | yes | yes | — |
-| POST | `/api/admin/content/{id}/hide` | admin | yes | yes | — |
-| POST | `/api/admin/content/{id}/unhide` | admin | yes | yes | — |
+| POST | `/api/admin/content` | admin, moderator (admin_grants) | yes | yes | — |
+| POST | `/api/admin/content/validate` | admin, moderator (admin_grants) | yes | yes | — |
+| POST | `/api/admin/content/{id}/hide` | admin, moderator (admin_grants) | yes | yes | — |
+| POST | `/api/admin/content/{id}/unhide` | admin, moderator (admin_grants) | yes | yes | — |
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
 | POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
-| POST | `/api/admin/feeds/items/{id}/unpublish` | admin | yes | yes | feeds |
+| POST | `/api/admin/feeds/items/{id}/unpublish` | admin, moderator (admin_grants) | yes | yes | feeds |
 | POST | `/api/admin/feeds/sources/{id}` | admin | yes | yes | feeds |
-| POST | `/api/admin/lostfound/moderate` | admin | yes | yes | lostfound |
-| POST | `/api/admin/market/bans` | admin | yes | yes | market |
-| POST | `/api/admin/market/items/{id}/hide` | admin | yes | yes | market |
-| POST | `/api/admin/market/items/{id}/restore` | admin | yes | yes | market |
+| POST | `/api/admin/grants` | admin (reason required, audited) | yes | yes | — |
+| POST | `/api/admin/grants/revoke` | admin (reason required, audited) | yes | yes | — |
+| POST | `/api/admin/lostfound/moderate` | admin, moderator (admin_grants) | yes | yes | lostfound |
+| POST | `/api/admin/market/bans` | admin, moderator (admin_grants) | yes | yes | market |
+| POST | `/api/admin/market/items/{id}/hide` | admin, moderator (admin_grants) | yes | yes | market |
+| POST | `/api/admin/market/items/{id}/restore` | admin, moderator (admin_grants) | yes | yes | market |
 | POST | `/api/admin/mentors/match` | admin | yes | yes | mentors |
 | POST | `/api/admin/mentors/pairs/{id}/end` | admin | yes | yes | mentors |
 | POST | `/api/admin/mentors/{userId}/status` | admin | yes | yes | mentors |
@@ -298,16 +316,19 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/print/shops/{id}/kaspi/login/start` | admin | yes (+ 6/admin/hour, shared with cafés) | yes | print |
 | POST | `/api/admin/print/shops/{id}/kaspi/login/verify` | admin | yes | yes | print |
 | POST | `/api/admin/print/shops/{id}/staff` | admin | yes | yes | print |
-| POST | `/api/admin/qa/moderate` | admin | yes | yes | courseqa |
-| POST | `/api/admin/qa/questions/{id}/lock` | admin | yes | yes | courseqa |
-| POST | `/api/admin/queue/{id}/approve` | admin | yes | yes | — |
-| POST | `/api/admin/queue/{id}/reject` | admin | yes | yes | — |
-| POST | `/api/admin/quiz/quizzes/{id}/hide` | admin | yes | yes | quiz |
-| POST | `/api/admin/quiz/quizzes/{id}/restore` | admin | yes | yes | quiz |
-| POST | `/api/admin/reports/dismiss` | admin | yes | yes | — |
+| POST | `/api/admin/qa/moderate` | admin, moderator (admin_grants) | yes | yes | courseqa |
+| POST | `/api/admin/qa/questions/{id}/lock` | admin, moderator (admin_grants) | yes | yes | courseqa |
+| POST | `/api/admin/queue/{id}/approve` | admin, moderator (admin_grants; role-granting kinds admin only) | yes | yes | — |
+| POST | `/api/admin/queue/{id}/reject` | admin, moderator (admin_grants; role-granting kinds admin only) | yes | yes | — |
+| POST | `/api/admin/quiz/quizzes/{id}/hide` | admin, moderator (admin_grants) | yes | yes | quiz |
+| POST | `/api/admin/quiz/quizzes/{id}/restore` | admin, moderator (admin_grants) | yes | yes | quiz |
+| POST | `/api/admin/reports/dismiss` | admin, moderator (admin_grants) | yes | yes | — |
 | POST | `/api/admin/role` | admin | yes | yes | — |
-| POST | `/api/admin/roommates/moderate` | admin | yes | yes | roommates |
+| POST | `/api/admin/roommates/moderate` | admin, moderator (admin_grants) | yes | yes | roommates |
 | POST | `/api/admin/university-staff` | admin | yes | yes | b2b |
+| POST | `/api/admin/users/{id}/block` | admin (reason required, audited; not self, not an admin) | yes | yes | — |
+| POST | `/api/admin/users/{id}/delete` | admin (reason + DELETE confirmation, audited; the DELETE /api/me code path; not self, not an admin) | yes | yes | — |
+| POST | `/api/admin/users/{id}/unblock` | admin (reason required, audited) | yes | yes | — |
 | POST | `/api/ambassador/apply` | signed-in | yes | yes | ambassador |
 | POST | `/api/ambassador/mentors/match` | ambassador (active team lead, own university) | yes | yes | mentors |
 | POST | `/api/ambassador/pause` | ambassador, admin (active term) | yes | yes | ambassador |
@@ -341,6 +362,8 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/clubs/{id}/join` | signed-in (consented; RLS: own pending row, request-mode clubs only) | yes | yes | clubs |
 | POST | `/api/clubs/{id}/posts` | club admin of this club (RLS; moderated) | yes | yes | clubs |
 | POST | `/api/clubs/{id}/requests/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
+| POST | `/api/console/cafe/{id}/team` | manager of the café (baristas only), admin (managers too); not self; audited | yes | yes | cafe |
+| POST | `/api/console/print/{id}/team` | manager of the shop (operators only), admin (managers too); not self; audited | yes | yes | print |
 | POST | `/api/discounts/{id}/check` | signed-in (consented) | yes | yes | — |
 | POST | `/api/employer/applications/{id}/status` | employer (own company; owner for membership/close/transfer) | yes | yes | b2b |
 | POST | `/api/employer/apply` | signed-in | yes | yes | b2b |
@@ -454,7 +477,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
 | PUT | `/api/admin/cafes/{id}` | admin | yes | yes | cafe |
-| PUT | `/api/admin/content/{id}` | admin | yes | yes | — |
+| PUT | `/api/admin/content/{id}` | admin, moderator (admin_grants) | yes | yes | — |
 | PUT | `/api/admin/feedback/recipients/{id}/staff` | admin | yes | yes | feedback |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |
 | PUT | `/api/admin/print/shops/{id}` | admin | yes | yes | print |

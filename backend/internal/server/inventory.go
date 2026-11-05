@@ -73,6 +73,11 @@ read/action with no parameters means there is no application input to validate; 
 is listed separately. Rate limits are shared Postgres counters, with an in-memory fallback
 when Postgres is unavailable. All browser writes use auth.Write (allowed Origin/Referer,
 per-IP and per-user budget); /api/client-errors also has a fixed 5/IP/minute budget.
+“moderator” is a scoped admin right (admin_grants, granted and revoked only by an admin with a reason,
+audited) re-read with the session on every request; it opens the moderation endpoints, never user
+management, exports, shop money or role-granting queue kinds (ambassador, mentor, employer verification,
+club leader). A blocked account (user_blocks) gets 403 account_restricted from auth.Write on every write
+except sign-in/out, password and email settings, DELETE /api/me and the anonymous analytics/error beacons.
 
 The write-guard exceptions are POST /api/telegram and POST /api/cafe/kaspi/webhook: a
 constant-time shared-secret check (Telegram's webhook secret; the kaspi-pos sidecar's HMAC-SHA256

@@ -12,8 +12,8 @@ func init() {
 		"POST /api/lostfound/claims/{id}/returned": {"signed-in", "yes", "yes", "lostfound"},
 		"GET /api/lostfound/mine":                  {"signed-in", "no", "no (no input)", "lostfound"},
 		"POST /api/lostfound/photos":               {"signed-in", "yes", "yes", "lostfound"},
-		"GET /api/lostfound/photos/{name}":         {"anonymous (active post); uploader or admin otherwise", "no", "yes", "lostfound"},
-		"POST /api/admin/lostfound/moderate":       {"admin", "yes", "yes", "lostfound"},
+		"GET /api/lostfound/photos/{name}":         {"anonymous (active post); uploader, admin or moderator otherwise", "no", "yes", "lostfound"},
+		"POST /api/admin/lostfound/moderate":       {"admin, moderator (admin_grants)", "yes", "yes", "lostfound"},
 
 		"GET /api/qa/questions":                  {"anonymous (author names: signed-in; anonymous authors: admin only)", "no", "yes", "courseqa"},
 		"GET /api/qa/questions/{id}":             {"anonymous (author names: signed-in; anonymous authors: admin only)", "no", "yes", "courseqa"},
@@ -23,8 +23,8 @@ func init() {
 		"DELETE /api/qa/answers/{id}":            {"signed-in", "yes", "yes", "courseqa"},
 		"POST /api/qa/questions/{id}/accept":     {"signed-in", "yes", "yes", "courseqa"},
 		"POST /api/qa/vote":                      {"signed-in", "yes", "yes", "courseqa"},
-		"POST /api/admin/qa/moderate":            {"admin", "yes", "yes", "courseqa"},
-		"POST /api/admin/qa/questions/{id}/lock": {"admin", "yes", "yes", "courseqa"},
+		"POST /api/admin/qa/moderate":            {"admin, moderator (admin_grants)", "yes", "yes", "courseqa"},
+		"POST /api/admin/qa/questions/{id}/lock": {"admin, moderator (admin_grants)", "yes", "yes", "courseqa"},
 
 		"GET /api/roommates/me":                      {"signed-in", "no", "no (no input)", "roommates"},
 		"POST /api/roommates/gender":                 {"signed-in", "yes", "yes", "roommates"},
@@ -35,7 +35,7 @@ func init() {
 		"POST /api/roommates/listings/{id}/requests": {"signed-in", "yes", "yes", "roommates"},
 		"POST /api/roommates/requests/{id}/decide":   {"signed-in", "yes", "yes", "roommates"},
 		"GET /api/roommates/requests":                {"signed-in", "no", "no (no input)", "roommates"},
-		"POST /api/admin/roommates/moderate":         {"admin", "yes", "yes", "roommates"},
+		"POST /api/admin/roommates/moderate":         {"admin, moderator (admin_grants)", "yes", "yes", "roommates"},
 	} {
 		routePolicies[pattern] = p
 	}
