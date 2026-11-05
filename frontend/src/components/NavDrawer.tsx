@@ -55,6 +55,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
       ['services', 'cap', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
       ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
+      ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as Item] : []),
       ...(cfg.features.surveys ? [['surveys', 'chart', tt('Сауалнамалар', 'Опросы')] as Item] : []),
       ...(cfg.features.feedback ? [['feedback', 'chat', tt('Ұсыныс және шағым', 'Предложения и жалобы')] as Item] : []),
       ...(cfg.features.wellbeing ? [['wellbeing', 'heart', tt('Әл-ауқат', 'Благополучие')] as Item] : []),
