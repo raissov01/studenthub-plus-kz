@@ -49,7 +49,7 @@ function QuickActions() {
     ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as [string, IconName, string]] : []),
     ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as [string, IconName, string]] : []),
     ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
-    ['saved', 'heart', tt('Сақталғандар', 'Сохранённое')],
+    ['saved', 'bookmark', tt('Сақталғандар', 'Сохранённое')],
   ];
   return (
     <section className="section home-quick" id="homeQuick">
