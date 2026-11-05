@@ -9,15 +9,12 @@ package cafe
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"log"
-	"math/big"
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -30,6 +27,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/me"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/ratelimit"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 const Feature = "cafe"
@@ -37,12 +35,7 @@ const Feature = "cafe"
 // Now is replaced by tests.
 var Now = time.Now
 
-var almaty = func() *time.Location {
-	if loc, err := time.LoadLocation("Asia/Almaty"); err == nil {
-		return loc
-	}
-	return time.FixedZone("Asia/Almaty", 5*3600)
-}()
+var almaty = shopkit.Almaty
 
 // Provider is the Kaspi payment provider, nil while Kaspi is not configured. Tests replace it.
 var Provider = func() payments.Provider {
@@ -61,12 +54,7 @@ var Cashier = func() CashierLogin {
 }
 
 // CashierLogin is the part of the Kaspi client the admin login screens use.
-type CashierLogin interface {
-	LoginStart(ctx context.Context, phone string) (string, error)
-	LoginVerify(ctx context.Context, processID, otp string) (*payments.Login, error)
-	OrgContext(ctx context.Context, s payments.Session, organizationID int64) (string, string, error)
-	Check(ctx context.Context, s payments.Session) error
-}
+type CashierLogin = shopkit.CashierLogin
 
 // Limits (env, docs/cafe.md).
 func maxActive() int       { return config.Int("CAFE_MAX_ACTIVE_ORDERS", 2) }
@@ -101,8 +89,8 @@ var (
 	MsgCafeData   = httpx.Msg{KK: "Кофейня деректерін тексеріңіз.", RU: "Проверьте данные кофейни."}
 	MsgMenuData   = httpx.Msg{KK: "Мәзір позициясын тексеріңіз: баға бүтін теңгемен, атаулары толық.", RU: "Проверьте позицию меню: цена в целых тенге, названия заполнены."}
 	MsgNoUser     = httpx.Msg{KK: "Пайдаланушы табылмады.", RU: "Пользователь не найден."}
-	MsgKaspiOff   = httpx.Msg{KK: "Kaspi байланысы бапталмаған (CAFE_KASPI_*).", RU: "Связь с Kaspi не настроена (CAFE_KASPI_*)."}
-	MsgKaspiLogin = httpx.Msg{KK: "Kaspi кіру сәтсіз: нөмірді не SMS кодын тексеріңіз.", RU: "Вход в Kaspi не удался: проверьте номер или SMS-код."}
+	MsgKaspiOff   = shopkit.MsgKaspiOff
+	MsgKaspiLogin = shopkit.MsgKaspiLogin
 )
 
 func init() {
@@ -205,15 +193,7 @@ type Cafe struct {
 	kaspiOK bool
 }
 
-type KaspiState struct {
-	Configured  bool       `json:"configured"`
-	LoggedIn    bool       `json:"loggedIn"`
-	Broken      bool       `json:"broken"`
-	PhoneMasked string     `json:"phoneMasked"`
-	OrgName     string     `json:"orgName"`
-	LastError   *string    `json:"lastError"`
-	UpdatedAt   *time.Time `json:"updatedAt"`
-}
+type KaspiState = shopkit.KaspiState
 
 type Staff struct {
 	UserID int64   `json:"userId"`
@@ -312,63 +292,18 @@ func scanItem(row pgx.Row) (Item, error) {
 
 // ---------- opening hours and pickup slots ----------
 
-func clock(s string) (int, bool) {
-	h, m, ok := strings.Cut(s, ":")
-	if !ok {
-		return 0, false
-	}
-	hh, err1 := strconv.Atoi(h)
-	mm, err2 := strconv.Atoi(m)
-	if err1 != nil || err2 != nil || hh < 0 || hh > 23 || mm < 0 || mm > 59 {
-		return 0, false
-	}
-	return hh*60 + mm, true
+func clock(s string) (int, bool) { return shopkit.Clock(s) }
+
+func (c *Cafe) hours() shopkit.Hours {
+	return shopkit.Hours{Active: c.Active, OpenDays: c.OpenDays, OpenTime: c.OpenTime, CloseTime: c.CloseTime, SlotMinutes: c.SlotMinutes, LeadMinutes: c.LeadMinutes}
 }
 
 // Slots are today's pickup times (Asia/Almaty) a student may still choose: every slot_minutes from opening
 // to the last slot that starts before closing, no earlier than now + lead_minutes. Empty on a closed day.
-func Slots(c *Cafe, now time.Time) []time.Time {
-	if !c.Active {
-		return nil
-	}
-	l := now.In(almaty)
-	wd := int(l.Weekday())
-	if wd == 0 {
-		wd = 7
-	}
-	open := false
-	for _, d := range c.OpenDays {
-		if d == wd {
-			open = true
-		}
-	}
-	from, ok1 := clock(c.OpenTime)
-	to, ok2 := clock(c.CloseTime)
-	step := c.SlotMinutes
-	if !open || !ok1 || !ok2 || step <= 0 {
-		return nil
-	}
-	day := time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, almaty)
-	earliest := now.Add(time.Duration(c.LeadMinutes) * time.Minute)
-	var out []time.Time
-	for m := from; m < to; m += step {
-		t := day.Add(time.Duration(m) * time.Minute)
-		if !t.Before(earliest) {
-			out = append(out, t)
-		}
-	}
-	return out
-}
+func Slots(c *Cafe, now time.Time) []time.Time { return c.hours().Slots(now) }
 
 // ValidSlot reports whether at is one of today's slots.
-func ValidSlot(c *Cafe, now, at time.Time) bool {
-	for _, t := range Slots(c, now) {
-		if t.Equal(at) {
-			return true
-		}
-	}
-	return false
-}
+func ValidSlot(c *Cafe, now, at time.Time) bool { return c.hours().ValidSlot(now, at) }
 
 // ---------- menu options and prices ----------
 
@@ -400,10 +335,7 @@ func ValidateOptions(opts []Option) error {
 	return nil
 }
 
-func textOK(s string, min, max int) bool {
-	n := len([]rune(s))
-	return n >= min && n <= max && strings.TrimSpace(s) == s
-}
+func textOK(s string, min, max int) bool { return shopkit.TextOK(s, min, max) }
 
 // LineInput is one cart line as the client sends it: an item id, a quantity and the chosen option ids.
 // The client never sends a price.
@@ -501,26 +433,10 @@ func Price(menu map[int64]Item, in []LineInput) ([]Line, int64, error) {
 }
 
 // pickupCode is the three digits the student shows at the counter.
-func pickupCode() string {
-	n, err := rand.Int(rand.Reader, big.NewInt(900))
-	if err != nil {
-		return strconv.FormatInt(Now().UnixNano()%900+100, 10)
-	}
-	return strconv.FormatInt(n.Int64()+100, 10)
-}
+func pickupCode() string { return shopkit.PickupCode() }
 
 // tenge formats tiyn as «1 250 ₸».
-func tenge(tiyn int64) string {
-	s := strconv.FormatInt(tiyn/100, 10)
-	var b strings.Builder
-	for i, r := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			b.WriteRune(' ')
-		}
-		b.WriteRune(r)
-	}
-	return b.String() + " ₸"
-}
+func tenge(tiyn int64) string { return shopkit.Tenge(tiyn) }
 
 // ---------- public menu ----------
 

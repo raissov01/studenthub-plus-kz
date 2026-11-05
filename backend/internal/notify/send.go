@@ -167,6 +167,21 @@ func (d *Dispatcher) Order(ctx context.Context, userID int64, text string, opts 
 	return d.send(ctx, userID, CatCafe, text, "order", opts)
 }
 
+// OrderIn is Order for another transactional category (CatPrint): same rules, its own inbox label.
+func OrderIn(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
+	d, err := dispatcher(ctx)
+	if err != nil {
+		return "", err
+	}
+	return d.OrderIn(ctx, userID, c, text, opts)
+}
+func (d *Dispatcher) OrderIn(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
+	if !c.transactional() {
+		return "", errors.New("notify: OrderIn takes only a transactional category")
+	}
+	return d.send(ctx, userID, c, text, "order", opts)
+}
+
 // Send persists before dispatch. No category, including moderation, bypasses this path.
 func Send(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
 	d, err := dispatcher(ctx)
@@ -176,8 +191,8 @@ func Send(ctx context.Context, userID int64, c Category, text string, opts Opts)
 	return d.Send(ctx, userID, c, text, opts)
 }
 func (d *Dispatcher) Send(ctx context.Context, userID int64, c Category, text string, opts Opts) (Result, error) {
-	if c == CatCafe {
-		return "", errors.New("notify: café updates go through Order")
+	if c.transactional() {
+		return "", errors.New("notify: café and print updates go through Order / OrderIn")
 	}
 	return d.send(ctx, userID, c, text, "direct", opts)
 }

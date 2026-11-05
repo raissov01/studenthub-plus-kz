@@ -15,6 +15,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 type PayInfo struct {
@@ -101,16 +102,7 @@ func active(status string) bool { return status == "new" || status == "accepted"
 
 // event appends to the audit trail inside the caller's transaction.
 func event(ctx context.Context, tx pgx.Tx, orderID int64, actor *int64, kind, name string, detail map[string]any) error {
-	if detail == nil {
-		detail = map[string]any{}
-	}
-	raw, err := json.Marshal(detail)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, `insert into cafe_order_events (order_id, actor_id, actor_kind, kind, detail) values ($1, $2, $3, $4, $5)`,
-		orderID, actor, kind, name, string(raw))
-	return err
+	return shopkit.Event(ctx, tx, "cafe_order_events", "order_id", orderID, actor, kind, name, detail)
 }
 
 func uid(u *auth.User) *int64 { id := u.ID; return &id }
@@ -281,10 +273,7 @@ func createOrder(w http.ResponseWriter, r *http.Request, u *auth.User) {
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 
 // dayStart is Almaty midnight of now's day.
-func dayStart(now time.Time) time.Time {
-	l := now.In(almaty)
-	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, almaty)
-}
+func dayStart(now time.Time) time.Time { return shopkit.DayStart(now) }
 
 func loadOrder(ctx context.Context, q pgx.Tx, id int64) (*Order, error) {
 	return scanOrder(q.QueryRow(ctx, `select `+orderCols+orderFrom+`where o.id = $1`, id))

@@ -8,6 +8,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/cafe"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/printshop"
 )
 
 // Café pre-ordering «Кофе / Кофейня» (docs/cafe.md): menu, orders, staff board, admin, the kaspi-pos webhook;
@@ -19,7 +20,9 @@ func init() {
 
 // StartBackground starts the in-process jobs of the API: the café payment poller (the backstop for a lost
 // Kaspi webhook, pending → paid/failed, unpaid Kaspi orders cancelled). It does nothing while FEATURE_CAFE
-// is off. cmd/server calls it once.
+// is off. The print shop's poller does the same for print jobs and deletes old files (FEATURE_PRINT).
+// cmd/server calls it once.
 func StartBackground(ctx context.Context) {
 	cafe.StartPoller(ctx, time.Duration(config.Int("CAFE_POLL_SECONDS", 15))*time.Second)
+	printshop.StartPoller(ctx, time.Duration(config.Int("PRINT_POLL_SECONDS", 15))*time.Second)
 }

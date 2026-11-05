@@ -15,6 +15,7 @@ import (
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 )
 
 // Staff are cafe_staff rows (barista or manager of one café), not a user role: a student can work at a café.
@@ -172,21 +173,7 @@ func staffOrders(w http.ResponseWriter, r *http.Request, u *auth.User) {
 }
 
 // shortName: «Аружан С.», enough to call out at the counter.
-func shortName(name string) string {
-	parts := strings.Fields(name)
-	if len(parts) == 0 {
-		return ""
-	}
-	out := parts[0]
-	if utf8.RuneCountInString(out) > 20 {
-		out = string([]rune(out)[:20])
-	}
-	if len(parts) > 1 {
-		r, _ := utf8.DecodeRuneInString(parts[1])
-		out += " " + string(r) + "."
-	}
-	return out
-}
+func shortName(name string) string { return shopkit.ShortName(name) }
 
 // ---------- transitions ----------
 

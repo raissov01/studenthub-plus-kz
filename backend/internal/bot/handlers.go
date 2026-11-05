@@ -398,6 +398,9 @@ func plain(s string, max int) string {
 // the order's café. next is the follow-up button (empty data: none) and link an optional URL button.
 var CafeAction func(ctx context.Context, userID int64, value string) (toast string, nextLabel, nextData, linkLabel, link string, err error)
 
+// PrintAction is the print shop's staff button ("print:p<job id>" printing, "print:r<job id>" ready); same contract.
+var PrintAction func(ctx context.Context, userID int64, value string) (toast string, nextLabel, nextData, linkLabel, link string, err error)
+
 func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 	L := s.L()
 	parts := strings.Split(cq.Data, ":")
@@ -431,11 +434,15 @@ func (s *session) onCallback(ctx context.Context, cq *CallbackQuery) error {
 	}
 
 	switch action {
-	case "cafe":
-		if CafeAction == nil {
+	case "cafe", "print":
+		act := CafeAction
+		if action == "print" {
+			act = PrintAction
+		}
+		if act == nil {
 			return answer("", false)
 		}
-		toast, nextLabel, nextData, linkLabel, link, err := CafeAction(ctx, s.user.ID, value)
+		toast, nextLabel, nextData, linkLabel, link, err := act(ctx, s.user.ID, value)
 		if err != nil {
 			return err
 		}
