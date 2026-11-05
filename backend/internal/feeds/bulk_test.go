@@ -37,6 +37,8 @@ func pendingItem(t *testing.T, n int, deadline string, confidence float64) int64
 func TestBulkPublish(t *testing.T) {
 	testdb.Need(t)
 	exec(t, `insert into feed_sources (id, kind, handle, name) values ('src-bulk', 'tg_public', 'bulk_chan', 'Bulk') on conflict do nothing`)
+	// other tests of the package read every published item: leave nothing behind
+	t.Cleanup(func() { exec(t, `delete from feed_sources where id = 'src-bulk'`) })
 	actor := q1[int64](t, `insert into users (telegram_id, name, role) values (99001, 'Bulk admin', 'admin') returning id`)
 	good := pendingItem(t, 1, "2099-12-31", 0.95)
 	low := pendingItem(t, 2, "2099-12-31", 0.5)

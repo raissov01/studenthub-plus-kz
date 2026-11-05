@@ -131,6 +131,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/queue` | admin, moderator (admin_grants; role-granting kinds admin only) | no | yes | — |
 | GET | `/api/admin/reports` | admin, moderator (admin_grants) | no | yes | — |
 | GET | `/api/admin/summary` | admin | no | no (no input) | — |
+| GET | `/api/admin/system` | admin; process, pool and catalog statistics only, no query texts | no | no (no input) | — |
 | GET | `/api/admin/university-staff` | admin | no | no (no input) | b2b |
 | GET | `/api/admin/users` | admin (personal data) | no | yes | — |
 | GET | `/api/admin/users/{id}` | admin (personal data) | no | yes | — |

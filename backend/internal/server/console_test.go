@@ -3,11 +3,34 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
+
+// consoleRequest is launchRequest from its own client IP: these tests make many writes, and the shared per-IP
+// write budget (Postgres counters) must stay free for the other tests of the package.
+func consoleRequest(t *testing.T, method, path, body string, uid int64) *httptest.ResponseRecorder {
+	t.Helper()
+	r := httptest.NewRequest(method, path, strings.NewReader(body))
+	r.Header.Set("Origin", "http://localhost")
+	r.RemoteAddr = "198.51.100.77:4000"
+	if uid != 0 {
+		tok, err := auth.Sign(auth.Claims{UserID: uid, Version: 1, Exp: time.Now().Add(time.Hour).Unix()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	}
+	w := httptest.NewRecorder()
+	Handler().ServeHTTP(w, r)
+	return w
+}
 
 // isAdminOnly: the route is for admins and does not open to moderators (policy text starts with "admin" and
 // does not name the moderator scope).
@@ -31,15 +54,15 @@ func TestModeratorScopeOnEveryAdminRoute(t *testing.T) {
 		switch {
 		case isAdminOnly(route.Policy):
 			adminOnly++
-			if w := launchRequest(t, method, p, `{}`, mod); w.Code != 403 {
+			if w := consoleRequest(t, method, p, `{}`, mod); w.Code != 403 {
 				t.Errorf("moderator %s: %d %s", route.Pattern, w.Code, w.Body)
 			}
 		case strings.HasPrefix(route.Policy.Callers, "admin, moderator"):
 			modRoutes++
-			if w := launchRequest(t, method, p, `{}`, mod); w.Code == 401 || w.Code == 403 {
+			if w := consoleRequest(t, method, p, `{}`, mod); w.Code == 401 || w.Code == 403 {
 				t.Errorf("moderator refused on %s: %d %s", route.Pattern, w.Code, w.Body)
 			}
-			if w := launchRequest(t, method, p, `{}`, student); w.Code != 403 {
+			if w := consoleRequest(t, method, p, `{}`, student); w.Code != 403 {
 				t.Errorf("student %s: %d %s", route.Pattern, w.Code, w.Body)
 			}
 		}
@@ -58,7 +81,7 @@ func TestModeratorQueueSkipsRoleGrantingKinds(t *testing.T) {
 	var amb, opp int64
 	amb = int64(launchCount(t, `with s as (insert into submissions (kind, payload) values ('ambassador_application', '{}') returning id) select id from s`))
 	opp = int64(launchCount(t, `with s as (insert into submissions (kind, payload) values ('opportunity', '{"title":"Queue fixture"}') returning id) select id from s`))
-	w := launchRequest(t, "GET", "/api/admin/queue?limit=200", "", mod)
+	w := consoleRequest(t, "GET", "/api/admin/queue?limit=200", "", mod)
 	if w.Code != 200 {
 		t.Fatalf("queue: %d %s", w.Code, w.Body)
 	}
@@ -74,7 +97,7 @@ func TestModeratorQueueSkipsRoleGrantingKinds(t *testing.T) {
 	if seen[amb] || !seen[opp] || q.PendingByKind["ambassador_application"] != 0 {
 		t.Fatalf("moderator queue: %s", w.Body)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/admin/queue/%d/reject", amb), `{"reason":"not for moderators"}`, mod); w.Code != 403 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/queue/%d/reject", amb), `{"reason":"not for moderators"}`, mod); w.Code != 403 {
 		t.Fatalf("moderator decided an ambassador application: %d %s", w.Code, w.Body)
 	}
 }
@@ -85,78 +108,81 @@ func TestGrantBlockAndAudit(t *testing.T) {
 	admin := launchUser(t, "admin")
 	target := launchUser(t, "student")
 	// a grant needs a reason and is audited
-	if w := launchRequest(t, "POST", "/api/admin/grants", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":""}`, target), admin); w.Code != 400 {
+	if w := consoleRequest(t, "POST", "/api/admin/grants", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":""}`, target), admin); w.Code != 400 {
 		t.Fatalf("grant without reason: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", "/api/admin/grants", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":"runs the queue"}`, target), admin); w.Code != 200 {
+	if w := consoleRequest(t, "POST", "/api/admin/grants", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":"runs the queue"}`, target), admin); w.Code != 200 {
 		t.Fatalf("grant: %d %s", w.Code, w.Body)
 	}
 	if n := launchCount(t, `select count(*) from audit_log where action = 'scope_grant' and actor_id = $1 and target_id = $2 and reason = 'runs the queue'`, admin, target); n != 1 {
 		t.Fatalf("grant audit rows: %d", n)
 	}
-	w := launchRequest(t, "GET", "/api/me", "", target)
+	w := consoleRequest(t, "GET", "/api/me", "", target)
 	if !strings.Contains(w.Body.String(), `"scopes":["moderator"]`) {
 		t.Fatalf("me after grant: %s", w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/reports", "", target); w.Code != 200 {
+	if w := consoleRequest(t, "GET", "/api/admin/reports", "", target); w.Code != 200 {
 		t.Fatalf("moderator reports: %d", w.Code)
 	}
 	// revoke takes effect on the next request
-	if w := launchRequest(t, "POST", "/api/admin/grants/revoke", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":"term over"}`, target), admin); w.Code != 200 {
+	if w := consoleRequest(t, "POST", "/api/admin/grants/revoke", fmt.Sprintf(`{"userId":%d,"scope":"moderator","reason":"term over"}`, target), admin); w.Code != 200 {
 		t.Fatalf("revoke: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/reports", "", target); w.Code != 403 {
+	if w := consoleRequest(t, "GET", "/api/admin/reports", "", target); w.Code != 403 {
 		t.Fatalf("revoked moderator: %d", w.Code)
 	}
 	// block: writes refused (except account deletion / sign-out), reads still work; audited; admins cannot be blocked
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", admin), `{"reason":"self block"}`, admin); w.Code != 400 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", admin), `{"reason":"self block"}`, admin); w.Code != 400 {
 		t.Fatalf("self block: %d", w.Code)
 	}
 	other := launchUser(t, "admin")
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", other), `{"reason":"admin block"}`, admin); w.Code != 409 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", other), `{"reason":"admin block"}`, admin); w.Code != 409 {
 		t.Fatalf("admin block: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", target), `{"reason":"spam in Q&A"}`, admin); w.Code != 200 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/block", target), `{"reason":"spam in Q&A"}`, admin); w.Code != 200 {
 		t.Fatalf("block: %d %s", w.Code, w.Body)
 	}
-	w = launchRequest(t, "PATCH", "/api/me", `{"name":"Blocked writer"}`, target)
+	w = consoleRequest(t, "PATCH", "/api/me", `{"name":"Blocked writer"}`, target)
 	if w.Code != 403 || !strings.Contains(w.Body.String(), "account_restricted") {
 		t.Fatalf("blocked write: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/me", "", target); w.Code != 200 || !strings.Contains(w.Body.String(), `"blocked":true`) {
+	if w := consoleRequest(t, "GET", "/api/me", "", target); w.Code != 200 || !strings.Contains(w.Body.String(), `"blocked":true`) {
 		t.Fatalf("blocked read: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "POST", "/api/auth/logout", `{}`, target); w.Code != 200 {
+	if w := consoleRequest(t, "POST", "/api/auth/logout", `{}`, target); w.Code != 200 {
 		t.Fatalf("blocked logout: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/unblock", target), `{"reason":"appeal accepted"}`, admin); w.Code != 200 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/users/%d/unblock", target), `{"reason":"appeal accepted"}`, admin); w.Code != 200 {
 		t.Fatalf("unblock: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "PATCH", "/api/me", `{"name":"Writer again"}`, target); w.Code == 403 {
+	if w := consoleRequest(t, "PATCH", "/api/me", `{"name":"Writer again"}`, target); w.Code == 403 {
 		t.Fatalf("unblocked write: %d %s", w.Code, w.Body)
 	}
 	if n := launchCount(t, `select count(*) from audit_log where action in ('user_block', 'user_unblock', 'scope_revoke') and target_id = $1`, target); n != 3 {
 		t.Fatalf("block audit rows: %d", n)
 	}
 	// the audit screen lists it with names
-	w = launchRequest(t, "GET", fmt.Sprintf("/api/admin/audit?target=%d", target), "", admin)
+	w = consoleRequest(t, "GET", fmt.Sprintf("/api/admin/audit?target=%d", target), "", admin)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), "spam in Q\\u0026A") && !strings.Contains(w.Body.String(), "spam in Q&A") {
 		t.Fatalf("audit: %d %s", w.Code, w.Body)
 	}
 	// detail and list
-	if w := launchRequest(t, "GET", fmt.Sprintf("/api/admin/users/%d", target), "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"reportsAgainst"`) {
+	if w := consoleRequest(t, "GET", fmt.Sprintf("/api/admin/users/%d", target), "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"reportsAgainst"`) {
 		t.Fatalf("detail: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/users?role=student&active=30&sort=active&page=1&limit=10", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"total"`) {
+	if w := consoleRequest(t, "GET", "/api/admin/users?role=student&active=30&sort=active&page=1&limit=10", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"total"`) {
 		t.Fatalf("list: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/users?active=5", "", admin); w.Code != 400 {
+	if w := consoleRequest(t, "GET", "/api/admin/users?active=5", "", admin); w.Code != 400 {
 		t.Fatalf("bad filter: %d", w.Code)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/dashboard", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"dau"`) {
+	if w := consoleRequest(t, "GET", "/api/admin/dashboard", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"dau"`) {
 		t.Fatalf("dashboard: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/voice", "", admin); w.Code != 200 {
+	if w := consoleRequest(t, "GET", "/api/admin/system", "", admin); w.Code != 200 || !strings.Contains(w.Body.String(), `"onlineNow"`) {
+		t.Fatalf("system: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "GET", "/api/admin/voice", "", admin); w.Code != 200 {
 		t.Fatalf("voice: %d %s", w.Code, w.Body)
 	}
 }
@@ -167,7 +193,7 @@ func TestExportsAreExcelFriendlyAndAudited(t *testing.T) {
 	admin := launchUser(t, "admin")
 	launchExec(t, `update users set name = '=HYPERLINK("x")' where id = $1`, launchUser(t, "student"))
 	for _, kind := range []string{"users", "audit", "cafe-orders", "print-jobs", "feedback", "surveys"} {
-		w := launchRequest(t, "GET", "/api/admin/export/"+kind+".csv", "", admin)
+		w := consoleRequest(t, "GET", "/api/admin/export/"+kind+".csv", "", admin)
 		if w.Code != 200 {
 			t.Fatalf("%s: %d %s", kind, w.Code, w.Body)
 		}
@@ -182,7 +208,7 @@ func TestExportsAreExcelFriendlyAndAudited(t *testing.T) {
 	if n := launchCount(t, `select count(*) from audit_log where action = 'export' and actor_id = $1`, admin); n != 6 {
 		t.Fatalf("export audit rows: %d", n)
 	}
-	if w := launchRequest(t, "GET", "/api/admin/export/secrets.csv", "", admin); w.Code != 404 {
+	if w := consoleRequest(t, "GET", "/api/admin/export/secrets.csv", "", admin); w.Code != 404 {
 		t.Fatalf("unknown export: %d", w.Code)
 	}
 }
@@ -200,7 +226,7 @@ func TestShopWorkspaceScope(t *testing.T) {
 	launchExec(t, `insert into cafe_orders (cafe_id, user_id, items, total, pickup_at, pickup_code, payment_method, idem_key, status, closed_at)
 		values ($1, $2, '[{"itemId":1}]', 150000, now(), '123', 'pickup', 'consoletest1', 'picked_up', now())`, cafe, newbie)
 	stats := func(uid int64, id int64) (int, map[string]any) {
-		w := launchRequest(t, "GET", fmt.Sprintf("/api/console/cafe/%d/stats", id), "", uid)
+		w := consoleRequest(t, "GET", fmt.Sprintf("/api/console/cafe/%d/stats", id), "", uid)
 		var out map[string]any
 		_ = json.Unmarshal(w.Body.Bytes(), &out)
 		return w.Code, out
@@ -215,29 +241,29 @@ func TestShopWorkspaceScope(t *testing.T) {
 	if code, _ := stats(outsider, cafe); code != 403 {
 		t.Fatalf("other café's barista: %d", code)
 	}
-	if w := launchRequest(t, "GET", fmt.Sprintf("/api/console/print/%d/stats", shop), "", manager); w.Code != 403 {
+	if w := consoleRequest(t, "GET", fmt.Sprintf("/api/console/print/%d/stats", shop), "", manager); w.Code != 403 {
 		t.Fatalf("café manager on the print shop: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d"}`, newbie), barista); w.Code != 403 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d"}`, newbie), barista); w.Code != 403 {
 		t.Fatalf("barista added staff: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d","role":"manager"}`, newbie), manager); w.Code != 403 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d","role":"manager"}`, newbie), manager); w.Code != 403 {
 		t.Fatalf("manager added a manager: %d", w.Code)
 	}
-	if w := launchRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d","reason":"new shift"}`, newbie), manager); w.Code != 200 {
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/console/cafe/%d/team", cafe), fmt.Sprintf(`{"user":"%d","reason":"new shift"}`, newbie), manager); w.Code != 200 {
 		t.Fatalf("manager added a barista: %d %s", w.Code, w.Body)
 	}
-	if w := launchRequest(t, "DELETE", fmt.Sprintf("/api/console/cafe/%d/team/%d", other, outsider), "", manager); w.Code != 403 {
+	if w := consoleRequest(t, "DELETE", fmt.Sprintf("/api/console/cafe/%d/team/%d", other, outsider), "", manager); w.Code != 403 {
 		t.Fatalf("manager removed staff of another café: %d", w.Code)
 	}
-	if w := launchRequest(t, "DELETE", fmt.Sprintf("/api/console/cafe/%d/team/%d", cafe, barista), "", manager); w.Code != 200 {
+	if w := consoleRequest(t, "DELETE", fmt.Sprintf("/api/console/cafe/%d/team/%d", cafe, barista), "", manager); w.Code != 200 {
 		t.Fatalf("remove: %d %s", w.Code, w.Body)
 	}
 	if n := launchCount(t, `select count(*) from audit_log where actor_id = $1 and action in ('staff_grant', 'staff_revoke') and meta->>'shop' = 'cafe'`, manager); n != 2 {
 		t.Fatalf("team audit rows: %d", n)
 	}
 	// the panel list names the café for its manager and nothing for the outsider's moderation
-	w := launchRequest(t, "GET", "/api/console/me", "", manager)
+	w := consoleRequest(t, "GET", "/api/console/me", "", manager)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"role":"manager"`) || !strings.Contains(w.Body.String(), `"moderation":null`) {
 		t.Fatalf("console me: %d %s", w.Code, w.Body)
 	}

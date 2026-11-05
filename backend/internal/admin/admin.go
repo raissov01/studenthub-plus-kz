@@ -44,6 +44,7 @@ func Routes(mux httpx.Router) {
 	get("GET /api/admin/grants", grants)
 	get("GET /api/admin/audit", auditLog)
 	get("GET /api/admin/voice", voice)
+	get("GET /api/admin/system", system)
 	get("GET /api/admin/export/{file}", export)
 	post("POST /api/admin/role", setRole)
 	post("POST /api/admin/users/{id}/block", block)

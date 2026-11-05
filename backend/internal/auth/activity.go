@@ -31,7 +31,35 @@ var (
 // ActiveDay is the Asia/Almaty calendar day of t ("2026-11-06").
 func ActiveDay(t time.Time) string { return t.In(almaty).Format(time.DateOnly) }
 
+// presence: when each account last made a signed-in request (this process only, memory only). Adapted from the
+// owner's StudyWithRaissov admin (internal/presence): "online now" = seen in the last OnlineWindow.
+var (
+	presenceMu sync.Mutex
+	presence   = map[int64]time.Time{}
+)
+
+// OnlineWindow is how recent a request must be to count as online.
+const OnlineWindow = 5 * time.Minute
+
+// OnlineCount counts accounts seen within OnlineWindow and forgets older ones.
+func OnlineCount(now time.Time) int {
+	presenceMu.Lock()
+	defer presenceMu.Unlock()
+	n := 0
+	for id, at := range presence {
+		if now.Sub(at) > OnlineWindow {
+			delete(presence, id)
+			continue
+		}
+		n++
+	}
+	return n
+}
+
 func recordActive(ctx context.Context, userID int64, now time.Time) {
+	presenceMu.Lock()
+	presence[userID] = now
+	presenceMu.Unlock()
 	day := ActiveDay(now)
 	activeMu.Lock()
 	if day != activeDay { // a new day: forget yesterday's accounts

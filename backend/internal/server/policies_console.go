@@ -15,6 +15,7 @@ var consolePolicies = map[string]RoutePolicy{
 	"POST /api/admin/grants":                       {"admin (reason required, audited)", "yes", "yes", "—"},
 	"POST /api/admin/grants/revoke":                {"admin (reason required, audited)", "yes", "yes", "—"},
 	"POST /api/admin/feeds/items/bulk":             {"admin, moderator (admin_grants); the single approve/reject path per item, max 500, expired skipped, one audit row", "yes (+ 20/user/10 min)", "yes", "feeds"},
+	"GET /api/admin/system":                        {"admin; process, pool and catalog statistics only, no query texts", "no", "no (no input)", "—"},
 	"GET /api/console/me":                          {"signed-in (own panels and their counts only)", "no", "no (no input)", "—"},
 	"GET /api/console/cafe/{id}/stats":             {"staff of the café (today's board numbers); its manager, admin (+ revenue by day, Kaspi status, team)", "no", "yes", "cafe"},
 	"POST /api/console/cafe/{id}/team":             {"manager of the café (baristas only), admin (managers too); not self; audited", "yes", "yes", "cafe"},
