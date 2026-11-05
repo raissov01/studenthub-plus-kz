@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/shopkit"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/testdb"
 )
 
@@ -114,10 +115,18 @@ func TestEstimateEndpointEtaReminderAndReport(t *testing.T) {
 	type reportReply struct {
 		Report Report `json:"report"`
 	}
-	rep := decode[reportReply](t, do(t, "GET", fmt.Sprintf("/api/print/staff/report?shop=%d", f.shop), f.operator, nil)).Report
+	// the report is of one Almaty day: pin both jobs to yesterday so the test never straddles midnight
+	day := shopkit.DayStart(time.Now()).AddDate(0, 0, -1)
+	exec(t, `update print_jobs set created_at = $2, queued_at = $2 where shop_id = $1`, f.shop, day.Add(10*time.Hour))
+	exec(t, `update print_jobs set ready_at = $2, closed_at = $3 where id = $1`, first.ID, day.Add(10*time.Hour+30*time.Minute), day.Add(11*time.Hour))
+	rep := decode[reportReply](t, do(t, "GET", fmt.Sprintf("/api/print/staff/report?shop=%d&day=%s", f.shop, day.Format("2006-01-02")), f.operator, nil)).Report
 	if rep.Received != 2 || rep.PickedUp != 1 || rep.Open != 1 || rep.RevenueCash != first.Total || rep.RevenueKaspi != 0 || rep.PagesBW != 50 || rep.PagesColor != 0 ||
-		rep.Sheets != 50 || rep.WaitMedianMin == nil || rep.Day != time.Now().In(time.FixedZone("", 5*3600)).Format("2006-01-02") {
+		rep.Sheets != 50 || rep.WaitMedianMin == nil || *rep.WaitMedianMin != 30 || rep.Day != day.Format("2006-01-02") {
 		t.Fatalf("report: %+v", rep)
+	}
+	// today: nothing came in or went out yet, the open job still counts
+	if today := decode[reportReply](t, do(t, "GET", fmt.Sprintf("/api/print/staff/report?shop=%d", f.shop), f.operator, nil)).Report; today.Received != 0 || today.PickedUp != 0 || today.Open != 1 {
+		t.Fatalf("today: %+v", today)
 	}
 	if w := do(t, "GET", fmt.Sprintf("/api/print/staff/report?shop=%d", f.shop), student, nil); w.Code != 403 {
 		t.Fatalf("student report: %d", w.Code)

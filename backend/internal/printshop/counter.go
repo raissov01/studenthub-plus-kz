@@ -164,7 +164,7 @@ func lookupJobs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	if id, code, ok := parseToken(q); ok {
 		where, args, byToken = `j.id = $2 and j.pickup_code = $3`, []any{id, code}, true
 	} else if reCode.MatchString(q) {
-		where, args = `j.pickup_code = $2 and (j.status in ('new', 'printing', 'ready') or j.created_at >= $3)`, []any{q, shopkit.DayStart(Now())}
+		where, args = `j.pickup_code = $2 and (j.status in ('new', 'printing', 'ready') or j.closed_at >= $3)`, []any{q, shopkit.DayStart(Now())}
 	} else {
 		httpx.JSON(w, http.StatusOK, map[string]any{"jobs": []*Job{}, "valid": false})
 		return
