@@ -33,6 +33,7 @@ func Routes(mux httpx.Router) {
 	mux.Handle("GET /api/admin/feeds/items", mod(listItems))
 	mux.Handle("POST /api/admin/feeds/sources/{id}", write(setSource))
 	mux.Handle("POST /api/admin/feeds/items/{id}/unpublish", modWrite(unpublish))
+	mux.Handle("POST /api/admin/feeds/items/bulk", modWrite(bulk))
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {
@@ -127,6 +128,7 @@ type ItemRow struct {
 	Status       string          `json:"status"`
 	Category     string          `json:"category"`
 	Source       string          `json:"source"`
+	SourceID     string          `json:"source_id"`
 	Data         json.RawMessage `json:"data"`
 	Confidence   float64         `json:"confidence"`
 	Auto         bool            `json:"auto"`
@@ -149,7 +151,7 @@ func listItems(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	}
 	items := []ItemRow{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `select i.id, i.status, i.category, s.name, i.data, i.confidence, i.auto, i.submission_id,
+		rows, err := tx.Query(ctx, `select i.id, i.status, i.category, s.name, s.id, i.data, i.confidence, i.auto, i.submission_id,
 				i.deadline::text, i.created_at, i.published_at, i.extra_sources
 			from feed_items i join feed_sources s on s.id = i.source_id
 			where i.status = $1 order by coalesce(i.published_at, i.created_at) desc, i.id desc limit 100`, status)
@@ -159,7 +161,7 @@ func listItems(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 		defer rows.Close()
 		for rows.Next() {
 			var it ItemRow
-			if err := rows.Scan(&it.ID, &it.Status, &it.Category, &it.Source, &it.Data, &it.Confidence, &it.Auto, &it.SubmissionID,
+			if err := rows.Scan(&it.ID, &it.Status, &it.Category, &it.Source, &it.SourceID, &it.Data, &it.Confidence, &it.Auto, &it.SubmissionID,
 				&it.Deadline, &it.CreatedAt, &it.PublishedAt, &it.Extra); err != nil {
 				return err
 			}

@@ -296,6 +296,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/employers/{id}/restore` | admin | yes | yes | b2b |
 | POST | `/api/admin/employers/{id}/suspend` | admin | yes | yes | b2b |
 | POST | `/api/admin/feedback/recipients` | admin | yes | yes | feedback |
+| POST | `/api/admin/feeds/items/bulk` | admin, moderator (admin_grants); the single approve/reject path per item, max 500, expired skipped, one audit row | yes (+ 20/user/10 min) | yes | feeds |
 | POST | `/api/admin/feeds/items/{id}/unpublish` | admin, moderator (admin_grants) | yes | yes | feeds |
 | POST | `/api/admin/feeds/sources/{id}` | admin | yes | yes | feeds |
 | POST | `/api/admin/grants` | admin (reason required, audited) | yes | yes | — |
