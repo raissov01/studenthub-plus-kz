@@ -5,7 +5,7 @@
    only when the owner accepts, 30-day auto-close, complaints. Reading needs an account. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail } from '@/components/desk';
+import { DeskDetail, DeskList, DeskForm } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, ymd } from '@/components/views/common';
@@ -107,14 +107,14 @@ function RMHome() {
   const list = useLoad<{ listings: RMListing[]; needListing?: boolean }>('/api/roommates/listings?' + qs.toString());
   const reload = () => { me.reload(); list.reload(); };
   const mine = me.data?.listing;
-  return (
-    <>
+  const actions = (
       <div className="btn-row">
         {!mine ? <button className="btn" type="button" onClick={() => go('roommates:new')}><Icon n="plus" s={18} /> {tt('Хабарландыру беру', 'Разместить объявление')}</button> : null}
         <button className="btn ghost" type="button" onClick={() => go('roommates:requests')}>{tt('Сұраулар', 'Запросы')}</button>
       </div>
-      {me.data ? <GenderCard me={me.data} reload={reload} /> : null}
-      {mine ? (
+  );
+  const gender = me.data ? <GenderCard me={me.data} reload={reload} /> : null;
+  const mineEl = mine ? (
         <>
           <SectionHead title={tt('Менің хабарландыруым', 'Моё объявление')} />
           <ListingCard l={mine} />
@@ -122,7 +122,9 @@ function RMHome() {
             yes={async () => { try { await api(`/api/roommates/listings/${mine.id}/close`, { method: 'POST', lang }); reload(); } catch (e) { toast(errText(e)); } }} />)}>
             {tt('Хабарландыруды жабу', 'Закрыть объявление')}</button>
         </>
-      ) : null}
+      ) : null;
+  const filters = (
+    <>
       <Seg items={[['all', tt('Барлығы', 'Все')], ['match', tt('Маған сай', 'Подходят мне')]]} cur={tab} onPick={k => setTab(k as typeof tab)} />
       {tab === 'all' ? (
         <div className="chips">
@@ -133,6 +135,10 @@ function RMHome() {
           <Chip pressed={housing === 'flat'} onClick={() => setHousing(h => (h === 'flat' ? 'all' : 'flat'))}>{tt('Пәтер', 'Квартира')}</Chip>
         </div>
       ) : null}
+    </>
+  );
+  const results = (
+    <>
       <ErrorLine err={list.err || me.err} />
       {!list.data && !list.err ? <Loading /> : list.data?.needListing ? (
         <Empty icon="bed" action={<button className="btn secondary" type="button" onClick={() => go('roommates:new')}>{tt('Хабарландыру беру', 'Разместить объявление')}</button>}>
@@ -145,11 +151,18 @@ function RMHome() {
       })() : list.data ? (
         <Empty icon="bed">{tt('Әзірге сәйкес хабарландыру жоқ. Өзіңіз жариялаңыз — басқалар сізді табады.', 'Подходящих объявлений пока нет. Разместите своё — вас найдут.')}</Empty>
       ) : null}
+    </>
+  );
+  const foot = (
+    <>
       {me.data ? <p className="tiny muted">{tt(`Бүгін ${me.data.requestsToday}/${me.data.dailyLimit} сұрау.`, `Сегодня запросов: ${me.data.requestsToday}/${me.data.dailyLimit}.`)}</p> : null}
       <p className="note">{tt('Пәтерді көрмей ақша аудармаңыз. Алғашқы кездесу — адам көп жерде. Ақша сұраса не күдікті болса — шағымданыңыз.',
         'Не переводите деньги, не увидев жильё. Первая встреча — в людном месте. Если просят деньги или что-то подозрительно — пожалуйтесь.')}</p>
     </>
   );
+  // a laptop: posting, the requests and the filters in a left panel; my listing and the others beside them
+  if (desktop) return <DeskList label={tt('Сүзгілер', 'Фильтры')} filters={<>{actions}{filters}{gender}{foot}</>}>{mineEl}{results}</DeskList>;
+  return <>{actions}{gender}{mineEl}{filters}{results}{foot}</>;
 }
 
 function RMListingView({ id }: { id: string }) {
@@ -191,6 +204,12 @@ function RMNew() {
   const problem = rmProblem(draft, me.data.gender, today);
   const toggle = (h: string) => setF(x => ({ ...x, habits: x.habits.includes(h) ? x.habits.filter(y => y !== h) : x.habits.length >= RM_LIMITS.habits ? x.habits : [...x.habits, h] }));
   return (
+    <DeskForm title={tt('Қауіпсіздік', 'Безопасность')} tips={[
+      tt('Байланыс тек екі жақ келіскенде ашылады.', 'Контакты открываются только по согласию обеих сторон.'),
+      tt('Мәтінге телефон не сілтеме жазбаңыз.', 'Не пишите в тексте телефон или ссылки.'),
+      tt('Пәтерді көрмей ақша аудармаңыз.', 'Не переводите деньги, не увидев жильё.'),
+      tt('Хабарландыру 30 күннен соң өзі жабылады.', 'Объявление закроется само через 30 дней.'),
+    ]}>
     <form className="form" noValidate onSubmit={async e => {
       e.preventDefault();
       setTried(true);
@@ -229,6 +248,7 @@ function RMNew() {
       <button className="btn block" type="submit" disabled={busy}>{tt('Жариялау', 'Опубликовать')}</button>
       <p className="tiny muted">{tt('Хабарландыру 30 күннен соң өзі жабылады.', 'Объявление закроется само через 30 дней.')}</p>
     </form>
+    </DeskForm>
   );
 }
 

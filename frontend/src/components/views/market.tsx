@@ -4,7 +4,7 @@
    username check, up to 3 photos resized in the browser), /market/mine owner actions, and the search results block. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail, DeskList } from '@/components/desk';
+import { DeskDetail, DeskList, DeskForm } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { agoDays, ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useFeature, useLoad, useNeedAccount, ymd } from '@/components/views/common';
@@ -226,6 +226,12 @@ function MarketNew() {
   const ok = f.title.trim().length >= 1 && f.category && f.condition && !up;
   const set = (k: keyof typeof f, v: string) => setF(x => ({ ...x, [k]: v }));
   return (
+    <DeskForm title={tt('Қалай беру керек', 'Как отдать вещь')} tips={[
+      tt('Тек тегін: баға жазылмайды.', 'Только бесплатно: цену не указывают.'),
+      tt('Анық фото қосыңыз — затты тезірек алады.', 'Добавьте чёткое фото — вещь заберут быстрее.'),
+      tt('Алу орнын университет аумағында көрсетіңіз.', 'Укажите место передачи на территории университета.'),
+      tt('Алушылар сізге Telegram-да жазады.', 'Получатели напишут вам в Telegram.'),
+    ]}>
     <form className="form" onSubmit={async e => {
       e.preventDefault();
       if (!ok || busy) return;
@@ -276,6 +282,7 @@ function MarketNew() {
       <ErrorLine err={err} />
       <button className="btn block" type="submit" disabled={!ok || busy}>{tt('Жариялау', 'Опубликовать')}</button>
     </form>
+    </DeskForm>
   );
 }
 

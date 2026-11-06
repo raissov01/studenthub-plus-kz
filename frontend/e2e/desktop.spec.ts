@@ -160,7 +160,8 @@ test('event page: description in the column, facts and sign-up in a right rail',
     status: 'published', created_by: 1, checkin_started_at: null, finished_at: null, created_at: '2029-12-01', registered: 3, waitlist: 0, checked_in: 0, spots_left: null, can_manage: false,
   };
   await page.route('**/api/config', r => r.fulfill({ json: { ...config, features: { ...config.features, events: true } } }));
-  await page.route(/\/api\/events(\?.*)?$/, r => r.fulfill({ json: { events: [ev, { ...ev, id: 9002, title_kk: 'Ұқсас кездесу' }] } }));
+  const lists: string[] = [];
+  await page.route(/\/api\/events(\?.*)?$/, r => { lists.push(new URL(r.request().url()).search); return r.fulfill({ json: { events: [ev, { ...ev, id: 9002, title_kk: 'Ұқсас кездесу' }] } }); });
   await page.route(/\/api\/events\/9001(\?.*)?$/, r => r.fulfill({ json: { event: ev } }));
   await page.route(/\/api\/events\/9001\/attendees/, r => r.fulfill({ json: { count: 3 } }));
   await onboard(page, 'kk');
@@ -170,7 +171,35 @@ test('event page: description in the column, facts and sign-up in a right rail',
   await expect(rail.getByRole('button', { name: 'Тіркелу' })).toBeVisible();
   await expect(page.locator('.desk-main')).toContainText('Сипаттама мәтіні');
   await expect(page.locator('.ev-similar')).toContainText('Ұқсас кездесу');
+  // similar events: a capped, same-university list from the server, not every event
+  expect(lists).toContain('?limit=12&university=' + encodeURIComponent('Сейфуллин университеті'));
   const main = (await page.locator('.desk-main').boundingBox())!, r = (await rail.boundingBox())!;
   expect(r.x).toBeGreaterThan(main.x + main.width - 1);
   await fits(page);
+});
+
+test('clubs: search and filters in a left panel; the cart button is a solid primary action', async ({ page }) => {
+  const base = { name_ru: null, summary_ru: null, about_kk: null, about_ru: null, university: 'U', room: null, schedule_ru: null, leader_title_ru: null, leader_contact: null, leader_contact_public: false, telegram_url: null, instagram_url: null, join_mode: 'request', join_link: null, recruiting: false, status: 'active', source_url: null, verified_at: null, schedule_kk: null, leader_title_kk: null, building_id: null, summary_kk: null, members: 0 };
+  await page.route('**/api/config', r => r.fulfill({ json: { ...config, features: { ...config.features, clubs: true, cafe: true } } }));
+  await page.route(/\/api\/clubs(\?.*)?$/, r => r.fulfill({ json: { clubs: [{ ...base, id: 1, name_kk: 'Дебат клубы', direction: 'debate' }, { ...base, id: 2, name_kk: 'Спорт клубы', direction: 'sport' }] } }));
+  await onboard(page, 'kk');
+  await page.goto('/clubs');
+  const panel = page.getByRole('complementary', { name: 'Сүзгілер' });
+  await expect(panel.locator('#clubQ')).toBeVisible();
+  const list = (await page.locator('#clubList').boundingBox())!, side = (await panel.boundingBox())!;
+  expect(list.x).toBeGreaterThan(side.x + side.width - 1);
+  await panel.locator('#clubQ').fill('Спорт');
+  await expect(page.locator('#clubList .club-card')).toHaveCount(1);
+  await fits(page);
+
+  const ref = { cafes: [cafeBase] };
+  await cafeApi(page, ref);
+  await page.goto('/cafe');
+  await page.getByRole('button', { name: 'Латте: себетке қосу' }).click();
+  const btn = page.locator('#cafeCart');
+  const [bg, primary] = await btn.evaluate(el => [getComputedStyle(el).backgroundColor, getComputedStyle(document.documentElement).getPropertyValue('--primary')]);
+  expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+  expect(primary.trim()).not.toBe('');
+  const solid = await btn.evaluate(el => { const p = document.createElement('span'); p.style.color = 'var(--primary)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return getComputedStyle(el).backgroundColor === c; });
+  expect(solid).toBe(true);
 });

@@ -2,7 +2,7 @@
 /* Mentors (prompt 07): /mentors (ask for a mentor, honest numbers, group meetings), /mentors/become,
    /mentors/me (own mentor profile, pairs with check-ins, end, report), and the manual matching board used by
    /admin/mentors (admin) and /ambassador/mentors (ambassador team lead, own university only). */
-import { DeskDetail } from '@/components/desk';
+import { DeskDetail, DeskForm } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { useState } from 'react';
 import { useApp } from '@/components/app';
@@ -144,6 +144,12 @@ function Become() {
   const adult = u.isAdult === true;
   const courseOk = u.course != null && u.course >= 2 && u.course <= 4;
   return (
+    <DeskForm title={tt('Ментор кім', 'Кто такой ментор')} tips={[
+      tt('2–4 курс студенті не түлек, 18 жастан асқан.', 'Студент 2–4 курса или выпускник, старше 18 лет.'),
+      tt('Бірінші курсқа алғашқы айда көмектеседі: оқу, жатақхана, құжаттар.', 'Помогает первокурснику в первый месяц: учёба, общежитие, документы.'),
+      tt('Неше студент алатыныңызды өзіңіз шешесіз.', 'Сколько студентов взять, решаете сами.'),
+      tt('Амбассадор сізді студентпен жұптайды.', 'Амбассадор подберёт вам студента.'),
+    ]}>
     <form className="form" onSubmit={async e => {
       e.preventDefault();
       if (!areas.length || busy) return;
@@ -173,6 +179,7 @@ function Become() {
       <ErrorLine err={err} />
       <button className="btn block" type="submit" disabled={!areas.length || busy || !adult || !(courseOk || alumni)}>{tt('Өтінім жіберу', 'Отправить заявку')}</button>
     </form>
+    </DeskForm>
   );
 }
 

@@ -3,6 +3,8 @@
    suggestions, team, resources, referral link, workload + pause, renewal banner), /ambassador/rating,
    /certificate/<code>, the «Мүмкіндік ұсыну» / «Пайдалы орын» suggestion sheets, and the report button for
    ambassador-published records. */
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { useState } from 'react';
 import { copyText, useApp } from '@/components/app';
 import { Chip, Empty, Icon, Row, Seg, SectionHead } from '@/components/ui';
@@ -118,6 +120,7 @@ function Stat({ v, l }: { v: Count; l: string }) {
 
 function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
   const { tt, lang, toast, go, openSheet } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const mentorsOn = useFeature('mentors');
   const eventsOn = useFeature('events');
@@ -131,7 +134,7 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
     try { await fn(); toast(done); reload(); } catch (e) { toast(errText(e)); } finally { setBusy(false); }
   };
   const s = stats.data;
-  return (
+  const termEl = (
     <>
       <div className="card">
         <span className="eyebrow">{t.role_in_team === 'lead' ? tt('Команда жетекшісі', 'Лидер команды') : tt('Команда мүшесі', 'Участник команды')}</span>
@@ -139,6 +142,10 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
         <span className="small muted">{tt(`Мерзімі: ${ymd(t.term_end)} дейін (${c.days_left} күн)`, `Срок: до ${ymd(t.term_end)} (${c.days_left} дн.)`)}</span>
         {rating.data?.mine ? <span className="badges"><span className="badge b-sun"><Icon n="award" s={12} /> {tt(`Университетіміз ${rating.data.mine.rank}-орында`, `Наш университет на ${rating.data.mine.rank}-м месте`)}</span></span> : null}
       </div>
+    </>
+  );
+  const renewEl = (
+    <>
       {c.renewal.ask ? (
         <div className="card banner"><b>{tt('Мерзім бітуге жақын. Жалғастырасың ба?', 'Срок скоро закончится. Продолжишь?')}</b>
           <div className="btn-row">
@@ -146,6 +153,10 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
             <button className="btn ghost" type="button" disabled={busy} onClick={() => run(() => api('/api/ambassador/renew', { method: 'POST', body: { continue: false }, lang }), tt('Рақмет! Мерзім соңында рөл аяқталады', 'Спасибо! Роль завершится в конце срока'))}>{tt('Жоқ', 'Нет')}</button>
           </div></div>
       ) : null}
+    </>
+  );
+  const uniEl = (
+    <>
       <section className="section"><SectionHead title={tt('Менің университетім', 'Мой университет')} />
         {s ? (
           <>
@@ -162,6 +173,10 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
           </>
         ) : stats.err ? <ErrorLine err={stats.err} /> : <Loading />}
       </section>
+    </>
+  );
+  const addEl = (
+    <>
       <section className="section"><SectionHead title={tt('Қосу', 'Добавить')} />
         <div className="group">
           <Row onClick={() => openSheet(<SuggestSheet kind="opportunity" onDone={subs.reload} />)} icon="globe" title={tt('Мүмкіндік', 'Возможность')} sub={tt('Грант, тағылымдама, байқау', 'Грант, стажировка, конкурс')} />
@@ -170,6 +185,10 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
           {mentorsOn && t.role_in_team === 'lead' ? <Row go="ambassador:mentors" icon="mentor" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}
         </div>
       </section>
+    </>
+  );
+  const refEl = (
+    <>
       <section className="section"><SectionHead title={tt('Шақыру сілтемесі', 'Ссылка-приглашение')} />
         <div className="card">
           <span className="code" style={{ overflowWrap: 'anywhere' }}>{c.referral.link}</span>
@@ -177,6 +196,10 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
           <button className="btn secondary" type="button" onClick={() => copyText(c.referral.link, toast, tt)}><Icon n="copy" s={18} /> {tt('Көшіру', 'Скопировать')}</button>
         </div>
       </section>
+    </>
+  );
+  const loadEl = (
+    <>
       <section className="section"><SectionHead title={tt('Жүктеме', 'Нагрузка')} />
         <div className="card">
           <span className="small">{tt(`Осы апта: ${w.items_this_week} / ${w.hours_per_week} пайдалы әрекет (≈1 сағат әрқайсысы)`, `На этой неделе: ${w.items_this_week} из ${w.hours_per_week} полезных действий (≈1 час каждое)`)}</span>
@@ -188,23 +211,51 @@ function Cabinet_({ c, reload }: { c: Cabinet; reload: () => void }) {
           <span className="tiny muted">{tt('Уәде еткен сағаттан көп тапсырма берілмейді.', 'Заданий не больше обещанных часов.')}</span>
         </div>
       </section>
+    </>
+  );
+  const subsEl = (
+    <>
       <section className="section"><SectionHead title={tt('Менің ұсыныстарым', 'Мои предложения')} />
         <MySubmissions list={subs.data?.submissions ?? null} />
       </section>
+    </>
+  );
+  const teamEl = (
+    <>
       <section className="section"><SectionHead title={tt('Команда', 'Команда')} />
         <div className="group">{c.team.map((m, i) => (
           <Row key={i} icon="user" title={m.name + (m.username ? ` · @${m.username}` : '')} chev={false}
             sub={`${m.role_in_team === 'lead' ? tt('жетекші', 'лидер') : tt('мүше', 'участник')} · ${tt(`${m.hours_per_week} сағ/апта`, `${m.hours_per_week} ч/нед`)} · ${tt(`${ymd(m.term_end)} дейін`, `до ${ymd(m.term_end)}`)}${m.paused ? ' · ' + tt('демалыста', 'отдыхает') : ''}`} />
         ))}</div>
       </section>
+    </>
+  );
+  const resEl = (
+    <>
       <section className="section"><SectionHead title={tt('Ресурстар', 'Ресурсы')} />
         <div className="group">{c.resources.length ? c.resources.map((r, i) => <Row key={i} href={r.url} icon="file" title={lang !== 'kk' ? r.title_ru || r.title_kk : r.title_kk} />)
           : <div className="empty">{tt('Нұсқаулық пен үлгілер жақында қосылады', 'Инструкции и шаблоны появятся скоро')}</div>}</div>
       </section>
+    </>
+  );
+  const certEl = (
+    <>
       {t.cert_code ? <button className="btn ghost block" type="button" onClick={() => go('certificate:' + t.cert_code)}><Icon n="award" s={18} /> {tt('Менің сертификатым', 'Мой сертификат')}</button> : null}
+    </>
+  );
+  const rateEl = (
+    <>
       <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => go('ambassador:rating')}>{tt('Университеттер рейтингі', 'Рейтинг университетов')}</button>
     </>
   );
+  // a laptop: the university's numbers, adding, my suggestions and the team in the column; my term, the invite
+  // link, the workload and the resources in the rail
+  if (desktop) return (
+    <DeskDetail label={tt('Амбассадор кабинеті', 'Кабинет амбассадора')}
+      main={<>{renewEl}{uniEl}{addEl}{subsEl}{teamEl}</>}
+      rail={<>{termEl}{refEl}{loadEl}{resEl}{certEl}{rateEl}</>} />
+  );
+  return <>{termEl}{renewEl}{uniEl}{addEl}{refEl}{loadEl}{subsEl}{teamEl}{resEl}{certEl}{rateEl}</>;
 }
 
 export function MySubmissions({ list }: { list: Submission[] | null }) {
@@ -389,12 +440,12 @@ export function CertificateView({ code }: { code: string }) {
 }
 function Certificate_({ code }: { code: string }) {
   const { tt } = useApp();
+  const desktop = useDesktop();
   const { data, code: ec, err } = useLoad<Certificate>(`/api/certificates/${encodeURIComponent(code)}`);
   if (ec === 'not_found') return <NotFound />;
   if (err) return <ErrorLine err={err} />;
   if (!data) return <Loading />;
-  return (
-    <>
+  const article = (
       <article className="cert">
         <span className="eyebrow">Student Hub</span>
         <h1>{tt('Амбассадор сертификаты', 'Сертификат амбассадора')}</h1>
@@ -408,7 +459,14 @@ function Certificate_({ code }: { code: string }) {
         </dl>
         <p className="tiny muted" style={{ overflowWrap: 'anywhere' }}>{tt('Тексеру', 'Проверка')}: {data.verify_url}</p>
       </article>
-      <button className="btn ghost block no-print" type="button" onClick={() => window.print()}><Icon n="file" s={18} /> {tt('Басып шығару', 'Распечатать')}</button>
-    </>
   );
+  const print = <button className="btn ghost block no-print" type="button" onClick={() => window.print()}><Icon n="file" s={18} /> {tt('Басып шығару', 'Распечатать')}</button>;
+  // a laptop: the certificate as a sheet in the column; printing and the check link in the rail
+  if (desktop) return (
+    <DeskDetail className="cert-desk" label={tt('Тексеру', 'Проверка')} main={article} rail={<>
+      <div className="group no-print"><Row href={data.verify_url} icon="shield" title={tt('Тексеру', 'Проверка')} sub={data.verify_url.replace(/^https:\/\//, '')} /></div>
+      {print}
+    </>} />
+  );
+  return <>{article}{print}</>;
 }

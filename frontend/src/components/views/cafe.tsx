@@ -259,7 +259,7 @@ function CartPanel({ menu, cart, setCart, onCheckout }: { menu: Menu; cart: Cart
           <p className="cafe-total"><span>{tt('Барлығы', 'Итого')}</span><b className="num">{money(sum.total)}</b></p>
         </>
       )}
-      <button className="btn block" type="button" id="cafeCart" disabled={!sum.count} onClick={onCheckout}>
+      <button className="btn block cta" type="button" id="cafeCart" disabled={!sum.count} onClick={onCheckout}>
         {tt('Тапсырыс беру', 'Оформить заказ')}{sum.count ? <> · <span className="num">{money(sum.total)}</span></> : null}
       </button>
       <p className="tiny muted">{tt('Келесі қадамда алу уақыты мен төлем тәсілін таңдайсыз.', 'Дальше выберете время и способ оплаты.')}</p>

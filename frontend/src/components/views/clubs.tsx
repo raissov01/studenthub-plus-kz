@@ -5,7 +5,7 @@
    the «Клуб жетекшісімін» application and the site admin list (/admin/clubs). API: docs/clubs.md. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail } from '@/components/desk';
+import { DeskDetail, DeskList } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { AdminOnly, ErrorLine, errText, Feature, Loading, NotFound, SignInCard, useFeature, useLoad, useNeedAccount, ymd } from '@/components/views/common';
@@ -46,6 +46,7 @@ export function ClubsScreen() {
 
 function Catalogue() {
   const { tt, lang, L, openSheet } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const q = useLoad<{ clubs: Club[] }>(`/api/clubs${acc.user ? '?u=' + acc.user.id : ''}`);
   const [f, setF] = useState<ClubFilter>(NO_FILTER);
@@ -60,15 +61,15 @@ function Catalogue() {
   const mine = all.filter(c => c.my?.admin || c.my?.status === 'member');
   const dirs = usedDirections(all);
   const bs = usedBuildings(all);
-  return (
+  const mineEl = mine.length ? (
+    <section className="section">
+      <SectionHead title={tt('Менің клубтарым', 'Мои клубы')} />
+      <div className="group">{mine.map(c => <Row key={c.id} go={'club:' + c.id} icon="users" title={clubName(c, lang)}
+        sub={c.my?.admin ? tt('Сіз жетекшісіз', 'Вы руководитель') : tt('Мүшесіз', 'Вы участник')} />)}</div>
+    </section>
+  ) : null;
+  const filters = (
     <>
-      {mine.length ? (
-        <section className="section">
-          <SectionHead title={tt('Менің клубтарым', 'Мои клубы')} />
-          <div className="group">{mine.map(c => <Row key={c.id} go={'club:' + c.id} icon="users" title={clubName(c, lang)}
-            sub={c.my?.admin ? tt('Сіз жетекшісіз', 'Вы руководитель') : tt('Мүшесіз', 'Вы участник')} />)}</div>
-        </section>
-      ) : null}
       <div className="search" role="search">
         <Icon n="search" s={18} />
         <input className="input" id="clubQ" type="search" autoComplete="off" value={f.q} onChange={e => setF({ ...f, q: e.target.value })}
@@ -88,14 +89,25 @@ function Catalogue() {
           </select>
         </div>
       ) : null}
+    </>
+  );
+  const results = (
+    <>
       <p className="tiny muted num" role="status">{tt(`Табылды: ${list.length}`, `Найдено: ${list.length}`)}</p>
       {list.length
         ? <div className="list" id="clubList">{list.map(c => <ClubCard key={c.id} c={c} />)}</div>
         : <Empty icon="search">{tt('Бұл сүзгі бойынша клуб жоқ.', 'По этому фильтру клубов нет.')}</Empty>}
+    </>
+  );
+  const foot = (
+    <>
       <p className="note">{tt('Клубты басқарасыз ба? Өтінім беріңіз — модератор тексерген соң клуб бетін өзіңіз жүргізесіз.', 'Руководите клубом? Подайте заявку — после проверки модератором вы будете вести страницу клуба.')}</p>
       {applyBtn}
     </>
   );
+  // a laptop: search and filters in a left panel (with «I lead a club»), my clubs and the catalogue beside them
+  if (desktop) return <DeskList label={tt('Сүзгілер', 'Фильтры')} filters={<>{filters}{foot}</>}>{mineEl}{results}</DeskList>;
+  return <>{mineEl}{filters}{results}{foot}</>;
 }
 
 function ClubCard({ c }: { c: Club }) {

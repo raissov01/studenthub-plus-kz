@@ -5,7 +5,7 @@
    moderators lock such threads. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail, DeskList } from '@/components/desk';
+import { DeskDetail, DeskList, DeskForm } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { agoDays, ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, useNeedAccount } from '@/components/views/common';
@@ -108,6 +108,12 @@ function QAAsk({ subject: initial }: { subject: string }) {
   const problem = tags === null ? 'bad_tags' : hasPhoneOrHandle(f.title + '\n' + f.body) ? 'has_contact' : '';
   const ok = !problem && f.honesty && titleLen >= 8 && Array.from(f.subject.trim()).length >= 2;
   return (
+    <DeskForm title={tt('Жақсы сұрақ', 'Хороший вопрос')} tips={[
+      tt('Тақырыпта мәселені бір сөйлеммен айтыңыз.', 'В заголовке опишите проблему одним предложением.'),
+      tt('Не істеп көргеніңізді және қай жерде тұрып қалғаныңызды жазыңыз.', 'Напишите, что уже пробовали и где застряли.'),
+      tt('Тегтер сұрақты табуға көмектеседі.', 'Теги помогают найти вопрос.'),
+      tt('Емтихан кезінде жауап жарияламаңыз.', 'Не публикуйте ответы во время экзамена.'),
+    ]}>
     <form className="form" onSubmit={async e => {
       e.preventDefault();
       if (!ok || busy) return;
@@ -144,6 +150,7 @@ function QAAsk({ subject: initial }: { subject: string }) {
       <button className="btn block" type="submit" disabled={!ok || busy}>{tt('Жариялау', 'Опубликовать')}</button>
       <HonestyRule />
     </form>
+    </DeskForm>
   );
 }
 

@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Icon } from '@/components/ui';
 import type { IconName } from '@/lib/icons';
+import { useDesktop } from '@/lib/desktop';
 
 /** content column + right rail; `label` names the rail for screen readers */
 export function DeskDetail({ main, rail, label, className = '' }: { main: ReactNode; rail: ReactNode; label: string; className?: string }) {
@@ -57,6 +58,23 @@ export function DeskList({ filters, children, label }: { filters: ReactNode; chi
     <div className="search-layout desk-list">
       <aside className="search-side" aria-label={label}>{filters}</aside>
       <div className="search-main">{children}</div>
+    </div>
+  );
+}
+
+/** a form on a laptop: the form in a centred column, a help card beside it (tips, rules, what happens next).
+    Phones get the form alone, unchanged. */
+export function DeskForm({ title, tips, extra, children }: { title: string; tips: string[]; extra?: ReactNode; children: ReactNode }) {
+  const desktop = useDesktop();
+  if (!desktop) return <>{children}</>;
+  return (
+    <div className="desk-form">
+      <div className="desk-form-main">{children}</div>
+      <aside className="desk-aside card" aria-label={title}>
+        <h2 className="rail-h"><Icon n="spark" s={18} /> {title}</h2>
+        <ul className="desk-tips">{tips.map(t => <li key={t}>{t}</li>)}</ul>
+        {extra}
+      </aside>
     </div>
   );
 }

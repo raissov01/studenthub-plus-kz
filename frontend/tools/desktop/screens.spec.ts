@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { config, content } from '../../e2e/content';
 import { onboard, seedTimetable } from '../../e2e/fixtures';
+import { quizMeta, quizPlay, quizResult } from './quiz-fixture';
 
 /* The screens the laptop layout touches, at every size of the config, against a mocked API (signed-in admin, cafe,
    print and clubs switched on). Writes docs/design/desktop/<screen>-<width>.png; SHOT_ONLY=home,cafe limits the set. */
@@ -55,7 +56,7 @@ async function mockApi(page: Page) {
     const url = new URL(route.request().url());
     const p = url.pathname;
     const json = (j: unknown) => route.fulfill({ json: j });
-    if (p === '/api/config') return json({ ...config, features: { ...config.features, cafe: true, print: true, clubs: true, events: true, market: true, lostfound: true, courseqa: true, roommates: true, mentors: true, ambassador: true } });
+    if (p === '/api/config') return json({ ...config, features: { ...config.features, cafe: true, print: true, clubs: true, events: true, market: true, lostfound: true, courseqa: true, roommates: true, mentors: true, ambassador: true, quiz: true, portfolio: true } });
     if (p === '/api/content') return json(content);
     if (p === '/api/me') return json({ user, needsConsent: false, inboxUnread: 2 });
     if (p === '/api/me/inbox') return json({ items: [], unread: 0, nextBefore: null });
@@ -79,6 +80,28 @@ async function mockApi(page: Page) {
     if (p === '/api/lostfound/posts/7') return json({ post: lfPost(), myClaim: null });
     if (p === '/api/qa/questions') return json({ questions: [question(), question({ id: 13, title: 'Ағылшын тілінен эссе құрылымы', subject: 'Ағылшын тілі', answers: 3, acceptedAnswerId: 2 }), question({ id: 14, title: 'Статистикадан дисперсия формуласы', subject: 'Статистика', answers: 0 })], subjectKey: '', university: 'KATU', facultyScoped: true });
     if (p === '/api/qa/questions/12') return json({ question: question(), answers: [{ id: 40, questionId: 12, body: 'Дәреже ережесі: (x^n)\' = n·x^(n-1). Сонда 2x + 3 шығады.', anonymous: false, author: { name: 'Ерлан' }, score: 3, voted: false, mine: false, accepted: false, createdAt: '2026-11-04T07:00:00Z', status: 'active' }] });
+    if (p === '/api/quiz/quizzes') return json({ quizzes: [quizMeta, { ...quizMeta, id: 2, title: 'Ағылшын тілі: Present Perfect', subject: 'Ағылшын тілі', plays: 120 }, { ...quizMeta, id: 3, title: 'Статистика негіздері', subject: 'Статистика', plays: 9 }], hasMore: false });
+    if (p === '/api/quiz/mine') return json({ quizzes: [] });
+    if (p === '/api/quiz/attempts') return json({ attempts: [] });
+    if (p === '/api/quiz/quizzes/1/play') return json(quizPlay);
+    if (p === '/api/quiz/quizzes/1/attempts') return json(quizResult);
+    if (p === '/api/portfolio/me') return json({
+      settings: { enabled: true, slug: 'aruzhan-t', url: 'https://studenthub.example/p/aruzhan-t', displayName: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: 'Деректерді талдауға қызығамын.', showUniversity: true, showCourse: true, showEvents: true, showCerts: true, showExperience: true, showSkills: true, showBadges: true, showContact: false, syncConsentAt: '2026-11-01T05:00:00Z', slugRotatedAt: null, updatedAt: '2026-11-01T05:00:00Z' },
+      items: [], preview: { noindex: true, profile: { name: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: null, university: 'Сейфуллин университеті', course: 2 }, verified: { events: [], certificates: [], badges: [] }, selfReported: { certificates: [], experience: [], skills: [], badges: [] }, contact: null, og: { title: 'Аружан Тест', description: null, image: '', url: '' }, site: 'Student Hub' },
+    });
+    if (p === '/api/events/my/attendance') return json({ attendance: [] });
+    if (p === '/api/portfolio/certificates') return json({ certificates: [], usage: { files: 0, bytes: 0, maxFiles: 20, maxBytes: 52428800 }, pageVisible: true });
+    if (p === '/api/certificates/ABC123') return json({ name: 'Аружан Тест', university: 'Сейфуллин университеті', role_in_team: 'member', term_start: '2026-02-01', term_end: '2026-10-31', issued_at: '2026-11-01', events_organized: 4, published_suggestions: 11, verify_url: 'https://studenthub.example/certificate/ABC123' });
+    if (p === '/api/ambassador/me') return json({
+      term: { id: 1, user_id: 1, university: 'Сейфуллин университеті', role_in_team: 'lead', term_start: '2026-09-01', term_end: '2027-01-31', hours_per_week: 4, ref_code: 'aru', status: 'active', paused_until: null, renew_answer: null, cert_code: 'ABC123', cert_issued_at: null },
+      days_left: 85, renewal: { ask: false, answer: null }, referral: { code: 'aru', ref: 'aru', link: 'https://studenthub.example/?ref=aru', joined: 17 },
+      workload: { hours_per_week: 4, items_this_week: 2, paused_until: null, paused: false, available: true },
+      team: [{ name: 'Аружан Тест', username: 'aru', role_in_team: 'lead', term_start: '2026-09-01', term_end: '2027-01-31', hours_per_week: 4, paused: false }, { name: 'Ерлан', username: null, role_in_team: 'member', term_start: '2026-09-01', term_end: '2027-01-31', hours_per_week: 3, paused: false }],
+      resources: [{ title_kk: 'Амбассадор нұсқаулығы', title_ru: 'Руководство амбассадора', url: 'https://studenthub.example/guide' }],
+    });
+    if (p === '/api/ambassador/stats') return json({ university: 'Сейфуллин университеті', students: 1240, weekly_active: 610, saved_deadlines: 2300, events: 18, registrations: 940, check_ins: 610, by_faculty: { 'Экономика': 320, 'IT': 280, other: '< 5' } });
+    if (p === '/api/ambassador/rating') return json({ rating: [], mine: { rank: 2, university: 'Сейфуллин университеті', weekly_active: 610, event_check_ins: 610, score: 88 } });
+    if (p === '/api/submissions/my') return json({ submissions: [] });
     if (p === '/api/mentors/summary') return json({ university: 'Сейфуллин университеті', stats: { university: 'Сейфуллин университеті', mentors: 14, freeMentors: 3, waiting: 5, typicalDays: 3 }, me: { isAdult: true, request: null, mentorStatus: null }, groupMeetings: [] });
     if (p === '/api/roommates/me') return json({ gender: 'f', listing: null, requestsToday: 0, dailyLimit: 10, blockers: [] });
     if (p === '/api/roommates/listings') return json({ listings: [listing(), listing({ id: 22, kind: 'looking', housing: 'dorm', district: 'Жатақхана №3', habits: ['early'] }), listing({ id: 23, district: 'Есіл ауданы', budgetMin: 60000, budgetMax: 100000 })], university: 'KATU' });
@@ -147,6 +170,16 @@ const SCREENS: [string, string, ((p: Page) => Promise<void>)?, (() => Promise<vo
   ['discounts', '/discounts'],
   ['inbox', '/notifications'],
   ['certificate', '/certificate/ABC123'],
+  ['portfolio', '/portfolio'],
+  ['ambassador', '/ambassador'],
+  ['privacy', '/privacy'],
+  ['docs-page', '/docs'],
+  ['pay', '/pay'],
+  ['quiz-play', '/quiz/1/play'],
+  ['quiz-result', '/quiz/1/play', async p => {
+    for (let i = 0; i < 2; i++) { await p.locator('.quiz-choice').first().click(); await p.getByRole('button', { name: /Келесі|Аяқтау/ }).click(); }
+    await expect(p.locator('.quiz-score')).toBeVisible();
+  }],
   ['edit', '/edit'],
   ['timetable', '/timetable'],
   ['subjects', '/subjects'],
@@ -180,7 +213,7 @@ const SCREENS: [string, string, ((p: Page) => Promise<void>)?, (() => Promise<vo
 
 test('screens', async ({ page }, info) => {
   test.setTimeout(900_000);
-  page.on('pageerror', e => console.log('pageerror:', e.message));
+  page.on('pageerror', e => console.log('pageerror:', e.message, (e.stack || '').split('\n').slice(1, 3).join(' | ')));
   await mockApi(page);
   await seed(page);
   const w = info.project.name.split('x')[0];

@@ -45,7 +45,8 @@
   :root:has(main[data-screen="roommates"]), :root:has(main[data-screen="mentors"]), :root:has(main[data-screen="ambassador"]),
   :root:has(main[data-screen="timetable"]), :root:has(main[data-screen="subjects"]), :root:has(main[data-screen="grades"]),
   :root:has(main[data-screen="notes"]), :root:has(main[data-screen="quiz"]), :root:has(main[data-screen="portfolio"]),
-  :root:has(main[data-screen="announcements"]), :root:has(main[data-screen="applications"]) {
+  :root:has(main[data-screen="announcements"]), :root:has(main[data-screen="applications"]),
+  :root:has(main[data-screen="notif"]), :root:has(main[data-screen="certificate"]), :root:has(main[data-screen="lostfound"]) {
     --page-w: 1200px;
   }
 
@@ -168,13 +169,31 @@
   .detail-head h1 { font-size: 2.2rem; }
   .desk-rail > .card > h2, .desk-rail .rail-h { font-size: 1rem; margin: 0; }
   .desk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; align-items: stretch; }
-  .desk-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; background: transparent; border: 0; border-radius: 0; overflow: visible; }
-  .desk-cards > * { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; }
-  .desk-cards > * + *::before { display: none; }
+  .desk-cards, main[data-screen="docs"] > .group { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; background: transparent; border: 0; border-radius: 0; overflow: visible; }
+  .desk-cards > *, main[data-screen="docs"] > .group > * { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; }
+  .desk-cards > * + *::before, main[data-screen="docs"] > .group > * + *::before { display: none; }
+  .desk-rail .row-sub { overflow-wrap: anywhere; }
   .desk-form { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; max-width: 1040px; margin-inline: auto; width: 100%; }
-  .desk-form > .desk-aside { position: sticky; top: 84px; }
+  .desk-form > .desk-aside { position: sticky; top: 84px; gap: 10px; background: var(--surface-2); }
+  .desk-form-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .desk-tips { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: .9rem; line-height: 1.45; }
+  .desk-tips li::marker { color: var(--primary); }
+  .desk-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start; }
+  .cert-desk .cert { margin: 0; }
+  /* reading pages keep a comfortable line length */
+  main[data-screen="privacy"] { max-width: calc(760px + 2 * var(--page-pad)); }
+  /* quiz: the catalogue in three columns; answering and the result in a focused centred column */
+  main[data-screen="quiz"] .quiz-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  main[data-screen="quiz"]:has(.quiz-progress), main[data-screen="quiz"]:has(.quiz-score) { max-width: calc(820px + 2 * var(--page-pad)); }
+  main[data-screen="quiz"] .quiz-answers:has(> .quiz-choice) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  main[data-screen="quiz"]:has(.quiz-progress) > .btn { align-self: flex-end; min-width: 220px; }
   .desk-list .search-side .chips { flex-wrap: wrap; overflow: visible; }
-  .desk-list .search-side .seg button { white-space: normal; line-height: 1.2; padding-inline: 4px; }
+  /* a segmented control is too narrow for three labels in the 280px panel: stack it */
+  .desk-list .search-side .seg { flex-direction: column; }
+  .desk-list .search-side .seg button { white-space: normal; text-align: left; padding: 8px 12px; overflow: visible; text-overflow: clip; }
+  /* the screen's main action stays a solid primary button even inside a card (the cart, the print order) */
+  .card > .btn.cta:not([disabled]) { background: var(--primary); color: var(--on-primary); }
+  .card > .btn.cta:not([disabled]):hover { background: var(--primary-press); }
   .desk-list .search-side .btn-row { flex-direction: column; }
   .desk-list .search-side .btn-row > .btn { flex: none; }
   .desk-list .mk-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }

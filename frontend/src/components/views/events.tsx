@@ -63,12 +63,14 @@ function DbEvent_({ id }: { id: string }) {
   const ev = useLoad<{ event: DbEvent }>(`/api/events/${id}${acc.user ? '?u=' + acc.user.id : ''}`);
   const att = useLoad<AttendeesResp>(`/api/events/${id}/attendees${acc.user ? '?u=' + acc.user.id : ''}`);
   const desktop = useDesktop();
-  const more = useLoad<{ events: DbEvent[] }>(desktop ? '/api/events' : null);
   const [busy, setBusy] = useState(false);
   const [prevTeam, setPrevTeam] = useState(false);
   const online = useOnline();
   // keep what the API said about my registration, so the ticket opens without internet (lib/tickets.ts)
   const live = ev.data?.event;
+  // similar events (laptop rail): the next 12 upcoming at the same university, a server-side cap (the list API has
+  // no category filter; the same category is preferred on the device)
+  const more = useLoad<{ events: DbEvent[] }>(desktop && live ? `/api/events?limit=12&university=${encodeURIComponent(live.university)}` : null);
   const userId = acc.user?.id;
   useEffect(() => {
     if (!live) return;

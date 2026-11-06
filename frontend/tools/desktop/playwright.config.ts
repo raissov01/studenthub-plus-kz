@@ -13,7 +13,7 @@ export default defineConfig({
   use: { ...base.use, baseURL: `http://127.0.0.1:${port}`, locale: 'kk-KZ', deviceScaleFactor: 1, timezoneId: 'Asia/Almaty' },
   projects: sizes.map(([width, height]) => ({ name: `${width}x${height}`, metadata: { lang: 'kk' }, use: { viewport: { width, height } } })),
   webServer: [
-    { command: 'npx tsx e2e/server.ts', cwd: '../..', env: { E2E_API_PORT: String(apiPort) }, url: `http://127.0.0.1:${apiPort}/api/content`, reuseExistingServer: false },
+    { command: 'npx tsx tools/desktop/server.ts', cwd: '../..', env: { E2E_API_PORT: String(apiPort) }, url: `http://127.0.0.1:${apiPort}/api/content`, reuseExistingServer: false },
     { command: `npx next start --hostname 127.0.0.1 --port ${port}`, cwd: '../..', url: `http://127.0.0.1:${port}`, reuseExistingServer: false, timeout: 120_000, env: { API_ORIGIN: `http://127.0.0.1:${apiPort}` } },
   ],
 });

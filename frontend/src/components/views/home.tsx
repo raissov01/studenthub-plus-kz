@@ -216,7 +216,10 @@ function NotifRow({ n }: { n: Notif }) {
 /** signed in: the server inbox first, then the device's own notices under their own heading; signed out: only those */
 export function Notifications() {
   const signedIn = hasAccount(useAccount());
+  const desktop = useDesktop();
   if (!signedIn) return <LocalNotices />;
+  // a laptop: the account's messages and this device's notices side by side
+  if (desktop) return <div className="desk-cols"><InboxSection /><LocalNotices heading /></div>;
   return (
     <>
       <InboxSection />

@@ -1,5 +1,7 @@
 'use client';
 /* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
+import { useDesktop } from '@/lib/desktop';
+import { DeskDetail } from '@/components/desk';
 import { useState } from 'react';
 import { useApp } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
@@ -348,18 +350,27 @@ export function Pay() {
 
 export function Portfolio() {
   const { S, tt, L, go } = useApp();
+  const desktop = useDesktop();
   const p = S.profile;
   const exp = (p.exp || '').split('\n').filter(s => s.trim());
-  return (
+  const content = (
     <>
-      <PublicPortfolioSection />
       <CertificatesSection />
       <section className="section"><h2>{tt('Қатысқан іс-шаралар', 'Мероприятия')}</h2>
         <VerifiedAttendance empty={<div className="group"><div className="empty">{tt('Әзірге жоқ. Іс-шараға QR арқылы белгіленсеңіз, мұнда расталған қатысу шығады.', 'Пока нет. Отметьтесь на мероприятии по QR — здесь появится подтверждённое участие.')}</div></div>} /></section>
       <section className="section"><h2>{tt('Тәжірибе', 'Опыт')}</h2>
         <div className="group">{exp.length ? exp.map((s, i) => <Row key={i} icon="briefcase" title={s} chev={false} />) : <div className="empty">{tt('Профильге тәжірибе қосыңыз', 'Добавьте опыт в профиль')}</div>}</div></section>
       <section className="section"><h2>{tt('Дағдылар', 'Навыки')}</h2><div className="chips wrap">{p.skills.filter(k => SKILLS[k]).map(k => <span key={k} className="chip">{L(SKILLS[k])}</span>)}</div></section>
-      <button className="btn block" type="button" onClick={() => go('resume')}><Icon n="doc" s={18} /> {tt('Портфолиодан түйіндеме жасау', 'Собрать резюме из портфолио')}</button>
+    </>
+  );
+  const resume = <button className="btn block" type="button" onClick={() => go('resume')}><Icon n="doc" s={18} /> {tt('Портфолиодан түйіндеме жасау', 'Собрать резюме из портфолио')}</button>;
+  // a laptop: what the portfolio holds in the column; the résumé and the public page settings in the rail
+  if (desktop) return <DeskDetail className="free-rail" label={tt('Жария портфолио', 'Публичное портфолио')} main={content} rail={<>{resume}<PublicPortfolioSection /></>} />;
+  return (
+    <>
+      <PublicPortfolioSection />
+      {content}
+      {resume}
     </>
   );
 }

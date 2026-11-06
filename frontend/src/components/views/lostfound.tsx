@@ -6,7 +6,7 @@
    office or security. */
 import { useRef, useState } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail, DeskList } from '@/components/desk';
+import { DeskDetail, DeskList, DeskForm } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, useNeedAccount, ymd } from '@/components/views/common';
@@ -255,6 +255,12 @@ function LFNew({ kind: initial }: { kind: LFKind }) {
     } catch (e) { setErr(errText(e, tt('Фото жүктелмеді', 'Фото не загрузилось'))); } finally { setUp(false); if (fileRef.current) fileRef.current.value = ''; }
   };
   return (
+    <DeskForm title={tt('Жақсы жазба үшін', 'Чтобы запись помогла')} tips={[
+      tt('Қай жерде және қашан болғанын нақты жазыңыз.', 'Точно укажите, где и когда это было.'),
+      tt('Құжат пен картаның фотосын салмаңыз, нөмірін жазбаңыз.', 'Не выкладывайте фото и номер документа или карты.'),
+      tt('Тапқан құжатты деканатқа не күзетке тапсырыңыз.', 'Найденный документ сдайте в деканат или охрану.'),
+      tt('Байланыс екі жақ келіскенде ғана ашылады.', 'Контакты открываются только по согласию обеих сторон.'),
+    ]}>
     <form className="form" noValidate onSubmit={async e => {
       e.preventDefault();
       setTried(true);
@@ -320,6 +326,7 @@ function LFNew({ kind: initial }: { kind: LFKind }) {
       <button className="btn block" type="submit" disabled={busy || up}>{tt('Жариялау', 'Опубликовать')}</button>
       <p className="tiny muted">{tt('Хабарландыру 30 күннен соң өзі жабылады. Атыңыз көрсетілмейді.', 'Объявление закроется само через 30 дней. Ваше имя не показывается.')}</p>
     </form>
+    </DeskForm>
   );
 }
 
