@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { config, content } from '../../e2e/content';
 import { onboard, seedTimetable } from '../../e2e/fixtures';
-import { quizMeta, quizPlay, quizResult } from './quiz-fixture';
+import { quizEdit, quizMeta, quizPlay, quizResult } from './quiz-fixture';
 
 /* The screens the laptop layout touches, at every size of the config, against a mocked API (signed-in admin, cafe,
    print and clubs switched on). Writes docs/design/desktop/<screen>-<width>.png; SHOT_ONLY=home,cafe limits the set. */
@@ -50,7 +50,27 @@ const lfPost = (over: Record<string, unknown> = {}) => ({ id: 7, kind: 'found', 
 const question = (over: Record<string, unknown> = {}) => ({ id: 12, subject: 'Математика 1', subjectKey: 'математика 1', facultyOnly: false, title: 'Туындыны қалай табамыз?', body: 'x^2 + 3x функциясының туындысы қалай шығады? Қадамдап түсіндіріңізші.', tags: ['туынды'], anonymous: true, author: null, status: 'active', locked: false, lockedReason: null, acceptedAnswerId: null, answers: 1, score: 2, voted: false, mine: false, createdAt: '2026-11-04T05:00:00Z', ...over });
 const listing = (over: Record<string, unknown> = {}) => ({ id: 21, kind: 'have_room', housing: 'flat', district: 'Сарыарқа ауданы', budgetMin: 40000, budgetMax: 80000, moveIn: '2026-11-20', habits: ['quiet', 'tidy'], about: 'Тыныш студентпін, кешке оқимын.', sameGender: true, gender: 'f', university: 'KATU', status: 'active', createdAt: '2026-11-04T05:00:00Z', expiresAt: '2026-12-04T05:00:00Z', mine: false, myRequest: null, ...over });
 
+/* the live quiz's WebSocket (components/quiz/live.tsx): a host and a player, a lobby, one question, a reveal */
+const players = [{ id: 'p1', nickname: 'Дана', online: true }, { id: 'p2', nickname: 'Ерлан', online: true }, { id: 'p3', nickname: 'Әсел', online: true }, { id: 'p4', nickname: 'Нұрлан', online: false }];
+const leaderboard = [{ rank: 1, id: 'p1', nickname: 'Дана', score: 980, correct: 1 }, { rank: 2, id: 'p3', nickname: 'Әсел', score: 860, correct: 1 }, { rank: 3, id: 'p2', nickname: 'Ерлан', score: 0, correct: 0 }];
+async function mockLive(page: Page) {
+  await page.routeWebSocket(/\/api\/quiz\/live\/ws/, ws => {
+    const host = new URL(ws.url()).searchParams.get('token') === 'host-token';
+    const out = (type: string, data: unknown) => ws.send(JSON.stringify({ type, data }));
+    const question = () => out('question', { index: 0, total: 2, question: quizPlay.questions[0], deadline: Date.now() + 25_000, serverTime: Date.now(), timeLimitMs: 30_000 });
+    out('hello', { code: 'K7Q2M', status: host ? 'lobby' : 'question', title: quizMeta.title, total: 2, index: 0 });
+    out('lobby', { players, count: players.length, max: 200 });
+    if (!host) question();
+    ws.onMessage(raw => {
+      const m = JSON.parse(String(raw));
+      if (m.type === 'start') { question(); out('progress', { index: 0, answered: 3, total: 4 }); }
+      if (m.type === 'next') out('reveal', { index: 0, correct: 0, explanation: 'Сұраныс заңы.', leaderboard, last: false, answered: 3, correctCount: 2, distribution: { 0: 2, 1: 1 } });
+    });
+  });
+}
+
 async function mockApi(page: Page) {
+  await mockLive(page);
   await page.route('https://fonts.googleapis.com/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
@@ -83,12 +103,26 @@ async function mockApi(page: Page) {
     if (p === '/api/quiz/quizzes') return json({ quizzes: [quizMeta, { ...quizMeta, id: 2, title: 'Ағылшын тілі: Present Perfect', subject: 'Ағылшын тілі', plays: 120 }, { ...quizMeta, id: 3, title: 'Статистика негіздері', subject: 'Статистика', plays: 9 }], hasMore: false });
     if (p === '/api/quiz/mine') return json({ quizzes: [] });
     if (p === '/api/quiz/attempts') return json({ attempts: [] });
+    if (p === '/api/quiz/quizzes/1') return json(quizEdit);
+    if (p === '/api/quiz/live/sessions') return json({ code: 'K7Q2M', hostToken: 'host-token', wsUrl: `ws://127.0.0.1:${new URL(route.request().url()).port}/api/quiz/live/ws`, expiresAt: Date.now() + 3_600_000, title: quizMeta.title });
+    if (p === '/api/quiz/live/sessions/K7Q2M/host-token') return json({ hostToken: 'host-token', wsUrl: `ws://127.0.0.1:${new URL(route.request().url()).port}/api/quiz/live/ws`, expiresAt: Date.now() + 3_600_000 });
+    if (p === '/api/quiz/live/join') return json({ token: 'player-token', wsUrl: `ws://127.0.0.1:${new URL(route.request().url()).port}/api/quiz/live/ws`, playerId: 'p1', nickname: 'Дана', rejoinKey: 'rk', expiresAt: Date.now() + 3_600_000 });
     if (p === '/api/quiz/quizzes/1/play') return json(quizPlay);
     if (p === '/api/quiz/quizzes/1/attempts') return json(quizResult);
     if (p === '/api/portfolio/me') return json({
       settings: { enabled: true, slug: 'aruzhan-t', url: 'https://studenthub.example/p/aruzhan-t', displayName: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: 'Деректерді талдауға қызығамын.', showUniversity: true, showCourse: true, showEvents: true, showCerts: true, showExperience: true, showSkills: true, showBadges: true, showContact: false, syncConsentAt: '2026-11-01T05:00:00Z', slugRotatedAt: null, updatedAt: '2026-11-01T05:00:00Z' },
       items: [], preview: { noindex: true, profile: { name: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: null, university: 'Сейфуллин университеті', course: 2 }, verified: { events: [], certificates: [], badges: [] }, selfReported: { certificates: [], experience: [], skills: [], badges: [] }, contact: null, og: { title: 'Аружан Тест', description: null, image: '', url: '' }, site: 'Student Hub' },
     });
+    if (p === '/api/admin/dashboard') return json({
+      users: { total: 1240, accounts: 980, new7: 64, new30: 210, blocked: 2, moderators: 4, byRole: { student: 1200, admin: 3, ambassador: 25, employer: 12 } },
+      signups: [], active: { dau: 310, wau: 820, mau: 1100, since: '2026-09-01', days: [] }, devices: { dau: 420, wau: 990 },
+      content: { jobs: 40, opportunities: 75, events: 18 },
+      pending: { queue: 3, queueModerator: 1, reports: 1, feedbackHeld: 0, feedbackOverdue: 0, redemptions: 2, employers: 1, cafeRefunds: 0, printRefunds: 0 },
+      shops: { cafe: { orders: 120, done: 115, revenue: 9800000 }, print: { orders: 60, done: 58, revenue: 2400000 } },
+      features: { cafe: true, print: true, clubs: true },
+    });
+    if (p === '/api/console/me') return json({ admin: true, moderator: false, blocked: false, moderation: { pending: 3, reports: 1 }, cafes: [], printShops: [], clubs: [], university: null, feedback: [], employer: null, ambassador: false, mentor: false });
+    if (p === '/api/announcements') return json({ announcements: [] });
     if (p === '/api/events/my/attendance') return json({ attendance: [] });
     if (p === '/api/portfolio/certificates') return json({ certificates: [], usage: { files: 0, bytes: 0, maxFiles: 20, maxBytes: 52428800 }, pageVisible: true });
     if (p === '/api/certificates/ABC123') return json({ name: 'Аружан Тест', university: 'Сейфуллин университеті', role_in_team: 'member', term_start: '2026-02-01', term_end: '2026-10-31', issued_at: '2026-11-01', events_organized: 4, published_suggestions: 11, verify_url: 'https://studenthub.example/certificate/ABC123' });
@@ -173,6 +207,18 @@ const SCREENS: [string, string, ((p: Page) => Promise<void>)?, (() => Promise<vo
   ['portfolio', '/portfolio'],
   ['ambassador', '/ambassador'],
   ['privacy', '/privacy'],
+  ['settings-notify', '/settings?s=notify'],
+  ['quiz-edit', '/quiz/1/edit'],
+  ['quiz-new', '/quiz/new'],
+  ['quiz-host', '/quiz/1/host', async p => { await p.getByRole('button', { name: 'Ойын бөлмесін ашу' }).click(); await expect(p.locator('.quiz-live-code')).toBeVisible(); }],
+  ['quiz-host-question', '/quiz/1/host', async p => {
+    await p.getByRole('button', { name: 'Бастау' }).click(); await expect(p.locator('.qh-grid')).toBeVisible();
+  }],
+  ['quiz-host-reveal', '/quiz/1/host', async p => {
+    await p.getByRole('button', { name: 'Бастау' }).click();
+    await p.getByRole('button', { name: 'Жауаптарды көрсету' }).click(); await expect(p.locator('.qh-bar').first()).toBeVisible();
+  }],
+  ['quiz-player', '/quiz/live/K7Q2M', async p => { await expect(p.locator('.quiz-choice').first()).toBeVisible(); }],
   ['docs-page', '/docs'],
   ['pay', '/pay'],
   ['quiz-play', '/quiz/1/play'],
@@ -221,6 +267,10 @@ test('screens', async ({ page }, info) => {
     if (only.length && !only.includes(name)) continue;
     if (name === 'home-long') await seedLong(page);
     if (prep) await prep();
+    if (name === 'quiz-player') {
+      await page.goto('/');
+      await page.evaluate(() => sessionStorage.setItem('studenthub.quiz.live.player.K7Q2M', JSON.stringify({ role: 'player', code: 'K7Q2M', nickname: 'Дана', rejoinKey: 'rk' })));
+    }
     await page.goto(path);
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(700);

@@ -33,6 +33,13 @@ test('size limits: PDF 10 MB, photo 8 MB', () => {
 
 test('sizes and image fitting', () => {
   assert.equal(fmtBytes(512), '512 Б');
+  // edges: empty usage, a bad number, rounding across a unit
+  assert.equal(fmtBytes(0), '0 Б');
+  assert.equal(fmtBytes(-5), '0 Б');
+  assert.equal(fmtBytes(NaN), '0 Б');
+  assert.equal(fmtBytes(0.4), '1 Б');
+  assert.equal(fmtBytes(1023.7), '1 КБ');
+  assert.equal(fmtBytes(1024 * 1023.8), '1,0 МБ');
   assert.equal(fmtBytes(200 * 1024), '200 КБ');
   assert.equal(fmtBytes(1.5 * 1024 * 1024), '1,5 МБ');
   assert.equal(fmtBytes(100 * 1024 * 1024), '100 МБ');

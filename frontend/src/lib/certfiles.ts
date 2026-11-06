@@ -86,8 +86,10 @@ export function problemText(p: FileProblem, tt: (kk: string, ru: string) => stri
 
 /** 1 536 000 → «1,5 МБ» */
 export function fmtBytes(n: number): string {
-  if (n < 1024) return `${Math.max(1, Math.round(n))} Б`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} КБ`;
+  // nothing (or a bad number) is «0 Б»; any real size shows at least 1 Б; a value that rounds up to the next unit uses it
+  if (!Number.isFinite(n) || n <= 0) return '0 Б';
+  if (Math.round(n) < 1024) return `${Math.max(1, Math.round(n))} Б`;
+  if (Math.round(n / 1024) < 1024) return `${Math.round(n / 1024)} КБ`;
   const v = n / (1024 * 1024);
   return `${(v >= 10 ? Math.round(v).toString() : v.toFixed(1)).replace('.', ',')} МБ`;
 }

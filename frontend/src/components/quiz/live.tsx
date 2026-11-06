@@ -244,7 +244,7 @@ function LiveBoard({ identity, restart }: { identity: LiveIdentity; restart?: ()
     not_active: ['Келесі сұрақты күтіңіз.', 'Дождитесь следующего вопроса.'],
   };
   return (
-    <div className={`quiz-stack ${host ? 'quiz-projector' : ''}`}>
+    <div className={`quiz-stack ${host ? 'quiz-projector' : 'quiz-player'}`}>
       <header className="quiz-stack">
         <p className="eyebrow">{host ? tt('Жүргізуші', 'Ведущий') : identity.nickname}</p>
         <h1>{title || tt('Тікелей ойын', 'Игра в прямом эфире')}</h1>
@@ -299,7 +299,64 @@ function LiveBoard({ identity, restart }: { identity: LiveIdentity; restart?: ()
           )}
         </>
       )}
-      {!ended && question && (phase === 'question' || phase === 'reveal') && (
+      {!ended && question && (phase === 'question' || phase === 'reveal') && host && (
+        // the projector: the question and its options (with how the room answered after the reveal) on the left;
+        // answered count, the correct answer, the next step and the leaders on the right
+        <div className="qh-grid">
+          <div className="qh-main">
+            <p className="qh-count">
+              {tt('Сұрақ', 'Вопрос')} {index + 1} / {total}
+              {phase === 'question' && <Timer key={`${index}-${deadline}`} deadline={deadline} />}
+            </p>
+            <h2>{question.prompt}</h2>
+            {!['hotspot', 'labeling'].includes(question.type) && <QuestionMedia q={question} />}
+            {question.passage && <p>{question.passage}</p>}
+            {question.options && (
+              <ol className="quiz-host-options">
+                {question.options.map((o, i) => {
+                  const n = reveal?.distribution?.[String(i)] ?? 0;
+                  const all = reveal?.answered ?? 0;
+                  return (
+                    <li key={i} className={reveal && JSON.stringify(reveal.correct) === String(i) ? 'is-right' : undefined}>
+                      <span className="qh-opt">{o}</span>
+                      {reveal?.distribution ? (
+                        <span className="qh-bar" aria-label={tt(`${n} жауап`, `ответов: ${n}`)}>
+                          <i style={{ width: `${all ? Math.round((n / all) * 100) : 0}%` }} /><b className="num">{n}</b>
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+          <aside className="qh-side card" aria-label={tt('Ойын барысы', 'Ход игры')}>
+            <p className="qh-big num">{reveal?.answered ?? progress} / {players.length}</p>
+            <p className="small muted">{tt('Жауап берді', 'Ответили')}{reveal?.correctCount != null ? ` · ${tt('дұрыс', 'верно')}: ${reveal.correctCount}` : ''}</p>
+            {reveal && (
+              <div className="quiz-stack">
+                <p><b>{tt('Дұрыс жауап:', 'Верный ответ:')}</b> {answerText(reveal.correct, question, tt)}</p>
+                {reveal.explanation ? <p className="small">{reveal.explanation}</p> : null}
+              </div>
+            )}
+            <button className="btn" disabled={connection !== 'connected'} onClick={() => send('next')}>
+              {phase === 'question'
+                ? tt('Жауаптарды көрсету', 'Показать ответы')
+                : reveal?.last
+                  ? tt('Қорытынды', 'Итоги')
+                  : tt('Келесі сұрақ', 'Следующий вопрос')}
+            </button>
+            {phase === 'reveal' && leaders.length ? (
+              <ol className="quiz-ranking qh-leaders">
+                {leaders.slice(0, 5).map((p) => (
+                  <li key={p.id}><b>{p.rank}. {p.nickname}</b><span className="num">{p.score}</span></li>
+                ))}
+              </ol>
+            ) : null}
+          </aside>
+        </div>
+      )}
+      {!ended && question && (phase === 'question' || phase === 'reveal') && !host && (
         <>
           <p>
             {tt('Сұрақ', 'Вопрос')} {index + 1} / {total}
@@ -387,7 +444,7 @@ function LiveBoard({ identity, restart }: { identity: LiveIdentity; restart?: ()
           )}
         </>
       )}
-      {(phase === 'reveal' || ended) && (
+      {(ended || (phase === 'reveal' && !(host && question))) && (
         <section className="quiz-stack">
           <h2>{ended ? tt('Қорытынды орындар', 'Итоговый пьедестал') : tt('Көшбасшылар', 'Лидеры')}</h2>
           <ol className={ended ? 'quiz-podium' : 'quiz-ranking'}>
