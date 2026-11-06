@@ -43,6 +43,10 @@ export function registerServiceWorker(): void {
   if (registered || !swAllowed()) return;
   registered = true;
   const build = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
+  const time = process.env.NEXT_PUBLIC_BUILD_TIME || '0';
+  // a page that is older than the running worker (its saved copy was served because the network was slow) must not
+  // register its own, older build: that installed the old worker as an "update" and showed «Жаңа нұсқа дайын» again
+  if (isOlderThanController(time)) return;
   let reloading = false;
   let accepted = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -59,7 +63,7 @@ export function registerServiceWorker(): void {
     accepted = true;
     waiting.postMessage({ type: 'SKIP_WAITING' });
   };
-  navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(build)}`, { scope: '/', updateViaCache: 'none' }).then(reg => {
+  navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(build)}&t=${encodeURIComponent(time)}`, { scope: '/', updateViaCache: 'none' }).then(reg => {
     const track = (w: ServiceWorker | null) => {
       if (!w) return;
       const check = () => { if (w.state === 'installed' && navigator.serviceWorker.controller) setWaiting(w); };
@@ -73,6 +77,15 @@ export function registerServiceWorker(): void {
     document.addEventListener('visibilitychange', poll);
     setInterval(poll, 30 * 60_000);
   }).catch(() => { /* no worker: the site works as before, only without offline pages */ });
+}
+
+/** the running worker's build time (the t= in its script URL) is newer than this page's build */
+export function isOlderThanController(time: string, scriptURL = typeof navigator !== 'undefined' ? navigator.serviceWorker?.controller?.scriptURL : undefined): boolean {
+  if (!scriptURL) return false;
+  try {
+    const t = Number(new URL(scriptURL).searchParams.get('t') || 0);
+    return t > 0 && Number(time) > 0 && t > Number(time);
+  } catch { return false; }
 }
 
 function keepLoadedAssets(): void {

@@ -42,6 +42,9 @@ const standaloneCsp = `${csp}; frame-ancestors 'none'`;
 // a new service worker with fresh caches and the student sees «Жаңа нұсқа дайын — Жаңарту».
 // BUILD_ID is the git sha passed as a docker build arg (docker/deploy.sh); a local build falls back to the time.
 const buildId = (process.env.BUILD_ID || process.env.GIT_SHA || "").slice(0, 12) || Date.now().toString(36);
+// when this build was made (ms): a page never registers a worker older than the one already running, so a stale copy
+// of the page served from the cache on a slow network cannot "update" the site back to an older build
+const buildTime = String(Date.now());
 
 const nextConfig: NextConfig = {
   // a self-contained server (node server.js) for the web image, docker/frontend.Dockerfile
@@ -50,7 +53,7 @@ const nextConfig: NextConfig = {
   // (~37 MB) stay out of the image
   images: { unoptimized: true },
   outputFileTracingExcludes: { "*": ["node_modules/@img/**", "node_modules/sharp/**"] },
-  env: { NEXT_PUBLIC_BUILD_ID: buildId },
+  env: { NEXT_PUBLIC_BUILD_ID: buildId, NEXT_PUBLIC_BUILD_TIME: buildTime },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiOrigin}/api/:path*` }];
   },
