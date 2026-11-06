@@ -3,8 +3,9 @@
    the café's own Kaspi account) or at the counter → order status with a big pickup code; order history; the counter's
    order board (/cafe/staff, made for a tablet); the compact home shortcut. Every price shown here is a preview: the
    server recomputes the order from its own menu. Flat: solid fills, 1px borders. */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail, PlaceCard, openFirst, payLine } from '@/components/desk';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useFeature, useLoad, useNeedAccount } from '@/components/views/common';
 import { KaspiPay, beep } from '@/components/views/shop-common';
@@ -16,6 +17,7 @@ import {
   type Cafe as CafeT, type CartLine, type Item, type Menu, type Order, type PaymentMethod,
 } from '@/lib/cafe';
 import { newKey } from '@/lib/points';
+import { useDesktop } from '@/lib/desktop';
 
 const nameOf = (x: { nameKk: string; nameRu: string }, lang: string) => (lang !== 'kk' ? x.nameRu : x.nameKk);
 
@@ -64,29 +66,58 @@ export function CafeShortcut() {
 function CafeList() {
   const { tt, lang, go } = useApp();
   const acc = useAccount();
+  const desktop = useDesktop();
   const list = useLoad<{ cafes: CafeT[] }>('/api/cafes');
   const mine = useLoad<{ orders: Order[] }>(hasAccount(acc) ? '/api/cafe/orders/mine' : null);
   const active = (mine.data?.orders ?? []).filter(o => isActive(o.status));
+  const cafes = list.data?.cafes ?? [];
+  const history = hasAccount(acc) ? <button className="link-btn" type="button" onClick={() => go('cafe:orders')}>{tt('Тарих', 'История')}</button> : undefined;
+  const orders = active.length ? (
+    <section className="section">
+      <SectionHead title={tt('Менің тапсырыстарым', 'Мои заказы')} />
+      <div className="group">
+        {active.map(o => (
+          <Row key={o.id} go={`cafe:o${o.id}`} icon="cup" title={<span className="cafe-code-inline num">№{o.pickupCode}</span>}
+            sub={`${nameOf({ nameKk: o.cafeNameKk, nameRu: o.cafeNameRu }, lang)} · ${hhmm(o.pickupAt)}`} end={<OrderBadge o={o} />} />
+        ))}
+      </div>
+    </section>
+  ) : null;
+  const note = <p className="note">{tt('Төлем тікелей кофейняның Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.',
+    'Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. Student Hub деньги не держит.')}</p>;
+  // a laptop with one café: no lonely card in a wide page, the café itself (menu on the left, the cart on the right)
+  if (desktop && cafes.length === 1) {
+    return (
+      <div className="cafe cafe-solo">
+        {orders}
+        <MenuView id={cafes[0].id} more={history} />
+        {note}
+      </div>
+    );
+  }
   return (
     <div className="cafe">
-      {active.length ? (
-        <section className="section">
-          <SectionHead title={tt('Менің тапсырыстарым', 'Мои заказы')} />
-          <div className="group">
-            {active.map(o => (
-              <Row key={o.id} go={`cafe:o${o.id}`} icon="cup" title={<span className="cafe-code-inline num">№{o.pickupCode}</span>}
-                sub={`${nameOf({ nameKk: o.cafeNameKk, nameRu: o.cafeNameRu }, lang)} · ${hhmm(o.pickupAt)}`} end={<OrderBadge o={o} />} />
+      {orders}
+      <section className="section">
+        <SectionHead title={tt('Кофейнялар', 'Кофейни')} more={history} />
+        <ErrorLine err={list.err} />
+        {!list.data ? <Loading /> : !cafes.length ? <Empty icon="cup">{tt('Әзірге кофейня қосылмаған.', 'Кофейни пока не подключены.')}</Empty> : desktop ? (
+          <div className="desk-grid place-grid" id="cafeGrid">
+            {openFirst(cafes, c => nameOf(c, lang)).map(c => (
+              <PlaceCard key={c.id} go={`cafe:${c.id}`} icon="cup" name={nameOf(c, lang)} open={c.openNow}
+                openLabel={tt('Қабылдап жатыр', 'Принимает')} closedLabel={tt('Жабық', 'Закрыто')}
+                badge={c.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : undefined}
+                facts={[
+                  { icon: 'pin', text: [c.building, lang !== 'kk' ? c.placeRu : c.placeKk].filter(Boolean).join(', ') },
+                  { icon: 'clock', text: hoursLabel(c, lang) },
+                  { icon: 'tenge', text: payLine(c.payments, tt) },
+                ]}
+                cta={tt('Мәзірді көру', 'Смотреть меню')} />
             ))}
           </div>
-        </section>
-      ) : null}
-      <section className="section">
-        <SectionHead title={tt('Кофейнялар', 'Кофейни')}
-          more={hasAccount(acc) ? <button className="link-btn" type="button" onClick={() => go('cafe:orders')}>{tt('Тарих', 'История')}</button> : undefined} />
-        <ErrorLine err={list.err} />
-        {!list.data ? <Loading /> : !list.data.cafes.length ? <Empty icon="cup">{tt('Әзірге кофейня қосылмаған.', 'Кофейни пока не подключены.')}</Empty> : (
+        ) : (
           <div className="group">
-            {list.data.cafes.map(c => (
+            {cafes.map(c => (
               <Row key={c.id} go={`cafe:${c.id}`} icon="cup" tone={c.openNow ? 'nico-2' : ''}
                 title={<>{nameOf(c, lang)} {c.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : null}</>}
                 sub={`${[c.building, lang !== 'kk' ? c.placeRu : c.placeKk].filter(Boolean).join(', ')}${c.building || c.placeKk ? ' · ' : ''}${hoursLabel(c, lang)}`}
@@ -95,16 +126,16 @@ function CafeList() {
           </div>
         )}
       </section>
-      <p className="note">{tt('Төлем тікелей кофейняның Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.',
-        'Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. Student Hub деньги не держит.')}</p>
+      {note}
     </div>
   );
 }
 
 /* ---------- menu, cart, checkout ---------- */
 
-function MenuView({ id }: { id: number }) {
+function MenuView({ id, more }: { id: number; more?: ReactNode }) {
   const { tt, lang, openSheet, toast } = useApp();
+  const desktop = useDesktop();
   const m = useLoad<Menu>(`/api/cafes/${id}/menu`);
   const [cart, setCart] = useState<CartLine[]>(() => (typeof window === 'undefined' ? [] : loadCart(id)));
   useEffect(() => { saveCart(id, cart); }, [id, cart]);
@@ -124,6 +155,50 @@ function MenuView({ id }: { id: number }) {
     if (!it.options.length) add(it, {}, 1);
     else openSheet(<ItemSheet item={it} onAdd={add} />);
   };
+  const checkout = () => openSheet(<CheckoutSheet menu={m.data!} cart={cart} setCart={setCart} />);
+  const itemRow = (it: Item) => (
+    <div className="row cafe-item" key={it.id}>
+      <span className="row-main">
+        <span className="row-title">{nameOf(it, lang)}</span>
+        {(lang !== 'kk' ? it.descRu : it.descKk) ? <span className="row-sub">{lang !== 'kk' ? it.descRu : it.descKk}</span> : null}
+        <span className="row-sub num">{it.options.length ? tt('бастап ', 'от ') : ''}{money(it.price)}</span>
+      </span>
+      {it.available ? (
+        <button className="btn secondary cafe-add" type="button" onClick={() => quickAdd(it)} aria-label={tt(`${nameOf(it, lang)}: себетке қосу`, `${nameOf(it, lang)}: в корзину`)}>
+          <Icon n="plus" s={18} />
+        </button>
+      ) : <span className="badge b-line">{tt('Таусылды', 'Закончилось')}</span>}
+    </div>
+  );
+  if (desktop) {
+    // a laptop: the café's header card across the page, the menu as a grid of tiles, the cart always open on the right
+    const place = [cafe.building, lang !== 'kk' ? cafe.placeRu : cafe.placeKk].filter(Boolean).join(', ');
+    const free = m.data.slots.find(x => !x.full);
+    return (
+      <div className="cafe cafe-desk">
+        <div className="card place-head" id="cafeHead">
+          <div className="place-head-top">
+            <span className={`ico ${cafe.openNow ? 'nico-2' : ''}`}><Icon n="cup" /></span>
+            <h2>{nameOf(cafe, lang)} {cafe.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : null}</h2>
+            <span className={`badge ${cafe.openNow ? 'b-ok' : 'b-line'}`}>{cafe.openNow ? tt('Қабылдап жатыр', 'Принимает') : tt('Жабық', 'Закрыто')}</span>
+            {more ? <span className="place-head-more">{more}</span> : null}
+          </div>
+          <p className="place-facts">
+            {place ? <span className="place-fact"><Icon n="pin" s={16} /><span>{place}</span></span> : null}
+            <span className="place-fact"><Icon n="clock" s={16} /><span>{hoursLabel(cafe, lang)}{cafe.openNow ? '' : ' · ' + tt('қазір тапсырыс қабылдамайды', 'сейчас заказы не принимает')}</span></span>
+            {cafe.payments.length ? <span className="place-fact"><Icon n="tenge" s={16} /><span>{payLine(cafe.payments, tt)}</span></span> : null}
+            {free ? <span className="place-fact"><Icon n="history" s={16} /><span className="num">{tt(`Ең жақын уақыт: ${hhmm(free.at)}`, `Ближайшее время: ${hhmm(free.at)}`)}</span></span> : null}
+          </p>
+        </div>
+        <DeskDetail label={tt('Себет', 'Корзина')} main={groups.map(([title, list]) => (
+          <section className="section" key={title}>
+            <SectionHead title={title} />
+            <div className="group desk-cards cafe-items">{list.map(itemRow)}</div>
+          </section>
+        ))} rail={<CartPanel menu={m.data} cart={cart} setCart={setCart} onCheckout={checkout} />} />
+      </div>
+    );
+  }
   return (
     <div className="cafe cafe-menu">
       {/* the café card and the cart: one block, a right rail on a laptop (app/desktop.css); on a phone the cart bar is fixed at the bottom */}
@@ -144,24 +219,50 @@ function MenuView({ id }: { id: number }) {
       {groups.map(([title, list]) => (
         <section className="section" key={title}>
           <SectionHead title={title} />
-          <div className="group">
-            {list.map(it => (
-              <div className="row cafe-item" key={it.id}>
-                <span className="row-main">
-                  <span className="row-title">{nameOf(it, lang)}</span>
-                  {(lang !== 'kk' ? it.descRu : it.descKk) ? <span className="row-sub">{lang !== 'kk' ? it.descRu : it.descKk}</span> : null}
-                  <span className="row-sub num">{it.options.length ? tt('бастап ', 'от ') : ''}{money(it.price)}</span>
-                </span>
-                {it.available ? (
-                  <button className="btn secondary cafe-add" type="button" onClick={() => quickAdd(it)} aria-label={tt(`${nameOf(it, lang)}: себетке қосу`, `${nameOf(it, lang)}: в корзину`)}>
-                    <Icon n="plus" s={18} />
-                  </button>
-                ) : <span className="badge b-line">{tt('Таусылды', 'Закончилось')}</span>}
-              </div>
-            ))}
-          </div>
+          <div className="group">{list.map(itemRow)}</div>
         </section>
       ))}
+    </div>
+  );
+}
+
+/** the laptop's cart: always visible beside the menu; the order itself (time, payment) is the checkout dialog */
+function CartPanel({ menu, cart, setCart, onCheckout }: { menu: Menu; cart: CartLine[]; setCart: (f: (c: CartLine[]) => CartLine[]) => void; onCheckout: () => void }) {
+  const { tt, lang } = useApp();
+  const sum = cartTotal(cart, menu.items);
+  return (
+    <div className="card cafe-cartpanel" id="cafeCartPanel">
+      <h2 className="cafe-cart-h"><Icon n="cart" s={18} /> {tt('Себет', 'Корзина')}{sum.count ? <span className="badge b-line num">{sum.count}</span> : null}</h2>
+      {!cart.length ? <p className="small muted">{tt('Себет бос. Мәзірден «+» басып таңдаңыз.', 'Корзина пуста. Выберите в меню кнопкой «+».')}</p> : (
+        <>
+          <div className="group cafe-lines">
+            {cart.map(l => {
+              const it = menu.items.find(i => i.id === l.itemId);
+              const gone = sum.gone.includes(l);
+              const opts = it ? it.options.flatMap(o => (l.options[o.id] ?? []).map(c => nameOf(o.choices.find(x => x.id === c) ?? { nameKk: c, nameRu: c }, lang))) : [];
+              const label = it ? nameOf(it, lang) : '—';
+              return (
+                <div className="row" key={l.key}>
+                  <span className="row-main">
+                    <span className="row-title">{label}</span>
+                    <span className="row-sub">{gone ? tt('Қазір жоқ — алып тасталады', 'Сейчас нет — будет убрано') : [...opts, money(it ? unitPrice(it, l.options) : 0)].join(' · ')}</span>
+                  </span>
+                  <span className="cafe-qty small" role="group" aria-label={label}>
+                    <button className="btn ghost" type="button" onClick={() => setCart(c => setQty(c, l.key, l.qty - 1))} aria-label={tt('Азайту', 'Меньше')}>−</button>
+                    <b className="num" aria-live="polite">{l.qty}</b>
+                    <button className="btn ghost" type="button" onClick={() => setCart(c => setQty(c, l.key, l.qty + 1))} aria-label={tt('Көбейту', 'Больше')} disabled={l.qty >= 10}>+</button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="cafe-total"><span>{tt('Барлығы', 'Итого')}</span><b className="num">{money(sum.total)}</b></p>
+        </>
+      )}
+      <button className="btn block" type="button" id="cafeCart" disabled={!sum.count} onClick={onCheckout}>
+        {tt('Тапсырыс беру', 'Оформить заказ')}{sum.count ? <> · <span className="num">{money(sum.total)}</span></> : null}
+      </button>
+      <p className="tiny muted">{tt('Келесі қадамда алу уақыты мен төлем тәсілін таңдайсыз.', 'Дальше выберете время и способ оплаты.')}</p>
     </div>
   );
 }

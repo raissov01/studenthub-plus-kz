@@ -3,6 +3,8 @@
    letter), «what do I need on the exam» and absences. Device-only (AppState.scores), works offline, sends nothing.
    /grades lists the subjects; /grades?id=<subject id> is one subject's sheet (lib/routes QUERY_ID). The formula is a
    labelled default (lib/scores.ts GRADING); the student can adjust the exam weight and pass mark for their faculty. */
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { useState, useSyncExternalStore } from 'react';
 import { useApp, type App } from '@/components/app';
 import { Empty, Icon, Row, SectionHead } from '@/components/ui';
@@ -71,6 +73,7 @@ export function GradesScreen() {
 
 function GradeList() {
   const { S, tt, go, toast } = useApp();
+  const desktop = useDesktop();
   const g = useGrading();
   const { list, ready } = useGradeSubjects();
   const [name, setName] = useState('');
@@ -84,12 +87,14 @@ function GradeList() {
     setName('');
     toast(tt('Пән қосылды', 'Предмет добавлен'));
   };
-  return (
-    <>
+  const intro = (
       <p className="small muted">{tt('Аралық бақылау (АБ), емтихан мен қорытынды балл және сабақтан қалғаныңыз — өз есебіңіз. Деректер тек осы құрылғыда.',
         'Рубежные контроли (РК), экзамен, итог и пропуски — ваш личный учёт. Данные только на этом устройстве.')}</p>
+  );
+  const listEl = (
+    <>
       {!ready ? <p className="small muted" role="status">{tt('Жүктелуде…', 'Загрузка…')}</p> : list.length ? (
-        <div className="group" id="gradeList">
+        <div className={`group${desktop ? ' desk-cards' : ''}`} id="gradeList">
           {list.map(s => {
             const e = S.scores.find(x => x.subject === s.id);
             const abs = e ? absenceState(e) : 'none';
@@ -97,6 +102,10 @@ function GradeList() {
           })}
         </div>
       ) : <Empty icon="grades">{tt('Пәндер сабақ кестесінен алынады. Кесте әлі жоқ болса, пәнді төменде өзіңіз қосыңыз.', 'Предметы берутся из расписания. Если его пока нет, добавьте предмет ниже.')}</Empty>}
+    </>
+  );
+  const side = (
+    <>
       <form className="card form" onSubmit={e => { e.preventDefault(); add(); }}>
         <div className="field">
           <label htmlFor="gradeNew">{tt('Пән қосу', 'Добавить предмет')}</label>
@@ -105,9 +114,13 @@ function GradeList() {
         <button className="btn" type="submit" disabled={!name.trim()}><Icon n="plus" s={18} /> {tt('Қосу', 'Добавить')}</button>
       </form>
       <FormulaCard g={g} />
-      <Row go="gpa" icon="calc" title={tt('GPA калькуляторы', 'Калькулятор GPA')} sub={tt('Қорытынды бағаларды GPA-ға толтыру', 'Заполнить GPA итоговыми оценками')} />
+      {desktop ? <div className="group"><Row go="gpa" icon="calc" title={tt('GPA калькуляторы', 'Калькулятор GPA')} sub={tt('Қорытынды бағаларды GPA-ға толтыру', 'Заполнить GPA итоговыми оценками')} /></div>
+        : <Row go="gpa" icon="calc" title={tt('GPA калькуляторы', 'Калькулятор GPA')} sub={tt('Қорытынды бағаларды GPA-ға толтыру', 'Заполнить GPA итоговыми оценками')} />}
     </>
   );
+  // a laptop: the subjects' scores as tiles; adding a subject, the formula and GPA on the right
+  if (desktop) return <DeskDetail label={tt('Баға есебі', 'Учёт оценок')} main={<>{intro}{listEl}</>} rail={side} />;
+  return <>{intro}{listEl}{side}</>;
 }
 
 function FormulaCard({ g }: { g: Grading }) {

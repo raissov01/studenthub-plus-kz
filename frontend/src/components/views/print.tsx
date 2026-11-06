@@ -4,8 +4,9 @@
    the job screen (queue position, status, a new price to approve, pickup code); history; the operator's queue board
    (/print/staff, made for a tablet) with the price list. Every total shown comes from the server. Flat: solid fills,
    1px borders. */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail, PlaceCard, openFirst, payLine } from '@/components/desk';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useLoad, useNeedAccount } from '@/components/views/common';
 import { DayReport, PriceCalc } from '@/components/views/print-extras';
@@ -16,6 +17,7 @@ import { useQueryId } from '@/components/views/subjects';
 import { api, apiUpload, useAccount } from '@/lib/account';
 import { hoursLabel, tengeToTiyn } from '@/lib/cafe';
 import { newKey } from '@/lib/points';
+import { useDesktop } from '@/lib/desktop';
 import {
   acceptAttr, blocker, bytesLabel, checkFile, colorAt, defaultOpts, duplexAt, fileError, fixOpts, isActive, isImage, lineDetail, money,
   etaLabel, newArrivals, parsePreset, paymentLabel, presetKey, presetOf, priceList, priceStateLabel, quoteBody, rangeOK, shouldPoll, sizesOf, sortReady, statusLabel, stepIndex, withPreset, workable,
@@ -49,29 +51,53 @@ function JobBadge({ j }: { j: Pick<Job, 'status'> }) {
 function ShopList() {
   const { tt, lang, go } = useApp();
   const acc = useAccount();
+  const desktop = useDesktop();
   const list = useLoad<{ shops: Shop[] }>('/api/print/shops');
   const mine = useLoad<{ jobs: Job[] }>(hasAccount(acc) ? '/api/print/jobs/mine' : null);
   const active = (mine.data?.jobs ?? []).filter(j => isActive(j.status));
+  const shops = list.data?.shops ?? [];
+  const history = hasAccount(acc) ? <button className="link-btn" type="button" onClick={() => go('print:jobs')}>{tt('Тарих', 'История')}</button> : undefined;
+  const jobs = active.length ? (
+    <section className="section">
+      <SectionHead title={tt('Менің тапсырыстарым', 'Мои заказы')} />
+      <div className="group">
+        {active.map(j => (
+          <Row key={j.id} go={`print:j${j.id}`} icon="printer" title={<span className="cafe-code-inline num">№{j.pickupCode}</span>}
+            sub={`${nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)} · ${money(j.total)}`} end={<JobBadge j={j} />} />
+        ))}
+      </div>
+    </section>
+  ) : null;
+  const note = <p className="note">{tt('Файлдарды жүктеп, бағасын көріп, кезекке тұрыңыз — дайын болғанда хабар келеді. Төлем полиграфияның өз Kaspi шотына не кассада.',
+    'Загрузите файлы, узнайте цену и встаньте в очередь — когда будет готово, придёт уведомление. Оплата — на Kaspi-счёт полиграфии или на кассе.')}</p>;
+  // a laptop with one shop: the shop itself (upload and price on the left, the shop and its prices on the right)
+  if (desktop && shops.length === 1) {
+    return <>{jobs}<ShopView id={shops[0].id} more={history} />{note}</>;
+  }
   return (
     <div className="cafe print">
-      {active.length ? (
-        <section className="section">
-          <SectionHead title={tt('Менің тапсырыстарым', 'Мои заказы')} />
-          <div className="group">
-            {active.map(j => (
-              <Row key={j.id} go={`print:j${j.id}`} icon="printer" title={<span className="cafe-code-inline num">№{j.pickupCode}</span>}
-                sub={`${nameOf({ nameKk: j.shopNameKk, nameRu: j.shopNameRu }, lang)} · ${money(j.total)}`} end={<JobBadge j={j} />} />
+      {jobs}
+      <section className="section">
+        <SectionHead title={tt('Полиграфиялар', 'Полиграфии')} more={history} />
+        <ErrorLine err={list.err} />
+        {!list.data ? <Loading /> : !shops.length ? <Empty icon="printer">{tt('Әзірге полиграфия қосылмаған.', 'Полиграфии пока не подключены.')}</Empty> : desktop ? (
+          <div className="desk-grid place-grid" id="printGrid">
+            {openFirst(shops, s => nameOf(s, lang)).map(s => (
+              <PlaceCard key={s.id} go={`print:${s.id}`} icon="printer" name={nameOf(s, lang)} open={s.openNow}
+                openLabel={tt('Ашық', 'Открыто')} closedLabel={tt('Жабық', 'Закрыто')}
+                facts={[
+                  { icon: 'pin', text: placeOf(s, lang) },
+                  { icon: 'clock', text: hoursLabel(s, lang) },
+                  { icon: 'history', text: s.leadMinutes ? tt(`Дайын болуы: ~${s.leadMinutes} мин`, `Готовность: ~${s.leadMinutes} мин`) : '' },
+                  { icon: 'file', text: s.accepts.map(x => x.toUpperCase()).join(', ') },
+                  { icon: 'tenge', text: payLine(s.payments, tt) },
+                ]}
+                cta={tt('Тапсырыс беру', 'Оформить заказ')} />
             ))}
           </div>
-        </section>
-      ) : null}
-      <section className="section">
-        <SectionHead title={tt('Полиграфиялар', 'Полиграфии')}
-          more={hasAccount(acc) ? <button className="link-btn" type="button" onClick={() => go('print:jobs')}>{tt('Тарих', 'История')}</button> : undefined} />
-        <ErrorLine err={list.err} />
-        {!list.data ? <Loading /> : !list.data.shops.length ? <Empty icon="printer">{tt('Әзірге полиграфия қосылмаған.', 'Полиграфии пока не подключены.')}</Empty> : (
+        ) : (
           <div className="group">
-            {list.data.shops.map(s => (
+            {shops.map(s => (
               <Row key={s.id} go={`print:${s.id}`} icon="printer" tone={s.openNow ? 'nico-2' : ''} title={nameOf(s, lang)}
                 sub={`${placeOf(s, lang)}${placeOf(s, lang) ? ' · ' : ''}${hoursLabel(s, lang)}`}
                 end={<span className={`badge ${s.openNow ? 'b-ok' : 'b-line'}`}>{s.openNow ? tt('Ашық', 'Открыто') : tt('Жабық', 'Закрыто')}</span>} />
@@ -79,21 +105,47 @@ function ShopList() {
           </div>
         )}
       </section>
-      <p className="note">{tt('Файлдарды жүктеп, бағасын көріп, кезекке тұрыңыз — дайын болғанда хабар келеді. Төлем полиграфияның өз Kaspi шотына не кассада.',
-        'Загрузите файлы, узнайте цену и встаньте в очередь — когда будет готово, придёт уведомление. Оплата — на Kaspi-счёт полиграфии или на кассе.')}</p>
+      {note}
     </div>
   );
 }
 
 /* ---------- the shop: price list and the job builder ---------- */
 
-function ShopView({ id }: { id: number }) {
+function ShopView({ id, more }: { id: number; more?: ReactNode }) {
   const { tt, lang } = useApp();
+  const desktop = useDesktop();
   const c = useLoad<Catalog>(`/api/print/shops/${id}`);
   if (c.code === 'not_found') return <NotFound />;
   if (!c.data) return <><ErrorLine err={c.err} />{c.err ? null : <Loading />}</>;
   const { shop } = c.data;
   const note = lang !== 'kk' ? shop.noteRu : shop.noteKk;
+  if (desktop) {
+    // a laptop: the shop across the page; the order (files, options, the server's price, pickup) on the left,
+    // the price list and the calculator on the right
+    return (
+      <div className="cafe print print-desk">
+        <div className="card place-head" id="printHead">
+          <div className="place-head-top">
+            <span className={`ico ${shop.openNow ? 'nico-2' : ''}`}><Icon n="printer" /></span>
+            <h2>{nameOf(shop, lang)}</h2>
+            <span className={`badge ${shop.openNow ? 'b-ok' : 'b-line'}`}>{shop.openNow ? tt('Ашық', 'Открыто') : tt('Жабық', 'Закрыто')}</span>
+            {more ? <span className="place-head-more">{more}</span> : null}
+          </div>
+          <p className="place-facts">
+            {placeOf(shop, lang) ? <span className="place-fact"><Icon n="pin" s={16} /><span>{placeOf(shop, lang)}</span></span> : null}
+            <span className="place-fact"><Icon n="clock" s={16} /><span>{hoursLabel(shop, lang)}{shop.openNow ? '' : ' · ' + tt('қазір жабық: тапсырыс келесі жұмыс уақытында басылады', 'сейчас закрыто: заказ напечатают в рабочее время')}</span></span>
+            {shop.leadMinutes ? <span className="place-fact"><Icon n="history" s={16} /><span>{tt(`Дайын болуы: ~${shop.leadMinutes} мин`, `Готовность: ~${shop.leadMinutes} мин`)}</span></span> : null}
+            {shop.payments.length ? <span className="place-fact"><Icon n="tenge" s={16} /><span>{payLine(shop.payments, tt)}</span></span> : null}
+          </p>
+          {note ? <p className="small">{note}</p> : null}
+        </div>
+        <DeskDetail className="free-rail" label={tt('Прайс', 'Прайс')}
+          main={<JobBuilder cat={c.data} />}
+          rail={<><PriceList services={c.data.services} goods={c.data.goods} minOrder={shop.minOrder} /><PriceCalc shopId={shop.id} services={c.data.services} /></>} />
+      </div>
+    );
+  }
   return (
     <div className="cafe print">
       <div className="card">

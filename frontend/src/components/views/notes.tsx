@@ -2,6 +2,8 @@
 /* «Конспектілер»: the list with search (/notes), the block editor (/notes?id=<note id>), the «new note» sheet with the
    three templates, export (.md / .txt / share) and «Қорытып, карточка жаса» (one AI button, result edited before saving).
    Storage and the write-ahead save are in lib/studydb.ts; the note model, templates and export in lib/notes.ts. */
+import { DeskList } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
 import { copyText, useApp } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Row } from '@/components/ui';
@@ -30,13 +32,14 @@ export function NotesScreen() {
 /* ---------- list + search ---------- */
 function NotesList() {
   const { S, tt, L, openSheet } = useApp();
+  const desktop = useDesktop();
   const { list } = useSubjects();
   const study = useStudy();
   const [q, setQ] = useState('');
   const lang = apiLang(S.lang);
   const hits = searchNotes(study.notes, q);
   const subjName = (id: string) => list.find(s => s.id === id)?.name ?? '';
-  return (
+  const tools = (
     <>
       <div className="search" role="search">
         <Icon n="search" s={18} />
@@ -44,17 +47,28 @@ function NotesList() {
           aria-label={tt('Конспектілерден іздеу', 'Поиск по конспектам')} placeholder={tt('Конспектілерден іздеу', 'Поиск по конспектам')} />
       </div>
       <button className="btn block" type="button" onClick={() => openSheet(<NewNoteSheet />)}><Icon n="plus" s={18} /> {tt('Жаңа конспект', 'Новый конспект')}</button>
+    </>
+  );
+  const results = (
+    <>
       {!study.ready ? <p className="small muted" role="status">{tt('Жүктелуде…', 'Загрузка…')}</p>
         : hits.length ? (
-          <div className="group" id="noteList">{hits.map(({ note, snippet }) => (
+          <div className={`group${desktop ? ' desk-cards' : ''}`} id="noteList">{hits.map(({ note, snippet }) => (
             <Row key={note.id} go={'notes:' + note.id} icon="doc" title={noteTitle(note, lang)}
               sub={snippet || [subjName(note.subject), L(TEMPLATE_LABEL[note.template]), note.date].filter(Boolean).join(' · ')} />
           ))}</div>
         ) : <Empty icon="doc">{q.trim() ? tt('Ештеңе табылмады.', 'Ничего не найдено.') : tt('Әзірге конспект жоқ. Үлгіні таңдап, бастаңыз.', 'Пока нет конспектов. Выберите шаблон и начните.')}</Empty>}
+    </>
+  );
+  const notes = (
+    <>
       {!study.durable && study.ready ? <p className="note">{tt('Бұл браузер IndexedDB-ге рұқсат бермейді: конспектілер шағын көшірмеде ғана сақталады, суреттер сақталмайды.', 'Этот браузер не даёт доступ к IndexedDB: конспекты хранятся только в небольшой копии, фото не сохраняются.')}</p> : null}
       <p className="tiny muted">{tt('Конспектілер тек осы құрылғыда сақталады және интернетсіз ашылады. Маңыздыларын .md файлына экспорттап қойыңыз.', 'Конспекты хранятся только на этом устройстве и открываются без интернета. Важные экспортируйте в файл .md.')}</p>
     </>
   );
+  // a laptop: search and «new note» in a left panel, the notes as tiles beside it
+  if (desktop) return <DeskList label={tt('Конспектілерден іздеу', 'Поиск по конспектам')} filters={<>{tools}{notes}</>}>{results}</DeskList>;
+  return <>{tools}{results}{notes}</>;
 }
 
 /* ---------- new note ---------- */

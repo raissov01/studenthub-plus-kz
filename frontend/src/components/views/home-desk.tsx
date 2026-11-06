@@ -9,6 +9,8 @@ import { useConfig } from '@/lib/config';
 import { addDays, byDay, weekdayMon, WEEK_SHORT } from '@/lib/calendar';
 import type { IconName } from '@/lib/icons';
 
+const MAX = 3;
+
 function WeekPreview() {
   const { S, I, tt, go, setUi, content, lang } = useApp();
   const today = todayYmd();
@@ -20,17 +22,28 @@ function WeekPreview() {
   return (
     <section className="section home-week" id="homeWeek">
       <SectionHead title={tt('Осы апта', 'Эта неделя')} more={<button className="link-btn" type="button" onClick={() => go('calendar')}>{tt('Күнтізбе', 'Календарь')}</button>} />
-      <div className="hw-grid">
+      {/* a day shows up to three items (time + a two-line name); the rest is «+N». Seven columns from 1360px, a strip that
+          scrolls sideways below that (app/desktop.css) so a name never shrinks to a few letters */}
+      <div className="hw-grid" role="list">
         {Array.from({ length: 7 }, (_, i) => {
           const d = addDays(from, i);
           const list = days.get(d) ?? [];
+          const all = list.map(it => (it.time ? `${it.time} ${it.title}` : it.title)).join('; ');
           return (
-            <button key={d} type="button" className="hw-day" aria-current={d === today ? 'date' : undefined} onClick={() => open(d)}
-              aria-label={`${I.fDate(new Date(d + 'T12:00:00'))}: ${list.length}`}>
-              <span className="hw-head"><span className="hw-wd">{WEEK_SHORT[lang][i]}</span><b className="hw-num num">{+d.slice(8)}</b></span>
-              {list.slice(0, 3).map(it => <span key={it.key} className={`hw-it cal-k-${it.kind}`} title={it.time ? `${it.time} ${it.title}` : it.title}>{it.title}</span>)}
-              {list.length > 3 ? <span className="hw-more">+{list.length - 3}</span> : null}
-            </button>
+            <div key={d} role="listitem" className="hw-cell">
+              <button type="button" className="hw-day" aria-current={d === today ? 'date' : undefined} onClick={() => open(d)}
+                title={all || undefined}
+                aria-label={`${I.fDate(new Date(d + 'T12:00:00'))}: ${list.length ? all : tt('бос', 'свободно')}`}>
+                <span className="hw-head"><span className="hw-wd">{WEEK_SHORT[lang][i]}</span><b className="hw-num num">{+d.slice(8)}</b></span>
+                {list.slice(0, MAX).map(it => (
+                  <span key={it.key} className={`hw-it cal-k-${it.kind}`} title={it.time ? `${it.time} ${it.title}` : it.title}>
+                    {it.time ? <span className="hw-time num">{it.time}</span> : null}
+                    <span className="hw-name">{it.title}</span>
+                  </span>
+                ))}
+                {list.length > MAX ? <span className="hw-more num">+{list.length - MAX}</span> : null}
+              </button>
+            </div>
           );
         })}
       </div>

@@ -4,6 +4,8 @@
    username check, up to 3 photos resized in the browser), /market/mine owner actions, and the search results block. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail, DeskList } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { agoDays, ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useFeature, useLoad, useNeedAccount, ymd } from '@/components/views/common';
 import { api, apiUpload, useAccount } from '@/lib/account';
@@ -38,6 +40,7 @@ function MarketCard({ it }: { it: MarketItem }) {
 
 export function MarketGrid() {
   const { tt, L, go } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const cfg = useConfig();
   const [uni, setUni] = useState<'own' | 'all'>('own');
@@ -64,7 +67,7 @@ export function MarketGrid() {
     } catch { /* keep what we have */ }
   };
   const season = data?.season ?? cfg.marketSeason;
-  return (
+  const actions = (
     <>
       {season?.active ? <div className="card banner"><b>{tt('Көшіп жатырсың ба? Заттарыңды жаңа студенттерге бер', 'Переезжаешь? Отдай вещи новым студентам')}</b>
         <button className="btn secondary" type="button" onClick={() => go('market:new')}>{tt('Зат беру', 'Отдать вещь')}</button></div> : null}
@@ -72,11 +75,15 @@ export function MarketGrid() {
         <button className="btn" type="button" onClick={() => go('market:new')}><Icon n="plus" s={18} /> {tt('Зат беру', 'Отдать вещь')}</button>
         {acc.user ? <button className="btn ghost" type="button" onClick={() => go('market:mine')}>{tt('Менің заттарым', 'Мои вещи')}</button> : null}
       </div>
-      {own ? <div className="chips">
+    </>
+  );
+  const filters = (
+    <>
+      {own ? <div className={`chips${desktop ? ' wrap' : ''}`}>
         <Chip pressed={uni === 'own'} onClick={() => setUni('own')}>{tt('Менің университетім', 'Мой университет')}</Chip>
         <Chip pressed={uni === 'all'} onClick={() => setUni('all')}>{tt('Барлық университет', 'Все университеты')}</Chip>
       </div> : null}
-      <div className="chips">
+      <div className={`chips${desktop ? ' wrap' : ''}`}>
         <Chip pressed={cat === 'all'} onClick={() => setCat('all')}>{tt('Барлығы', 'Все')}</Chip>
         {Object.entries(MARKET_CATS).map(([k, c]) => <Chip key={k} pressed={cat === k} onClick={() => setCat(k)}>{L(c)}</Chip>)}
       </div>
@@ -85,6 +92,10 @@ export function MarketGrid() {
           <option value="all">{tt('Кез келген', 'Любое')}</option>
           {Object.entries(MARKET_CONDITIONS).map(([k, c]) => <option key={k} value={k}>{L(c)}</option>)}
         </select></div>
+    </>
+  );
+  const results = (
+    <>
       <ErrorLine err={err} />
       {!data && !err ? <Loading /> : items.length ? (
         <>
@@ -96,13 +107,17 @@ export function MarketGrid() {
           {tt('Әзірге зат жоқ. Семестр соңында көп болады — керек емес заттарыңды бірінші болып бер.', 'Пока вещей нет. В конце семестра их будет больше — отдай ненужное первым.')}
         </Empty>
       ) : null}
-      <p className="note">{tt('Тек тегін. Сату, дәрі-дәрмек, алкоголь, темекі, құжаттар, жануарлар, қару, ақша мен карталар — тыйым салынған.', 'Только бесплатно. Продажа, лекарства, алкоголь, табак, документы, животные, оружие, деньги и карты — запрещены.')}</p>
     </>
   );
+  const note = <p className="note">{tt('Тек тегін. Сату, дәрі-дәрмек, алкоголь, темекі, құжаттар, жануарлар, қару, ақша мен карталар — тыйым салынған.', 'Только бесплатно. Продажа, лекарства, алкоголь, табак, документы, животные, оружие, деньги и карты — запрещены.')}</p>;
+  // a laptop: «give», «mine» and the filters in a left panel, the items as a photo grid beside them
+  if (desktop) return <DeskList label={tt('Сүзгілер', 'Фильтры')} filters={<>{actions}{filters}{note}</>}>{results}</DeskList>;
+  return <>{actions}{filters}{results}{note}</>;
 }
 
 function MarketItemView({ id }: { id: string }) {
   const { tt, L, go, openSheet } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const need = useNeedAccount();
   const { data, err, code } = useLoad<{ item: MarketItem }>(acc.loaded ? `/api/market/items/${id}${acc.user ? '?u=' + acc.user.id : ''}` : null);
@@ -110,29 +125,31 @@ function MarketItemView({ id }: { id: string }) {
   if (err) return <ErrorLine err={err} />;
   const it = data?.item;
   if (!it) return <Loading />;
-  return (
-    <>
-      {it.photos.length ? <div className="mk-photos">{it.photos.map((p, i) => <img key={i} src={p} alt={`${it.title} ${i + 1}`} />)}</div> : null}
-      <div className="detail-head"><h1>{it.title}</h1>
-        <div className="badges">
-          <span className="badge b-ok">{tt('Тегін', 'Бесплатно')}</span>
-          <span className="badge b-line">{L(MARKET_CATS[it.category])}</span>
-          <span className="badge b-line">{L(MARKET_CONDITIONS[it.condition])}</span>
-          {it.status === 'reserved' ? <span className="badge b-sun">{tt('Брондалды', 'Забронировано')}</span> : null}
-        </div></div>
-      {it.desc ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{it.desc}</p> : null}
-      <div className="group">
-        <Row icon="pin" title={it.pickup || tt('Университет аумағында', 'На территории университета')} sub={it.university} chev={false} />
-        <Row icon="clock" title={agoDays(it.daysAgo, tt)} sub={tt(`${ymd(it.expiresAt)} дейін`, `до ${ymd(it.expiresAt)}`)} chev={false} />
-        {it.author ? <Row icon="user" title={it.author.name} sub={it.author.username ? '@' + it.author.username : ''} chev={false} /> : null}
-      </div>
-      {it.mine ? <button className="btn secondary block" type="button" onClick={() => go('market:mine')}>{tt('Менің заттарым', 'Мои вещи')}</button>
-        : it.author?.telegramUrl ? <button className="btn block" type="button" onClick={() => openTelegramLink(it.author!.telegramUrl!)}><Icon n="send" s={18} /> {tt('Жазу', 'Написать')}</button>
-          : !it.author ? <SignInCard text={tt('Жариялаушының аты, Telegram-ы және нақты алу орны тек кірген студенттерге көрінеді.', 'Имя, Telegram и точное место видны только вошедшим студентам.')} /> : null}
-      <p className="note">{tt('Кездесу тек университет аумағында не адам көп жерде. Ақша сұраса — шағымданыңыз.', 'Встречайтесь только на территории вуза или в людном месте. Если просят деньги — пожалуйтесь.')}</p>
-      {!it.mine ? <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => { if (need()) openSheet(<MarketReportSheet id={it.id} />); }}>{tt('Шағымдану', 'Пожаловаться')}</button> : null}
-    </>
+  const photos = it.photos.length ? <div className="mk-photos">{it.photos.map((p, i) => <img key={i} src={p} alt={`${it.title} ${i + 1}`} />)}</div> : null;
+  const head = (
+    <div className="detail-head"><h1>{it.title}</h1>
+      <div className="badges">
+        <span className="badge b-ok">{tt('Тегін', 'Бесплатно')}</span>
+        <span className="badge b-line">{L(MARKET_CATS[it.category])}</span>
+        <span className="badge b-line">{L(MARKET_CONDITIONS[it.condition])}</span>
+        {it.status === 'reserved' ? <span className="badge b-sun">{tt('Брондалды', 'Забронировано')}</span> : null}
+      </div></div>
   );
+  const desc = it.desc ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{it.desc}</p> : null;
+  const facts = (
+    <div className="group">
+      <Row icon="pin" title={it.pickup || tt('Университет аумағында', 'На территории университета')} sub={it.university} chev={false} />
+      <Row icon="clock" title={agoDays(it.daysAgo, tt)} sub={tt(`${ymd(it.expiresAt)} дейін`, `до ${ymd(it.expiresAt)}`)} chev={false} />
+      {it.author ? <Row icon="user" title={it.author.name} sub={it.author.username ? '@' + it.author.username : ''} chev={false} /> : null}
+    </div>
+  );
+  const cta = it.mine ? <button className="btn secondary block" type="button" onClick={() => go('market:mine')}>{tt('Менің заттарым', 'Мои вещи')}</button>
+    : it.author?.telegramUrl ? <button className="btn block" type="button" onClick={() => openTelegramLink(it.author!.telegramUrl!)}><Icon n="send" s={18} /> {tt('Жазу', 'Написать')}</button>
+      : !it.author ? <SignInCard text={tt('Жариялаушының аты, Telegram-ы және нақты алу орны тек кірген студенттерге көрінеді.', 'Имя, Telegram и точное место видны только вошедшим студентам.')} /> : null;
+  const note = <p className="note">{tt('Кездесу тек университет аумағында не адам көп жерде. Ақша сұраса — шағымданыңыз.', 'Встречайтесь только на территории вуза или в людном месте. Если просят деньги — пожалуйтесь.')}</p>;
+  const report = !it.mine ? <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => { if (need()) openSheet(<MarketReportSheet id={it.id} />); }}>{tt('Шағымдану', 'Пожаловаться')}</button> : null;
+  if (desktop) return <DeskDetail label={tt('Алу жолы', 'Как забрать')} main={<>{head}{photos}{desc}</>} rail={<>{facts}{cta}{note}{report}</>} />;
+  return <>{photos}{head}{desc}{facts}{cta}{note}{report}</>;
 }
 
 function MarketReportSheet({ id }: { id: number }) {

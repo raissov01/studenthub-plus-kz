@@ -4,6 +4,8 @@
    the «Пәндер» subjects. Pure helpers: lib/timetable.ts. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { ConfirmSheet, Empty, Icon, SectionHead } from '@/components/ui';
 import { ScheduleIcsButton } from '@/components/views/home';
 import { KIND_MAX, makeEntry, NAME_MAX, ROOM_MAX, sortTimetable, weekdayOf } from '@/lib/timetable';
@@ -13,15 +15,14 @@ const DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 export function TimetableScreen() {
   const { S, tt, wd, go, openSheet, update, toast } = useApp();
+  const desktop = useDesktop();
   const [edit, setEdit] = useState<TimetableEntry | null>(null);
   const list = S.timetable;
   const dayName = (d: number) => wd[(d + 1) % 7];
   const del = (e: TimetableEntry) => openSheet(<ConfirmSheet msg={tt(`«${e.name}» сабағын кестеден өшіру керек пе?`, `Удалить «${e.name}» из расписания?`)} yesLabel={tt('Өшіру', 'Удалить')}
     yes={() => { update(s => { s.timetable = s.timetable.filter(x => x.id !== e.id); }); if (edit?.id === e.id) setEdit(null); toast(tt('Сабақ өшірілді', 'Пара удалена')); }} />);
-  return (
-    <>
-      {list.length ? (
-        <div id="timetableList">
+  const week = list.length ? (
+        <div id="timetableList" className={desktop ? 'desk-grid tt-week' : undefined}>
           {DAYS.filter(d => list.some(e => e.wd === d)).map(d => (
             <section key={d} className="section" aria-label={dayName(d)}>
               <SectionHead title={dayName(d)} />
@@ -41,8 +42,10 @@ export function TimetableScreen() {
         </div>
       ) : (
         <Empty icon="timetable">{tt('Кестеңіз әзірге бос. Төменнен әр сабақты бір рет қосыңыз — ол әр апта қайталанады.', 'Расписание пока пустое. Добавьте каждую пару один раз ниже — она будет повторяться каждую неделю.')}</Empty>
-      )}
-      <TimetableForm key={edit?.id ?? 'new'} edit={edit} onDone={() => setEdit(null)} />
+      );
+  const form = <TimetableForm key={edit?.id ?? 'new'} edit={edit} onDone={() => setEdit(null)} />;
+  const tail = (
+    <>
       {list.length ? (
         <div className="btn-row">
           <button className="btn ghost" type="button" onClick={() => go('calendar')}><Icon n="calendar" s={18} /> {tt('Күнтізбеде көру', 'Посмотреть в календаре')}</button>
@@ -53,6 +56,9 @@ export function TimetableScreen() {
       <p className="tiny muted">{tt('Кесте тек осы құрылғыда сақталады. Университеттің ресми кестесі қосылса, ол автоматты түрде шығады.', 'Расписание хранится только на этом устройстве. Когда подключат официальное расписание университета, оно появится автоматически.')}</p>
     </>
   );
+  // a laptop: the week as day cards; adding or editing a class stays open on the right
+  if (desktop) return <DeskDetail label={tt('Сабақ қосу', 'Добавить пару')} main={week} rail={<>{form}{tail}</>} />;
+  return <>{week}{form}{tail}</>;
 }
 
 function TimetableForm({ edit, onDone }: { edit: TimetableEntry | null; onDone: () => void }) {

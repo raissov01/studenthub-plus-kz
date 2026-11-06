@@ -5,6 +5,8 @@
    the «Клуб жетекшісімін» application and the site admin list (/admin/clubs). API: docs/clubs.md. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { AdminOnly, ErrorLine, errText, Feature, Loading, NotFound, SignInCard, useFeature, useLoad, useNeedAccount, ymd } from '@/components/views/common';
 import { useQueryId } from '@/components/views/subjects';
@@ -131,6 +133,7 @@ function ClubPage({ id }: { id: string }) {
   const d = useLoad<ClubDetail>(`/api/clubs/${id}${acc.user ? '?u=' + acc.user.id : ''}`);
   const evs = useLoad<{ events: DbEvent[] }>(eventsOn ? `/api/events?club=${id}${acc.user ? '&u=' + acc.user.id : ''}` : null);
   const [busy, setBusy] = useState(false);
+  const desktop = useDesktop();
   if (d.code === 'not_found' || d.code === 'http_404') return <NotFound />;
   if (d.err && !d.data) return <ErrorLine err={d.err} />;
   if (!d.data) return <Loading />;
@@ -147,72 +150,105 @@ function ClubPage({ id }: { id: string }) {
       reload();
     } catch (e) { toast(errText(e)); } finally { setBusy(false); }
   };
+  const head = (
+    <div className="detail-head"><h1>{clubName(c, lang)}</h1>
+      <div className="badges"><DirBadge d={c.direction} /><RecruitBadge on={c.recruiting} />
+        {c.status === 'archived' ? <span className="badge b-line">{tt('Архивте', 'В архиве')}</span> : null}
+        {my?.admin ? <span className="badge b-sun">{tt('Сіз жетекшісіз', 'Вы руководитель')}</span> : null}</div>
+    </div>
+  );
+  const summary = clubSummary(c, lang) ? <p>{clubSummary(c, lang)}</p> : null;
+  const about = clubAbout(c, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{clubAbout(c, lang)}</p> : null;
+  const facts = (
+    <div className="group">
+      {clubSchedule(c, lang) ? <Row icon="clock" title={clubSchedule(c, lang)} sub={tt('Кездесу кестесі', 'Расписание встреч')} chev={false} /> : null}
+      {b ? <Row icon="pin" title={[L(b.name), c.room].filter(Boolean).join(', ')} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')}
+        onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }} />
+        : c.room ? <Row icon="pin" title={c.room} chev={false} /> : null}
+      {clubLeader(c, lang) || c.leader_contact ? <Row icon="user" title={clubLeader(c, lang) || tt('Жетекші', 'Руководитель')}
+        sub={c.leader_contact ? c.leader_contact + (manage && !c.leader_contact_public ? ' · ' + tt('тек сізге көрінеді', 'видно только вам') : '') : undefined} chev={false} /> : null}
+      <Row icon="users" title={tt(`Мүшелер: ${c.members}`, `Участников: ${c.members}`)} chev={false} />
+      {tg ? <Row icon="send" title="Telegram" sub={tg.replace('https://', '')} href={tg} /> : null}
+      {ig ? <Row icon="camera" title="Instagram" sub={ig.replace(/^https:\/\/(www\.)?/, '')} href={ig} /> : null}
+    </div>
+  );
+  const join = c.status === 'active' ? (
+    c.join_mode === 'link' && joinLink ? (
+      <a className="btn block" id="clubJoin" href={joinLink} target="_blank" rel="noopener noreferrer"><Icon n="send" s={18} /> {tt('Telegram тобына қосылу', 'Вступить в Telegram-группу')}</a>
+    ) : my?.status === 'member' ? (
+      <div className="card"><span className="badge b-ok"><Icon n="check" s={12} /> {tt('Сіз клуб мүшесісіз', 'Вы участник клуба')}</span>
+        <button className="btn ghost" type="button" disabled={busy || !online} onClick={leaveClub}>{tt('Клубтан шығу', 'Выйти из клуба')}</button></div>
+    ) : my?.status === 'pending' ? (
+      <div className="card" id="clubPending"><b>{tt('Өтінім жіберілді', 'Заявка отправлена')}</b>
+        <span className="small muted">{tt('Жетекші қараған соң хабарлама келеді.', 'Когда руководитель рассмотрит, придёт уведомление.')}</span>
+        <button className="btn ghost" type="button" disabled={busy || !online} onClick={leaveClub}>{tt('Өтінімді қайтарып алу', 'Отозвать заявку')}</button></div>
+    ) : !my?.admin ? (
+      <div className="sticky-cta"><button className="btn block" type="button" id="clubJoin" disabled={!online}
+        onClick={() => { if (need()) openSheet(<JoinSheet c={c} onDone={reload} />); }}><Icon n="plus" s={18} /> {tt('Қосылу', 'Вступить')}</button></div>
+    ) : null
+  ) : null;
+  const signIn = !acc.user && online ? <SignInCard text={tt('Клубқа қосылу үшін аккаунтқа кіріңіз.', 'Чтобы вступить в клуб, войдите в аккаунт.')} /> : null;
+  const managePanel = manage ? <ManagePanel d={d.data} onChange={reload} /> : null;
+  const events = eventsOn ? (
+    <section className="section">
+      <SectionHead title={tt('Алдағы іс-шаралар', 'Ближайшие мероприятия')} />
+      {evs.data?.events?.length ? <div className="list" id="clubEvents">{evs.data.events.map(e => <DbEventCard key={e.id} e={e} />)}</div>
+        : evs.data ? <p className="small muted">{tt('Әзірге жоспарланған іс-шара жоқ.', 'Запланированных мероприятий пока нет.')}</p> : null}
+    </section>
+  ) : null;
+  const news = (
+    <section className="section">
+      <SectionHead title={tt('Клуб жаңалықтары', 'Новости клуба')} />
+      {posts.length ? <div className="list" id="clubNews">{posts.map(p => (
+        <div className="card" key={p.id}>
+          <span className="tiny muted">{ymd(p.published_at || p.created_at)}{p.status === 'pending' ? ' · ' + tt('Модерацияда', 'На модерации') : ''}</span>
+          <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{postBody(p, lang)}</span>
+          {p.link_url && /^https:\/\//.test(p.link_url) ? <a className="small" href={p.link_url} target="_blank" rel="noopener noreferrer">{tt('Толығырақ', 'Подробнее')}</a> : null}
+        </div>
+      ))}</div> : <p className="small muted">{tt('Жаңалық әзірге жоқ.', 'Новостей пока нет.')}</p>}
+    </section>
+  );
+  const source = c.source_url && /^https:\/\//.test(c.source_url) ? (
+    <p className="tiny muted">{tt('Дереккөз', 'Источник')}: <a href={c.source_url} target="_blank" rel="noopener noreferrer">{c.source_url.replace('https://', '').slice(0, 60)}</a>
+      {c.verified_at ? ` · ${tt('тексерілді', 'проверено')} ${c.verified_at}` : ''}</p>
+  ) : null;
+  const leaderApply = acc.user && !my?.admin && c.status === 'active' ? (
+    <button className="link-btn" type="button" onClick={() => { if (need()) openSheet(<LeaderApplySheet club={c} />); }}>{tt('Мен осы клубтың жетекшісімін', 'Я руководитель этого клуба')}</button>
+  ) : null;
+  if (desktop) {
+    // a laptop: a cover card with the name and the summary; about, events and news in the column; joining,
+    // the meeting time and place, the leader and the contacts in the rail
+    return (
+      <>
+        <div className={`card club-cover club-dir-${c.direction}`} id="clubCover">{head}{summary}</div>
+        <DeskDetail label={tt('Клуб туралы', 'О клубе')} main={<>
+          {managePanel}
+          {about ? <section className="section"><SectionHead title={tt('Клуб туралы', 'О клубе')} />{about}</section> : null}
+          {events}
+          {news}
+          {source}
+        </>} rail={<>
+          {join}
+          {signIn}
+          {facts}
+          {leaderApply}
+        </>} />
+      </>
+    );
+  }
   return (
     <>
-      <div className="detail-head"><h1>{clubName(c, lang)}</h1>
-        <div className="badges"><DirBadge d={c.direction} /><RecruitBadge on={c.recruiting} />
-          {c.status === 'archived' ? <span className="badge b-line">{tt('Архивте', 'В архиве')}</span> : null}
-          {my?.admin ? <span className="badge b-sun">{tt('Сіз жетекшісіз', 'Вы руководитель')}</span> : null}</div>
-      </div>
-      {clubSummary(c, lang) ? <p>{clubSummary(c, lang)}</p> : null}
-      {clubAbout(c, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{clubAbout(c, lang)}</p> : null}
-      <div className="group">
-        {clubSchedule(c, lang) ? <Row icon="clock" title={clubSchedule(c, lang)} sub={tt('Кездесу кестесі', 'Расписание встреч')} chev={false} /> : null}
-        {b ? <Row icon="pin" title={[L(b.name), c.room].filter(Boolean).join(', ')} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')}
-          onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }} />
-          : c.room ? <Row icon="pin" title={c.room} chev={false} /> : null}
-        {clubLeader(c, lang) || c.leader_contact ? <Row icon="user" title={clubLeader(c, lang) || tt('Жетекші', 'Руководитель')}
-          sub={c.leader_contact ? c.leader_contact + (manage && !c.leader_contact_public ? ' · ' + tt('тек сізге көрінеді', 'видно только вам') : '') : undefined} chev={false} /> : null}
-        <Row icon="users" title={tt(`Мүшелер: ${c.members}`, `Участников: ${c.members}`)} chev={false} />
-        {tg ? <Row icon="send" title="Telegram" sub={tg.replace('https://', '')} href={tg} /> : null}
-        {ig ? <Row icon="camera" title="Instagram" sub={ig.replace(/^https:\/\/(www\.)?/, '')} href={ig} /> : null}
-      </div>
-
-      {c.status === 'active' ? (
-        c.join_mode === 'link' && joinLink ? (
-          <a className="btn block" id="clubJoin" href={joinLink} target="_blank" rel="noopener noreferrer"><Icon n="send" s={18} /> {tt('Telegram тобына қосылу', 'Вступить в Telegram-группу')}</a>
-        ) : my?.status === 'member' ? (
-          <div className="card"><span className="badge b-ok"><Icon n="check" s={12} /> {tt('Сіз клуб мүшесісіз', 'Вы участник клуба')}</span>
-            <button className="btn ghost" type="button" disabled={busy || !online} onClick={leaveClub}>{tt('Клубтан шығу', 'Выйти из клуба')}</button></div>
-        ) : my?.status === 'pending' ? (
-          <div className="card" id="clubPending"><b>{tt('Өтінім жіберілді', 'Заявка отправлена')}</b>
-            <span className="small muted">{tt('Жетекші қараған соң хабарлама келеді.', 'Когда руководитель рассмотрит, придёт уведомление.')}</span>
-            <button className="btn ghost" type="button" disabled={busy || !online} onClick={leaveClub}>{tt('Өтінімді қайтарып алу', 'Отозвать заявку')}</button></div>
-        ) : !my?.admin ? (
-          <div className="sticky-cta"><button className="btn block" type="button" id="clubJoin" disabled={!online}
-            onClick={() => { if (need()) openSheet(<JoinSheet c={c} onDone={reload} />); }}><Icon n="plus" s={18} /> {tt('Қосылу', 'Вступить')}</button></div>
-        ) : null
-      ) : null}
-      {!acc.user && online ? <SignInCard text={tt('Клубқа қосылу үшін аккаунтқа кіріңіз.', 'Чтобы вступить в клуб, войдите в аккаунт.')} /> : null}
-
-      {manage ? <ManagePanel d={d.data} onChange={reload} /> : null}
-
-      {eventsOn ? (
-        <section className="section">
-          <SectionHead title={tt('Алдағы іс-шаралар', 'Ближайшие мероприятия')} />
-          {evs.data?.events?.length ? <div className="list" id="clubEvents">{evs.data.events.map(e => <DbEventCard key={e.id} e={e} />)}</div>
-            : evs.data ? <p className="small muted">{tt('Әзірге жоспарланған іс-шара жоқ.', 'Запланированных мероприятий пока нет.')}</p> : null}
-        </section>
-      ) : null}
-
-      <section className="section">
-        <SectionHead title={tt('Клуб жаңалықтары', 'Новости клуба')} />
-        {posts.length ? <div className="list" id="clubNews">{posts.map(p => (
-          <div className="card" key={p.id}>
-            <span className="tiny muted">{ymd(p.published_at || p.created_at)}{p.status === 'pending' ? ' · ' + tt('Модерацияда', 'На модерации') : ''}</span>
-            <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{postBody(p, lang)}</span>
-            {p.link_url && /^https:\/\//.test(p.link_url) ? <a className="small" href={p.link_url} target="_blank" rel="noopener noreferrer">{tt('Толығырақ', 'Подробнее')}</a> : null}
-          </div>
-        ))}</div> : <p className="small muted">{tt('Жаңалық әзірге жоқ.', 'Новостей пока нет.')}</p>}
-      </section>
-
-      {c.source_url && /^https:\/\//.test(c.source_url) ? (
-        <p className="tiny muted">{tt('Дереккөз', 'Источник')}: <a href={c.source_url} target="_blank" rel="noopener noreferrer">{c.source_url.replace('https://', '').slice(0, 60)}</a>
-          {c.verified_at ? ` · ${tt('тексерілді', 'проверено')} ${c.verified_at}` : ''}</p>
-      ) : null}
-      {acc.user && !my?.admin && c.status === 'active' ? (
-        <button className="link-btn" type="button" onClick={() => { if (need()) openSheet(<LeaderApplySheet club={c} />); }}>{tt('Мен осы клубтың жетекшісімін', 'Я руководитель этого клуба')}</button>
-      ) : null}
+      {head}
+      {summary}
+      {about}
+      {facts}
+      {join}
+      {signIn}
+      {managePanel}
+      {events}
+      {news}
+      {source}
+      {leaderApply}
     </>
   );
 }

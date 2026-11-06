@@ -5,6 +5,8 @@
    only when the owner accepts, 30-day auto-close, complaints. Reading needs an account. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, ymd } from '@/components/views/common';
 import { ContactCard, ReportLink, RuleWarning } from '@/components/views/community-ui';
@@ -91,6 +93,7 @@ function GenderCard({ me, reload }: { me: RMMe; reload: () => void }) {
 
 function RMHome() {
   const { tt, go, openSheet, lang, toast } = useApp();
+  const desktop = useDesktop();
   const me = useLoad<RMMe>('/api/roommates/me');
   const [tab, setTab] = useState<'all' | 'match'>('all');
   const [kind, setKind] = useState<'all' | RMKind>('all');
@@ -134,11 +137,12 @@ function RMHome() {
       {!list.data && !list.err ? <Loading /> : list.data?.needListing ? (
         <Empty icon="bed" action={<button className="btn secondary" type="button" onClick={() => go('roommates:new')}>{tt('Хабарландыру беру', 'Разместить объявление')}</button>}>
           {tt('«Маған сай» тізімі сіздің хабарландыруыңызға қарап құралады.', 'Список «Подходят мне» строится по вашему объявлению.')}</Empty>
-      ) : list.data?.listings.filter(l => !l.mine).length ? (
-        list.data.listings.filter(l => !l.mine).map(l => (
+      ) : list.data?.listings.filter(l => !l.mine).length ? (() => {
+        const cards = list.data.listings.filter(l => !l.mine).map(l => (
           <ListingCard key={l.id} l={l} onRequest={() => openSheet(<RequestSheet l={l} done={reload} />)} />
-        ))
-      ) : list.data ? (
+        ));
+        return desktop ? <div className="desk-grid" id="rmGrid">{cards}</div> : cards;
+      })() : list.data ? (
         <Empty icon="bed">{tt('Әзірге сәйкес хабарландыру жоқ. Өзіңіз жариялаңыз — басқалар сізді табады.', 'Подходящих объявлений пока нет. Разместите своё — вас найдут.')}</Empty>
       ) : null}
       {me.data ? <p className="tiny muted">{tt(`Бүгін ${me.data.requestsToday}/${me.data.dailyLimit} сұрау.`, `Сегодня запросов: ${me.data.requestsToday}/${me.data.dailyLimit}.`)}</p> : null}
@@ -149,12 +153,25 @@ function RMHome() {
 }
 
 function RMListingView({ id }: { id: string }) {
-  const { openSheet } = useApp();
+  const { tt, go, openSheet } = useApp();
+  const desktop = useDesktop();
   const { data, err, code, reload } = useLoad<{ listing: RMListing }>(`/api/roommates/listings/${id}`);
   if (code === 'not_found') return <NotFound />;
   if (err) return <ErrorLine err={err} />;
   if (!data) return <Loading />;
-  return <ListingCard l={data.listing} onRequest={data.listing.status === 'active' ? () => openSheet(<RequestSheet l={data.listing} done={reload} />) : undefined} />;
+  const card = <ListingCard l={data.listing} onRequest={data.listing.status === 'active' ? () => openSheet(<RequestSheet l={data.listing} done={reload} />) : undefined} />;
+  if (!desktop) return card;
+  // a laptop: the listing in the column; safety advice and the way to the other listings and requests in the rail
+  return (
+    <DeskDetail label={tt('Пәтерлес', 'Соседи по жилью')} main={card} rail={<>
+      <div className="group">
+        <Row icon="bed" title={tt('Барлық хабарландыру', 'Все объявления')} onClick={() => go('roommates')} />
+        <Row icon="mail" title={tt('Сұраулар', 'Запросы')} onClick={() => go('roommates:requests')} />
+      </div>
+      <p className="note">{tt('Пәтерді көрмей ақша аудармаңыз. Алғашқы кездесу — адам көп жерде. Ақша сұраса не күдікті болса — шағымданыңыз.',
+        'Не переводите деньги, не увидев жильё. Первая встреча — в людном месте. Если просят деньги или что-то подозрительно — пожалуйтесь.')}</p>
+    </>} />
+  );
 }
 
 function RMNew() {

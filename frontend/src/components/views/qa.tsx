@@ -5,6 +5,8 @@
    moderators lock such threads. */
 import { useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail, DeskList } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
 import { agoDays, ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, useNeedAccount } from '@/components/views/common';
 import { ReportLink, RuleWarning } from '@/components/views/community-ui';
@@ -45,6 +47,7 @@ function QuestionRow({ q }: { q: QAQuestion }) {
 
 function QAListView({ subject }: { subject: string }) {
   const { tt, go } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const [faculty, setFaculty] = useState<'mine' | 'all'>('mine');
   const [open, setOpen] = useState(false);
@@ -57,21 +60,25 @@ function QAListView({ subject }: { subject: string }) {
   if (open) qs.set('sort', 'open');
   if (query) qs.set('q', query);
   const { data, err } = useLoad<QAList>(acc.loaded ? '/api/qa/questions?' + qs.toString() : null);
-  return (
+  const head = subject ? <div className="card"><span className="eyebrow">{tt('Пән', 'Предмет')}</span><h1 className="subj-title">{subject}</h1></div> : null;
+  const filters = (
     <>
-      {subject ? <div className="card"><span className="eyebrow">{tt('Пән', 'Предмет')}</span><h1 className="subj-title">{subject}</h1></div> : null}
       <button className="btn block" type="button" onClick={() => go(subject ? 'qa:new:' + subject : 'qa:new')}><Icon n="plus" s={18} /> {tt('Сұрақ қою', 'Задать вопрос')}</button>
       <form className="field" role="search" onSubmit={e => { e.preventDefault(); setQuery(q.trim()); }}>
         <label htmlFor="qaSearch">{tt('Сұрақтардан іздеу', 'Поиск по вопросам')}</label>
         <input className="input" id="qaSearch" type="search" maxLength={64} value={q} onChange={e => setQ(e.target.value)} onBlur={() => setQuery(q.trim())} />
       </form>
-      <div className="chips">
+      <div className={`chips${desktop ? ' wrap' : ''}`}>
         {hasFaculty ? <>
           <Chip pressed={faculty === 'mine'} onClick={() => setFaculty('mine')}>{tt('Менің факультетім', 'Мой факультет')}</Chip>
           <Chip pressed={faculty === 'all'} onClick={() => setFaculty('all')}>{tt('Бүкіл университет', 'Весь университет')}</Chip>
         </> : null}
         <Chip pressed={open} onClick={() => setOpen(x => !x)}>{tt('Шешілмегендер', 'Без решения')}</Chip>
       </div>
+    </>
+  );
+  const results = (
+    <>
       <ErrorLine err={err} />
       {!data && !err ? <Loading /> : data?.questions.length ? (
         <div className="group" aria-label={tt('Сұрақтар', 'Вопросы')}>{data.questions.map(x => <QuestionRow key={x.id} q={x} />)}</div>
@@ -80,9 +87,11 @@ function QAListView({ subject }: { subject: string }) {
           {subject ? tt('Бұл пән бойынша әзірге сұрақ жоқ.', 'По этому предмету пока нет вопросов.') : tt('Әзірге сұрақ жоқ.', 'Пока нет вопросов.')}
         </Empty>
       ) : null}
-      <HonestyRule />
     </>
   );
+  // a laptop: the search, the filters and «ask» in a left panel, the questions beside them
+  if (desktop) return <>{head}<DeskList label={tt('Сүзгілер', 'Фильтры')} filters={<>{filters}<HonestyRule /></>}>{results}</DeskList></>;
+  return <>{head}{filters}{results}<HonestyRule /></>;
 }
 
 function QAAsk({ subject: initial }: { subject: string }) {
@@ -216,13 +225,14 @@ function AnswerForm({ q, done }: { q: QAQuestion; done: () => void }) {
 
 function QAThread({ id }: { id: string }) {
   const { tt, go, lang, toast, openSheet } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const { data, err, code, reload } = useLoad<QADetail>(acc.loaded ? `/api/qa/questions/${id}${acc.user ? '?u=' + acc.user.id : ''}` : null);
   if (code === 'not_found') return <NotFound />;
   if (err) return <ErrorLine err={err} />;
   if (!data) return <Loading />;
   const q = data.question;
-  return (
+  const thread = (
     <>
       <article className="card" aria-labelledby="qaTitleH">
         <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => go(qaBoard(q.subject))}>{q.subject}</button>
@@ -251,8 +261,23 @@ function QAThread({ id }: { id: string }) {
       {data.answers.length ? data.answers.map(a => <AnswerCard key={a.id} a={a} q={q} reload={reload} />)
         : <p className="small muted">{tt('Әзірге жауап жоқ. Бірінші болып көмектесіңіз.', 'Пока нет ответов. Помогите первым.')}</p>}
       {!q.locked && q.status === 'active' ? <AnswerForm q={q} done={reload} /> : null}
-      {!q.mine ? <ReportLink kind="qa_question" id={q.id} /> : null}
-      <HonestyRule />
+      {desktop ? null : <>{!q.mine ? <ReportLink kind="qa_question" id={q.id} /> : null}<HonestyRule /></>}
     </>
+  );
+  if (!desktop) return thread;
+  // a laptop: the thread in the column; the board, the thread's numbers, a new question and the rules in the rail
+  const accepted = data.answers.some(a => a.id === q.acceptedAnswerId);
+  return (
+    <DeskDetail label={tt('Сұрақ туралы', 'О вопросе')} main={thread} rail={<>
+      <div className="group">
+        <Row icon="book" title={q.subject} sub={tt('Пән бойынша барлық сұрақ', 'Все вопросы по предмету')} onClick={() => go(qaBoard(q.subject))} />
+        <Row icon="qa" title={tt(`${data.answers.length} жауап`, `ответов: ${data.answers.length}`)}
+          sub={accepted ? tt('Шешім таңдалды', 'Решение выбрано') : q.locked ? tt('Тақырып жабық', 'Тема закрыта') : tt('Шешім әлі жоқ', 'Решения пока нет')} chev={false} />
+        <Row icon="clock" title={agoDays(daysAgo(q.createdAt), tt)} sub={q.anonymous ? tt('Аноним', 'Аноним') : q.author?.name ?? tt('Студент', 'Студент')} chev={false} />
+      </div>
+      <button className="btn secondary block" type="button" onClick={() => go('qa:new:' + q.subject)}><Icon n="plus" s={18} /> {tt('Сұрақ қою', 'Задать вопрос')}</button>
+      <HonestyRule />
+      {!q.mine ? <ReportLink kind="qa_question" id={q.id} /> : null}
+    </>} />
   );
 }
