@@ -2,6 +2,8 @@
 /* Mentors (prompt 07): /mentors (ask for a mentor, honest numbers, group meetings), /mentors/become,
    /mentors/me (own mentor profile, pairs with check-ins, end, report), and the manual matching board used by
    /admin/mentors (admin) and /ambassador/mentors (ambassador team lead, own university only). */
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { useState } from 'react';
 import { useApp } from '@/components/app';
 import { Chip, Empty, Icon, Row, Seg, SectionHead } from '@/components/ui';
@@ -40,6 +42,7 @@ function GroupMeetings({ list }: { list: MentorSummary['groupMeetings'] }) {
 
 function MentorsHome() {
   const { tt, L, lang, toast, go } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const need = useNeedAccount();
   const sum = useLoad<MentorSummary>(acc.loaded ? '/api/mentors/summary' + (acc.user ? '?u=' + acc.user.id : '') : null);
@@ -62,14 +65,14 @@ function MentorsHome() {
       sum.reload();
     } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };
-  return (
-    <>
+  const intro = (
       <div className="card">
         <h2>{tt('Алғашқы айда көмек', 'Помощь в первый месяц')}</h2>
         <p className="small muted">{tt('Әр студентке жеке ментор уәде етпейміз: менторлар — ерікті студенттер. Ментор жетпесе, топтық кездесу ұсынамыз.', 'Мы не обещаем личного ментора каждому: менторы — студенты-волонтёры. Если менторов не хватает, предложим групповую встречу.')}</p>
         {s.stats ? <StatsLine s={s.stats} /> : null}
       </div>
-      {req && req.status !== 'closed' ? (
+  );
+  const ask = req && req.status !== 'closed' ? (
         <div className="card">
           <span className="eyebrow">{tt('Сіздің сұранысыңыз', 'Ваша заявка')}</span>
           <b>{L(NEEDS[req.need])}</b>
@@ -99,17 +102,20 @@ function MentorsHome() {
           <button className="btn block" type="submit" disabled={!needK || busy}>{tt('Сұраныс қалдыру', 'Оставить заявку')}</button>
           {!acc.user ? <p className="tiny muted">{tt('Сұраныс үшін Telegram арқылы кіру керек.', 'Для заявки нужен вход через Telegram.')}</p> : null}
         </form>
-      )}
-      {after?.offerGroup || minor || (s.stats && s.stats.freeMentors === 0) || s.groupMeetings.length ? (
+      );
+  const meetings = after?.offerGroup || minor || (s.stats && s.stats.freeMentors === 0) || s.groupMeetings.length ? (
         <section className="section"><SectionHead title={tt('Жақын топтық кездесулер', 'Ближайшие групповые встречи')} /><GroupMeetings list={s.groupMeetings} /></section>
-      ) : null}
+      ) : null;
+  const links = (
       <div className="group">
         {s.me?.mentorStatus ? <Row go="mentors:me" icon="mentor" title={tt('Менің менторлығым', 'Моё менторство')} />
           : <Row go="mentors:become" icon="mentor" title={tt('Ментор болу', 'Стать ментором')} sub={tt('2–4 курс студенттері мен түлектер, 18+', 'Студенты 2–4 курса и выпускники, 18+')} />}
         {req?.status === 'matched' && !s.me?.mentorStatus ? null : acc.user ? <Row go="mentors:me" icon="user" title={tt('Менің жұптарым', 'Мои пары')} /> : null}
       </div>
-    </>
   );
+  // a laptop: the request form in the column; what mentoring is, the numbers and the links on the right
+  if (desktop) return <DeskDetail label={tt('Менторлық', 'Менторство')} main={<>{ask}{meetings}</>} rail={<>{intro}{links}</>} />;
+  return <>{intro}{ask}{meetings}{links}</>;
 }
 
 function Become() {

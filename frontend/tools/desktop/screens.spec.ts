@@ -24,23 +24,65 @@ const clubs = [
   { ...clubBase, id: 4, name_kk: 'IT клубы', direction: 'it', summary_kk: 'Хакатондар мен жобалар.' },
 ];
 
+/* mutable mock state: how many cafés and print shops the API lists (one place → the laptop shows it as a workspace) */
+const state = { cafes: 1, shops: 1 };
+const cafes = () => [
+  cafe,
+  { ...cafe, id: 5, nameKk: 'Coffee Point', nameRu: 'Coffee Point', building: '4-корпус', placeKk: 'Фойе', placeRu: 'Фойе', openNow: false, openTime: '09:00', closeTime: '17:00', openDays: [1, 2, 3, 4, 5], payments: ['pickup'] },
+  { ...cafe, id: 6, nameKk: 'Асхана-кофейня «Дәм»', nameRu: 'Столовая-кофейня «Дәм»', building: 'Жатақхана №3', placeKk: '1-қабат', placeRu: '1 этаж' },
+].slice(0, state.cafes);
+const shops = () => [shop, { ...shop, id: 7, nameKk: 'Copy Center', nameRu: 'Copy Center', building: '2-корпус', placeKk: '012', placeRu: '012', openNow: false, leadMinutes: 40, accepts: ['pdf'] }].slice(0, state.shops);
+const at = (days: number, h: number) => { const d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, 0, 0, 0); return d.toISOString(); };
+const evBase = {
+  desc_ru: null, title_ru: null, university: 'Сейфуллин университеті', building_id: 'b1', capacity: 60, walk_in_allowed: true, gives_cert: true,
+  teams_enabled: false, status: 'published', created_by: 9, checkin_started_at: null, finished_at: null, created_at: '2026-10-01', registered: 34,
+  waitlist: 0, checked_in: 0, spots_left: 26, can_manage: false, is_demo: false, club_id: 1,
+};
+const events = [
+  { ...evBase, id: 9001, title_kk: 'Жастар форумы: цифрлық экономикадағы мансап', cat: 'career', starts_at: at(3, 15), ends_at: at(3, 18), place_text: 'Бас ғимарат, акт залы',
+    desc_kk: 'Жұмыс берушілер мен түлектер цифрлық экономикадағы мамандықтар туралы айтады.\n\nБағдарлама: панельдік талқылау, нетворкинг, түйіндеме кеңесі.' },
+  { ...evBase, id: 9002, title_kk: 'Дебат турнирі', cat: 'youth', starts_at: at(6, 18), ends_at: at(6, 20), place_text: '214 аудитория', desc_kk: null, gives_cert: false },
+  { ...evBase, id: 9003, title_kk: 'Python шеберханасы', cat: 'training', starts_at: at(9, 14), ends_at: at(9, 17), place_text: 'IT-хаб', desc_kk: null },
+];
+const market = (id: number, title: string, over: Record<string, unknown> = {}) => ({ id, title, desc: 'Жақсы күйде, тек алып кетіңіз.', category: 'books', condition: 'good', university: 'Сейфуллин университеті', photos: [], status: 'active', createdAt: '2026-11-01', expiresAt: '2026-12-01', daysAgo: 2, mine: false, pickup: 'Бас ғимарат, 1-қабат', pickupHint: '', author: { name: 'Дана', username: 'dana', telegramUrl: 'https://t.me/dana' }, ...over });
+const lfPost = (over: Record<string, unknown> = {}) => ({ id: 7, kind: 'found', category: 'keys', title: 'Көк брелокты кілттер', desc: 'Кітапханада үстел үстінде қалыпты.', building: 'b1', room: '1-305', happenedOn: '2026-11-04', photo: null, handedTo: '', university: 'KATU', status: 'active', createdAt: '2026-11-04T05:00:00Z', expiresAt: '2026-12-04T05:00:00Z', mine: false, ...over });
+const question = (over: Record<string, unknown> = {}) => ({ id: 12, subject: 'Математика 1', subjectKey: 'математика 1', facultyOnly: false, title: 'Туындыны қалай табамыз?', body: 'x^2 + 3x функциясының туындысы қалай шығады? Қадамдап түсіндіріңізші.', tags: ['туынды'], anonymous: true, author: null, status: 'active', locked: false, lockedReason: null, acceptedAnswerId: null, answers: 1, score: 2, voted: false, mine: false, createdAt: '2026-11-04T05:00:00Z', ...over });
+const listing = (over: Record<string, unknown> = {}) => ({ id: 21, kind: 'have_room', housing: 'flat', district: 'Сарыарқа ауданы', budgetMin: 40000, budgetMax: 80000, moveIn: '2026-11-20', habits: ['quiet', 'tidy'], about: 'Тыныш студентпін, кешке оқимын.', sameGender: true, gender: 'f', university: 'KATU', status: 'active', createdAt: '2026-11-04T05:00:00Z', expiresAt: '2026-12-04T05:00:00Z', mine: false, myRequest: null, ...over });
+
 async function mockApi(page: Page) {
   await page.route('https://fonts.googleapis.com/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
   await page.route('**/api/**', async route => {
-    const p = new URL(route.request().url()).pathname;
+    const url = new URL(route.request().url());
+    const p = url.pathname;
     const json = (j: unknown) => route.fulfill({ json: j });
-    if (p === '/api/config') return json({ ...config, features: { ...config.features, cafe: true, print: true, clubs: true, events: true } });
+    if (p === '/api/config') return json({ ...config, features: { ...config.features, cafe: true, print: true, clubs: true, events: true, market: true, lostfound: true, courseqa: true, roommates: true, mentors: true, ambassador: true } });
     if (p === '/api/content') return json(content);
     if (p === '/api/me') return json({ user, needsConsent: false, inboxUnread: 2 });
     if (p === '/api/me/inbox') return json({ items: [], unread: 0, nextBefore: null });
-    if (p === '/api/cafes') return json({ cafes: [cafe] });
-    if (p === '/api/cafes/3/menu') return json(menu);
+    if (p === '/api/cafes') return json({ cafes: cafes() });
+    let mm = /^\/api\/cafes\/(\d+)\/menu$/.exec(p);
+    if (mm) { const c = cafes().find(x => x.id === Number(mm![1])) ?? cafe; return json({ ...menu, cafe: c }); }
     if (p === '/api/cafe/orders/mine') return json({ orders: [] });
-    if (p === '/api/print/shops') return json({ shops: [shop] });
-    if (p === '/api/print/shops/4') return json(catalog);
+    if (p === '/api/print/shops') return json({ shops: shops() });
+    mm = /^\/api\/print\/shops\/(\d+)$/.exec(p);
+    if (mm) { const sh = shops().find(x => x.id === Number(mm![1])) ?? shop; return json({ ...catalog, shop: sh }); }
     if (p === '/api/print/jobs/mine') return json({ jobs: [] });
     if (p === '/api/clubs') return json({ clubs });
-    if (p === '/api/events') return json({ events: [] });
+    if (p === '/api/clubs/1') return json({ club: { ...clubs[0], about_kk: 'Клуб 2019 жылы құрылған. Әр апта сайын пікір-сайыс өтеді, республикалық турнирлерге қатысамыз.\nЖаңа мүшелерге шешендік өнер негіздерін үйретеміз.', building_id: 'b1', leader_title_kk: 'Төраға: Дана Серікқызы', leader_contact: '@dana_s', leader_contact_public: true, telegram_url: 'https://t.me/shyraq', instagram_url: 'https://www.instagram.com/shyraq/', members: 42 }, posts: [{ id: 1, body_kk: 'Сейсенбі күні іріктеу турнирі өтеді. Барлығын шақырамыз!', body_ru: null, link_url: null, status: 'published', published_at: '2026-11-03', created_at: '2026-11-03' }], can_manage: false });
+    if (p === '/api/events') return json({ events: url.searchParams.get('club') ? events.slice(1) : events });
+    if (p === '/api/events/9001') return json({ event: events[0] });
+    if (p === '/api/events/9001/attendees') return json({ count: 34 });
+    if (p === '/api/market/items') return json({ items: [market(5, 'Экономика оқулығы'), market(6, 'Үстел шамы', { category: 'home' }), market(8, 'Калькулятор Casio', { category: 'tech', status: 'reserved' }), market(9, 'Қысқы күртке', { category: 'clothes' })], university: 'Сейфуллин университеті', season: null });
+    if (p === '/api/market/items/5') return json({ item: market(5, 'Экономика оқулығы') });
+    if (p === '/api/market/me') return json({ canPublish: true, blockers: [], rulesAccepted: true, hasUsername: true, banUntil: null, today: 0, dailyLimit: 3 });
+    if (p === '/api/lostfound/posts') return json({ posts: [lfPost(), lfPost({ id: 8, kind: 'lost', category: 'cards', title: 'Студенттік билет', building: 'b5', room: '' }), lfPost({ id: 9, title: 'Қара қолшатыр', category: 'other' })], university: 'KATU' });
+    if (p === '/api/lostfound/posts/7') return json({ post: lfPost(), myClaim: null });
+    if (p === '/api/qa/questions') return json({ questions: [question(), question({ id: 13, title: 'Ағылшын тілінен эссе құрылымы', subject: 'Ағылшын тілі', answers: 3, acceptedAnswerId: 2 }), question({ id: 14, title: 'Статистикадан дисперсия формуласы', subject: 'Статистика', answers: 0 })], subjectKey: '', university: 'KATU', facultyScoped: true });
+    if (p === '/api/qa/questions/12') return json({ question: question(), answers: [{ id: 40, questionId: 12, body: 'Дәреже ережесі: (x^n)\' = n·x^(n-1). Сонда 2x + 3 шығады.', anonymous: false, author: { name: 'Ерлан' }, score: 3, voted: false, mine: false, accepted: false, createdAt: '2026-11-04T07:00:00Z', status: 'active' }] });
+    if (p === '/api/mentors/summary') return json({ university: 'Сейфуллин университеті', stats: { university: 'Сейфуллин университеті', mentors: 14, freeMentors: 3, waiting: 5, typicalDays: 3 }, me: { isAdult: true, request: null, mentorStatus: null }, groupMeetings: [] });
+    if (p === '/api/roommates/me') return json({ gender: 'f', listing: null, requestsToday: 0, dailyLimit: 10, blockers: [] });
+    if (p === '/api/roommates/listings') return json({ listings: [listing(), listing({ id: 22, kind: 'looking', housing: 'dorm', district: 'Жатақхана №3', habits: ['early'] }), listing({ id: 23, district: 'Есіл ауданы', budgetMin: 60000, budgetMax: 100000 })], university: 'KATU' });
+    if (p === '/api/roommates/listings/21') return json({ listing: listing() });
     if (p === '/api/admin/summary') return json({ users: { total: 1240, byRole: { student: 1200, admin: 3, ambassador: 25, employer: 12 }, withConsent: 1100 }, activeReminders: 310, features: { cafe: true, print: true, clubs: true } });
     if (p === '/api/admin/analytics') return json({ devices: 2100, returned_day1: 640, eligible_day1: 1500, returned_day7: 380, eligible_day7: 1300, saved_first: 520, from_share: 90, ambassadors: null, feedback_avg: 4.4, feedback_count: 37, feedback_recent: [] });
     if (p === '/api/admin/users') return json({ users: [] });
@@ -53,7 +95,21 @@ async function seed(page: Page) {
   await seedTimetable(page);
 }
 
-const SCREENS: [string, string, ((p: Page) => Promise<void>)?][] = [
+/** long subject names and four classes a day: the laptop week strip must keep them readable */
+async function seedLong(page: Page) {
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('studenthub.v1') || '{}');
+    const names = ['Микроэкономика және макроэкономика негіздері', 'Кәсіби қазақ (орыс) тілі', 'Ақпараттық-коммуникациялық технологиялар', 'Философия', 'Экономикалық теория'];
+    s.timetable = [0, 1, 2, 3, 4].flatMap(wd => names.slice(0, wd === 2 ? 5 : 4).map((name, i) => ({ id: `l${wd}${i}`, name, wd, t: `${String(8 + i * 2).padStart(2, '0')}:00`, end: `${String(8 + i * 2).padStart(2, '0')}:50`, room: '4-214', kind: 'Дәріс' })));
+    localStorage.setItem('studenthub.v1', JSON.stringify(s));
+  });
+  await page.reload();
+}
+
+const cafeN = (n: number) => async () => { state.cafes = n; };
+const shopN = (n: number) => async () => { state.shops = n; };
+/* [name, path, act after load, prepare before load] */
+const SCREENS: [string, string, ((p: Page) => Promise<void>)?, (() => Promise<void>)?][] = [
   ['home', '/'],
   ['search', '/search'],
   ['section', '/internships'],
@@ -63,29 +119,80 @@ const SCREENS: [string, string, ((p: Page) => Promise<void>)?][] = [
   ['profile', '/profile'],
   ['settings', '/settings'],
   ['clubs', '/clubs'],
-  ['cafe', '/cafe'],
-  ['cafe-menu', '/cafe?id=3', async p => { await p.locator('.cafe-add').first().click(); await p.locator('.cafe-add').nth(3).click(); }],
-  ['print', '/print'],
+  ['club', '/club?id=1'],
+  ['event', '/event/9001'],
+  ['cafe', '/cafe', undefined, cafeN(1)],
+  // the phone keeps the list; a laptop with one café shows its menu right here (add two items to fill the cart)
+  ['cafe-1', '/cafe', async p => { if (await p.locator('.cafe-add').count()) { await p.locator('.cafe-add').first().click(); await p.locator('.cafe-add').nth(3).click(); } }, cafeN(1)],
+  ['cafe-3', '/cafe', undefined, cafeN(3)],
+  ['cafe-menu', '/cafe?id=3', async p => { await p.locator('.cafe-add').first().click(); await p.locator('.cafe-add').nth(3).click(); }, cafeN(3)],
+  ['print', '/print', undefined, shopN(1)],
+  ['print-2', '/print', undefined, shopN(2)],
+  ['print-shop', '/print?id=4', undefined, shopN(2)],
+  ['market', '/market'],
+  ['market-item', '/market/5'],
+  ['market-new', '/market/new'],
+  ['lostfound', '/lostfound'],
+  ['lostfound-post', '/lostfound?id=7'],
+  ['lostfound-new', '/lostfound?id=new:lost'],
+  ['qa', '/qa'],
+  ['qa-thread', '/qa?id=12'],
+  ['qa-ask', '/qa?id=new'],
+  ['roommates', '/roommates'],
+  ['roommates-listing', '/roommates?id=21'],
+  ['roommates-new', '/roommates?id=new'],
+  ['mentors', '/mentors'],
+  ['mentors-become', '/mentors/become'],
+  ['ambassador-apply', '/ambassador/apply'],
+  ['discounts', '/discounts'],
+  ['inbox', '/notifications'],
+  ['certificate', '/certificate/ABC123'],
+  ['edit', '/edit'],
+  ['timetable', '/timetable'],
+  ['subjects', '/subjects'],
+  ['grades', '/grades'],
+  ['notes', '/notes'],
+  ['quiz', '/quiz'],
+  ['points', '/points'],
+  ['gpa', '/gpa'],
+  ['docs', '/docs'],
+  ['saved', '/saved'],
+  ['applications', '/applications'],
+  ['suggest', '/suggest'],
+  ['feedback', '/feedback'],
+  ['surveys', '/surveys'],
+  ['wellbeing', '/wellbeing'],
+  ['announcements', '/announcements'],
+  ['ai', '/ai'],
+  ['resume', '/resume'],
+  ['cards', '/cards'],
+  ['roadmap', '/roadmap'],
+  ['materials', '/materials'],
+  ['services', '/services'],
+  ['map', '/map'],
   ['admin', '/admin'],
   ['notif', '/notifications'],
   ['sheet', '/calendar', async p => { await p.getByRole('button', { name: 'Іс-шара қосу', exact: true }).click(); await expect(p.locator('.sheet')).toBeVisible(); }],
   ['filters', '/search', async p => { const b = p.locator('.filter-btn:visible'); if (await b.count()) { await b.click(); await expect(p.locator('.sheet')).toBeVisible(); } }],
   ['menu', '/', async p => { const b = p.locator('#menu-btn:visible'); if (await b.count()) { await b.click(); await expect(p.locator('#nav-drawer')).toBeVisible(); } }],
+  ['home-long', '/', undefined, undefined],
 ];
 
 test('screens', async ({ page }, info) => {
-  test.setTimeout(300_000);
+  test.setTimeout(900_000);
   page.on('pageerror', e => console.log('pageerror:', e.message));
   await mockApi(page);
   await seed(page);
   const w = info.project.name.split('x')[0];
-  for (const [name, path, act] of SCREENS) {
+  for (const [name, path, act, prep] of SCREENS) {
     if (only.length && !only.includes(name)) continue;
+    if (name === 'home-long') await seedLong(page);
+    if (prep) await prep();
     await page.goto(path);
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(700);
     if (act) await act(page);
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${dir}/${name}-${w}.png` });
+    await page.screenshot({ path: `${dir}/${name}-${w}.png`, fullPage: !!process.env.SHOT_FULL });
   }
 });

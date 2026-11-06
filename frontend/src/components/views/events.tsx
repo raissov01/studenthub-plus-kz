@@ -4,6 +4,8 @@
    rotating QR, a ticket scanner, the fallback list, teams, finish, CSV and feedback. */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
 import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
@@ -60,6 +62,8 @@ function DbEvent_({ id }: { id: string }) {
   const need = useNeedAccount();
   const ev = useLoad<{ event: DbEvent }>(`/api/events/${id}${acc.user ? '?u=' + acc.user.id : ''}`);
   const att = useLoad<AttendeesResp>(`/api/events/${id}/attendees${acc.user ? '?u=' + acc.user.id : ''}`);
+  const desktop = useDesktop();
+  const more = useLoad<{ events: DbEvent[] }>(desktop ? '/api/events' : null);
   const [busy, setBusy] = useState(false);
   const [prevTeam, setPrevTeam] = useState(false);
   const online = useOnline();
@@ -97,68 +101,125 @@ function DbEvent_({ id }: { id: string }) {
   };
   const open = e.status === 'published' && !isPast(e.ends_at);
   const started = isPast(e.starts_at);
-  return (
+  const head = (
+    <div className="card-row ev-head">
+      <div className="date" style={{ width: 64 }}><small>{I.monS[d.getMonth()]}</small><b style={{ fontSize: '1.6rem' }}>{d.getDate()}</b></div>
+      <div className="detail-head" style={{ minWidth: 0 }}><h1>{evTitle(e, lang)}</h1>
+        <div className="badges">
+          <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
+          {e.gives_cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}
+          {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
+          {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}
+        </div></div>
+    </div>
+  );
+  const notices = (
     <>
-      <div className="card-row">
-        <div className="date" style={{ width: 64 }}><small>{I.monS[d.getMonth()]}</small><b style={{ fontSize: '1.6rem' }}>{d.getDate()}</b></div>
-        <div className="detail-head" style={{ minWidth: 0 }}><h1>{evTitle(e, lang)}</h1>
-          <div className="badges">
-            <span className="badge b-line">{L(ALL_EVENT_CATS[e.cat])}</span>
-            {e.gives_cert ? <span className="badge b-sun"><Icon n="award" s={12} /> {tt('Сертификат беріледі', 'Выдаётся сертификат')}</span> : null}
-            {e.status === 'draft' ? <span className="badge b-line">{tt('Черновик', 'Черновик')}</span> : null}
-            {e.status === 'finished' ? <span className="badge b-line">{tt('Өтті', 'Прошло')}</span> : null}
-          </div></div>
-      </div>
       {saved ? <p className="small muted" role="status">{tt(`Сақталған көшірме (${I.fDate(new Date(saved.savedAt))}). Интернет қосылғанда жаңарады.`, `Сохранённая копия (${I.fDate(new Date(saved.savedAt))}). Обновится, когда появится интернет.`)}</p> : null}
       {e.status === 'cancelled' ? <p className="draft-banner">{tt('Іс-шара өтпейді (ұйымдастырушы тоқтатты)', 'Мероприятие отменено организатором')}</p> : null}
-      <div className="group">
-        <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={`${hhmm(e.starts_at)}–${hhmm(e.ends_at)} · ${e.university}`} chev={false} />
-        {b ? <Row onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }} icon="pin" title={e.place_text || L(b.name)} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')} />
-          : e.place_text ? <Row icon="pin" title={e.place_text} chev={false} /> : null}
-        <Row icon="users" title={tt(`Кім барады: ${att.data?.count ?? e.registered}`, `Кто идёт: ${att.data?.count ?? e.registered}`)}
-          sub={e.capacity == null ? tt('Орын шектелмеген', 'Без ограничения мест') : e.spots_left ? tt(`Бос орын: ${e.spots_left} / ${e.capacity}`, `Свободно: ${e.spots_left} из ${e.capacity}`) : tt(`Орын толды (${e.capacity}). Күту тізімі бар`, `Мест нет (${e.capacity}). Есть лист ожидания`)}
-          onClick={att.data?.attendees ? () => openSheet(<AttendeesSheet list={att.data?.attendees ?? []} />) : undefined} chev={!!att.data?.attendees} />
+    </>
+  );
+  const facts = (
+    <div className="group">
+      <Row icon="clock" title={`${wd[d.getDay()]}, ${I.fDate(d)}`} sub={`${hhmm(e.starts_at)}–${hhmm(e.ends_at)} · ${e.university}`} chev={false} />
+      {b ? <Row onClick={() => { setUi({ mapSel: b.id, mapQ: '' }); go('map'); }} icon="pin" title={e.place_text || L(b.name)} sub={tt('Кампус картасынан көру', 'Посмотреть на карте кампуса')} />
+        : e.place_text ? <Row icon="pin" title={e.place_text} chev={false} /> : null}
+      <Row icon="users" title={tt(`Кім барады: ${att.data?.count ?? e.registered}`, `Кто идёт: ${att.data?.count ?? e.registered}`)}
+        sub={e.capacity == null ? tt('Орын шектелмеген', 'Без ограничения мест') : e.spots_left ? tt(`Бос орын: ${e.spots_left} / ${e.capacity}`, `Свободно: ${e.spots_left} из ${e.capacity}`) : tt(`Орын толды (${e.capacity}). Күту тізімі бар`, `Мест нет (${e.capacity}). Есть лист ожидания`)}
+        onClick={att.data?.attendees ? () => openSheet(<AttendeesSheet list={att.data?.attendees ?? []} />) : undefined} chev={!!att.data?.attendees} />
+    </div>
+  );
+  const calAct = e.status !== 'cancelled' && !isPast(e.ends_at) ? <CalendarActions item={'event:' + e.id} target={eventPinTarget(e.id, { kk: e.title_kk, ru: e.title_ru }, e.starts_at)} /> : null;
+  const attNote = !att.data?.attendees ? <p className="tiny muted">{tt('Қатысушылардың аты тек тіркелгендерге көрінеді.', 'Имена участников видны только записавшимся.')}</p> : null;
+  const desc = evDesc(e, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evDesc(e, lang)}</p> : null;
+  const fair = <FairSection id={e.id} cat={e.cat} manage={!!e.can_manage} />;
+  const manageBtn = e.can_manage ? <button className="btn secondary block" type="button" onClick={() => go('organize:' + e.id)}><Icon n="gear" s={18} /> {tt('Іс-шараны басқару', 'Управлять мероприятием')}</button> : null;
+  // the laptop rail already has «add to calendar» (Google / .ics): no second .ics button there
+  const ics = desktop && calAct ? null : <IcsLink id={e.id} />;
+  const reg = my?.status === 'registered' ? (
+    <>
+      <div className="card ev-ticket" style={{ alignItems: 'center', textAlign: 'center' }}>
+        <span className="eyebrow">{tt('Электрондық билет', 'Электронный билет')}</span>
+        {my.checked_in_at
+          ? <><span className="badge b-ok"><Icon n="check" s={12} /> {tt('Келгеніңіз расталды', 'Ваше присутствие подтверждено')}</span>
+            {my.team_no ? <span className="big-num">{tt(`${my.team_no}-команда`, `Команда ${my.team_no}`)}</span> : null}</>
+          : <><Qr text={my.ticket} /><span className="code">{my.ticket.slice(0, 6).toUpperCase()}</span>
+            <span className="tiny muted">{tt('Кіреберісте ұйымдастырушының QR-ын сканерлеңіз. Интернет болмаса — осы билетті көрсетіңіз.', 'На входе отсканируйте QR организатора. Нет интернета — покажите этот билет.')}</span></>}
       </div>
-      {e.status !== 'cancelled' && !isPast(e.ends_at) ? <CalendarActions item={'event:' + e.id} target={eventPinTarget(e.id, { kk: e.title_kk, ru: e.title_ru }, e.starts_at)} /> : null}
-      {!att.data?.attendees ? <p className="tiny muted">{tt('Қатысушылардың аты тек тіркелгендерге көрінеді.', 'Имена участников видны только записавшимся.')}</p> : null}
-      {evDesc(e, lang) ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evDesc(e, lang)}</p> : null}
-      <FairSection id={e.id} cat={e.cat} manage={!!e.can_manage} />
-      {e.can_manage ? <button className="btn secondary block" type="button" onClick={() => go('organize:' + e.id)}><Icon n="gear" s={18} /> {tt('Іс-шараны басқару', 'Управлять мероприятием')}</button> : null}
-      {my?.status === 'registered' ? (
-        <>
-          <div className="card" style={{ alignItems: 'center', textAlign: 'center' }}>
-            <span className="eyebrow">{tt('Электрондық билет', 'Электронный билет')}</span>
-            {my.checked_in_at
-              ? <><span className="badge b-ok"><Icon n="check" s={12} /> {tt('Келгеніңіз расталды', 'Ваше присутствие подтверждено')}</span>
-                {my.team_no ? <span className="big-num">{tt(`${my.team_no}-команда`, `Команда ${my.team_no}`)}</span> : null}</>
-              : <><Qr text={my.ticket} /><span className="code">{my.ticket.slice(0, 6).toUpperCase()}</span>
-                <span className="tiny muted">{tt('Кіреберісте ұйымдастырушының QR-ын сканерлеңіз. Интернет болмаса — осы билетті көрсетіңіз.', 'На входе отсканируйте QR организатора. Нет интернета — покажите этот билет.')}</span></>}
-          </div>
-          <IcsLink id={e.id} />
-          {!started && open ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button> : null}
-          {e.status === 'finished' && my.checked_in_at && my.feedback_score == null && online ? <FeedbackForm id={e.id} onDone={reload} /> : null}
-          {my.feedback_score != null ? <p className="tiny muted">{tt('Пікіріңіз үшін рақмет!', 'Спасибо за отзыв!')}</p> : null}
-        </>
-      ) : my?.status === 'waitlist' ? (
-        <>
-          <div className="card"><b>{tt('Орын жоқ — күту тізіміндесіз', 'Мест нет — вы в листе ожидания')}</b>
-            <span className="small muted">{tt('Біреу бас тартса, сізді автоматты тіркеп, Telegram-да хабарлаймыз.', 'Если кто-то откажется, запишем вас автоматически и сообщим в Telegram.')}</span></div>
-          {open && !started ? <IcsLink id={e.id} /> : null}
-          {open && !started ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Күту тізімінен шығу', 'Выйти из листа ожидания')}</button> : null}
-        </>
-      ) : open ? (
-        <>
-          {e.teams_enabled ? <label className="check"><input type="checkbox" checked={prevTeam} onChange={x => setPrevTeam(x.target.checked)} /><span className="small">{tt('Бұрынғы командаммен', 'С моей прошлой командой')}</span></label> : null}
-          <div className="sticky-cta">
-            <button className="btn block" type="button" disabled={busy || !online} onClick={register}><Icon n="check" s={18} /> {e.spots_left === 0 ? tt('Күту тізіміне жазылу', 'В лист ожидания') : tt('Тіркелу', 'Записаться')}</button>
-          </div>
-          <IcsLink id={e.id} />
-        </>
-      ) : null}
-      {e.gives_cert ? <p className="tiny muted">{tt('Келгеніңіз QR арқылы расталса, сертификат портфолиоңызға өзі қосылады.', 'Если ваше присутствие подтверждено по QR, сертификат сам появится в портфолио.')}</p> : null}
-      {e.status === 'published' ? <ShareRow path={`/event/${e.id}`} title={evTitle(e, lang)} kind="event" id={String(e.id)} /> : null}
-      {!online ? <p className="tiny muted">{tt('Тіркелу мен бас тартуға интернет керек.', 'Для записи и отмены нужен интернет.')}</p> : null}
-      {!acc.user && online ? <SignInCard text={tt('Тіркелу үшін Telegram арқылы кіріңіз — билет пен еске салу аккаунтқа байланады.', 'Чтобы записаться, войдите через Telegram — билет и напоминание привязываются к аккаунту.')} /> : null}
+      {ics}
+      {!started && open ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Тіркеуден бас тарту', 'Отменить запись')}</button> : null}
+      {e.status === 'finished' && my.checked_in_at && my.feedback_score == null && online ? <FeedbackForm id={e.id} onDone={reload} /> : null}
+      {my.feedback_score != null ? <p className="tiny muted">{tt('Пікіріңіз үшін рақмет!', 'Спасибо за отзыв!')}</p> : null}
+    </>
+  ) : my?.status === 'waitlist' ? (
+    <>
+      <div className="card"><b>{tt('Орын жоқ — күту тізіміндесіз', 'Мест нет — вы в листе ожидания')}</b>
+        <span className="small muted">{tt('Біреу бас тартса, сізді автоматты тіркеп, Telegram-да хабарлаймыз.', 'Если кто-то откажется, запишем вас автоматически и сообщим в Telegram.')}</span></div>
+      {open && !started ? ics : null}
+      {open && !started ? <button className="btn danger block" type="button" disabled={busy || !online} onClick={unregister}>{tt('Күту тізімінен шығу', 'Выйти из листа ожидания')}</button> : null}
+    </>
+  ) : open ? (
+    <>
+      {e.teams_enabled ? <label className="check"><input type="checkbox" checked={prevTeam} onChange={x => setPrevTeam(x.target.checked)} /><span className="small">{tt('Бұрынғы командаммен', 'С моей прошлой командой')}</span></label> : null}
+      <div className="sticky-cta">
+        <button className="btn block" type="button" disabled={busy || !online} onClick={register}><Icon n="check" s={18} /> {e.spots_left === 0 ? tt('Күту тізіміне жазылу', 'В лист ожидания') : tt('Тіркелу', 'Записаться')}</button>
+      </div>
+      {ics}
+    </>
+  ) : null;
+  const certNote = e.gives_cert ? <p className="tiny muted">{tt('Келгеніңіз QR арқылы расталса, сертификат портфолиоңызға өзі қосылады.', 'Если ваше присутствие подтверждено по QR, сертификат сам появится в портфолио.')}</p> : null;
+  const share = e.status === 'published' ? <ShareRow path={`/event/${e.id}`} title={evTitle(e, lang)} kind="event" id={String(e.id)} /> : null;
+  const offline = !online ? <p className="tiny muted">{tt('Тіркелу мен бас тартуға интернет керек.', 'Для записи и отмены нужен интернет.')}</p> : null;
+  const signIn = !acc.user && online ? <SignInCard text={tt('Тіркелу үшін Telegram арқылы кіріңіз — билет пен еске салу аккаунтқа байланады.', 'Чтобы записаться, войдите через Telegram — билет и напоминание привязываются к аккаунту.')} /> : null;
+  if (desktop) {
+    // a laptop: the description and similar events in the column; when/where, the ticket or the sign-up,
+    // the calendar, the organiser and sharing in the rail
+    const similar = (more.data?.events ?? []).filter(x => x.id !== e.id && x.status === 'published' && !isPast(x.ends_at))
+      .sort((x, y) => Number(y.cat === e.cat) - Number(x.cat === e.cat) || x.starts_at.localeCompare(y.starts_at)).slice(0, 4);
+    return (
+      <DeskDetail label={tt('Іс-шара туралы', 'О мероприятии')} main={<>
+        {head}{notices}
+        <section className="section">
+          <SectionHead title={tt('Сипаттама', 'Описание')} />
+          {desc ?? <p className="small muted">{tt('Ұйымдастырушы сипаттама қоспаған.', 'Организатор не добавил описание.')}</p>}
+        </section>
+        {fair}
+        {similar.length ? (
+          <section className="section" aria-labelledby="evSimilar">
+            <SectionHead title={<span id="evSimilar">{tt('Ұқсас іс-шаралар', 'Похожие мероприятия')}</span>} />
+            <div className="desk-grid ev-similar">{similar.map(x => <DbEventCard key={x.id} e={x} />)}</div>
+          </section>
+        ) : null}
+      </>} rail={<>
+        {facts}
+        {reg}
+        {signIn}
+        {offline}
+        {calAct}
+        {attNote}
+        {certNote}
+        {e.club_id ? <div className="group"><Row icon="users" title={tt('Ұйымдастырушы клуб', 'Клуб-организатор')} sub={e.university} go={'club:' + e.club_id} /></div>
+          : <div className="group"><Row icon="building" title={e.university} sub={tt('Ұйымдастырушы', 'Организатор')} chev={false} /></div>}
+        {manageBtn}
+        {share}
+      </>} />
+    );
+  }
+  return (
+    <>
+      {head}
+      {notices}
+      {facts}
+      {calAct}
+      {attNote}
+      {desc}
+      {fair}
+      {manageBtn}
+      {reg}
+      {certNote}
+      {share}
+      {offline}
+      {signIn}
     </>
   );
 }

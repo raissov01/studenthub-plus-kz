@@ -6,6 +6,8 @@
    office or security. */
 import { useRef, useState } from 'react';
 import { useApp } from '@/components/app';
+import { DeskDetail, DeskList } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { Chip, Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useLoad, useNeedAccount, ymd } from '@/components/views/common';
 import { ContactCard, ReportLink, RuleWarning } from '@/components/views/community-ui';
@@ -49,6 +51,7 @@ function LFCard({ p }: { p: LFPost }) {
 
 function LFListView() {
   const { tt, L, go } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const [kind, setKind] = useState<'all' | LFKind>('all');
   const [cat, setCat] = useState('all');
@@ -59,7 +62,7 @@ function LFListView() {
   if (cat !== 'all') qs.set('category', cat);
   if (!own || uni === 'all') qs.set('university', 'all');
   const { data, err } = useLoad<LFList>(acc.loaded ? '/api/lostfound/posts?' + qs.toString() : null);
-  return (
+  const filters = (
     <>
       <div className="btn-row">
         <button className="btn" type="button" onClick={() => go('lostfound:new:lost')}><Icon n="search" s={18} /> {tt('Жоғалттым', 'Потерял')}</button>
@@ -76,9 +79,13 @@ function LFListView() {
           <option value="all">{tt('Кез келген', 'Любая')}</option>
           {Object.entries(LF_CATS).map(([k, c]) => <option key={k} value={k}>{L(c)}</option>)}
         </select></div>
+    </>
+  );
+  const results = (
+    <>
       <ErrorLine err={err} />
       {!data && !err ? <Loading /> : data?.posts.length ? (
-        <div className="group" aria-label={tt('Хабарландырулар', 'Объявления')}>{data.posts.map(p => <LFCard key={p.id} p={p} />)}</div>
+        <div className={`group${desktop ? ' desk-cards' : ''}`} aria-label={tt('Хабарландырулар', 'Объявления')}>{data.posts.map(p => <LFCard key={p.id} p={p} />)}</div>
       ) : data ? (
         <Empty icon="lostfound">{tt('Әзірге ештеңе жоқ. Бір нәрсе жоғалтсаңыз не тапсаңыз — бірінші болып жазыңыз.', 'Пока ничего нет. Если что-то потеряли или нашли — напишите первым.')}</Empty>
       ) : null}
@@ -86,6 +93,8 @@ function LFListView() {
         'Нашли документ или карту: не выкладывайте фото и номер, сдайте в деканат или охрану. Владелец сам назовёт примету.')}</p>
     </>
   );
+  if (desktop) return <DeskList label={tt('Сүзгілер', 'Фильтры')} filters={filters}>{results}</DeskList>;
+  return <>{filters}{results}</>;
 }
 
 function ClaimSheet({ post, done }: { post: LFPost; done: () => void }) {
@@ -164,6 +173,7 @@ function ClaimBlock({ c, mine, reload }: { c: LFClaim; mine: boolean; reload: ()
 
 function LFPostView({ id }: { id: string }) {
   const { tt, L, go, openSheet, lang, toast } = useApp();
+  const desktop = useDesktop();
   const acc = useAccount();
   const need = useNeedAccount();
   const { data, err, code, reload } = useLoad<LFDetail>(acc.loaded ? `/api/lostfound/posts/${id}${acc.user ? '?u=' + acc.user.id : ''}` : null);
@@ -175,45 +185,47 @@ function LFPostView({ id }: { id: string }) {
   const close = async () => {
     try { await api(`/api/lostfound/posts/${p.id}/close`, { method: 'POST', lang }); toast(tt('Жабылды', 'Закрыто')); reload(); } catch (e) { toast(errText(e)); }
   };
-  return (
-    <>
-      {p.photo ? <div className="mk-photos"><img src={p.photo} alt={p.title} /></div> : null}
-      <div className="detail-head"><h1>{p.title}</h1>
-        <div className="badges">
-          <span className={`badge ${p.kind === 'lost' ? 'b-sun' : 'b-ok'}`}>{kindLabel(p.kind, tt)}</span>
-          <span className="badge b-line">{L(LF_CATS[p.category] ?? LF_CATS.other)}</span>
-          {p.handedTo ? <span className="badge b-ok">{L(LF_HANDED[p.handedTo])}</span> : null}
-          {p.status !== 'active' ? <span className="badge b-line">{p.status === 'resolved' ? tt('Иесі табылды', 'Владелец найден') : tt('Жабық', 'Закрыто')}</span> : null}
-        </div></div>
-      {p.desc ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{p.desc}</p> : null}
-      <div className="group">
-        {where ? <Row icon="pin" title={where} sub={p.university} chev={false} /> : <Row icon="pin" title={p.university} chev={false} />}
-        <Row icon="calendar" title={ymd(p.happenedOn)} sub={tt(`${ymd(p.expiresAt)} дейін көрінеді`, `видно до ${ymd(p.expiresAt)}`)} chev={false} />
-      </div>
-      {p.handedTo ? <p className="note">{tt('Құжатты алу үшін жеке куәлігіңізбен көрсетілген жерге барыңыз.', 'Чтобы забрать, приходите с удостоверением личности в указанное место.')}</p> : null}
-
-      {p.mine ? (
-        <section className="section" aria-label={tt('Хабарламалар', 'Сообщения')}>
-          <SectionHead title={tt('Хабарламалар', 'Сообщения')} />
-          {data.claims?.length ? data.claims.map(c => <ClaimBlock key={c.id} c={c} mine reload={reload} />)
-            : <p className="small muted">{tt('Әзірге ешкім жазбады. Хабарлама келсе, Telegram-ға және хабарламаларға хабар келеді.', 'Пока никто не написал. О новом сообщении придёт уведомление.')}</p>}
-          {p.status === 'active' ? <button className="btn ghost" type="button" onClick={close}>{tt('Жариялауды жабу', 'Снять с публикации')}</button> : null}
-        </section>
-      ) : data.myClaim ? (
-        <section className="section" aria-label={tt('Менің хабарламам', 'Моё сообщение')}>
-          <SectionHead title={tt('Менің хабарламам', 'Моё сообщение')} />
-          <ClaimBlock c={data.myClaim} mine={false} reload={reload} />
-        </section>
-      ) : p.status === 'active' ? (
-        hasAccount(acc)
-          ? <button className="btn block" type="button" onClick={() => openSheet(<ClaimSheet post={p} done={reload} />)}>
-            {p.kind === 'found' ? tt('Бұл менікі', 'Это моё') : tt('Мен таптым', 'Я нашёл')}</button>
-          : <SignInCard text={tt('Жариялаушыға жеке хабарлама жіберу үшін кіріңіз. Байланыстар екі жақ келіскенде ғана ашылады.', 'Чтобы написать автору, войдите. Контакты открываются только по согласию обеих сторон.')} />
-      ) : null}
-      {!p.mine ? <ReportLink kind="lostfound_post" id={p.id} /> : null}
-      {!acc.user ? null : <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => { if (need()) go('lostfound:mine'); }}>{tt('Менің жазбаларым', 'Мои записи')}</button>}
-    </>
+  const photo = p.photo ? <div className="mk-photos"><img src={p.photo} alt={p.title} /></div> : null;
+  const head = (
+    <div className="detail-head"><h1>{p.title}</h1>
+      <div className="badges">
+        <span className={`badge ${p.kind === 'lost' ? 'b-sun' : 'b-ok'}`}>{kindLabel(p.kind, tt)}</span>
+        <span className="badge b-line">{L(LF_CATS[p.category] ?? LF_CATS.other)}</span>
+        {p.handedTo ? <span className="badge b-ok">{L(LF_HANDED[p.handedTo])}</span> : null}
+        {p.status !== 'active' ? <span className="badge b-line">{p.status === 'resolved' ? tt('Иесі табылды', 'Владелец найден') : tt('Жабық', 'Закрыто')}</span> : null}
+      </div></div>
   );
+  const desc = p.desc ? <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{p.desc}</p> : null;
+  const facts = (
+    <div className="group">
+      {where ? <Row icon="pin" title={where} sub={p.university} chev={false} /> : <Row icon="pin" title={p.university} chev={false} />}
+      <Row icon="calendar" title={ymd(p.happenedOn)} sub={tt(`${ymd(p.expiresAt)} дейін көрінеді`, `видно до ${ymd(p.expiresAt)}`)} chev={false} />
+    </div>
+  );
+  const handed = p.handedTo ? <p className="note">{tt('Құжатты алу үшін жеке куәлігіңізбен көрсетілген жерге барыңыз.', 'Чтобы забрать, приходите с удостоверением личности в указанное место.')}</p> : null;
+  const claims = p.mine ? (
+    <section className="section" aria-label={tt('Хабарламалар', 'Сообщения')}>
+      <SectionHead title={tt('Хабарламалар', 'Сообщения')} />
+      {data.claims?.length ? data.claims.map(c => <ClaimBlock key={c.id} c={c} mine reload={reload} />)
+        : <p className="small muted">{tt('Әзірге ешкім жазбады. Хабарлама келсе, Telegram-ға және хабарламаларға хабар келеді.', 'Пока никто не написал. О новом сообщении придёт уведомление.')}</p>}
+      {p.status === 'active' ? <button className="btn ghost" type="button" onClick={close}>{tt('Жариялауды жабу', 'Снять с публикации')}</button> : null}
+    </section>
+  ) : data.myClaim ? (
+    <section className="section" aria-label={tt('Менің хабарламам', 'Моё сообщение')}>
+      <SectionHead title={tt('Менің хабарламам', 'Моё сообщение')} />
+      <ClaimBlock c={data.myClaim} mine={false} reload={reload} />
+    </section>
+  ) : null;
+  const act = !p.mine && !data.myClaim && p.status === 'active' ? (
+    hasAccount(acc)
+      ? <button className="btn block" type="button" onClick={() => openSheet(<ClaimSheet post={p} done={reload} />)}>
+        {p.kind === 'found' ? tt('Бұл менікі', 'Это моё') : tt('Мен таптым', 'Я нашёл')}</button>
+      : <SignInCard text={tt('Жариялаушыға жеке хабарлама жіберу үшін кіріңіз. Байланыстар екі жақ келіскенде ғана ашылады.', 'Чтобы написать автору, войдите. Контакты открываются только по согласию обеих сторон.')} />
+  ) : null;
+  const report = !p.mine ? <ReportLink kind="lostfound_post" id={p.id} /> : null;
+  const mineLink = !acc.user ? null : <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={() => { if (need()) go('lostfound:mine'); }}>{tt('Менің жазбаларым', 'Мои записи')}</button>;
+  if (desktop) return <DeskDetail label={tt('Қайда және қашан', 'Где и когда')} main={<>{head}{photo}{desc}{claims}</>} rail={<>{facts}{act}{handed}{report}{mineLink}</>} />;
+  return <>{photo}{head}{desc}{facts}{handed}{claims}{act}{report}{mineLink}</>;
 }
 
 function LFNew({ kind: initial }: { kind: LFKind }) {

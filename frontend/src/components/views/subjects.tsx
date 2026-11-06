@@ -2,6 +2,8 @@
 /* «Пәндер»: the subject list (from the timetable, plus own ones) and one screen per subject that gathers what
    already exists elsewhere — next class and room, deadlines, notes, flashcard decks, spaced repetition, exam date
    and plan, the expected grade. /subjects lists them; /subjects?id=<id> is one subject (see lib/routes QUERY_ID). */
+import { DeskDetail } from '@/components/desk';
+import { useDesktop } from '@/lib/desktop';
 import { useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useApp, type App } from '@/components/app';
@@ -54,6 +56,7 @@ export function SubjectsScreen() {
 
 function SubjectList() {
   const { S, tt, go, toast } = useApp();
+  const desktop = useDesktop();
   const { list, study } = useSubjects();
   const [name, setName] = useState('');
   const add = () => {
@@ -66,16 +69,15 @@ function SubjectList() {
     setName('');
     toast(tt('Пән қосылды', 'Предмет добавлен'));
   };
-  return (
-    <>
-      {S.timetable.length
+  const intro = S.timetable.length
         ? <p className="small muted">{tt('Пәндер сіздің сабақ кестеңізден алынды. Әр пәннің бетінде сабақ, дедлайн, конспект, карточка, емтихан мен баға бір жерде.', 'Предметы взяты из вашего расписания. На странице предмета — пары, дедлайны, конспекты, карточки, экзамен и оценка в одном месте.')}</p>
         : (
           <Empty icon="timetable" action={<button className="btn secondary" type="button" id="subjAddTimetable" onClick={() => go('timetable')}><Icon n="plus" s={18} /> {tt('Кестені қосу', 'Добавить расписание')}</button>}>
             {tt('Сабақ кестеңізді қосыңыз — пәндер одан өздігінен шығады. Немесе пәнді төменнен қолмен қосыңыз.', 'Добавьте своё расписание — предметы появятся из него сами. Или добавьте предмет вручную ниже.')}
           </Empty>
-        )}
-      <div className="group" id="subjectList">
+        );
+  const listEl = (
+      <div className={`group${desktop ? ' desk-cards' : ''}`} id="subjectList">
         {list.map(s => {
           const nx = nextSlot(s, new Date());
           const notes = study.notes.filter(n => n.subject === s.id).length;
@@ -88,6 +90,9 @@ function SubjectList() {
             end={due ? <span className="badge b-sky num">{due}</span> : undefined} />;
         })}
       </div>
+  );
+  const side = (
+    <>
       <form className="card form" onSubmit={e => { e.preventDefault(); add(); }}>
         <div className="field">
           <label htmlFor="subjNew">{tt('Пән қосу', 'Добавить предмет')}</label>
@@ -95,9 +100,13 @@ function SubjectList() {
         </div>
         <button className="btn" type="submit" disabled={!name.trim()}><Icon n="plus" s={18} /> {tt('Қосу', 'Добавить')}</button>
       </form>
-      <Row go="notes" icon="doc" title={tt('Барлық конспектілер', 'Все конспекты')} sub={tt('Іздеу және экспорт', 'Поиск и экспорт')} />
+      {desktop ? <div className="group"><Row go="notes" icon="doc" title={tt('Барлық конспектілер', 'Все конспекты')} sub={tt('Іздеу және экспорт', 'Поиск и экспорт')} /></div>
+        : <Row go="notes" icon="doc" title={tt('Барлық конспектілер', 'Все конспекты')} sub={tt('Іздеу және экспорт', 'Поиск и экспорт')} />}
     </>
   );
+  // a laptop: the subjects as tiles; adding one and the notes link on the right
+  if (desktop) return <DeskDetail label={tt('Пән қосу', 'Добавить предмет')} main={<>{intro}{list.length ? listEl : null}</>} rail={side} />;
+  return <>{intro}{listEl}{side}</>;
 }
 
 function SubjectPage({ id }: { id: string }) {
