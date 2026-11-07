@@ -41,6 +41,10 @@ func secure(next http.Handler) http.Handler {
 		if h.Get("Cache-Control") == "" {
 			h.Set("Cache-Control", "no-store")
 		}
+		if httpx.HasNUL(r) { // Postgres refuses NUL in text parameters: it was a 500 on every search
+			httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
