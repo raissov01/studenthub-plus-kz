@@ -32,7 +32,7 @@ the last section. File:line refer to the commit after the fixes.
 | 9 | S3 | Anonymous survey answers linkable to the student at database level (`xmin`, insert order) | open |
 | 10 | S3 | Self-declared university/faculty/course opens other universities' surveys and complaint boxes | open — owner decision |
 | 11 | S3 | Any player can clone a public/unlisted quiz and read its answer keys | open — owner decision |
-| 12 | S4 | NUL in a query/path/JSON string → 500 on 7 routes | fixed a501d0c |
+| 12 | S4 | NUL in a query/path/JSON string → 500 on 7 routes; `/api/events/manage` 500 for any manager without a university | fixed a501d0c, see text |
 | 13 | S4 | Wellbeing contact email 121–186 chars → 500 | fixed 4a12f3a |
 | 14 | S4 | Moderator can hide/restore their own market item / quiz | open |
 | 15 | S4 | Roommates: «same gender only» rests on a self-set field; strict listing visible through requests | open |
@@ -162,11 +162,14 @@ a public/unlisted quiz a player can read all answers. It contradicts «answer ke
 ### 12. S4 — NUL → 500 (fixed)
 
 The fuzzer's only 500s on the original build: `%00` in a query/path (`GET /api/market/items`, `/api/qa/questions`,
-`/api/quiz/quizzes`, `/api/quiz/s/{code}`, `/meta`, `/clone`, `/api/events/manage`) and `\u0000` in a JSON string
+`/api/quiz/quizzes`, `/api/quiz/s/{code}`, `/meta`, `/clone`) and `\u0000` in a JSON string
 (`POST /api/events/checkin/claim`): Postgres refuses NUL in text (SQLSTATE 08P01). No body leaked internals (all
 were the generic `internal` message). Fix: the router answers 400 to NUL in path/query (`httpx.HasNUL`, wired in
 `server/server.go`) and `httpx.Decode` refuses `\u0000`. Tests: `TestDecodeRefusesNUL`, `TestHasNUL`,
-`TestNULIsBadRequest`.
+`TestNULIsBadRequest`. The re-run on the fixed build found one more, not caused by input: `manageList`
+(`events/events.go:538`) passed the placeholder `"\x00"` as the university of a manager without one, so
+`GET /api/events/manage` was a 500 for every such account (e.g. a club leader with an empty profile). It now
+passes NULL (test `TestManageListWithoutUniversity`). After that, zero 500s across the whole route set.
 
 ### 13. S4 — wellbeing email 500 (fixed)
 
@@ -248,6 +251,7 @@ were the generic `internal` message). Fix: the router answers 400 to NUL in path
 | `POST /api/print/uploads` | self-nested object-stream PDF | process died (no response) | 201, pages unknown, 0.36 s |
 | `POST /api/print/uploads` | `/Prev` loop PDF | 201 after 5 s, core spinning forever | 201, 0.22 s, no goroutine left |
 | 6 GET search/meta routes | `%00` in query/path | 500 | 400 |
+| `GET /api/events/manage` | manager without a university | 500 | 200 |
 | `POST /api/events/checkin/claim` | `"\u0000"` | 500 | 400 |
 | `PUT /api/staff/wellbeing/contacts` | 157-char email | 500 | 400 |
 | every route × 3 roles | malformed JSON, wrong types, overflow, huge strings, unicode | 4xx | 4xx |

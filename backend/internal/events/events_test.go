@@ -770,3 +770,11 @@ func TestDailyRemindersRespectOnePerDay(t *testing.T) {
 		t.Fatalf("cron: %d %s", w.Code, w.Body)
 	}
 }
+
+// A manager without a university used to get a 500: the "\x00" placeholder reached Postgres (08P01).
+func TestManageListWithoutUniversity(t *testing.T) {
+	staff := newUser(t, "university_staff", "", "")
+	if w := do(t, "GET", "/api/events/manage", staff, nil); w.Code != 200 || !strings.Contains(w.Body.String(), `"events":`) {
+		t.Fatalf("manage without university: %d %s", w.Code, w.Body)
+	}
+}
