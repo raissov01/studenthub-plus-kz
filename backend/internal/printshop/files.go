@@ -4,7 +4,7 @@ package printshop
 // never the name or the declared Content-Type: PDF, JPEG, PNG, or a ZIP that really is a DOCX / XLSX / PPTX — no
 // macro-enabled documents), the student's daily quota (files and bytes), then the page count:
 //
-//   - PDF: counted on the server by a pure-Go parser (github.com/ledongthuc/pdf, catalogue → /Pages → /Count),
+//   - PDF: counted on the server by a pure-Go parser (internal/pdf, a hardened fork of github.com/ledongthuc/pdf; catalogue → /Pages → /Count),
 //     under a time limit and with panics recovered; a PDF it cannot read is treated like an Office file.
 //   - JPG / PNG: one page.
 //   - DOCX / XLSX / PPTX: there is no converter in the API image (memory budget, docs/print.md), so the student
@@ -42,11 +42,11 @@ import (
 	"unicode"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/ledongthuc/pdf"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/db"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/pdf"
 )
 
 const (
@@ -186,7 +186,6 @@ var pdfSem = make(chan struct{}, 2)
 func PDFPages(ctx context.Context, data []byte) int {
 	select {
 	case pdfSem <- struct{}{}:
-		defer func() { <-pdfSem }()
 	case <-ctx.Done():
 		return 0
 	}
@@ -197,9 +196,12 @@ func PDFPages(ctx context.Context, data []byte) int {
 			if recover() != nil {
 				n = 0
 			}
+			<-pdfSem // the slot is free only when the parse has really ended, not when we stop waiting
 			done <- n
 		}()
-		rd, err := pdf.NewReader(bytes.NewReader(data), int64(len(data)))
+		// any read after the deadline panics: a file that keeps the parser busy cannot keep a core forever
+		src := pdf.Deadline(bytes.NewReader(data), time.Now().Add(6*time.Second))
+		rd, err := pdf.NewReader(src, int64(len(data)))
 		if err != nil {
 			return
 		}

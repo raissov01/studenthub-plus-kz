@@ -11,13 +11,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ledongthuc/pdf"
-
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/pdf"
 )
 
 // Lecture notes → text. Everything happens in memory: the multipart body is streamed part by
@@ -112,7 +112,8 @@ func pdfText(data []byte) (text string, pages int, err error) {
 			text, pages, err = "", 0, errZip
 		}
 	}()
-	rd, err := pdf.NewReader(bytes.NewReader(data), int64(len(data)))
+	// a hostile file that keeps the parser reading stops at the deadline (the panic becomes errZip)
+	rd, err := pdf.NewReader(pdf.Deadline(bytes.NewReader(data), time.Now().Add(10*time.Second)), int64(len(data)))
 	if err != nil {
 		return "", 0, errZip
 	}

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // Lecture notes used by the AI tests (Latin text so the generated PDF can carry it).
@@ -401,4 +402,23 @@ func dirList(t *testing.T, dir string) string {
 		names = append(names, e.Name())
 	}
 	return strings.Join(names, ",")
+}
+
+func TestPDFTextHostile(t *testing.T) {
+	for name, data := range map[string][]byte{
+		"prev loop": []byte("%PDF-1.4\nxref\n0 1\n0000000000 65535 f \ntrailer\n<</Size 1/Prev 9>>\nstartxref\n9\n%%EOF\n"),
+		"self-nested object stream": append(append([]byte("%PDF-1.5\n2 0 obj\n<</Type/XRef/Size 3/W[1 1 1]/Root 1 0 R/Length 9>>\nstream\n"),
+			0, 0, 0, 2, 1, 0, 1, 9, 0), "\nendstream\nendobj\nstartxref\n9\n%%EOF\n"...),
+	} {
+		done := make(chan error, 1)
+		go func() { _, _, err := pdfText(data); done <- err }()
+		select {
+		case err := <-done:
+			if err != errZip {
+				t.Fatalf("%s: %v", name, err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("%s: parser never returned", name)
+		}
+	}
 }
