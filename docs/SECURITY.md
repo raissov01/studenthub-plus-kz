@@ -78,10 +78,13 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | DELETE | `/api/admin/cafes/{id}/staff/{userId}` | admin | yes | yes | cafe |
 | DELETE | `/api/admin/clubs/{id}/admins/{userId}` | admin | yes | yes | clubs |
 | DELETE | `/api/admin/content/{id}` | admin, moderator (admin_grants) | yes | yes | — |
+| DELETE | `/api/admin/invites/{id}` | admin; audited | yes | yes | — |
 | DELETE | `/api/admin/market/bans/{userId}` | admin, moderator (admin_grants) | yes | yes | market |
 | DELETE | `/api/admin/print/shops/{id}/kaspi` | admin | yes | yes | print |
 | DELETE | `/api/admin/print/shops/{id}/staff/{userId}` | admin | yes | yes | print |
 | DELETE | `/api/admin/university-staff/{userId}` | admin | yes | yes | b2b |
+| DELETE | `/api/admin/users/{id}/notes/{note}` | admin; audited | yes | yes | — |
+| DELETE | `/api/admin/views/{id}` | the filter's owner only; audited | yes | yes | — |
 | DELETE | `/api/ambassador/pause` | ambassador, admin (active term) | yes | no (no input) | ambassador |
 | DELETE | `/api/clubs/{id}/join` | signed-in (own row, RLS) | yes | yes | clubs |
 | DELETE | `/api/clubs/{id}/members/{userId}` | club admin of this club (RLS), admin | yes | yes | clubs |
@@ -108,6 +111,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/cafe/orders/{id}` | admin | no | yes | cafe |
 | GET | `/api/admin/cafes` | admin | no | no (no input) | cafe |
 | GET | `/api/admin/clubs` | admin | no | no (no input) | clubs |
+| GET | `/api/admin/config` | admin; feature switches (read only) and support contacts | no | no (no input) | — |
 | GET | `/api/admin/content` | admin, moderator (admin_grants) | no | yes | — |
 | GET | `/api/admin/content/{id}` | admin, moderator (admin_grants) | no | yes | — |
 | GET | `/api/admin/dashboard` | admin; counts only | no | no (no input) | — |
@@ -118,10 +122,12 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/feeds/items` | admin, moderator (admin_grants) | no | yes | feeds |
 | GET | `/api/admin/grants` | admin | no | no (no input) | — |
 | GET | `/api/admin/health` | admin | no | no (no input) | — |
+| GET | `/api/admin/invites` | admin | no | no (no input) | — |
 | GET | `/api/admin/market/items` | admin, moderator (admin_grants) | no | yes | market |
 | GET | `/api/admin/mentors` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/pairs` | admin | no | yes | mentors |
 | GET | `/api/admin/mentors/requests/{id}/candidates` | admin | no | yes | mentors |
+| GET | `/api/admin/payments` | admin (every shop); a café / print manager (own shops only, another shop 403); anyone else 403 | no | yes | cafe or print |
 | GET | `/api/admin/points/redemptions` | admin | no | yes | points |
 | GET | `/api/admin/points/rewards` | admin | no | no (no input) | points |
 | GET | `/api/admin/points/users/{userId}` | admin | no | yes | points |
@@ -135,6 +141,9 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/admin/university-staff` | admin | no | no (no input) | b2b |
 | GET | `/api/admin/users` | admin (personal data) | no | yes | — |
 | GET | `/api/admin/users/{id}` | admin (personal data) | no | yes | — |
+| GET | `/api/admin/users/{id}/notes` | admin; internal notes, never shown to the student | no | yes | — |
+| GET | `/api/admin/users/{id}/orders` | admin (personal data): the account's 30 latest café orders and print jobs | no | yes | — |
+| GET | `/api/admin/views` | signed-in with the screen's right (users: admin; payments: admin or a shop manager); own filters only | no | yes | — |
 | GET | `/api/admin/voice` | admin; counts only, no ticket texts or answers | no | no (no input) | — |
 | GET | `/api/ambassador/application` | signed-in | no | no (no input) | ambassador |
 | GET | `/api/ambassador/me` | ambassador, admin (active term) | no | no (no input) | ambassador |
@@ -178,6 +187,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/employer/me` | signed-in | no | no (no input) | b2b |
 | GET | `/api/employer/members` | employer (own company; owner for membership/close/transfer) | no | no (no input) | b2b |
 | GET | `/api/events` | anonymous | no | yes | events |
+| GET | `/api/events/attendance` | admin; ambassador / university staff (own university); club admin (own clubs); anyone else 403 | no | yes | events |
 | GET | `/api/events/manage` | signed-in (only manageable events returned) | no | yes | events |
 | GET | `/api/events/my` | signed-in | no | yes | events |
 | GET | `/api/events/my/attendance` | signed-in | no | yes | events |
@@ -259,6 +269,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | GET | `/api/staff/surveys/{id}/results.csv` | university_staff (bound university), admin; aggregate CSV only, no texts, under 5 hidden | no | yes | surveys |
 | GET | `/api/staff/wellbeing/contacts` | university_staff (bound university), admin | no | yes | wellbeing |
 | GET | `/api/submissions/my` | signed-in | no | no (no input) | — |
+| GET | `/api/support` | anonymous (the support contacts the admin published) | no | no (no input) | — |
 | GET | `/api/surveys` | student, ambassador (consented; only surveys whose university/audience match) | no | no (no input) | surveys |
 | GET | `/api/surveys/{id}` | student, ambassador (consented; eligible surveys only, else 404) | no | yes | surveys |
 | GET | `/api/university/me` | university_staff (bound university) | no | no (no input) | b2b |
@@ -304,6 +315,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/feeds/sources/{id}` | admin | yes | yes | feeds |
 | POST | `/api/admin/grants` | admin (reason required, audited) | yes | yes | — |
 | POST | `/api/admin/grants/revoke` | admin (reason required, audited) | yes | yes | — |
+| POST | `/api/admin/invites` | admin; grant admin|moderator only, refused for an email with an account, audited; applied once on a verified sign-in | yes | yes | — |
 | POST | `/api/admin/lostfound/moderate` | admin, moderator (admin_grants) | yes | yes | lostfound |
 | POST | `/api/admin/market/bans` | admin, moderator (admin_grants) | yes | yes | market |
 | POST | `/api/admin/market/items/{id}/hide` | admin, moderator (admin_grants) | yes | yes | market |
@@ -332,7 +344,9 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/admin/university-staff` | admin | yes | yes | b2b |
 | POST | `/api/admin/users/{id}/block` | admin (reason required, audited; not self, not an admin) | yes | yes | — |
 | POST | `/api/admin/users/{id}/delete` | admin (reason + DELETE confirmation, audited; the DELETE /api/me code path; not self, not an admin) | yes | yes | — |
+| POST | `/api/admin/users/{id}/notes` | admin; 1–2000 chars, audited without the text | yes | yes | — |
 | POST | `/api/admin/users/{id}/unblock` | admin (reason required, audited) | yes | yes | — |
+| POST | `/api/admin/views` | signed-in with the screen's right; own filters, max 20 per screen, query ≤1000 chars, audited | yes | yes | — |
 | POST | `/api/ambassador/apply` | signed-in | yes | yes | ambassador |
 | POST | `/api/ambassador/mentors/match` | ambassador (active team lead, own university) | yes | yes | mentors |
 | POST | `/api/ambassador/pause` | ambassador, admin (active term) | yes | yes | ambassador |
@@ -483,6 +497,7 @@ routes are callable without a session. Flagged (threat/profanity) tickets are he
 | POST | `/api/telegram` | Telegram webhook secret | no | yes | — |
 | POST | `/api/university/posts` | university_staff (bound university) | yes | yes | b2b |
 | PUT | `/api/admin/cafes/{id}` | admin | yes | yes | cafe |
+| PUT | `/api/admin/config/support` | admin; plain text fields with length limits, no markup, audited with the changed field names | yes | yes | — |
 | PUT | `/api/admin/content/{id}` | admin, moderator (admin_grants) | yes | yes | — |
 | PUT | `/api/admin/feedback/recipients/{id}/staff` | admin | yes | yes | feedback |
 | PUT | `/api/admin/points/rewards/{id}` | admin | yes | yes | points |

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect, onboard } from './fixtures';
 import { config } from './content';
+import { attendance, dashboardExtra, payments, settings, userNotes, userOrders, weekEvents } from './admin-data';
 
 /* Design screenshots of every /admin screen at 390×844 and 1440×900 into docs/design/admin/ (mocked API, illustrative
    numbers for the picture only). Runs only with ADMIN_SHOTS=1:
@@ -9,8 +10,9 @@ test.skip(process.env.ADMIN_SHOTS !== '1', 'design screenshots on demand');
 
 const none = { admin: false, moderator: false, blocked: false, moderation: null, cafes: [], printShops: [], clubs: [], university: null, feedback: [], employer: null, ambassador: false, mentor: false };
 const days = (n: number, f: (i: number) => number) => Array.from({ length: n }, (_, i) => ({ day: new Date(Date.UTC(2026, 10, 6 - n + i)).toISOString().slice(0, 10), n: f(i) }));
-const user = (id: number, name: string, extra = {}) => ({ id, telegramId: 9000 + id, email: null, username: `user${id}`, name, role: 'student', university: 'KATU',
-  consentAt: '2026-10-01T00:00:00Z', createdAt: '2026-10-01T00:00:00Z', lastActive: '2026-11-05', blocked: false, scopes: [], ...extra });
+const user = (id: number, name: string, extra = {}) => ({ id, telegramId: 9000 + id, email: `${name.split(' ')[0].toLowerCase().replace(/[^a-zа-яәіңғүұқөһ]/gi, '')}${id}@example.kz`,
+  username: `user${id}`, name, role: 'student', university: 'KATU',
+  consentAt: '2026-10-01T00:00:00Z', createdAt: '2026-10-01T00:00:00Z', lastActive: '2026-11-05', blocked: false, scopes: [], places: [], ...extra });
 
 async function mock(page: Page, role: string, scopes: string[], panels: object) {
   await page.route('**/api/clubs?**', r => r.fulfill({ json: { clubs: [] } }));
@@ -18,7 +20,14 @@ async function mock(page: Page, role: string, scopes: string[], panels: object) 
   await page.route('**/api/cafe/orders/mine', r => r.fulfill({ json: { orders: [] } }));
   await page.route('**/api/print/jobs/mine', r => r.fulfill({ json: { jobs: [] } }));
   await page.route('**/api/points/**', r => r.fulfill({ status: 404, json: { error: { code: 'not_found' } } }));
-  await page.route('**/api/config', r => r.fulfill({ json: { ...config, features: { ...config.features, cafe: true, print: true, clubs: true, market: true, feeds: true, surveys: true, feedback: true, b2b: true, points: true } } }));
+  await page.route('**/api/config', r => r.fulfill({ json: { ...config, features: { ...config.features, cafe: true, print: true, clubs: true, market: true, feeds: true, surveys: true, feedback: true, b2b: true, points: true, events: true } } }));
+  await page.route('**/api/events/**', r => {
+    const p = new URL(r.request().url()).pathname;
+    if (p === '/api/events/manage') return r.fulfill({ json: { events: weekEvents() } });
+    if (p === '/api/events/attendance') return r.fulfill({ json: attendance() });
+    return r.fulfill({ status: 404, json: { error: { code: 'not_found' } } });
+  });
+  await page.route('**/api/support', r => r.fulfill({ json: { support: settings().support } }));
   await page.route('**/api/me', r => r.fulfill({ json: { user: { id: 501, name: 'Аружан Тест', role, scopes, lang: 'kk', consentAt: '2026-01-01', isAdult: true, university: 'KATU' }, needsConsent: false, inboxUnread: 0, console: true } }));
   await page.route('**/api/console/**', r => {
     const p = new URL(r.request().url()).pathname;
@@ -43,12 +52,21 @@ async function mock(page: Page, role: string, scopes: string[], panels: object) 
         pending: { queue: 7, queueModerator: 5, reports: 2, feedbackHeld: 1, feedbackOverdue: 3, redemptions: 4, employers: 1, cafeRefunds: 0, printRefunds: 1 },
         shops: { cafe: { orders: 61, done: 55, revenue: 4875000 }, print: { orders: 23, done: 19, revenue: 912000 } },
         features: { cafe: true, print: true, clubs: true, feedback: true, points: true, b2b: true, market: true, lostfound: true, courseqa: true, events: true, surveys: true, roommates: true },
+        ...dashboardExtra(),
       });
+      case '/api/admin/invites': return j({ invites: [{ id: 1, email: 'aigerim.new@example.kz', grant: 'moderator', reason: 'Командаға шақырылды', createdAt: '2026-11-07T10:00:00Z', by: { id: 501, name: 'Аружан Тест' } }] });
+      case '/api/admin/views': return j({ views: url.searchParams.get('screen') === 'users' ? [{ id: 1, name: 'Модераторлар', query: 'scope=moderator' }] : [{ id: 2, name: 'Қайтару керек', query: 'payment=refund_manual' }] });
+      case '/api/admin/payments': return j(payments());
+      case '/api/admin/config': return j(settings());
+      case '/api/admin/users/77/orders': return j(userOrders());
+      case '/api/admin/users/77/notes': return j(userNotes());
+      case '/api/admin/cafes': return j({ cafes: [{ id: 3, nameKk: 'Бас ғимарат кофесі', nameRu: 'Кофе' }] });
       case '/api/admin/analytics': return j({ devices: 420, returned_day1: 120, eligible_day1: 400, returned_day7: 80, eligible_day7: 350, saved_first: 150, from_share: 30, ambassadors: { amb_aru: 12 }, feedback_avg: 4.4, feedback_count: 18, feedback_recent: ['Ыңғайлы'] });
       case '/api/admin/queue': return j({ items: [], pendingByKind: { opportunity: 3, feed_item: 2 } });
       case '/api/admin/reports': return j({ reports: [] });
-      case '/api/admin/users': return j({ total: 1284, page: 1, limit: 25, universities: [{ name: 'KATU', count: 1100 }],
-        users: [user(77, 'Дана Ерланқызы'), user(78, 'Нұрлан Сейіт', { scopes: ['moderator'] }), user(79, 'Айгерім Б.', { blocked: true, lastActive: '2026-10-28' }),
+      case '/api/admin/users': if ((url.searchParams.get('q') || '').includes('@')) return j({ total: 0, page: 1, limit: 25, universities: [], users: [] });
+        return j({ total: 1284, page: 1, limit: 25, universities: [{ name: 'KATU', count: 1100 }],
+        users: [user(77, 'Дана Ерланқызы', { places: ['cafe_barista'] }), user(78, 'Нұрлан Сейіт', { scopes: ['moderator'] }), user(79, 'Айгерім Б.', { blocked: true, lastActive: '2026-10-28' }),
           user(80, 'Тимур К.', { role: 'ambassador' }), user(81, 'Мадина О.', { consentAt: null, lastActive: null })] });
       case '/api/admin/users/77': return j({
         user: { id: 77, telegramId: 9077, email: 'dana@example.kz', emailVerified: true, username: 'dana', name: 'Дана Ерланқызы', lang: 'kk', role: 'student', university: 'KATU', faculty: 'IT', course: 2, city: 'Астана', isAdult: true,
@@ -80,7 +98,15 @@ async function mock(page: Page, role: string, scopes: string[], panels: object) 
 }
 
 const VIEWPORTS = [{ w: 390, h: 844 }, { w: 1440, h: 900 }];
-const SCREENS: { name: string; role: string; scopes: string[]; panels: object; path: string }[] = [
+const SCREENS: { name: string; role: string; scopes: string[]; panels: object; path: string; click?: string }[] = [
+  { name: 'give-role', role: 'admin', scopes: [], panels: {}, path: '/admin/users', click: 'Рөл беру' },
+  { name: 'invite', role: 'admin', scopes: [], panels: {}, path: '/admin/users', click: 'search:dina.new@example.kz' },
+  { name: 'user-orders', role: 'admin', scopes: [], panels: {}, path: '/admin/users?id=77', click: 'tab:Тапсырыстар' },
+  { name: 'user-notes', role: 'admin', scopes: [], panels: {}, path: '/admin/users?id=77', click: 'tab:Ішкі жазбалар' },
+  { name: 'schedule', role: 'admin', scopes: [], panels: {}, path: '/admin/schedule' },
+  { name: 'attendance', role: 'admin', scopes: [], panels: {}, path: '/admin/attendance' },
+  { name: 'payments', role: 'admin', scopes: [], panels: {}, path: '/admin/payments' },
+  { name: 'settings', role: 'admin', scopes: [], panels: {}, path: '/admin/settings' },
   { name: 'home-admin', role: 'admin', scopes: [], panels: { admin: true, moderator: true, moderation: { pending: 7, reports: 2 } }, path: '/admin' },
   { name: 'users', role: 'admin', scopes: [], panels: {}, path: '/admin/users' },
   { name: 'user-detail', role: 'admin', scopes: [], panels: {}, path: '/admin/users?id=77' },
@@ -107,6 +133,10 @@ for (const s of SCREENS) {
       await page.goto(s.path);
       await expect(page.locator('main')).toBeVisible();
       await page.waitForTimeout(600);
+      if (s.click?.startsWith('search:')) { await page.getByRole('searchbox').fill(s.click.slice(7)); await page.getByRole('searchbox').press('Enter'); }
+      else if (s.click?.startsWith('tab:')) await page.getByRole('tab', { name: s.click.slice(4) }).click();
+      else if (s.click) await page.getByRole('button', { name: s.click, exact: true }).filter({ visible: true }).first().click();
+      if (s.click) await page.waitForTimeout(500);
       await page.screenshot({ path: `../docs/design/admin/${s.name}-${v.w}.png`, fullPage: v.w < 1000 });
     }
   });

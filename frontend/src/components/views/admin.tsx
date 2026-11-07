@@ -4,14 +4,15 @@
    workspace; café / print shop staff their shop; club admins their clubs; university staff their voice inbox;
    an employer the company cabinet; ambassadors and mentors their cabinets. Anyone without a panel gets the same
    neutral screen as an unknown page. The server enforces every right again on each request. */
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { Icon, Row, SectionHead } from '@/components/ui';
-import { ErrorLine, Loading, NotFound, useLoad } from '@/components/views/common';
+import { ErrorLine, Loading, NotFound, useFeature, useLoad } from '@/components/views/common';
 import { ModerationLinks } from '@/components/views/moderation';
 import { roleLabel } from '@/components/views/account';
-import { api, ApiError, useAccount, type Role } from '@/lib/account';
+import { useAccount, type Role } from '@/lib/account';
 import { money } from '@/lib/cafe';
+import { ChartCard, ColumnChart, compact, DataTable, LineChart, type Point } from '@/components/charts';
 import { bars, panelCount, total, type DayCount, type Panels } from '@/lib/console';
 import type { IconName } from '@/lib/icons';
 
@@ -28,47 +29,13 @@ interface Dashboard {
   content: Record<string, number>;
   pending: { queue: number; queueModerator: number; reports: number; feedbackHeld: number; feedbackOverdue: number; redemptions: number; employers: number; cafeRefunds: number; printRefunds: number };
   shops: { cafe: { orders: number; done: number; revenue: number }; print: { orders: number; done: number; revenue: number } };
+  orders?: { day: string; cafe: number; print: number; revenue: number }[];
+  checkins?: { week: string; events: number; registered: number; checkedIn: number }[];
   features: Record<string, boolean>;
 }
 
 export const ROLES: Role[] = ['student', 'ambassador', 'admin', 'university_staff', 'employer'];
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
-
-/** change users.role, with the reason the audit log keeps */
-export function RoleSheet({ u, onDone }: { u: UserRow; onDone: () => void }) {
-  const { tt, lang, toast, closeSheet } = useApp();
-  const [role, setRole] = useState<Role>(u.role);
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  const okReason = reason.trim().length >= 3 && reason.trim().length <= 500;
-  return (
-    <form className="form" onSubmit={async e => {
-      e.preventDefault();
-      if (!okReason || role === u.role) return;
-      setBusy(true); setErr('');
-      try {
-        await api('/api/admin/role', { method: 'POST', body: { userId: u.id, role, reason: reason.trim() }, lang });
-        closeSheet(); toast(tt('Рөл өзгертілді', 'Роль изменена')); onDone();
-      } catch (e2) { setErr(e2 instanceof ApiError ? e2.message : String(e2)); } finally { setBusy(false); }
-    }}>
-      <h2>{u.name || (u.username ? '@' + u.username : `#${u.id}`)}</h2>
-      <p className="small muted">{tt('Қазіргі рөлі', 'Текущая роль')}: {roleLabel(u.role, tt)}</p>
-      <div className="field"><label htmlFor="admRole">{tt('Жаңа рөл', 'Новая роль')}</label>
-        <select className="input" id="admRole" value={role} onChange={e => setRole(e.target.value as Role)}>
-          {ROLES.map(r => <option key={r} value={r}>{roleLabel(r, tt)}</option>)}
-        </select></div>
-      <div className="field"><label htmlFor="admReason">{tt('Себебі (міндетті, 3–500 таңба)', 'Причина (обязательно, 3–500 символов)')}</label>
-        <textarea className="input" id="admReason" maxLength={500} value={reason} onChange={e => setReason(e.target.value)} />
-        <span className="tiny muted">{tt('Себеп журналға жазылады.', 'Причина записывается в журнал.')}</span></div>
-      {err ? <p className="small urgent" role="alert">{err}</p> : null}
-      <div className="btn-row">
-        <button className="btn ghost" type="button" onClick={closeSheet}>{tt('Бас тарту', 'Отмена')}</button>
-        <button className="btn" type="submit" disabled={busy || !okReason || role === u.role}>{role === 'student' && u.role !== 'student' ? tt('Рөлді алу', 'Снять роль') : tt('Рөл беру', 'Выдать роль')}</button>
-      </div>
-    </form>
-  );
-}
 
 export function Stat({ value, label, tone }: { value: string | number; label: string; tone?: 'warn' }) {
   return <div className={`stat${tone ? ' stat-' + tone : ''}`}><b className="num">{value}</b><span>{label}</span></div>;
@@ -138,6 +105,7 @@ function MyPanels({ p }: { p: Panels }) {
         stats={[[s.open, tt('тақтада', 'на доске')], [s.active ? tt('ашық', 'открыта') : tt('өшірулі', 'выключена'), tt('күйі', 'статус')]]}>
         <Go to="cafe:staff" primary>{tt('Тапсырыстар тақтасы', 'Доска заказов')}</Go>
         <Go to={`admin:shop?cafe=${s.id}`}>{tt('Панель', 'Панель')}</Go>
+        {s.role === 'manager' ? <Go to={`admin:payments?cafe=${s.id}`}>{tt('Төлемдер', 'Платежи')}</Go> : null}
       </PanelCard>,
     );
   }
@@ -147,6 +115,7 @@ function MyPanels({ p }: { p: Panels }) {
         stats={[[s.open, tt('кезекте', 'в очереди')], [s.active ? tt('ашық', 'открыта') : tt('өшірулі', 'выключена'), tt('күйі', 'статус')]]}>
         <Go to="print:staff" primary>{tt('Кезек тақтасы', 'Доска очереди')}</Go>
         <Go to={`admin:shop?print=${s.id}`}>{tt('Панель', 'Панель')}</Go>
+        {s.role === 'manager' ? <Go to={`admin:payments?print=${s.id}`}>{tt('Төлемдер', 'Платежи')}</Go> : null}
       </PanelCard>,
     );
   }
@@ -155,6 +124,7 @@ function MyPanels({ p }: { p: Panels }) {
       <PanelCard key={'k' + c.id} icon="user" title={nm(c)} badge={c.status === 'active' ? tt('клуб әкімшісі', 'админ клуба') : tt('архивте', 'в архиве')}
         stats={[[c.members, tt('мүше', 'участников')], [c.requests, tt('өтінім', 'заявок')], [c.pendingPosts, tt('жаңалық тексеруде', 'новостей на проверке')]]}>
         <Go to={`club:${c.id}`} primary>{tt('Клуб бетін басқару', 'Управлять страницей клуба')}</Go>
+        <Go to="admin:schedule">{tt('Күнтізбе', 'Календарь')}</Go>
       </PanelCard>,
     );
   }
@@ -189,6 +159,102 @@ function MyPanels({ p }: { p: Panels }) {
   );
 }
 
+/** the overview charts (kurs dashboard style): sign-ups, active accounts, orders, revenue and the check-in rate */
+function OverviewCharts({ d }: { d: Dashboard }) {
+  const { tt, monS } = useApp();
+  const f = d.features;
+  const dayPt = (day: string, n: number, text?: string): Point => {
+    const [, m, dd] = day.split('-').map(Number);
+    return { label: String(dd), long: `${dd} ${monS[m - 1]}`, value: n, text: text ?? n.toLocaleString('ru-RU') };
+  };
+  const c = (v: number) => compact(v, tt);
+  const signups = d.signups.map(x => dayPt(x.day, x.n));
+  const active = d.active.days.map(x => dayPt(x.day, x.n));
+  const orders = (d.orders ?? []).map(x => dayPt(x.day, x.cafe + x.print, tt(`${x.cafe + x.print} (кофе ${x.cafe}, басып шығару ${x.print})`, `${x.cafe + x.print} (кофе ${x.cafe}, печать ${x.print})`)));
+  const revenue = (d.orders ?? []).map(x => dayPt(x.day, Math.round(x.revenue / 100), money(x.revenue)));
+  const weeks = (d.checkins ?? []).map(x => {
+    const [, m, dd] = x.week.split('-').map(Number);
+    const pct = x.registered > 0 ? Math.round((x.checkedIn / x.registered) * 100) : null;
+    return { label: `${dd}.${String(m).padStart(2, '0')}`, long: tt(`${dd} ${monS[m - 1]} аптасы`, `Неделя с ${dd} ${monS[m - 1]}`), value: pct,
+      text: pct === null ? tt('іс-шара болмады', 'мероприятий не было') : tt(`${pct}% (${x.checkedIn} / ${x.registered})`, `${pct}% (${x.checkedIn} из ${x.registered})`) };
+  });
+  const table = (head: string, pts: Point[]) => <DataTable head={[tt('Күн', 'День'), head]} rows={pts.map(p => [p.long, p.text])} />;
+  const alt = (title: string, pts: Point[]) => `${title}: ${pts.map(p => `${p.long} ${p.text}`).join('; ')}`;
+  const shops = (f.cafe || f.print) && orders.length;
+  return (
+    <div className="chart-grid">
+      <ChartCard testId="chart-signups" title={tt('Тіркелгендер', 'Регистрации')} subtitle={tt('30 күн, күн сайын', '30 дней, по дням')} table={table(tt('Тіркелді', 'Зарегистрировались'), signups)}>
+        <ColumnChart data={signups} fmtTick={c} label={alt(tt('Тіркелгендер', 'Регистрации'), signups)} />
+      </ChartCard>
+      {d.active.since ? (
+        <ChartCard testId="chart-active" title={tt('Сайтқа кіргендер', 'Заходили на сайт')} subtitle={tt('Күніне кемінде бір рет кірген аккаунттар', 'Аккаунты, заходившие хотя бы раз за день')} table={table(tt('Аккаунт', 'Аккаунтов'), active)}>
+          <ColumnChart data={active} fmtTick={c} label={alt(tt('Сайтқа кіргендер', 'Заходили на сайт'), active)} />
+        </ChartCard>
+      ) : null}
+      {shops ? (
+        <ChartCard testId="chart-orders" title={tt('Тапсырыстар', 'Заказы')} subtitle={tt('Кофехана мен полиграфия, күн сайын', 'Кофейни и полиграфии, по дням')} table={table(tt('Тапсырыс', 'Заказов'), orders)}>
+          <ColumnChart data={orders} fmtTick={c} label={alt(tt('Тапсырыстар', 'Заказы'), orders)} />
+        </ChartCard>
+      ) : null}
+      {shops ? (
+        <ChartCard testId="chart-revenue" title={tt('Табыс', 'Выручка')} subtitle={tt('Берілген тапсырыстар, ₸ (қайтарылғандарсыз)', 'Выданные заказы, ₸ (без возвратов)')} table={table(tt('Сома', 'Сумма'), revenue)}>
+          <ColumnChart data={revenue} fmtTick={c} label={alt(tt('Табыс', 'Выручка'), revenue)} />
+        </ChartCard>
+      ) : null}
+      {f.events && weeks.length ? (
+        <ChartCard testId="chart-checkins" title={tt('Іс-шараға келгендер', 'Пришли на мероприятия')} subtitle={tt('Тіркелгендердің қаншасы QR арқылы келді, апта сайын', 'Какая доля записавшихся отметилась по QR, по неделям')}
+          table={<DataTable head={[tt('Апта', 'Неделя'), tt('Келді', 'Пришли')]} rows={weeks.map(p => [p.long, p.text])} />}>
+          <LineChart data={weeks} label={alt(tt('Іс-шараға келгендер', 'Пришли на мероприятия'), weeks)} />
+        </ChartCard>
+      ) : null}
+    </div>
+  );
+}
+
+/** the first card of the admin home: how to add someone to the team, in three steps */
+function TeamStart() {
+  const { tt, go } = useApp();
+  return (
+    <section className="card adm-start stack" aria-labelledby="admStart">
+      <h2 id="admStart">{tt('Командаңызды қосыңыз', 'Добавьте свою команду')}</h2>
+      <ol className="steps">
+        <li>{tt('Адам сайтқа email не Telegram арқылы кіреді.', 'Человек входит на сайт через email или Telegram.')}</li>
+        <li>{tt('«Қолданушылар» бөлімінде оның email-ін іздейсіз.', 'В разделе «Пользователи» вы ищете его email.')}</li>
+        <li>{tt('«Рөл беру» басып, рөлді таңдайсыз. Болды.', 'Нажимаете «Выдать роль» и выбираете роль. Готово.')}</li>
+      </ol>
+      <p className="small muted">{tt('Адам әлі тіркелмесе де болады: email-ін іздеп, рөлді алдын ала беріңіз — кіргенде өзі қосылады.',
+        'Можно и до регистрации: найдите email и назначьте роль заранее — она добавится при входе.')}</p>
+      <button className="btn block" type="button" onClick={() => go('admin:users')}>{tt('Қолданушыларға өту', 'Перейти к пользователям')}</button>
+    </section>
+  );
+}
+
+/** «Не қайда»: every main section with one sentence; the rare ones live in the menu under «Тағы» */
+function WhereIs() {
+  const { tt, go } = useApp();
+  const f = { cafe: useFeature('cafe'), print: useFeature('print'), clubs: useFeature('clubs') };
+  const items: [string, string, string][] = [
+    ['admin:users', tt('Қолданушылар', 'Пользователи'), tt('Адамды табу, рөл беру, шектеу', 'Найти человека, выдать роль, ограничить')],
+    ['admin:queue', tt('Тексеруді күтетіндер', 'Ждут проверки'), tt('Студенттер ұсынған жазбаларды жариялау не қайтару', 'Опубликовать или вернуть то, что прислали студенты')],
+    ['admin:reports', tt('Шағымдар', 'Жалобы'), tt('Шағым түскен жазбаларды қарау', 'Разобрать записи с жалобами')],
+    ['admin:content', tt('Жазбалар', 'Записи'), tt('Вакансия, грант, жаңалықты өзіңіз қосу', 'Самому добавить вакансию, грант, новость')],
+    ...(f.cafe ? [['admin:cafe', tt('Кофеханалар', 'Кофейни'), tt('Мәзір, жұмыс уақыты, қызметкерлер', 'Меню, часы работы, сотрудники')] as [string, string, string]] : []),
+    ...(f.print ? [['admin:print', tt('Полиграфиялар', 'Полиграфии'), tt('Бағалар, жұмыс уақыты, қызметкерлер', 'Цены, часы работы, сотрудники')] as [string, string, string]] : []),
+    ...(f.clubs ? [['admin:clubs', tt('Клубтар', 'Клубы'), tt('Клуб ашу және әкімшісін тағайындау', 'Открыть клуб и назначить его админа')] as [string, string, string]] : []),
+    ['admin:roles', tt('Кім нені басқарады', 'Кто чем управляет'), tt('Барлық рөлдер бір тізімде', 'Все роли одним списком')],
+  ];
+  return (
+    <section className="section">
+      <SectionHead title={tt('Не қайда', 'Что где')} />
+      <div className="adm-where">
+        {items.map(([to, title, sub]) => (
+          <button key={to} type="button" className="adm-where-item" onClick={() => go(to)}><b>{title}</b><span className="small muted">{sub}</span></button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function AdminOverview() {
   const { tt } = useApp();
   const d = useLoad<Dashboard>('/api/admin/dashboard');
@@ -196,7 +262,7 @@ function AdminOverview() {
   const x = d.data, f = x.features;
   const pend = x.pending;
   const waiting: [number, string, string][] = ([
-    [pend.queue, tt('Модерация кезегі', 'Очередь модерации'), 'admin:queue'],
+    [pend.queue, tt('Тексеруді күтетіндер', 'Ждут проверки'), 'admin:queue'],
     [pend.reports, tt('Шағым жасалған жазбалар', 'Записи с жалобами'), 'admin:reports'],
     ...(f.feedback ? [[pend.feedbackHeld, tt('Белгіленген өтініштер (әкімшіге)', 'Помеченные обращения (админу)'), 'voice'], [pend.feedbackOverdue, tt('Мерзімі өткен өтініштер', 'Просроченные обращения'), 'admin:voice']] : []),
     ...(f.points ? [[pend.redemptions, tt('Сыйлық өтінімдері', 'Заявки на награды'), 'admin:points']] : []),
@@ -219,7 +285,7 @@ function AdminOverview() {
   return (
     <>
       <section className="section">
-        <SectionHead title={tt('Шолу', 'Обзор')} more={<button className="link-btn" type="button" onClick={d.reload}>{tt('Жаңарту', 'Обновить')}</button>} />
+        <SectionHead title={tt('Басты сандар', 'Главные цифры')} more={<button className="link-btn" type="button" onClick={d.reload}>{tt('Жаңарту', 'Обновить')}</button>} />
         <div className="stat-grid">
           <Stat value={x.users.accounts} label={tt('Аккаунттар (келісіммен)', 'Аккаунты (с согласием)')} />
           <Stat value={x.users.new7} label={tt('Жаңа, 7 күн', 'Новые, 7 дней')} />
@@ -231,9 +297,8 @@ function AdminOverview() {
         <p className="tiny muted">{x.active.since
           ? tt(`Белсенділік — кірген аккаунттың сайтқа күніне бір сұрауы; ${x.active.since} бастап саналады.`, `Активность — хотя бы один запрос вошедшего аккаунта за день; считается с ${x.active.since}.`)
           : tt('Белсенділік әлі жиналмаған: кірген аккаунттар келгенде санала бастайды.', 'Активность ещё не собрана: начнёт считаться, когда зайдут аккаунты.')}</p>
-        <DayBars series={x.signups} label={tt('Тіркелу, 30 күн', 'Регистрации, 30 дней')} />
-        {x.active.since ? <DayBars series={x.active.days} label={tt('Белсенді аккаунттар, 14 күн', 'Активные аккаунты, 14 дней')} /> : null}
       </section>
+      <OverviewCharts d={x} />
       <section className="section">
         <SectionHead title={tt('Шешім күтіп тұр', 'Ждёт решения')} />
         <div className="group">
@@ -252,23 +317,15 @@ function AdminOverview() {
           <p className="tiny muted">{tt('Сома — бүгін берілген тапсырыстар (қайтарылғандарсыз). Ақша дүкеннің өз шотына түседі.', 'Сумма — выданные сегодня заказы (без возвратов). Деньги идут на счёт самого магазина.')}</p>
         </section>
       ) : null}
+      <details className="card adm-more">
+        <summary><b>{tt('Толық статистика', 'Подробная статистика')}</b> <span className="small muted">{tt('контент, көрсеткіштер, ажыратқыштар', 'контент, метрики, переключатели')}</span></summary>
       <section className="section">
         <SectionHead title={tt('Сайттағы контент', 'Контент на сайте')} />
         <div className="stat-grid">{content.map(([k, n, label]) => <Stat key={k} value={n} label={label} />)}</div>
       </section>
-      <section className="section">
-        <SectionHead title={tt('Басқару', 'Управление')} />
-        <div className="group">
-          <Row go="admin:users" icon="user" title={tt('Қолданушылар', 'Пользователи')} sub={tt('Іздеу, сүзгі, профиль, шектеу, өшіру', 'Поиск, фильтры, профиль, ограничение, удаление')} end={<b className="num">{x.users.total}</b>} />
-          <Row go="admin:roles" icon="shield" title={tt('Рөлдер мен құқықтар', 'Роли и права')} sub={tt('Модераторлар және кім нені басқарады', 'Модераторы и кто чем управляет')} end={<b className="num">{x.users.moderators}</b>} />
-          <Row go="admin:audit" icon="clock" title={tt('Әрекеттер журналы', 'Журнал действий')} sub={tt('Әр рөл, шектеу, экспорт және шешім', 'Каждая роль, ограничение, экспорт и решение')} />
-          <Row go="admin:exports" icon="doc" title={tt('CSV экспорт', 'Экспорт CSV')} sub={tt('Excel-ге: қолданушылар, тапсырыстар, өтініштер', 'Для Excel: пользователи, заказы, обращения')} />
-          {f.surveys || f.feedback || f.wellbeing ? <Row go="admin:voice" icon="chat" title={tt('Студент дауысы: барлық университет', 'Голос студентов: все вузы')} sub={tt('Сауалнамалар, өтініштер, психолог байланыстары', 'Опросы, обращения, контакты психологов')} /> : null}
-          <Row go="admin:health" icon="bolt" title={tt('Денсаулық', 'Состояние системы')} sub={tt('Қателер, бот және күнделікті тапсырмалар', 'Ошибки, бот и ежедневные задачи')} />
-        </div>
-      </section>
       <ModerationLinks />
       <ProductMetrics features={f} byRole={x.users.byRole} />
+      </details>
     </>
   );
 }
@@ -342,7 +399,7 @@ export function Admin() {
       <p className="small muted">{p.admin
         ? tt('Сіз — бас әкімшісіз: төменде бүкіл сайттың нақты көрсеткіштері мен басқару бөлімдері.', 'Вы — главный администратор: ниже реальные показатели всего сайта и разделы управления.')
         : tt('Мұнда тек өзіңіз басқаратын бөлімдер. Әр әрекетті сервер қайта тексереді.', 'Здесь только разделы, которыми вы управляете. Каждое действие сервер проверяет заново.')}</p>
-      {p.admin ? <AdminOverview /> : null}
+      {p.admin ? <><TeamStart /><WhereIs /><AdminOverview /></> : null}
       <MyPanels p={p} />
     </div>
   );

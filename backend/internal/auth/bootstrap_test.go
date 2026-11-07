@@ -45,3 +45,38 @@ func TestAdminEmailsBootstrap(t *testing.T) {
 		t.Fatal("adminEmail matching")
 	}
 }
+
+// A role reserved for an email (admin_role_invites) is applied on the first verified sign-in, once, audited.
+func TestRoleInviteApplied(t *testing.T) {
+	testdb.Need(t)
+	in := fakeResend(t)
+	mod, adm := newEmail(), newEmail()
+	for e, kind := range map[string]string{strings.ToLower(mod): "moderator", strings.ToLower(adm): "admin"} {
+		exec(t, `insert into admin_role_invites (email, grant_kind, reason) values ($1, $2, 'Командаға қосылды')`, e, kind)
+	}
+	// registered but not verified: nothing yet
+	if w := post(t, "/api/auth/email/register", map[string]string{"email": mod, "password": goodPw, "lang": "kk"}, nil); w.Code != 200 {
+		t.Fatalf("register: %d %s", w.Code, w.Body)
+	}
+	if n := count(t, `select count(*) from admin_role_invites where email = $1`, strings.ToLower(mod)); n != 1 {
+		t.Fatal("invite used before verification")
+	}
+	w := post(t, "/api/auth/email/verify", map[string]string{"email": mod, "code": in.code(t, strings.ToLower(mod)), "password": goodPw}, nil)
+	if w.Code != 200 {
+		t.Fatalf("verify: %d %s", w.Code, w.Body)
+	}
+	if n := count(t, `select count(*) from admin_grants g join users u on u.id = g.user_id where u.email = $1 and g.scope = 'moderator'`, strings.ToLower(mod)); n != 1 {
+		t.Fatal("moderator invite not applied")
+	}
+	signUp(t, in, adm, goodPw)
+	if n := count(t, `select count(*) from users where email = $1 and role = 'admin'`, strings.ToLower(adm)); n != 1 {
+		t.Fatal("admin invite not applied")
+	}
+	if n := count(t, `select count(*) from admin_role_invites where email in ($1, $2)`, strings.ToLower(mod), strings.ToLower(adm)); n != 0 {
+		t.Fatal("invites not consumed")
+	}
+	if n := count(t, `select count(*) from audit_log l join users u on u.id = l.target_id where u.email in ($1, $2) and l.action = 'invite_applied'`,
+		strings.ToLower(mod), strings.ToLower(adm)); n != 2 {
+		t.Fatalf("invite_applied rows: %d", n)
+	}
+}

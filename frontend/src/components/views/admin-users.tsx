@@ -5,14 +5,17 @@
    unblock and deletion on request, each with a reason that goes to the audit log. */
 import { useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { Icon, Row, SectionHead } from '@/components/ui';
+import { Row, SectionHead } from '@/components/ui';
 import { AdminOnly, ErrorLine, errText, Loading, ReasonSheet, useLoad, useQueryParam, ymd } from '@/components/views/common';
-import { RoleSheet, ROLES, Stat, type UserRow } from '@/components/views/admin';
+import { ROLES, Stat, type UserRow } from '@/components/views/admin';
+import { AccessBadges, CopyLink, GiveRoleSheet, InviteSheet, PendingInvites, type InviteRow } from '@/components/views/admin-access';
 import { roleLabel } from '@/components/views/account';
 import { api, apiDownload, useAccount, type Role } from '@/lib/account';
 import { AUDIT_ACTIONS, query, reasonOk, who } from '@/lib/console';
+import { money } from '@/lib/cafe';
+import { parseQuery, SavedViews } from '@/components/views/admin-views';
 
-interface ListRow extends UserRow { email: string | null; lastActive: string | null; blocked: boolean; scopes: string[] }
+interface ListRow extends UserRow { email: string | null; lastActive: string | null; blocked: boolean; scopes: string[]; places?: string[] }
 interface ListResp { users: ListRow[]; total: number; page: number; limit: number; universities: { name: string; count: number }[] }
 
 const EMPTY = { q: '', role: '', scope: '', blocked: false, university: '', active: '', consent: '', from: '', to: '', sort: '' };
@@ -34,7 +37,8 @@ export function AdminUsers() {
 }
 
 function UsersList({ current }: { current: number }) {
-  const { tt, lang, go, toast } = useApp();
+  const { tt, lang, go, toast, openSheet } = useApp();
+  const inv = useLoad<{ invites: InviteRow[] }>('/api/admin/invites');
   const [f, setF] = useState<Filter>(EMPTY);
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -51,23 +55,32 @@ function UsersList({ current }: { current: number }) {
       </select>
     </div>
   );
+  const give = (id: number) => openSheet(<GiveRoleSheet userId={id} onDone={r.reload} />);
+  const asEmail = /^\S+@\S+\.\S+$/.test(f.q);
+  const status = (u: ListRow) => u.blocked ? <span className="badge b-bad">{tt('Шектелген', 'Ограничен')}</span>
+    : !u.consentAt ? <span className="badge b-line">{tt('Тек бот', 'Только бот')}</span> : <span className="badge b-ok">{tt('Белсенді', 'Активен')}</span>;
+  const last = (u: ListRow) => u.lastActive || tt('кірмеген', 'не входил');
   return (
     <div className="stack">
-      <form className="search" role="search" onSubmit={e => { e.preventDefault(); set('q', q.trim()); }}>
-        <input className="input" type="search" aria-label={tt('Қолданушыны іздеу', 'Поиск пользователя')} placeholder={tt('Аты, @username, email не id', 'Имя, @username, email или id')}
+      <p className="small muted">{tt('Адамды email-і не аты бойынша тауып, «Рөл беру» басыңыз.', 'Найдите человека по email или имени и нажмите «Выдать роль».')}</p>
+      <form className="search adm-search" role="search" onSubmit={e => { e.preventDefault(); set('q', q.trim()); }}>
+        <input className="input" type="search" aria-label={tt('Email не аты бойынша іздеу', 'Поиск по email или имени')} placeholder={tt('Email не аты', 'Email или имя')}
           value={q} onChange={e => setQ(e.target.value)} style={{ paddingLeft: 14 }} />
+        <button className="btn" type="submit">{tt('Іздеу', 'Найти')}</button>
       </form>
+      <PendingInvites list={inv.data?.invites ?? []} onChange={inv.reload} />
+      <SavedViews screen="users" query={query(f)} onApply={v => { const n = parseQuery(v, EMPTY); setF(n); setQ(n.q); setPage(1); }} />
       <details className="card" open={filtered}>
-        <summary className="small"><b>{tt('Сүзгілер', 'Фильтры')}</b>{filtered ? ' · ' + tt('қосулы', 'включены') : ''}</summary>
+        <summary className="small"><b>{tt('Қосымша сүзгілер', 'Дополнительные фильтры')}</b>{filtered ? ' · ' + tt('қосулы', 'включены') : ''}</summary>
         <div className="adm-filters">
           {sel('role', tt('Рөлі', 'Роль'), [['', tt('Барлығы', 'Все')], ...ROLES.map(x => [x, roleLabel(x, tt)] as [string, string])])}
-          {sel('scope', tt('Құқық', 'Право'), [['', tt('Кез келген', 'Любое')], ['moderator', tt('Модератор', 'Модератор')]])}
-          {sel('active', tt('Белсенділік', 'Активность'), [['', tt('Кез келген', 'Любая')], ['7', tt('7 күнде болған', 'Был за 7 дней')], ['30', tt('30 күнде болған', 'Был за 30 дней')], ['never', tt('Ешқашан', 'Ни разу')]])}
-          {sel('consent', tt('Келісім', 'Согласие'), [['', tt('Кез келген', 'Любое')], ['yes', tt('Берген', 'Есть')], ['no', tt('Жоқ (тек бот)', 'Нет (только бот)')]])}
+          {sel('scope', tt('Модератор', 'Модератор'), [['', tt('Маңызды емес', 'Неважно')], ['moderator', tt('Тек модераторлар', 'Только модераторы')]])}
+          {sel('active', tt('Соңғы кірген', 'Последний вход'), [['', tt('Кез келген', 'Любой')], ['7', tt('7 күн ішінде', 'За 7 дней')], ['30', tt('30 күн ішінде', 'За 30 дней')], ['never', tt('Ешқашан', 'Ни разу')]])}
+          {sel('consent', tt('Тіркелу', 'Регистрация'), [['', tt('Кез келген', 'Любая')], ['yes', tt('Сайтта тіркелген', 'Зарегистрирован на сайте')], ['no', tt('Тек ботта', 'Только в боте')]])}
           {sel('university', tt('Университет', 'Университет'), [['', tt('Барлығы', 'Все')], ['-', tt('Көрсетілмеген', 'Не указан')],
             ...(r.data?.universities ?? []).map(u => [u.name, `${u.name} (${u.count})`] as [string, string]),
             ...(f.university && f.university !== '-' && !(r.data?.universities ?? []).some(u => u.name === f.university) ? [[f.university, f.university] as [string, string]] : [])])}
-          {sel('sort', tt('Реті', 'Порядок'), [['', tt('Жаңасы бірінші', 'Сначала новые')], ['old', tt('Ескісі бірінші', 'Сначала старые')], ['active', tt('Белсенділігі бойынша', 'По активности')], ['name', tt('Аты бойынша', 'По имени')]])}
+          {sel('sort', tt('Реті', 'Порядок'), [['', tt('Жаңасы бірінші', 'Сначала новые')], ['old', tt('Ескісі бірінші', 'Сначала старые')], ['active', tt('Жақында кіргендер', 'Недавно входившие')], ['name', tt('Аты бойынша', 'По имени')]])}
           <div className="field"><label htmlFor="uf_from">{tt('Тіркелген, бастап', 'Создан, с')}</label>
             <input className="input" id="uf_from" type="date" value={f.from} onChange={e => set('from', e.target.value)} /></div>
           <div className="field"><label htmlFor="uf_to">{tt('Тіркелген, дейін', 'Создан, по')}</label>
@@ -79,47 +92,48 @@ function UsersList({ current }: { current: number }) {
       <div className="section-head">
         <span className="small muted num" role="status">{r.data ? tt(`Табылды: ${r.data.total}`, `Найдено: ${r.data.total}`) : ''}</span>
         <button className="link-btn" type="button" disabled={!r.data?.total} onClick={() => apiDownload('/api/admin/export/users.csv' + query(f), 'studenthub-users.csv', lang)
-          .catch(e => toast(errText(e, tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл'))))}>CSV</button>
+          .catch(e => toast(errText(e, tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл'))))}>{tt('Excel-ге жүктеу', 'Скачать для Excel')}</button>
       </div>
       <ErrorLine err={r.err} />
       {!r.data ? (r.err ? null : <Loading />) : r.data.users.length ? (<>
         <div className="group table-wrap adm-users-table">
           <table>
-            <thead><tr><th scope="col">{tt('Аты', 'Имя')}</th><th scope="col">{tt('Рөлі', 'Роль')}</th><th scope="col">{tt('Университет', 'Университет')}</th>
-              <th scope="col">{tt('Соңғы белсенділік', 'Последняя активность')}</th><th scope="col">{tt('Тіркелген', 'Создан')}</th></tr></thead>
+            <thead><tr><th scope="col">{tt('Аты', 'Имя')}</th><th scope="col">Email</th><th scope="col">{tt('Рөлі', 'Роль')}</th>
+              <th scope="col">{tt('Соңғы кірген', 'Последний вход')}</th><th scope="col">{tt('Күйі', 'Статус')}</th><th scope="col"><span className="sr-only">{tt('Әрекет', 'Действие')}</span></th></tr></thead>
             <tbody>{r.data.users.map(u => (
               <tr key={u.id} className={current === u.id ? 'is-current' : ''}>
                 <td><button className="link-btn" type="button" onClick={() => go('admin:users?id=' + u.id)}>{who(u)}</button>
-                  {u.blocked ? <span className="badge b-bad">{tt('шектелген', 'ограничен')}</span> : null}
-                  {u.scopes?.includes('moderator') ? <span className="badge b-sky">{tt('модератор', 'модератор')}</span> : null}
-                  {u.username && u.name ? <span className="tiny muted"> @{u.username}</span> : null}</td>
-                <td>{roleLabel(u.role, tt)}</td><td>{u.university || '—'}</td>
-                <td className="num">{u.lastActive || '—'}</td><td className="num">{ymd(u.createdAt)}</td>
+                  {u.username ? <span className="tiny muted"> @{u.username}</span> : null}</td>
+                <td className="adm-email">{u.email || <span className="muted">—</span>}</td>
+                <td><span className="badges"><AccessBadges role={u.role} scopes={u.scopes} places={u.places} /></span></td>
+                <td className="num">{last(u)}</td><td>{status(u)}</td>
+                <td><button className="btn secondary adm-give" type="button" onClick={() => give(u.id)}>{tt('Рөл беру', 'Выдать роль')}</button></td>
               </tr>
             ))}</tbody>
           </table>
         </div>
         <div className="group adm-users-cards">
           {r.data.users.map(u => (
-            <button key={u.id} type="button" className={`adm-user${current === u.id ? ' is-current' : ''}`} onClick={() => go('admin:users?id=' + u.id)}>
-              <span className="ico" aria-hidden="true"><Icon n="user" /></span>
+            <div key={u.id} className={`adm-user${current === u.id ? ' is-current' : ''}`}>
               <span className="row-main">
-                <span className="row-title">{who(u)}</span>
-                <span className="row-sub">{[u.username && u.name ? '@' + u.username : '', roleLabel(u.role, tt), u.university || '',
-                  u.lastActive ? tt(`соңғы рет ${u.lastActive}`, `был ${u.lastActive}`) : tt('белсенділік жоқ', 'нет активности')].filter(Boolean).join(' · ')}</span>
-                {u.blocked || u.scopes?.length || !u.consentAt ? (
-                  <span className="badges">
-                    {u.blocked ? <span className="badge b-bad">{tt('шектелген', 'ограничен')}</span> : null}
-                    {u.scopes?.includes('moderator') ? <span className="badge b-sky">{tt('модератор', 'модератор')}</span> : null}
-                    {!u.consentAt ? <span className="badge b-line">{tt('келісімсіз', 'без согласия')}</span> : null}
-                  </span>
-                ) : null}
+                <button className="link-btn row-title" type="button" onClick={() => go('admin:users?id=' + u.id)}>{who(u)}</button>
+                <span className="row-sub adm-email">{[u.email, u.username ? '@' + u.username : ''].filter(Boolean).join(' · ') || tt('email жоқ', 'нет email')}</span>
+                <span className="badges"><AccessBadges role={u.role} scopes={u.scopes} places={u.places} />{u.blocked || !u.consentAt ? status(u) : null}</span>
+                <span className="tiny muted">{tt('Соңғы кірген', 'Последний вход')}: {last(u)}</span>
               </span>
-              <span className="chev" aria-hidden="true"><Icon n="chev" s={18} /></span>
-            </button>
+              <button className="btn secondary adm-give" type="button" onClick={() => give(u.id)}>{tt('Рөл беру', 'Выдать роль')}</button>
+            </div>
           ))}
         </div>
-      </>) : <div className="group"><div className="empty">{filtered || f.q ? tt('Бұл сүзгімен ешкім табылмады', 'По этому фильтру никого нет') : tt('Әзірге қолданушы жоқ', 'Пользователей пока нет')}</div></div>}
+      </>) : asEmail ? (
+        <section className="card stack" data-testid="invite-card">
+          <b>{tt(`${f.q} әлі тіркелмеген`, `${f.q} ещё не зарегистрирован`)}</b>
+          <p className="small">{tt('Адамға сайтқа кіру сілтемесін жіберіңіз. Рөлді қазір беріп қоюға болады: ол осы email-мен кіргенде өзі қосылады.',
+            'Отправьте человеку ссылку для входа. Роль можно назначить уже сейчас: она добавится, когда он войдёт с этим email.')}</p>
+          <CopyLink />
+          <button className="btn" type="button" onClick={() => openSheet(<InviteSheet email={f.q} onDone={inv.reload} />)}>{tt('Рөлді алдын ала беру', 'Назначить роль заранее')}</button>
+        </section>
+      ) : <div className="group"><div className="empty">{filtered || f.q ? tt('Бұл сүзгімен ешкім табылмады', 'По этому фильтру никого нет') : tt('Әзірге қолданушы жоқ', 'Пользователей пока нет')}</div></div>}
       {pages > 1 ? (
         <nav className="adm-pager" aria-label={tt('Беттер', 'Страницы')}>
           <button className="btn ghost" type="button" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{tt('Алдыңғы', 'Назад')}</button>
@@ -163,7 +177,7 @@ export function actionLabel(a: string, tt: (kk: string, ru: string) => string): 
 
 export function AuditList({ entries }: { entries: AuditEntry[] }) {
   const { tt, go } = useApp();
-  if (!entries.length) return <div className="group"><div className="empty">{tt('Журналда жазба жоқ', 'В журнале нет записей')}</div></div>;
+  if (!entries.length) return <div className="group"><div className="empty">{tt('Тарихта жазба жоқ', 'В истории нет записей')}</div></div>;
   return (
     <ol className="group adm-log">
       {entries.map(e => (
@@ -218,8 +232,83 @@ function Kv({ rows }: { rows: [string, ReactNode][] }) {
   return <dl className="kv">{rows.filter(([, v]) => v !== null && v !== '' && v !== undefined).map(([k, v]) => <div key={k} className="kv-row"><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
 }
 
+const TABS: [Tab, [string, string]][] = [['profile', ['Профиль', 'Профиль']], ['activity', ['Белсенділік', 'Активность']], ['orders', ['Тапсырыстар', 'Заказы']],
+  ['reports', ['Шағымдар', 'Жалобы']], ['notes', ['Ішкі жазбалар', 'Заметки']], ['history', ['Тарих', 'История']]];
+type Tab = 'profile' | 'activity' | 'orders' | 'reports' | 'notes' | 'history';
+
+interface OrderRow { id: number; shopId: number; shopKk: string; shopRu: string; total: number; paid: number | null; status: string; method: string; payment: string; refundManual: boolean; createdAt: string }
+
+/** the person's last café orders and print jobs (admin only) */
+function UserOrders({ id }: { id: number }) {
+  const { tt, lang } = useApp();
+  const r = useLoad<{ cafe: OrderRow[]; print: OrderRow[] }>(`/api/admin/users/${id}/orders`);
+  if (!r.data) return <><ErrorLine err={r.err} />{r.err ? null : <Loading />}</>;
+  const all = [...r.data.cafe.map(o => ({ ...o, kind: 'cafe' as const })), ...r.data.print.map(o => ({ ...o, kind: 'print' as const }))]
+    .sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+  if (!all.length) return <div className="group"><div className="empty">{tt('Тапсырыс болмаған', 'Заказов не было')}</div></div>;
+  return (
+    <div className="group" data-testid="user-orders">
+      {all.map(o => (
+        <Row key={o.kind + o.id} icon={o.kind === 'cafe' ? 'cup' : 'file'} chev={false}
+          title={`${lang !== 'kk' ? o.shopRu : o.shopKk} · ${money(o.paid ?? o.total)}`}
+          sub={[ymd(o.createdAt), orderStatus(o.status, tt), payLabel(o.payment, o.method, tt), o.refundManual ? tt('ақшаны қолмен қайтару керек', 'нужно вернуть деньги вручную') : ''].filter(Boolean).join(' · ')} />
+      ))}
+    </div>
+  );
+}
+
+/** the team's internal notes about the person: never shown to them */
+function UserNotes({ id }: { id: number }) {
+  const { tt, lang, toast } = useApp();
+  const r = useLoad<{ notes: { id: number; body: string; createdAt: string; author: { id: number; name: string | null; username: string | null } | null }[] }>(`/api/admin/users/${id}/notes`);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const add = async () => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    try { await api(`/api/admin/users/${id}/notes`, { method: 'POST', body: { body: text.trim() }, lang }); setText(''); toast(tt('Жазба сақталды', 'Заметка сохранена')); r.reload(); }
+    catch (e) { toast(errText(e)); } finally { setBusy(false); }
+  };
+  return (
+    <div className="stack">
+      <p className="small muted">{tt('Тек әкімшілер көреді. Студентке ешқашан көрсетілмейді.', 'Видят только администраторы. Студенту никогда не показывается.')}</p>
+      <form className="form" onSubmit={e => { e.preventDefault(); void add(); }}>
+        <div className="field"><label htmlFor="noteText">{tt('Жаңа жазба', 'Новая заметка')}</label>
+          <textarea className="input" id="noteText" maxLength={2000} value={text} onChange={e => setText(e.target.value)}
+            placeholder={tt('Мысалы: «Телефонмен хабарласты, аккаунтын өшіруді сұрады»', 'Например: «Звонил, просил удалить аккаунт»')} /></div>
+        <button className="btn" type="submit" disabled={!text.trim() || busy}>{tt('Сақтау', 'Сохранить')}</button>
+      </form>
+      <ErrorLine err={r.err} />
+      {!r.data ? (r.err ? null : <Loading />) : r.data.notes.length ? (
+        <ol className="group adm-log" data-testid="user-notes">
+          {r.data.notes.map(n => (
+            <li key={n.id}>
+              <span className="small muted">{who(n.author)} · <span className="num">{ymd(n.createdAt)} {n.createdAt.slice(11, 16)}</span></span>
+              <span style={{ whiteSpace: 'pre-wrap' }}>{n.body}</span>
+              <button className="link-btn" type="button" style={{ alignSelf: 'flex-start' }} onClick={async () => {
+                try { await api(`/api/admin/users/${id}/notes/${n.id}`, { method: 'DELETE', lang }); r.reload(); } catch (e) { toast(errText(e)); }
+              }}>{tt('Өшіру', 'Удалить')}</button>
+            </li>
+          ))}
+        </ol>
+      ) : <div className="group"><div className="empty">{tt('Әзірге жазба жоқ', 'Заметок пока нет')}</div></div>}
+    </div>
+  );
+}
+
+export function orderStatus(s: string, tt: (kk: string, ru: string) => string): string {
+  return ({ new: tt('жаңа', 'новый'), accepted: tt('қабылданды', 'принят'), printing: tt('басылуда', 'печатается'), ready: tt('дайын', 'готов'),
+    picked_up: tt('берілді', 'выдан'), cancelled: tt('тоқтатылды', 'отменён'), no_show: tt('алып кетпеді', 'не забрали') } as Record<string, string>)[s] ?? s;
+}
+export function payLabel(p: string, method: string, tt: (kk: string, ru: string) => string): string {
+  if (method === 'pickup' && p === 'unpaid') return tt('кассада төлейді', 'оплата на кассе');
+  return ({ unpaid: tt('төленбеген', 'не оплачен'), pending: tt('төлем күтілуде', 'ждёт оплаты'), paid: tt('Kaspi арқылы төленді', 'оплачен через Kaspi'),
+    refunded: tt('ақша қайтарылды', 'деньги возвращены'), failed: tt('төлем өтпеді', 'оплата не прошла') } as Record<string, string>)[p] ?? p;
+}
+
 function UserDetail({ id }: { id: number }) {
   const { tt, lang, go, openSheet, closeSheet, toast } = useApp();
+  const [tab, setTab] = useState<Tab>('profile');
   const me = useAccount().user;
   const r = useLoad<Detail>(`/api/admin/users/${id}`);
   if (!r.data) return <><ErrorLine err={r.err} />{r.err ? <button className="btn ghost" type="button" onClick={() => go('admin:users')}>{tt('Тізімге оралу', 'К списку')}</button> : <Loading />}</>;
@@ -227,10 +316,6 @@ function UserDetail({ id }: { id: number }) {
   const self = me?.id === u.id;
   const moderator = d.scopes.some(s => s.scope === 'moderator');
   const nm = (o: { nameKk: string; nameRu: string | null }) => (lang !== 'kk' && o.nameRu ? o.nameRu : o.nameKk);
-  const post = (path: string, done: string) => async (reason: string) => {
-    await api(path, { method: 'POST', body: { userId: u.id, scope: 'moderator', reason }, lang });
-    closeSheet(); toast(done); r.reload();
-  };
   const memberRows: [string, ReactNode][] = [
     ...m.cafes.map(c => [tt('Кофехана', 'Кофейня'), `${nm(c)} · ${c.role}`] as [string, ReactNode]),
     ...m.printShops.map(c => [tt('Полиграфия', 'Полиграфия'), `${nm(c)} · ${c.role}`] as [string, ReactNode]),
@@ -252,9 +337,9 @@ function UserDetail({ id }: { id: number }) {
       <button className="link-btn adm-back" type="button" onClick={() => go('admin:users')} style={{ alignSelf: 'flex-start' }}>← {tt('Барлық қолданушылар', 'Все пользователи')}</button>
       <article className={`card${d.block ? ' adm-danger' : ''}`}>
         <h2 style={{ margin: 0 }}>{who(u)}</h2>
+        <p className="small adm-email">{u.email || tt('Email көрсетілмеген', 'Email не указан')}{u.username ? ' · @' + u.username : ''}</p>
         <div className="badges">
-          <span className="badge b-sky">{roleLabel(u.role, tt)}</span>
-          {moderator ? <span className="badge b-sky">{tt('модератор', 'модератор')}</span> : null}
+          <AccessBadges role={u.role} scopes={moderator ? ['moderator'] : []} places={[...m.cafes.map(c => 'cafe_' + c.role), ...m.printShops.map(c => 'print_' + c.role), ...(m.clubs.length ? ['club_admin'] : [])]} />
           {d.block ? <span className="badge b-bad">{tt('шектелген', 'ограничен')}</span> : null}
           {!u.consentAt ? <span className="badge b-line">{tt('келісімсіз', 'без согласия')}</span> : null}
           {self ? <span className="badge b-line">{tt('бұл сіз', 'это вы')}</span> : null}
@@ -274,19 +359,12 @@ function UserDetail({ id }: { id: number }) {
       </article>
       {self ? <p className="small muted">{tt('Өз аккаунтыңызға рөл, шектеу және өшіру қолданылмайды.', 'К своему аккаунту роль, ограничение и удаление не применяются.')}</p> : (
         <div className="panel-actions">
-          <button className="btn ghost" type="button" onClick={() => openSheet(<RoleSheet u={{ ...u, role: u.role }} onDone={r.reload} />)}>{tt('Рөлді өзгерту', 'Изменить роль')}</button>
-          {moderator
-            ? <button className="btn ghost" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Модератор құқығын алу', 'Снять права модератора')} label={tt('Себебі (журналға жазылады)', 'Причина (пишется в журнал)')}
-              action={tt('Алу', 'Снять')} danger onSubmit={post('/api/admin/grants/revoke', tt('Құқық алынды', 'Права сняты'))} />)}>{tt('Модераторлықты алу', 'Снять модератора')}</button>
-            : <button className="btn ghost" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Модератор тағайындау', 'Назначить модератором')} label={tt('Себебі (журналға жазылады)', 'Причина (пишется в журнал)')}
-              action={tt('Тағайындау', 'Назначить')} extra={<p className="small muted">{tt('Модератор кезекті, шағымдарды, тегін заттарды, ағын мен контентті қарайды. Қолданушылар, экспорт, ақша және рөл беретін өтінімдер оған жабық.',
-                'Модератор разбирает очередь, жалобы, «Отдам даром», ленту и контент. Пользователи, экспорт, деньги и заявки, выдающие роли, ему закрыты.')}</p>}
-              onSubmit={post('/api/admin/grants', tt('Модератор тағайындалды', 'Назначен модератор'))} />)}>{tt('Модератор ету', 'Сделать модератором')}</button>}
+          <button className="btn" type="button" onClick={() => openSheet(<GiveRoleSheet userId={u.id} onDone={r.reload} />)}>{tt('Рөл беру', 'Выдать роль')}</button>
           {u.role === 'admin' ? null : d.block
-            ? <button className="btn ghost" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Шектеуді алу', 'Снять ограничение')} label={tt('Себебі (журналға жазылады)', 'Причина (пишется в журнал)')}
+            ? <button className="btn ghost" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Шектеуді алу', 'Снять ограничение')} label={tt('Себебі (тарихта сақталады)', 'Причина (сохранится в истории)')}
               action={tt('Шектеуді алу', 'Снять ограничение')} onSubmit={async reason => { await api(`/api/admin/users/${u.id}/unblock`, { method: 'POST', body: { reason }, lang }); closeSheet(); toast(tt('Шектеу алынды', 'Ограничение снято')); r.reload(); }} />)}>
               {tt('Шектеуді алу', 'Снять ограничение')}</button>
-            : <button className="btn danger" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Аккаунтты шектеу', 'Ограничить аккаунт')} label={tt('Себебі (міндетті, журналға жазылады)', 'Причина (обязательно, пишется в журнал)')}
+            : <button className="btn danger" type="button" onClick={() => openSheet(<ReasonSheet title={tt('Аккаунтты шектеу', 'Ограничить аккаунт')} label={tt('Себебі (міндетті, тарихта сақталады)', 'Причина (обязательно, сохранится в истории)')}
               action={tt('Шектеу', 'Ограничить')} danger extra={<p className="small muted">{tt('Студент сайтты оқи алады, кіре-шыға алады және аккаунтын өшіре алады, бірақ жаза, жариялай, тапсырыс бере алмайды.',
                 'Студент сможет читать, входить и выходить и удалить аккаунт, но не сможет писать, публиковать и заказывать.')}</p>}
               onSubmit={async reason => { await api(`/api/admin/users/${u.id}/block`, { method: 'POST', body: { reason }, lang }); closeSheet(); toast(tt('Аккаунт шектелді', 'Аккаунт ограничен')); r.reload(); }} />)}>
@@ -294,18 +372,30 @@ function UserDetail({ id }: { id: number }) {
           {u.role === 'admin' ? null : <button className="btn ghost" type="button" onClick={() => openSheet(<DeleteUserSheet id={u.id} name={who(u)} onDone={() => go('admin:users')} />)}>{tt('Сұрау бойынша өшіру', 'Удалить по просьбе')}</button>}
         </div>
       )}
+      <div className="adm-tabs" role="tablist" aria-label={tt('Қолданушы бөлімдері', 'Разделы пользователя')}>
+        {TABS.map(([k, label]) => (
+          <button key={k} type="button" role="tab" id={'ut-' + k} aria-selected={tab === k} aria-controls="ut-panel" onClick={() => setTab(k)}>{tt(...label)}</button>
+        ))}
+      </div>
+      <div id="ut-panel" role="tabpanel" aria-labelledby={'ut-' + tab} className="stack">
+      {tab === 'profile' ? <>
       <section className="section">
-        <SectionHead title={tt('Рөлдер мен мүшеліктер', 'Роли и членство')} />
+        <SectionHead title={tt('Құқықтары', 'Права')} />
         {memberRows.length || d.scopes.length ? (
           <div className="card">
             <Kv rows={[...d.scopes.map(s => [tt('Модератор', 'Модератор'), `${ymd(s.createdAt)} · ${who(s.grantedBy as { id: number; name: string | null })} · «${s.reason}»`] as [string, ReactNode]), ...memberRows]} />
           </div>
         ) : <div className="group"><div className="empty">{tt('Қосымша рөл не мүшелік жоқ', 'Дополнительных ролей и членства нет')}</div></div>}
       </section>
+      </> : null}
+      {tab === 'activity' ? <>
       <section className="section">
         <SectionHead title={tt('Белсенділік', 'Активность')} />
         <div className="stat-grid">{stats.map(([k, l]) => <Stat key={k} value={Number(a[k] ?? 0)} label={l} />)}</div>
       </section>
+      </> : null}
+      {tab === 'orders' ? <UserOrders id={u.id} /> : null}
+      {tab === 'reports' ? <>
       <section className="section">
         <SectionHead title={tt('Контентіне шағымдар', 'Жалобы на его контент')} />
         {d.reportsAgainst.length ? (
@@ -315,10 +405,15 @@ function UserDetail({ id }: { id: number }) {
           ))}</div>
         ) : <div className="group"><div className="empty">{tt('Шағым жоқ', 'Жалоб нет')}</div></div>}
       </section>
+      </> : null}
+      {tab === 'notes' ? <UserNotes id={u.id} /> : null}
+      {tab === 'history' ? <>
       <section className="section">
-        <SectionHead title={tt('Журнал', 'Журнал')} more={<button className="link-btn" type="button" onClick={() => go(`admin:audit?target=${u.id}`)}>{tt('Толық журнал', 'Весь журнал')}</button>} />
+        <SectionHead title={tt('Өзгерістер тарихы', 'История изменений')} more={<button className="link-btn" type="button" onClick={() => go(`admin:audit?target=${u.id}`)}>{tt('Толық тарих', 'Вся история')}</button>} />
         <AuditList entries={d.audit} />
       </section>
+      </> : null}
+      </div>
     </div>
   );
 }

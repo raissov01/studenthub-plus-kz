@@ -500,6 +500,9 @@ func startSession(w http.ResponseWriter, r *http.Request, u *User, webapp bool) 
 // bootstrapAdmin makes ADMIN_TELEGRAM_IDS (Telegram id) and ADMIN_EMAILS (verified email, case-insensitive)
 // admins on login. The grant is audited when the role actually changes, so it is logged once.
 func bootstrapAdmin(ctx context.Context, tx pgx.Tx, u *User) error {
+	if err := applyInvite(ctx, tx, u); err != nil {
+		return err
+	}
 	if u.Role == "admin" {
 		return nil
 	}
@@ -518,6 +521,43 @@ func bootstrapAdmin(ctx context.Context, tx pgx.Tx, u *User) error {
 	_, err := tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, reason, meta)
 		values (null, 'role_grant', $1, $3, jsonb_build_object('from', $2::text, 'to', 'admin'))`, u.ID, u.Role, source)
 	u.Role = "admin"
+	return err
+}
+
+// applyInvite gives a verified email the right an admin reserved for it before the account existed
+// (admin_role_invites): role admin or the moderator grant. Applied once, audited, then the invite is deleted.
+func applyInvite(ctx context.Context, tx pgx.Tx, u *User) error {
+	if u.Email == nil || !u.EmailVerified {
+		return nil
+	}
+	var kind, reason string
+	var by *int64
+	err := tx.QueryRow(ctx, `delete from admin_role_invites where email = lower($1) returning grant_kind, reason, invited_by`, *u.Email).
+		Scan(&kind, &reason, &by)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	switch kind {
+	case "admin":
+		if u.Role != "admin" {
+			if _, err := tx.Exec(ctx, `update users set role = 'admin' where id = $1`, u.ID); err != nil {
+				return err
+			}
+		}
+	case ScopeModerator:
+		if _, err := tx.Exec(ctx, `insert into admin_grants (user_id, scope, granted_by, reason) values ($1, $2, $3, $4)
+			on conflict (user_id, scope) do nothing`, u.ID, ScopeModerator, by, reason); err != nil {
+			return err
+		}
+	}
+	_, err = tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, reason, meta)
+		values ($1, 'invite_applied', $2, $3, jsonb_build_object('grant', $4::text, 'from', $5::text))`, by, u.ID, reason, kind, u.Role)
+	if kind == "admin" {
+		u.Role = "admin"
+	}
 	return err
 }
 

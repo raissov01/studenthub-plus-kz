@@ -464,10 +464,16 @@ function initForm(e?: DbEvent): FormState {
 }
 
 /** create / edit an event; with clubId (a club admin on the club page) the event belongs to that club and its university */
-export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?: () => void; clubId?: number }) {
+export function EventForm({ edit, onSaved, clubId, prefill, onCreated }: {
+  edit?: DbEvent; onSaved?: () => void; clubId?: number;
+  /** the calendar's slot: '<input type=datetime-local>' values (Astana time) */
+  prefill?: { starts: string; ends: string };
+  /** instead of opening the new event's page (the calendar stays where it is) */
+  onCreated?: (e: DbEvent) => void;
+}) {
   const { tt, lang, L, toast, go } = useApp();
   const acc = useAccount();
-  const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), university: edit?.university ?? acc.user?.university ?? '' }));
+  const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), ...(prefill && !edit ? prefill : {}), university: edit?.university ?? acc.user?.university ?? '' }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF(x => ({ ...x, [k]: v }));
@@ -494,7 +500,7 @@ export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?:
       } else {
         const r = await api<{ event: DbEvent }>('/api/events/create', { method: 'POST', body, lang });
         toast(status === 'published' ? tt('Жарияланды', 'Опубликовано') : tt('Черновик сақталды', 'Черновик сохранён'));
-        go('organize:' + r.event.id, { replace: true });
+        if (onCreated) onCreated(r.event); else go('organize:' + r.event.id, { replace: true });
       }
     } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };

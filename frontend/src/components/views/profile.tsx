@@ -1,5 +1,6 @@
 'use client';
 /* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
+import { SupportCard } from '@/components/views/admin-settings';
 import { useDesktop } from '@/lib/desktop';
 import { DeskDetail, DeskPage } from '@/components/desk';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -497,7 +498,7 @@ export function Settings() {
     ['notify', 'bell', tt('Хабарламалар', 'Уведомления'), <NotifySection key="n" />],
     ['data', 'folder', tt('Деректер', 'Данные'), data],
     ['privacy', 'shield', tt('Құпиялылық', 'Конфиденциальность'), <section className="section" key="p"><h2>{tt('Құпиялылық', 'Конфиденциальность')}</h2><div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div></section>],
-    ['about', 'spark', tt('Қосымша туралы', 'О приложении'), <section className="section" key="ab"><h2>{tt('Қосымша туралы', 'О приложении')}</h2>{about}</section>],
+    ['about', 'spark', tt('Қосымша туралы', 'О приложении'), <section className="section" key="ab"><h2>{tt('Қосымша туралы', 'О приложении')}</h2>{about}<SupportCard /></section>],
   ];
   return <SettingsPage sections={sections} />;
 }

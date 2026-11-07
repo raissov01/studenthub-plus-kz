@@ -316,6 +316,13 @@ func TestDeleteAccount(t *testing.T) {
 	exec(t, "insert into bot_events (kind, user_id) values ('registered', $1)", uid)
 	exec(t, "insert into audit_log (actor_id, action, target_id, reason) values ($1, 'role_grant', $2, 'test')", admin, uid)
 	exec(t, "insert into audit_log (actor_id, action, target_id, reason) values ($1, 'moderation', $2, 'test')", uid, other)
+	// the admin workspace (20261108000010/20): notes about the account go, notes it wrote stay without an author
+	exec(t, "insert into admin_user_notes (user_id, author_id, body) values ($1, $2, 'about the deleted one')", uid, admin)
+	exec(t, "insert into admin_user_notes (user_id, author_id, body) values ($1, $2, 'written by the deleted one')", other, uid)
+	exec(t, "insert into admin_saved_views (owner_id, screen, name, query) values ($1, 'users', 'Мой фильтр', 'role=admin')", uid)
+	exec(t, `insert into admin_settings (key, value, updated_by) values ('support', '{"email":"help@example.kz"}', $1)
+		on conflict (key) do update set updated_by = excluded.updated_by`, uid)
+	exec(t, "insert into admin_role_invites (email, grant_kind, reason, invited_by) values ('deltest.invite@example.kz', 'moderator', 'test', $1)", uid)
 	var hookRan int64
 	RegisterDeleteHook(func(_ context.Context, _ pgx.Tx, id int64) error { hookRan = id; return nil })
 	t.Cleanup(func() { mu.Lock(); deleteHooks = nil; mu.Unlock() })
@@ -346,6 +353,12 @@ func TestDeleteAccount(t *testing.T) {
 	}
 	if n := count(t, "select count(*) from reminders where user_id = $1", other); n != 1 {
 		t.Fatal("other student's reminder removed")
+	}
+	if n := count(t, "select count(*) from admin_user_notes where user_id = $1 and author_id is null", other); n != 1 {
+		t.Fatal("a note the deleted account wrote about someone else was not kept without its author")
+	}
+	if n := count(t, "select count(*) from admin_settings where key = 'support' and updated_by is null"); n != 1 {
+		t.Fatal("settings row lost with its editor")
 	}
 	if n := count(t, "select count(*) from audit_log where action = 'account_delete'"); n != before+1 {
 		t.Fatalf("account_delete audit rows: %d", n)

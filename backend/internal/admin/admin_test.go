@@ -222,3 +222,66 @@ func TestEmailOnlyUserInAdmin(t *testing.T) {
 		t.Fatalf("summary with email-only user: %d", w.Code)
 	}
 }
+
+// Invites: admin only, refused for a registered email, audited; the list shows each person's place badges.
+func TestInvitesAndPlaces(t *testing.T) {
+	testdb.Need(t)
+	admin, _ := newUser(t, "admin", "Инвайт админ")
+	student, _ := newUser(t, "student", "Инвайт студент")
+	body := map[string]any{"email": "New.Mod@Example.kz", "grant": "moderator", "reason": "Командаға қосылды"}
+	if w := do(t, "POST", "/api/admin/invites", student, body); w.Code != 403 {
+		t.Fatalf("student invite: %d", w.Code)
+	}
+	w := do(t, "POST", "/api/admin/invites", admin, body)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"email":"new.mod@example.kz"`) {
+		t.Fatalf("invite: %d %s", w.Code, w.Body)
+	}
+	var id int64
+	err := db.Tx(ctx(), func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx(), `update users set email = 'taken.invite@example.kz' where id = $1`, student); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx(), `select id from admin_role_invites where email = 'new.mod@example.kz'`).Scan(&id)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := do(t, "POST", "/api/admin/invites", admin, map[string]any{"email": "taken.invite@example.kz", "grant": "admin", "reason": "Командаға қосылды"}); w.Code != 409 {
+		t.Fatalf("registered email: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "POST", "/api/admin/invites", admin, map[string]any{"email": "x@example.kz", "grant": "cafe", "reason": "Командаға қосылды"}); w.Code != 400 {
+		t.Fatalf("bad grant: %d", w.Code)
+	}
+	if w := do(t, "GET", "/api/admin/invites", admin, nil); w.Code != 200 || !strings.Contains(w.Body.String(), "new.mod@example.kz") {
+		t.Fatalf("list: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "DELETE", "/api/admin/invites/"+strconv.FormatInt(id, 10), admin, nil); w.Code != 200 {
+		t.Fatalf("delete: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "DELETE", "/api/admin/invites/"+strconv.FormatInt(id, 10), admin, nil); w.Code != 404 {
+		t.Fatalf("delete twice: %d", w.Code)
+	}
+	var n int
+	db.Tx(ctx(), func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx(), `select count(*) from audit_log where actor_id = $1 and action in ('invite_create', 'invite_delete')`, admin).Scan(&n)
+	})
+	if n != 2 {
+		t.Fatalf("audit rows: %d", n)
+	}
+	// a club admin shows up with a place badge in the directory
+	err = db.Tx(ctx(), func(tx pgx.Tx) error {
+		var club int64
+		if err := tx.QueryRow(ctx(), `insert into clubs (name_kk, direction, university) values ('Дебат клубы инвайт', 'other', 'KATU') returning id`).Scan(&club); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx(), `insert into club_admins (club_id, user_id) values ($1, $2)`, club, student)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	w = do(t, "GET", "/api/admin/users?q=taken.invite", admin, nil)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"places":["club_admin"]`) {
+		t.Fatalf("places: %d %s", w.Code, w.Body)
+	}
+}

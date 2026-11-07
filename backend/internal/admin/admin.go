@@ -52,6 +52,10 @@ func Routes(mux httpx.Router) {
 	post("POST /api/admin/users/{id}/delete", deleteUser)
 	post("POST /api/admin/grants", grantScope)
 	post("POST /api/admin/grants/revoke", revokeScope)
+	workspaceRoutes(mux)
+	get("GET /api/admin/invites", invites)
+	post("POST /api/admin/invites", createInvite)
+	mux.HandleFunc("DELETE /api/admin/invites/{id}", auth.Write(auth.NeedRole(deleteInvite, "admin")))
 }
 
 func fail(w http.ResponseWriter, r *http.Request, what string, err error) {

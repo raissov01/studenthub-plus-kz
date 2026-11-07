@@ -349,6 +349,12 @@ func markRefunded(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if err := event(ctx, tx, id, uid(u), kind, "refunded_manually", nil); err != nil {
 			return err
 		}
+		// the platform's audit log too: who said the money went back, for which order and how much
+		if _, err := tx.Exec(ctx, `insert into audit_log (actor_id, action, target_id, meta)
+			select $1, 'refund_returned', o.user_id, jsonb_build_object('shop', 'cafe', 'shopId', o.cafe_id, 'order', o.id, 'amount', coalesce(o.paid_amount, o.total))
+			from cafe_orders o where o.id = $2`, u.ID, id); err != nil {
+			return err
+		}
 		o, err = loadOrder(ctx, tx, id)
 		return err
 	})

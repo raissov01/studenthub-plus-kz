@@ -113,17 +113,22 @@ type listRow struct {
 	LastActive *string  `json:"lastActive"`
 	Blocked    bool     `json:"blocked"`
 	Scopes     []string `json:"scopes"`
+	Places     []string `json:"places"` // cafe_manager, cafe_barista, print_manager, print_operator, club_admin, university_staff
 }
 
 const listCols = `u.id, u.telegram_id, u.email, u.tg_username, u.name, u.role::text, u.university, u.consent_at, u.created_at,
 	(select to_char(max(a.day), 'YYYY-MM-DD') from user_active_days a where a.user_id = u.id) as last_active,
 	exists (select 1 from user_blocks b where b.user_id = u.id),
-	array(select g.scope from admin_grants g where g.user_id = u.id order by g.scope)`
+	array(select g.scope from admin_grants g where g.user_id = u.id order by g.scope),
+	array(select distinct p from (select 'cafe_' || s.role as p from cafe_staff s where s.user_id = u.id
+		union all select 'print_' || s.role from print_staff s where s.user_id = u.id
+		union all select 'club_admin' from club_admins a where a.user_id = u.id
+		union all select 'university_staff' from university_staff s where s.user_id = u.id) x order by p)`
 
 func scanListRow(row pgx.CollectableRow) (listRow, error) {
 	var u listRow
 	return u, row.Scan(&u.ID, &u.TelegramID, &u.Email, &u.Username, &u.Name, &u.Role, &u.University, &u.ConsentAt, &u.CreatedAt,
-		&u.LastActive, &u.Blocked, &u.Scopes)
+		&u.LastActive, &u.Blocked, &u.Scopes, &u.Places)
 }
 
 // users: GET /api/admin/users?q=&role=&scope=&blocked=1&university=&from=&to=&active=7|30|never&consent=yes|no

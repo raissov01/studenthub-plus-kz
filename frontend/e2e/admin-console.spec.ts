@@ -41,7 +41,7 @@ test('console: a café barista sees only their café panel, no admin sections', 
   await expect(card).toContainText(lang === 'ru' ? 'Кофе в главном корпусе' : 'Бас ғимарат кофесі');
   await expect(card).toContainText(t('бариста', 'бариста'));
   await expect(page.getByRole('button', { name: t('Қолданушылар', 'Пользователи') })).toHaveCount(0);
-  await expect(page.getByText(t('Шолу', 'Обзор'), { exact: true })).toHaveCount(0);
+  await expect(page.getByText(t('Басқару басты беті', 'Главная управления'), { exact: true })).toHaveCount(0);
   await fits(page);
   await card.getByRole('button', { name: t('Панель', 'Панель'), exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/shop\?cafe=3$/);
@@ -70,7 +70,7 @@ test('console: a moderator gets the moderation workspace only', async ({ page, l
   await page.getByRole('button', { name: t('Жұмыс орнын ашу', 'Открыть рабочее место') }).click();
   await expect(page).toHaveURL(/\/admin\/moderation$/);
   await expect(page.locator('.stat').first()).toContainText('3');
-  await expect(page.getByRole('button', { name: new RegExp(t('Модерация кезегі', 'Очередь модерации')) })).toBeVisible();
+  await expect(page.getByRole('button', { name: new RegExp(t('Тексеруді күтетіндер', 'Ждут проверки')) })).toBeVisible();
   await fits(page);
   // the super admin's screens stay closed in the UI too (the server answers 403 anyway)
   await page.goto('/admin/users');
@@ -127,9 +127,11 @@ test('console: super admin overview, user directory filters, user detail and a b
   await onboard(page, lang);
   await page.goto('/admin');
   await expect(page.getByText(t('Бүгін белсенді (DAU)', 'Активны сегодня (DAU)'))).toBeVisible();
-  await expect(page.locator('.bars').first()).toBeVisible();
+  await expect(page.getByTestId('chart-signups')).toBeVisible();
+  await page.getByTestId('chart-signups').getByRole('button', { name: t('Кесте', 'Таблица') }).click();
+  await expect(page.getByTestId('chart-signups').locator('table')).toBeVisible();
   await fits(page);
-  await page.getByRole('button', { name: new RegExp(t('Қолданушылар', 'Пользователи')) }).first().click();
+  await page.getByRole('button', { name: t('Қолданушыларға өту', 'Перейти к пользователям') }).click();
   await expect(page).toHaveURL(/\/admin\/users$/);
   await page.locator('details.card summary').click();
   await page.locator('#uf_role').selectOption('student');
@@ -138,6 +140,7 @@ test('console: super admin overview, user directory filters, user detail and a b
   await fits(page);
   await page.getByRole('button', { name: /Дана Е\./ }).click();
   await expect(page).toHaveURL(/\/admin\/users\?id=77$/);
+  await page.getByRole('tab', { name: t('Шағымдар', 'Жалобы') }).click();
   await expect(page.getByText('qa_question #4')).toBeVisible();
   await page.getByRole('button', { name: t('Шектеу', 'Ограничить'), exact: true }).click();
   const dialog = page.getByRole('dialog');
@@ -148,6 +151,7 @@ test('console: super admin overview, user directory filters, user detail and a b
   await expect(dialog).toBeHidden();
   expect(calls.find(c => c.path === '/api/admin/users/77/block')?.body).toEqual({ reason: 'спам в вопросах' });
   await expect(page.locator('.badge.b-bad').first()).toBeVisible();
+  await page.getByRole('tab', { name: t('Тарих', 'История') }).click();
   await expect(page.locator('.adm-log')).toContainText('спам в вопросах');
   await fits(page);
 });
@@ -193,4 +197,68 @@ test('feeds: a moderator filters the pending queue, selects items and bulk-publi
   await expect(dialog.getByText(t('мерзімі өткен, өткізілді', 'просрочены, пропущены'))).toBeVisible();
   expect(bodies.map(b => b.action)).toEqual(['preview', 'approve']);
   expect(bodies[1].filter).toEqual({ ids: [1, 3] });
+});
+
+test('admin made simple: the owner finds a person by email and gives «Модератор» in three clicks', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await signedIn(page, lang, 'admin', []);
+  await page.route('**/api/console/me', route => route.fulfill({ json: { ...none, admin: true, moderator: true, moderation: { pending: 0, reports: 0 } } }));
+  let mod = false;
+  const calls: { path: string; search: string; body: unknown }[] = [];
+  const row = () => ({ id: 77, telegramId: null, email: 'dana@example.kz', username: 'dana', name: 'Дана Е.', role: 'student', university: 'KATU',
+    consentAt: '2026-10-01T00:00:00Z', createdAt: '2026-10-01T00:00:00Z', lastActive: '2026-11-05', blocked: false, scopes: mod ? ['moderator'] : [], places: [] });
+  await page.route('**/api/admin/**', route => {
+    const req = route.request(), url = new URL(req.url());
+    calls.push({ path: url.pathname, search: url.search, body: req.postData() ? req.postDataJSON() : null });
+    switch (url.pathname) {
+      case '/api/admin/invites': return route.fulfill({ json: { invites: [] } });
+      case '/api/admin/users': {
+        const q = url.searchParams.get('q') || '';
+        return route.fulfill({ json: { total: q === 'nobody@example.kz' ? 0 : 1, page: 1, limit: 25, universities: [], users: q === 'nobody@example.kz' ? [] : [row()] } });
+      }
+      case '/api/admin/users/77': return route.fulfill({ json: {
+        user: { id: 77, telegramId: null, email: 'dana@example.kz', emailVerified: true, username: 'dana', name: 'Дана Е.', lang: 'kk', role: 'student', university: 'KATU' },
+        scopes: mod ? [{ scope: 'moderator', reason: 'x', createdAt: '2026-11-05T00:00:00Z', grantedBy: { id: 501, name: 'Аружан Тест' } }] : [],
+        memberships: { cafes: [], printShops: [], clubs: [], university: null, feedback: [], employer: null, ambassador: null, mentor: null },
+        activity: {}, reportsAgainst: [], audit: [], block: null,
+      } });
+      case '/api/admin/grants': mod = true; return route.fulfill({ json: { changed: true } });
+    }
+    return route.fulfill({ status: 404, json: { error: { code: 'not_found' } } });
+  });
+  await onboard(page, lang);
+  await page.goto('/admin/users');
+  // the email is on the list from the first screen
+  await expect(page.getByText('dana@example.kz').filter({ visible: true }).first()).toBeVisible();
+  await page.getByRole('searchbox').fill('dana@example.kz');
+  await page.getByRole('searchbox').press('Enter');
+  await expect.poll(() => calls.some(c => c.path === '/api/admin/users' && c.search.includes('q=dana%40example.kz'))).toBe(true);
+  await fits(page);
+  // 1: «Рөл беру» on the row, 2: «Модератор», 3: confirm
+  await page.getByRole('button', { name: t('Рөл беру', 'Выдать роль') }).filter({ visible: true }).first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: new RegExp(t('Модератор', 'Модератор')) }).check();
+  await dialog.getByRole('button', { name: t('Рөл беру', 'Выдать роль'), exact: true }).click();
+  await expect(dialog).toBeHidden();
+  expect(calls.find(c => c.path === '/api/admin/grants')?.body).toEqual({ userId: 77, scope: 'moderator', reason: t('Командаға қосылды', 'Добавлен в команду') });
+  await expect(page.locator('.badge', { hasText: t('Модератор', 'Модератор') }).filter({ visible: true }).first()).toBeVisible();
+  // an email nobody registered: copy the sign-in link or reserve the role
+  await page.getByRole('searchbox').fill('nobody@example.kz');
+  await page.getByRole('searchbox').press('Enter');
+  await expect(page.getByTestId('invite-card')).toContainText('nobody@example.kz');
+  await expect(page.getByRole('button', { name: t('Шақыру сілтемесін көшіру', 'Скопировать ссылку-приглашение') })).toBeVisible();
+  await fits(page);
+});
+
+test('admin made simple: the home starts with the three team steps', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  await signedIn(page, lang, 'admin', []);
+  await page.route('**/api/console/me', route => route.fulfill({ json: { ...none, admin: true, moderator: true, moderation: { pending: 0, reports: 0 } } }));
+  await page.route('**/api/admin/**', route => route.fulfill({ status: 404, json: { error: { code: 'not_found' } } }));
+  await onboard(page, lang);
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: t('Командаңызды қосыңыз', 'Добавьте свою команду') })).toBeVisible();
+  await expect(page.locator('.adm-start .steps li')).toHaveCount(3);
+  await page.getByRole('button', { name: t('Қолданушыларға өту', 'Перейти к пользователям') }).click();
+  await expect(page).toHaveURL(/\/admin\/users$/);
 });

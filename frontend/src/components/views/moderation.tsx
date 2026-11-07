@@ -176,7 +176,7 @@ function Reports() {
         )) : <div className="group"><div className="empty">{tt('Шағым жоқ', 'Жалоб нет')}</div></div>}</div>
       )}
       {marketOn ? <button className="btn secondary block" type="button" onClick={() => go('admin:market')}>{tt('Тегін заттарға шағымдар', 'Жалобы на вещи «Отдам даром»')}</button> : null}
-      <button className="btn ghost block" type="button" onClick={() => go('admin:queue')}>{tt('Модерация кезегі', 'Очередь модерации')}</button>
+      <button className="btn ghost block" type="button" onClick={() => go('admin:queue')}>{tt('Тексеруді күтетіндер', 'Ждут проверки')}</button>
     </>
   );
 }
@@ -342,8 +342,8 @@ export function ModerationLinks() {
     <section className="section">
       <SectionHead title={tt('Модерация', 'Модерация')} />
       <div className="group">
-        <Row go="admin:content" icon="file" title={tt('Контент', 'Контент')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
-        <Row go="admin:queue" icon="shield" title={tt('Модерация кезегі', 'Очередь модерации')} end={pending ? <b className="num">{pending}</b> : undefined} />
+        <Row go="admin:content" icon="file" title={tt('Жазбалар', 'Записи')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
+        <Row go="admin:queue" icon="shield" title={tt('Тексеруді күтетіндер', 'Ждут проверки')} end={pending ? <b className="num">{pending}</b> : undefined} />
         <Row go="admin:reports" icon="flag" title={tt('Шағымдар', 'Жалобы')} />
         {amb ? <Row go="admin:ambassadors" icon="badge" title={tt('Амбассадорлар', 'Амбассадоры')} /> : null}
         {mentors ? <Row go="admin:mentors" icon="mentor" title={tt('Менторларды жұптау', 'Подбор менторов')} /> : null}

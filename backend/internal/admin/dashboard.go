@@ -13,9 +13,10 @@ import (
 )
 
 // dashboard: GET /api/admin/dashboard — the super admin's overview. Every number is a count over real rows:
-// accounts and sign-ups (users), active accounts per day (user_active_days, collected since the admin console
+// accounts and sign-ups (users), active accounts per day for 30 days (user_active_days, collected since the admin console
 // shipped: "since" says from when), anonymous devices (analytics_events), live content, what waits for a
-// decision, and today's handed-over café / print orders (Asia/Almaty day).
+// decision, today's handed-over café / print orders (Asia/Almaty day), café + print orders and revenue per day
+// (30 days) and event registrations vs QR check-ins per week (12 weeks, by the event's start).
 func dashboard(w http.ResponseWriter, r *http.Request, _ *auth.User) {
 	ctx := r.Context()
 	var out json.RawMessage
@@ -58,8 +59,26 @@ select jsonb_build_object(
 		'since', (select to_char(min(day), 'YYYY-MM-DD') from user_active_days),
 		'days', (select jsonb_agg(jsonb_build_object('day', to_char(g.day, 'YYYY-MM-DD'), 'n',
 				(select count(*) from user_active_days a where a.day = g.day)) order by g.day)
-			from (select generate_series((select d from today) - 13, (select d from today), interval '1 day')::date as day) g)
+			from (select generate_series((select d from today) - 29, (select d from today), interval '1 day')::date as day) g)
 	),
+	'orders', (select jsonb_agg(jsonb_build_object('day', to_char(g.day, 'YYYY-MM-DD'),
+			'cafe', (select count(*) from cafe_orders o where (o.created_at at time zone 'Asia/Almaty')::date = g.day),
+			'print', (select count(*) from print_jobs j where (j.created_at at time zone 'Asia/Almaty')::date = g.day),
+			'revenue', (select coalesce(sum(coalesce(o.paid_amount, o.total)), 0) from cafe_orders o where o.status = 'picked_up'
+					and o.payment_status <> 'refunded' and (o.closed_at at time zone 'Asia/Almaty')::date = g.day)
+				+ (select coalesce(sum(coalesce(j.paid_amount, j.total)), 0) from print_jobs j where j.status = 'picked_up'
+					and j.payment_status <> 'refunded' and (j.closed_at at time zone 'Asia/Almaty')::date = g.day)) order by g.day)
+		from (select generate_series((select d from today) - 29, (select d from today), interval '1 day')::date as day) g),
+	'checkins', (select jsonb_agg(jsonb_build_object('week', to_char(g.wk, 'YYYY-MM-DD'),
+			'events', (select count(*) from events e where e.status in ('published', 'finished') and not e.is_demo
+				and (e.starts_at at time zone 'Asia/Almaty')::date >= g.wk and (e.starts_at at time zone 'Asia/Almaty')::date < g.wk + 7),
+			'registered', (select count(*) from event_regs r join events e on e.id = r.event_id where r.status = 'registered'
+				and e.status in ('published', 'finished') and not e.is_demo
+				and (e.starts_at at time zone 'Asia/Almaty')::date >= g.wk and (e.starts_at at time zone 'Asia/Almaty')::date < g.wk + 7),
+			'checkedIn', (select count(*) from event_regs r join events e on e.id = r.event_id where r.checked_in_at is not null
+				and e.status in ('published', 'finished') and not e.is_demo
+				and (e.starts_at at time zone 'Asia/Almaty')::date >= g.wk and (e.starts_at at time zone 'Asia/Almaty')::date < g.wk + 7)) order by g.wk)
+		from (select generate_series(date_trunc('week', (select d from today))::date - 77, date_trunc('week', (select d from today))::date, interval '7 days')::date as wk) g),
 	'devices', jsonb_build_object(
 		'dau', (select count(distinct anon_id) from analytics_events where day = (select d from today)),
 		'wau', (select count(distinct anon_id) from analytics_events where day > (select d from today) - 7)

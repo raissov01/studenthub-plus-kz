@@ -244,6 +244,11 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into admin_grants(user_id,scope,granted_by,reason) values ($1,'moderator',$2,'fixture grant'),($2,'moderator',$1,'fixture grant')`, uid, other)
 		exec(`insert into user_blocks(user_id,reason,blocked_by) values ($1,'fixture block',$2),($2,'fixture block',$1)`, uid, other)
 		exec(`insert into user_active_days(user_id,day) values ($1,current_date)`, uid)
+		// admin workspace: notes about and by the user, a saved filter, the support settings, an email invite
+		exec(`insert into admin_user_notes(user_id,author_id,body) values ($1,$2,'fixture note'),($2,$1,'fixture note by')`, uid, other)
+		exec(`insert into admin_saved_views(owner_id,screen,name,query) values ($1,'users','fixture','role=admin')`, uid)
+		exec(`insert into admin_settings(key,value,updated_by) values ('support','{}',$1) on conflict (key) do update set updated_by = excluded.updated_by`, uid)
+		exec(`insert into admin_role_invites(email,grant_kind,reason,invited_by) values ('fixture.invite@example.kz','moderator','fixture',$1)`, uid)
 		return nil
 	})
 	if err != nil {

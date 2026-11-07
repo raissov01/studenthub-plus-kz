@@ -89,11 +89,11 @@ function Roles() {
     <Row key={`${p.userId}-${extra}`} icon="user" title={who(p)} sub={extra} onClick={() => go('admin:users?id=' + p.userId)} />
   );
   const revoke = (userId: number, name: string) => openSheet(
-    <ReasonSheet title={tt(`${name}: модератор құқығын алу`, `${name}: снять права модератора`)} label={tt('Себебі (журналға жазылады)', 'Причина (пишется в журнал)')} action={tt('Алу', 'Снять')} danger
+    <ReasonSheet title={tt(`${name}: модератор құқығын алу`, `${name}: снять права модератора`)} label={tt('Себебі (тарихта сақталады)', 'Причина (сохранится в истории)')} action={tt('Алу', 'Снять')} danger
       onSubmit={async reason => { await api('/api/admin/grants/revoke', { method: 'POST', body: { userId, scope: 'moderator', reason }, lang }); closeSheet(); toast(tt('Құқық алынды', 'Права сняты')); r.reload(); }} />,
   );
   const grant = () => openSheet(
-    <ReasonSheet title={tt(`#${uid}: модератор тағайындау`, `#${uid}: назначить модератором`)} label={tt('Себебі (журналға жазылады)', 'Причина (пишется в журнал)')} action={tt('Тағайындау', 'Назначить')}
+    <ReasonSheet title={tt(`#${uid}: модератор тағайындау`, `#${uid}: назначить модератором`)} label={tt('Себебі (тарихта сақталады)', 'Причина (сохранится в истории)')} action={tt('Тағайындау', 'Назначить')}
       onSubmit={async reason => { await api('/api/admin/grants', { method: 'POST', body: { userId: Number(uid), scope: 'moderator', reason }, lang }); closeSheet(); setUid(''); toast(tt('Модератор тағайындалды', 'Назначен модератор')); r.reload(); }} />,
   );
   const section = (title: string, manage: string | null, rows: ReactNode[], empty: string) => (
@@ -104,7 +104,7 @@ function Roles() {
   );
   return (
     <div className="stack">
-      <p className="small muted">{tt('Кімнің қандай құқығы бар — бір жерде. Әр беру мен алу себебімен журналға жазылады.', 'Кто чем управляет — в одном месте. Каждая выдача и снятие пишется в журнал с причиной.')}</p>
+      <p className="small muted">{tt('Кімнің қандай құқығы бар — бір жерде. Әр беру мен алу себебімен тарихта сақталады.', 'Кто чем управляет — в одном месте. Каждая выдача и снятие сохраняется в истории с причиной.')}</p>
       <section className="section">
         <SectionHead title={tt('Модераторлар', 'Модераторы')} />
         <p className="tiny muted">{tt('Модератор кезекті, шағымдарды, тегін заттарды, ағын мен контентті қарайды. Қолданушылар, экспорт, ақша және рөл беретін өтінімдер оған жабық.',
@@ -144,7 +144,7 @@ function Exports() {
   const [err, setErr] = useState('');
   const kinds: [string, string, string, boolean][] = ([
     ['users', tt('Қолданушылар', 'Пользователи'), tt('Аты, байланыс, рөл, университет, белсенділік. Сүзгілер — «Қолданушылар» бетінде.', 'Имя, контакты, роль, вуз, активность. Фильтры — на странице «Пользователи».'), false],
-    ['audit', tt('Әрекеттер журналы', 'Журнал действий'), tt('Кезең бойынша барлық жазба.', 'Все записи за период.'), true],
+    ['audit', tt('Өзгерістер тарихы', 'История изменений'), tt('Кезең бойынша барлық жазба.', 'Все записи за период.'), true],
     ...(cafe ? [['cafe-orders', tt('Кофе тапсырыстары', 'Заказы кофе'), tt('Сома, төлем, күй; студенттің тек id-і.', 'Сумма, оплата, статус; от студента только id.'), true]] : []),
     ...(print ? [['print-jobs', tt('Басып шығару тапсырыстары', 'Заказы печати'), tt('Сома, төлем, күй; файлдарсыз.', 'Сумма, оплата, статус; без файлов.'), true]] : []),
     ...(feedback ? [['feedback', tt('Өтініштер', 'Обращения'), tt('Тек метадеректер: мәтінсіз, авторсыз.', 'Только метаданные: без текста и автора.'), true]] : []),
@@ -157,8 +157,8 @@ function Exports() {
   };
   return (
     <div className="stack">
-      <p className="small muted">{tt('Файлдар Excel-де бірден ашылады (UTF-8). Әр экспорт журналға жазылады. Жеке деректерді тек қажет жерде қолданыңыз.',
-        'Файлы сразу открываются в Excel (UTF-8). Каждый экспорт пишется в журнал. Используйте личные данные только там, где это нужно.')}</p>
+      <p className="small muted">{tt('Файлдар Excel-де бірден ашылады (UTF-8). Әр жүктеу тарихта сақталады. Жеке деректерді тек қажет жерде қолданыңыз.',
+        'Файлы сразу открываются в Excel (UTF-8). Каждая выгрузка сохраняется в истории. Используйте личные данные только там, где это нужно.')}</p>
       <div className="card adm-filters">
         <div className="field"><label htmlFor="ex_from">{tt('Кезең басы', 'Начало периода')}</label>
           <input className="input" id="ex_from" type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
@@ -250,9 +250,9 @@ function Moderation() {
         <Stat value={rep.data ? rep.data.reports.length : '…'} label={tt('Шағым жасалған жазба', 'Записей с жалобами')} />
       </div>
       <div className="group">
-        <Row go="admin:queue" icon="shield" title={tt('Модерация кезегі', 'Очередь модерации')} sub={tt('Ескісі бірінші; қайтарғанда себеп міндетті', 'Сначала старые; при отказе причина обязательна')} end={pending ? <b className="num">{pending}</b> : undefined} />
+        <Row go="admin:queue" icon="shield" title={tt('Тексеруді күтетіндер', 'Ждут проверки')} sub={tt('Ескісі бірінші; қайтарғанда себеп міндетті', 'Сначала старые; при отказе причина обязательна')} end={pending ? <b className="num">{pending}</b> : undefined} />
         <Row go="admin:reports" icon="bell" title={tt('Шағымдар', 'Жалобы')} sub={tt('Негізсіз шағымды жабу не жазбаны жасыру', 'Закрыть необоснованную или скрыть запись')} />
-        <Row go="admin:content" icon="file" title={tt('Контент', 'Контент')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
+        <Row go="admin:content" icon="file" title={tt('Жазбалар', 'Записи')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
         {market ? <Row go="admin:market" icon="gift" title={tt('Тегін заттар', 'Отдам даром')} sub={tt('Жасыру, қайтару, жариялауды шектеу', 'Скрыть, вернуть, ограничить публикации')} /> : null}
         {feeds ? <Row go="admin:feeds" icon="spark" title={tt('Мүмкіндіктер ағыны', 'Лента возможностей')} sub={tt('ЖИ тапқан жазбаларды тексеру', 'Проверка записей, найденных ИИ')} /> : null}
       </div>

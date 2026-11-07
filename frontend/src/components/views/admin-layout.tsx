@@ -9,50 +9,58 @@ import { useFeature } from '@/components/views/common';
 import { canScope, useAccount } from '@/lib/account';
 import type { IconName } from '@/lib/icons';
 
-type Item = { view: string; icon: IconName; label: string };
+type Item = { view: string; icon: IconName; label: string; more?: boolean };
 
 function useNav(): [string, Item[]][] {
   const { tt } = useApp();
   const acc = useAccount();
   const f = {
     cafe: useFeature('cafe'), print: useFeature('print'), clubs: useFeature('clubs'), feeds: useFeature('feeds'), market: useFeature('market'),
-    points: useFeature('points'), b2b: useFeature('b2b'), amb: useFeature('ambassador'), mentors: useFeature('mentors'),
+    points: useFeature('points'), b2b: useFeature('b2b'), amb: useFeature('ambassador'), mentors: useFeature('mentors'), events: useFeature('events'),
   };
   const surveys = useFeature('surveys'), feedback = useFeature('feedback'), wellbeing = useFeature('wellbeing');
   const voice = surveys || feedback || wellbeing;
   const u = acc.user;
   const admin = u?.role === 'admin', mod = canScope(u, 'moderator');
-  const groups: [string, Item[]][] = [[tt('Басқару', 'Управление'), [{ view: 'admin', icon: 'home', label: admin ? tt('Шолу', 'Обзор') : tt('Менің панельдерім', 'Мои панели') }]]];
+  const groups: [string, Item[]][] = [[tt('Басқару', 'Управление'), [{ view: 'admin', icon: 'home', label: admin ? tt('Басқару басты беті', 'Главная управления') : tt('Менің панельдерім', 'Мои панели') }]]];
   if (admin) {
     groups[0][1].push(
-      { view: 'admin:users', icon: 'user', label: tt('Қолданушылар', 'Пользователи') },
-      { view: 'admin:roles', icon: 'shield', label: tt('Рөлдер мен құқықтар', 'Роли и права') },
-      { view: 'admin:audit', icon: 'clock', label: tt('Әрекеттер журналы', 'Журнал действий') },
-      { view: 'admin:exports', icon: 'doc', label: tt('CSV экспорт', 'Экспорт CSV') },
-      { view: 'admin:health', icon: 'bolt', label: tt('Денсаулық', 'Состояние системы') },
+      { view: 'admin:users', icon: 'user', label: tt('Қолданушылар және рөлдер', 'Пользователи и роли') },
+      ...(f.cafe || f.print ? [{ view: 'admin:payments', icon: 'tenge' as IconName, label: tt('Төлемдер', 'Платежи') }] : []),
+      { view: 'admin:settings', icon: 'gear' as IconName, label: tt('Баптаулар', 'Настройки'), more: true },
+      { view: 'admin:roles', icon: 'shield', label: tt('Кім нені басқарады', 'Кто чем управляет'), more: true },
+      { view: 'admin:audit', icon: 'clock', label: tt('Өзгерістер тарихы', 'История изменений'), more: true },
+      { view: 'admin:exports', icon: 'doc', label: tt('Excel-ге жүктеу', 'Скачать для Excel'), more: true },
+      { view: 'admin:health', icon: 'bolt', label: tt('Сайттың жұмысы', 'Работа сайта'), more: true },
     );
+  }
+  if (f.events && (admin || u?.role === 'ambassador' || u?.role === 'university_staff')) {
+    groups.push([tt('Іс-шаралар', 'Мероприятия'), [
+      { view: 'admin:schedule', icon: 'calendar' as IconName, label: tt('Күнтізбе', 'Календарь') },
+      { view: 'admin:attendance', icon: 'check' as IconName, label: tt('Кім келді', 'Кто пришёл') },
+    ]]);
   }
   if (mod) {
     groups.push([tt('Модерация', 'Модерация'), [
       ...(admin ? [] : [{ view: 'admin:moderation', icon: 'shield' as IconName, label: tt('Жұмыс орны', 'Рабочее место') }]),
-      { view: 'admin:queue', icon: 'check', label: tt('Модерация кезегі', 'Очередь модерации') },
+      { view: 'admin:queue', icon: 'check', label: tt('Тексеруді күтетіндер', 'Ждут проверки') },
       { view: 'admin:reports', icon: 'bell', label: tt('Шағымдар', 'Жалобы') },
-      { view: 'admin:content', icon: 'file', label: tt('Контент', 'Контент') },
-      ...(f.feeds ? [{ view: 'admin:feeds', icon: 'spark' as IconName, label: tt('Мүмкіндіктер ағыны', 'Лента возможностей') }] : []),
-      ...(f.market ? [{ view: 'admin:market', icon: 'gift' as IconName, label: tt('Тегін заттар', 'Отдам даром') }] : []),
+      { view: 'admin:content', icon: 'file', label: tt('Жазбалар', 'Записи') },
+      ...(f.feeds ? [{ view: 'admin:feeds', icon: 'spark' as IconName, label: tt('Мүмкіндіктер ағыны', 'Лента возможностей'), more: true }] : []),
+      ...(f.market ? [{ view: 'admin:market', icon: 'gift' as IconName, label: tt('Тегін заттар', 'Отдам даром'), more: true }] : []),
     ]]);
   }
   if (admin) {
     groups.push([tt('Бөлімдер', 'Разделы'), [
-      ...(voice ? [{ view: 'admin:voice', icon: 'chat' as IconName, label: tt('Студент дауысы', 'Голос студентов') }] : []),
+      ...(voice ? [{ more: true, view: 'admin:voice', icon: 'chat' as IconName, label: tt('Студент дауысы', 'Голос студентов') }] : []),
       ...(f.cafe ? [{ view: 'admin:cafe', icon: 'cup' as IconName, label: tt('Кофеханалар', 'Кофейни') }] : []),
       ...(f.print ? [{ view: 'admin:print', icon: 'file' as IconName, label: tt('Полиграфиялар', 'Полиграфии') }] : []),
       ...(f.clubs ? [{ view: 'admin:clubs', icon: 'user' as IconName, label: tt('Клубтар', 'Клубы') }] : []),
-      ...(f.b2b ? [{ view: 'admin:employers', icon: 'briefcase' as IconName, label: tt('Жұмыс берушілер', 'Работодатели') },
-        { view: 'admin:staff', icon: 'cap' as IconName, label: tt('Университет қызметкерлері', 'Сотрудники университетов') }] : []),
-      ...(f.amb ? [{ view: 'admin:ambassadors', icon: 'award' as IconName, label: tt('Амбассадорлар', 'Амбассадоры') }] : []),
-      ...(f.mentors ? [{ view: 'admin:mentors', icon: 'cap' as IconName, label: tt('Менторларды жұптау', 'Подбор менторов') }] : []),
-      ...(f.points ? [{ view: 'admin:points', icon: 'trophy' as IconName, label: tt('Ұпайлар мен сыйлықтар', 'Баллы и награды') }] : []),
+      ...(f.b2b ? [{ more: true, view: 'admin:employers', icon: 'briefcase' as IconName, label: tt('Жұмыс берушілер', 'Работодатели') },
+        { more: true, view: 'admin:staff', icon: 'cap' as IconName, label: tt('Университет қызметкерлері', 'Сотрудники университетов') }] : []),
+      ...(f.amb ? [{ more: true, view: 'admin:ambassadors', icon: 'award' as IconName, label: tt('Амбассадорлар', 'Амбассадоры') }] : []),
+      ...(f.mentors ? [{ more: true, view: 'admin:mentors', icon: 'cap' as IconName, label: tt('Менторларды жұптау', 'Подбор менторов') }] : []),
+      ...(f.points ? [{ more: true, view: 'admin:points', icon: 'trophy' as IconName, label: tt('Ұпайлар мен сыйлықтар', 'Баллы и награды') }] : []),
     ]]);
   }
   return groups;
@@ -90,6 +98,15 @@ function Palette({ items, onClose }: { items: Item[]; onClose: () => void }) {
   );
 }
 
+function NavItem({ x, current }: { x: Item; current: boolean }) {
+  const { go } = useApp();
+  return (
+    <button type="button" className="adm-nav-item" aria-current={current ? 'page' : undefined} onClick={() => go(x.view)}>
+      <Icon n={x.icon} s={18} /> <span>{x.label}</span>
+    </button>
+  );
+}
+
 export function AdminLayout({ view, children }: { view: string; children: ReactNode }) {
   const { tt, go } = useApp();
   const acc = useAccount();
@@ -115,11 +132,13 @@ export function AdminLayout({ view, children }: { view: string; children: ReactN
           {groups.filter(([, x]) => x.length).map(([title, list]) => (
             <div key={title} className="adm-nav-group">
               <span className="adm-nav-title">{title}</span>
-              {list.map(x => (
-                <button key={x.view} type="button" className="adm-nav-item" aria-current={base === x.view ? 'page' : undefined} onClick={() => go(x.view)}>
-                  <Icon n={x.icon} s={18} /> <span>{x.label}</span>
-                </button>
-              ))}
+              {list.filter(x => !x.more).map(x => <NavItem key={x.view} x={x} current={base === x.view} />)}
+              {list.some(x => x.more) ? (
+                <details className="adm-nav-more" open={list.some(x => x.more && base === x.view)}>
+                  <summary className="adm-nav-item"><Icon n="chev" s={18} /> <span>{tt('Тағы', 'Ещё')}</span></summary>
+                  {list.filter(x => x.more).map(x => <NavItem key={x.view} x={x} current={base === x.view} />)}
+                </details>
+              ) : null}
             </div>
           ))}
         </nav>

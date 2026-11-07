@@ -9,6 +9,7 @@ package events
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -92,6 +93,7 @@ func Routes(mux httpx.Router) {
 	h("POST /api/events/checkin/claim", auth.Write(auth.Need(claim)))
 	// organizers
 	h("GET /api/events/manage", auth.Need(manageList))
+	h("GET /api/events/attendance", auth.Need(attendanceOverview))
 	h("POST /api/events/create", auth.Write(auth.Need(create))) // POST /api/events is the analytics tracker
 	h("PATCH /api/events/{id}", auth.Write(auth.Need(update)))
 	h("POST /api/events/{id}/checkin/start", auth.Write(auth.Need(startCheckin)))
@@ -541,6 +543,13 @@ func manageList(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
 		return
 	}
+	// ?from=&to= (RFC 3339): only events overlapping that range (the calendar's week)
+	from, okFrom := optTime(r.URL.Query().Get("from"))
+	to, okTo := optTime(r.URL.Query().Get("to"))
+	if !okFrom || !okTo {
+		httpx.Error(w, r, http.StatusBadRequest, "bad_request", httpx.MsgBad)
+		return
+	}
 	// "" = every university (admin); nil = none of them, only club events (CanManage filters them below).
 	// (The old "\x00" placeholder for nil was refused by Postgres: a 500.)
 	empty := ""
@@ -551,7 +560,8 @@ func manageList(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	out := []*Event{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, "select "+eventCols+` from events e where ($1 = '' or e.university = $1 or ($2 and e.club_id is not null))
-			order by e.status = 'finished', e.starts_at desc limit 300`, univ, ClubManager != nil)
+			and ($3::timestamptz is null or e.ends_at > $3) and ($4::timestamptz is null or e.starts_at < $4)
+			order by e.status = 'finished', e.starts_at desc limit 300`, univ, ClubManager != nil, from, to)
 		if err != nil {
 			return err
 		}
@@ -572,6 +582,17 @@ func manageList(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"events": out})
+}
+
+func optTime(v string) (*time.Time, bool) {
+	if v == "" {
+		return nil, true
+	}
+	t, err := time.Parse(time.RFC3339, v)
+	if err != nil {
+		return nil, false
+	}
+	return &t, true
 }
 
 // ---------- create / update ----------
@@ -750,8 +771,10 @@ func create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	var ev *Event
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
-		ev, err = load(ctx, tx, id, false)
-		return err
+		if ev, err = load(ctx, tx, id, false); err != nil {
+			return err
+		}
+		return auditEvent(ctx, tx, u.ID, "event_create", ev, nil)
 	})
 	if err != nil {
 		fail(w, r, "create load", err)
@@ -769,6 +792,23 @@ func deref(p *string) string {
 }
 
 func boolOr(p *bool) bool { return p != nil && *p }
+
+// auditEvent writes the organizer's change to audit_log with the event's id and title (a label snapshot).
+func auditEvent(ctx context.Context, tx pgx.Tx, actor int64, action string, ev *Event, meta map[string]any) error {
+	if meta == nil {
+		meta = map[string]any{}
+	}
+	meta["event"], meta["title"], meta["university"] = ev.ID, ev.TitleKK, ev.University
+	if ev.ClubID != nil {
+		meta["club"] = *ev.ClubID
+	}
+	raw, err := json.Marshal(meta)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `insert into audit_log (actor_id, action, reason, meta) values ($1, $2, null, $3::jsonb)`, actor, action, string(raw))
+	return err
+}
 
 // allowed status changes through PATCH; "finished" only via /finish.
 var transitions = map[string][]string{
@@ -907,8 +947,15 @@ func update(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	var ev *Event
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
-		ev, err = load(ctx, tx, before.ID, false)
-		return err
+		if ev, err = load(ctx, tx, before.ID, false); err != nil {
+			return err
+		}
+		fields := make([]string, 0, len(raw))
+		for k := range raw {
+			fields = append(fields, k)
+		}
+		slices.Sort(fields)
+		return auditEvent(ctx, tx, u.ID, "event_update", ev, map[string]any{"fields": fields, "from": before.Status, "to": ev.Status})
 	})
 	if err != nil {
 		fail(w, r, "update load", err)
@@ -968,8 +1015,10 @@ func createForClub(w http.ResponseWriter, r *http.Request, u *auth.User, body []
 	var ev *Event
 	err = db.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
-		ev, err = load(ctx, tx, id, false)
-		return err
+		if ev, err = load(ctx, tx, id, false); err != nil {
+			return err
+		}
+		return auditEvent(ctx, tx, u.ID, "event_create", ev, nil)
 	})
 	if err != nil {
 		fail(w, r, "create club event load", err)

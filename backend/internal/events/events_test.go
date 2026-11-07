@@ -778,3 +778,55 @@ func TestManageListWithoutUniversity(t *testing.T) {
 		t.Fatalf("manage without university: %d %s", w.Code, w.Body)
 	}
 }
+
+// The attendance overview and the calendar's week filter keep the manage rule: an ambassador sees only their
+// university, a student is refused; an organizer's create and edit land in the audit log.
+func TestAttendanceOverviewScopeAndAudit(t *testing.T) {
+	admin := newUser(t, "admin", "", "")
+	amb := newUser(t, "ambassador", "ATT-U", "")
+	student := newUser(t, "student", "ATT-U", "")
+	mine := newEvent(t, evOpts{univ: "ATT-U", startsIn: -3 * time.Hour})
+	other := newEvent(t, evOpts{univ: "ATT-OTHER", startsIn: -3 * time.Hour})
+	exec(t, `insert into event_regs (event_id, user_id, ticket, checked_in_at, checkin_method) values ($1, $2, 'att-t1', now(), 'qr')`, mine, student)
+	if w := do(t, "GET", "/api/events/attendance", student, nil); w.Code != 403 {
+		t.Fatalf("student: %d", w.Code)
+	}
+	w := do(t, "GET", "/api/events/attendance", amb, nil)
+	body := w.Body.String()
+	if w.Code != 200 || !strings.Contains(body, fmt.Sprintf(`"id":%d`, mine)) || strings.Contains(body, fmt.Sprintf(`"id":%d,`, other)) {
+		t.Fatalf("ambassador: %d %s", w.Code, body)
+	}
+	if !strings.Contains(body, `"checked_in":1`) || !strings.Contains(body, `"qr":1`) {
+		t.Fatalf("counts: %s", body)
+	}
+	if w := do(t, "GET", "/api/events/attendance", admin, nil); !strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d,`, other)) {
+		t.Fatalf("admin sees all: %s", w.Body)
+	}
+	// the calendar week: only events overlapping the range
+	from := time.Now().Add(-24 * time.Hour).UTC().Format(time.RFC3339)
+	to := time.Now().Add(24 * time.Hour).UTC().Format(time.RFC3339)
+	far := newEvent(t, evOpts{univ: "ATT-U", startsIn: 30 * 24 * time.Hour})
+	w = do(t, "GET", "/api/events/manage?from="+from+"&to="+to, amb, nil)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d,`, mine)) || strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d,`, far)) {
+		t.Fatalf("week filter: %d %s", w.Code, w.Body)
+	}
+	if w := do(t, "GET", "/api/events/manage?from=yesterday", amb, nil); w.Code != 400 {
+		t.Fatalf("bad from: %d", w.Code)
+	}
+	starts := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Minute)
+	w = do(t, "POST", "/api/events/create", amb, map[string]any{"title_kk": "Аудит іс-шарасы", "cat": "career",
+		"starts_at": starts.Format(time.RFC3339), "ends_at": starts.Add(time.Hour).Format(time.RFC3339)})
+	if w.Code != 201 {
+		t.Fatalf("create: %d %s", w.Code, w.Body)
+	}
+	id := int64(decode(t, w)["event"].(map[string]any)["id"].(float64))
+	if w := do(t, "PATCH", path(id, ""), amb, map[string]any{"starts_at": starts.Add(time.Hour).Format(time.RFC3339), "ends_at": starts.Add(2 * time.Hour).Format(time.RFC3339)}); w.Code != 200 {
+		t.Fatalf("move: %d %s", w.Code, w.Body)
+	}
+	if n := count(t, `select count(*) from audit_log where actor_id = $1 and action in ('event_create', 'event_update') and (meta->>'event')::bigint = $2`, amb, id); n != 2 {
+		t.Fatalf("event audit rows: %d", n)
+	}
+	if n := count(t, `select count(*) from audit_log where actor_id = $1 and action = 'event_update' and meta->'fields' ? 'starts_at'`, amb); n != 1 {
+		t.Fatal("update audit lacks the changed fields")
+	}
+}
