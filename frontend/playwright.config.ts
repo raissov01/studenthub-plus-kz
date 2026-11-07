@@ -15,7 +15,9 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${port}`, browserName: 'chromium',
     serviceWorkers: 'allow', trace: 'retain-on-failure', screenshot: 'only-on-failure',
-    launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
+    // Chromium's Local Network Access checks stop a public page (the mocked web.telegram.org) from framing 127.0.0.1,
+    // which the Telegram-frame security spec needs; in production the site is not on a local address, so it doesn't apply
+    launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests'] },
   },
   projects: [
     ...['kk', 'ru'].flatMap(lang => [360, 390].map(width => ({

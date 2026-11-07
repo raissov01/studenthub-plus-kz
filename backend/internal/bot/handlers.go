@@ -187,7 +187,7 @@ func (s *session) onMessage(ctx context.Context, msg *Message) error {
 		if err := s.q.BotSetPausedUntil(ctx, q.BotSetPausedUntilParams{ID: s.user.ID}); err != nil {
 			return err
 		}
-		if err := notify.Reschedule(ctx, s.b.Pool, s.user.ID); err != nil {
+		if err := notify.Reschedule(ctx, s.b.Pool, s.user.ID, s.b.now()); err != nil {
 			return err
 		}
 		if was {
@@ -619,7 +619,7 @@ func (s *session) toggleSetting(ctx context.Context, key string) error {
 	if err := notify.SavePrefs(ctx, s.b.Pool, s.user.ID, p); err != nil {
 		return err
 	}
-	return notify.Reschedule(ctx, s.b.Pool, s.user.ID)
+	return notify.Reschedule(ctx, s.b.Pool, s.user.ID, s.b.now())
 }
 
 // DeleteUserData is /stop: reminders and bot state are removed; pending sends are cancelled. A user
