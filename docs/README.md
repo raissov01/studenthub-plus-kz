@@ -80,6 +80,7 @@ SIVA үш бөліктен тұрады: Next.js фронтенд (`frontend/`),
 | Мүмкіндіктер ағыны (Telegram, сайттар, ИИ сүзгісі) | [feeds.md](./feeds.md) |
 | PWA, офлайн | [PWA.md](./PWA.md) |
 | Браузер хабарламалары (Web Push) | [PUSH.md](./PUSH.md) |
+| Google арқылы кіру (OAuth, Console қадамдары, Android дизайны) | [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md) |
 | Тілдер (kk / ru / en), ағылшын сөздігі | [I18N.md](./I18N.md) |
 | Атау (SIVA), неге ішкі атаулар `studenthub`, иесінің қолмен қадамдары | [BRAND.md](./BRAND.md) |
 | Қауіпсіздік тақырыптары | [HEADERS.md](./HEADERS.md) |

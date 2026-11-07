@@ -37,3 +37,13 @@ test('11-016: real HMAC required for widget and Mini App; isolated test database
   expect(sql<{ current_database: string }>('select current_database()')[0].current_database).toBe(process.env.E2E_DB_NAME);
   expect((await page.request.post('/api/auth/test', { headers, data: { role: 'admin' } })).status()).toBe(404);
 });
+
+test('Google sign-in is off unless configured: no googleLogin in /api/config, its routes are 404', async ({ page, baseURL }) => {
+  const config = await (await page.request.get('/api/config')).json();
+  expect(config.googleLogin).toBe(false);
+  expect(JSON.stringify(config)).not.toMatch(/GOOGLE|apps\.googleusercontent/);
+  const start = await page.request.get('/api/auth/google/start?next=/', { maxRedirects: 0 });
+  expect(start.status()).toBe(404);
+  expect((await page.request.get('/api/auth/google/callback?code=x&state=y', { maxRedirects: 0 })).status()).toBe(404);
+  expect((await page.request.delete('/api/me/google', { headers: { Origin: baseURL! } })).status()).toBe(404);
+});

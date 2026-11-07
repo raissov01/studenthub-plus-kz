@@ -126,6 +126,11 @@ names, are never public and are served only through 5-minute HMAC links bound to
 retention period. No antivirus runs: the risk is documented in docs/print.md. Prices are recomputed from
 print_services/print_goods; a page count the server cannot make (Office files) is declared by the student
 and confirmed or changed by the operator, and a changed price needs the student's approval.
+Google sign-in (FEATURE_GOOGLE_LOGIN plus the OAuth client, docs/GOOGLE_LOGIN.md): the server runs the
+authorization-code flow with PKCE (S256), state and nonce kept only in a 10-minute HMAC-signed HttpOnly cookie
+used once; the ID token is verified locally (RS256 against Google's cached JWKS, iss, aud, exp, nonce) and only
+an email Google marks verified is used, to sign in to the account holding it or to create one. The return path
+is a same-origin path (no open redirect). DELETE /api/me/google refuses to remove the last sign-in method.
 University voice (FEATURE_SURVEYS / FEEDBACK / WELLBEING, docs/UNIVOICE.md): anonymous survey
 answers have no user column and no timestamp; double voting is stopped by an HMAC(user id) marker
 keyed from SESSION_SECRET in a separate table. Results and CSV are aggregates with every group

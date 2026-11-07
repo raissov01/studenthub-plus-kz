@@ -69,3 +69,36 @@ jobs:
             const bad = ["/", "/search", "/calendar", "/profile"].filter(r => !m[r] || m[r].initialRevalidateSeconds !== false);
             if (bad.length) { console.error("not prerendered:", bad.join(" ")); process.exit(1); }
             console.log("static:", Object.keys(m).length, "routes");'
+
+  e2e:
+    name: Playwright e2e (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+        env:
+          BUILD_ID: ${{ github.sha }}
+      # the mocked suite (e2e/server.ts stands in for the Go API); the screenshot specs skip unless asked
+      - run: npx playwright test --shard=${{ matrix.shard }}/4 --workers=2
+        env:
+          CI: "1"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          path: frontend/playwright-report
+          retention-days: 7

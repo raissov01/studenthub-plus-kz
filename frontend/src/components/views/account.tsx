@@ -1,14 +1,15 @@
 'use client';
 /* Optional account: sign-in prompt (Telegram: Login Widget outside Telegram, a button inside the Mini App; Email when
-   the server offers it, see account-email.tsx), the consent screen, and the «Аккаунт» section of Settings (email,
-   password and Telegram link, sync, export, sign out, delete). The device profile keeps working without any of this. */
+   the server offers it, see account-email.tsx; Google when the server offers it, docs/GOOGLE_LOGIN.md), the consent
+   screen, and the «Аккаунт» section of Settings (email, password, Telegram and Google link, sync, export, sign out,
+   delete). The device profile keeps working without any of this. */
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/app';
 import { Icon, Row, Seg } from '@/components/ui';
 import { Addr, EmailSheet, EmailSignIn, PasswordSheet } from '@/components/views/account-email';
 import {
-  ApiError, deleteAccount, downloadExport, giveConsent, signInWebApp, signInWidget, signOut, syncProfile, useAccount,
-  type Role,
+  ApiError, deleteAccount, downloadExport, getAccount, giveConsent, googleStartUrl, loadMe, signInWebApp, signInWidget,
+  signOut, syncProfile, unlinkGoogle, useAccount, type Role,
 } from '@/lib/account';
 import { useConfig } from '@/lib/config';
 import { CITIES, SPECS } from '@/lib/data/static';
@@ -92,6 +93,98 @@ function TelegramSignIn({ after, label }: { after: (needsConsent: boolean) => vo
   );
 }
 
+/* ---------- Google ---------- */
+/** Google's own «G» (Sign in with Google branding guidelines: the four-colour mark, unaltered, on white) */
+export function GoogleG({ s = 18 }: { s?: number }) {
+  return (
+    <svg className="google-g" width={s} height={s} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+/** «Continue with Google»: a full-page navigation to the server, which runs the whole OAuth round trip and comes back here.
+    Hidden inside the Telegram Mini App: Google refuses sign-in in embedded web views. */
+function GoogleButton() {
+  const { tt, S } = useApp();
+  // the return path is this page, read at click time (the shell is static: no location while prerendering)
+  return (
+    <button className="btn-google" type="button" onClick={() => window.location.assign(googleStartUrl(S.lang))}>
+      <GoogleG /> <span>{tt('Google арқылы кіру', 'Войти через Google')}</span>
+    </button>
+  );
+}
+
+/** ?google=<status> the server's callback appends (internal/auth/google.go) */
+function googleStatusText(st: string, tt: (kk: string, ru: string) => string): string {
+  switch (st) {
+    case 'ok': return tt('Кірдіңіз', 'Вы вошли');
+    case 'linked': return tt('Google байланыстырылды', 'Google привязан');
+    case 'cancelled': return tt('Google арқылы кіру тоқтатылды', 'Вход через Google отменён');
+    case 'expired': case 'state': return tt('Google арқылы кіру үзілді немесе тым ұзаққа созылды. Қайта көріңіз.', 'Вход через Google прервался или занял слишком долго. Попробуйте ещё раз.');
+    case 'email_unverified': return tt('Google аккаунтыңыздағы email расталмаған. Оны Google-да растап, қайта көріңіз.', 'Email в вашем аккаунте Google не подтверждён. Подтвердите его в Google и попробуйте снова.');
+    case 'taken': return tt('Бұл Google аккаунты басқа SIVA аккаунтына байланған. Аккаунттар біріктірілмейді.', 'Этот аккаунт Google уже привязан к другому аккаунту SIVA. Аккаунты не объединяются.');
+    case 'mismatch': return tt('Бұл аккаунтқа басқа Google аккаунты байланған. Сол Google арқылы кіріңіз.', 'К этому аккаунту привязан другой аккаунт Google. Войдите через него.');
+    case 'email_taken': return tt('Бұл email басқа, расталмаған аккаунтта тұр. Email мен құпиясөз арқылы кіріп, оны растаңыз.', 'Этот email указан в другом, неподтверждённом аккаунте. Войдите по email и паролю и подтвердите его.');
+    case 'blocked': return tt('Бұл аккаунт бұғатталған.', 'Этот аккаунт заблокирован.');
+    case 'session': return tt('Google-ды байланыстыру үшін алдымен аккаунтқа кіріңіз.', 'Чтобы привязать Google, сначала войдите в аккаунт.');
+    case 'rate_limited': return tt('Тым көп әрекет. Біраздан кейін қайталаңыз.', 'Слишком много попыток. Повторите чуть позже.');
+    case 'invalid': return tt('Google жауабын тексере алмадық. Қайта көріңіз.', 'Не удалось проверить ответ Google. Попробуйте ещё раз.');
+    default: return tt('Google арқылы кіру қазір істемей тұр. Кейінірек көріңіз.', 'Вход через Google сейчас не работает. Попробуйте позже.');
+  }
+}
+
+let googleReturnSeen = false;
+/** Back from Google: drop ?google= from the address, then the consent screen (new account) or a short message. */
+export function useGoogleReturn() {
+  const { tt, toast, openSheet } = useApp();
+  useEffect(() => {
+    if (googleReturnSeen) return;
+    googleReturnSeen = true;
+    const url = new URL(window.location.href);
+    const st = url.searchParams.get('google');
+    if (!st) return;
+    url.searchParams.delete('google');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    void loadMe(true).then(() => {
+      if ((st === 'ok' || st === 'linked') && getAccount().needsConsent) openSheet(<ConsentSheet />);
+      else toast(googleStatusText(st.slice(0, 32), tt));
+    });
+  }, [tt, toast, openSheet]);
+}
+
+/** Settings → Аккаунт: link Google (a round trip, link=1) or unlink it (not while it is the only way in) */
+function GoogleRow({ linked }: { linked: boolean }) {
+  const { tt, S, toast } = useApp();
+  const [busy, setBusy] = useState(false);
+  if (!linked) {
+    return (
+      <button className="row" type="button" onClick={() => window.location.assign(googleStartUrl(S.lang, true))}>
+        <span className="ico google-ico"><GoogleG /></span>
+        <span className="row-main"><span className="row-title">{tt('Google-ды байланыстыру', 'Привязать Google')}</span>
+          <span className="row-sub">{tt('Google аккаунтыңыз арқылы да кіру үшін', 'Чтобы входить и через аккаунт Google')}</span></span>
+        <span className="chev"><Icon n="chev" s={18} /></span>
+      </button>
+    );
+  }
+  return (
+    <div className="row">
+      <span className="ico google-ico"><GoogleG /></span>
+      <span className="row-main"><span className="row-title">{tt('Google байланысқан', 'Google привязан')}</span>
+        <span className="row-sub">{tt('Google аккаунтыңыз арқылы кіре аласыз', 'Можно входить через аккаунт Google')}</span></span>
+      <span className="row-end">
+        <button className="btn ghost small-btn" type="button" disabled={busy} onClick={async () => {
+          setBusy(true);
+          try { await unlinkGoogle(S.lang); toast(tt('Google ажыратылды', 'Google отвязан')); } catch (e) { toast(errText(e, tt('Болмады', 'Не получилось'))); } finally { setBusy(false); }
+        }}>{tt('Ажырату', 'Отвязать')}</button>
+      </span>
+    </div>
+  );
+}
+
 export function SignInSheet() {
   const { tt, toast, closeSheet, openSheet } = useApp();
   const cfg = useConfig();
@@ -104,12 +197,19 @@ export function SignInSheet() {
     else { closeSheet(); toast(note || tt('Кірдіңіз', 'Вы вошли')); }
   };
   const email = cfg.emailAuth && tab === 'email';
+  const google = cfg.googleLogin && !tg.app;
   return (
     <>
-      <h2>{cfg.emailAuth ? tt('Аккаунтқа кіру', 'Вход в аккаунт') : tt('Telegram арқылы кіру', 'Вход через Telegram')}</h2>
+      <h2>{cfg.emailAuth || google ? tt('Аккаунтқа кіру', 'Вход в аккаунт') : tt('Telegram арқылы кіру', 'Вход через Telegram')}</h2>
       {deep && email ? null : <p className="small muted">{tt(
         'Кіру міндетті емес: профиль, жоспарлар мен сақталғандар осы құрылғыда кірмей-ақ жұмыс істейді. Аккаунт тек ортақ деректер керек әрекеттерге қажет.',
         'Вход необязателен: профиль, планы и сохранённое работают на этом устройстве и без него. Аккаунт нужен только для действий с общими данными.')}</p>}
+      {google && !(deep && email)
+        ? <>
+          <GoogleButton />
+          <p className="or-line" aria-hidden="true"><span>{tt('немесе', 'или')}</span></p>
+        </>
+        : null}
       {cfg.emailAuth && !(deep && email)
         ? <Seg items={[['tg', 'Telegram'], ['email', 'Email']]} cur={tab} onPick={k => setTab(k === 'email' ? 'email' : 'tg')} />
         : null}
@@ -159,6 +259,7 @@ export function ConsentSheet() {
       <div className="consent">
         <h3>{tt('Не сақталады', 'Что хранится')}</h3>
         {acc.user?.email ? <p className="small">{tt('Email адресіңіз және құпиясөздің хэші (құпиясөздің өзі сақталмайды).', 'Ваш email и хэш пароля (сам пароль не хранится).')}</p> : null}
+        {acc.user?.googleLinked ? <p className="small">{tt('Google аккаунтыңыздың тұрақты идентификаторы, расталған email және аты: Google-дан тек осылар алынады, кіру Google серверлері (АҚШ) арқылы өтеді.', 'Постоянный идентификатор вашего аккаунта Google, подтверждённый email и имя: от Google берутся только они, вход идёт через серверы Google (США).')}</p> : null}
         <p className="small">{tt(
           'Telegram id, username және аты; тіл; өзіңіз жіберсеңіз — университет, факультет, курс, қала; рөліңіз, келісім уақыты, соңғы кіру уақыты; ботқа қойған еске салуларыңыз. Сессия студентке 90 күн (қолданған сайын ұзарады), қызметкер рөлдеріне 14 күн; «Шығу» сессияны серверде де жабады.',
           'Telegram id, username и имя; язык; если вы сами отправите — вуз, факультет, курс, город; ваша роль, время согласия и последнего входа; напоминания, которые вы поставили в боте. Сессия студенту 90 дней (продлевается при использовании), служебным ролям 14 дней; «Выйти» закрывает сессию и на сервере.')}</p>
@@ -224,6 +325,7 @@ export function AccountSection() {
   const { S, tt, L, toast, openSheet } = useApp();
   const acc = useAccount();
   const cfg = useConfig();
+  const tg = useTelegram();
   const [busy, setBusy] = useState('');
   const run = async (key: string, fn: () => Promise<void>, done: string) => {
     if (busy) return;
@@ -236,7 +338,12 @@ export function AccountSection() {
     return (
       <section className="section"><h2>{tt('Аккаунт', 'Аккаунт')}</h2>
         <div className="group">
-          {cfg.emailAuth
+          {cfg.googleLogin
+            ? <Row onClick={() => openSheet(<SignInSheet />)} icon="user" title={tt('Аккаунтқа кіру', 'Войти в аккаунт')}
+              sub={cfg.emailAuth
+                ? tt('Telegram, Google немесе email арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Через Telegram, Google или email. Необязательно: профиль работает на этом устройстве и без входа.')
+                : tt('Telegram немесе Google арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Через Telegram или Google. Необязательно: профиль работает на этом устройстве и без входа.')} />
+            : cfg.emailAuth
             ? <Row onClick={() => openSheet(<SignInSheet />)} icon="user" title={tt('Аккаунтқа кіру', 'Войти в аккаунт')}
               sub={tt('Telegram немесе email арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.', 'Через Telegram или email. Необязательно: профиль работает на этом устройстве и без входа.')} />
             : <Row onClick={() => openSheet(<SignInSheet />)} icon="send" title={tt('Telegram арқылы кір', 'Войти через Telegram')}
@@ -268,6 +375,8 @@ export function AccountSection() {
           ? (cfg.emailAuth ? <Row icon="send" title={tt('Telegram байланысқан', 'Telegram привязан')} sub={u.username ? '@' + u.username : tt('Бот хабарламалары қолжетімді', 'Сообщения бота доступны')} chev={false} /> : null)
           : <Row onClick={() => openSheet(<LinkTelegramSheet />)} icon="send" tone="sun" title={tt('Telegram-ды байланыстыру', 'Привязать Telegram')}
             sub={tt('Telegram жоқ: бот еске салу мен хабарлама жібере алмайды', 'Telegram не привязан: бот не сможет напоминать и присылать уведомления')} />}
+        {/* Google: shown only while the server offers it; never inside the Mini App (Google refuses web views) */}
+        {cfg.googleLogin && (u.googleLinked || !tg.app) ? <GoogleRow linked={!!u.googleLinked} /> : null}
         {acc.needsConsent
           ? <Row onClick={() => openSheet(<ConsentSheet />)} icon="shield" tone="sun" title={tt('Келісім беру', 'Дать согласие')} sub={tt('Аккаунтты қолдану үшін деректер туралы келісім керек', 'Чтобы пользоваться аккаунтом, нужно согласие на обработку данных')} />
           : <Row onClick={sync} icon="sync" title={tt('Аккаунтпен синхрондау', 'Синхронизировать с аккаунтом')}

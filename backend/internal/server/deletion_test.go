@@ -183,7 +183,7 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 		exec(`insert into mentor_meeting_notices(event_id,user_id) values ($1,$2)`, event, uid)
 		exec(`insert into discount_checks(discount_id,user_id,worked) values ('d1',$1,true)`, uid)
 		exec(`insert into revoked_sessions(sid,user_id,expires_at) values ('fixture-sid-1',$1,now()+interval '1 day')`, uid)
-		exec(`update users set email='launch-delete@example.kz', email_verified_at=now() where id=$1`, uid)
+		exec(`update users set email='launch-delete@example.kz', email_verified_at=now(), google_sub='launch-delete-google-sub' where id=$1`, uid)
 		exec(`insert into user_passwords(user_id,hash) values ($1,'$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA')`, uid)
 		exec(`insert into auth_codes(user_id,purpose,email,code_hash,expires_at) values ($1,'reset_password','launch-delete@example.kz','\x00',now()+interval '15 minutes')`, uid)
 		qz := id(`insert into quizzes(user_id,title,share_code) values ($1,'fixture','launchquiz') returning id`, uid)
@@ -259,6 +259,9 @@ func TestAccountDeletionPopulatesEveryUserForeignKeyAndDeletesFiles(t *testing.T
 	}
 	if launchCount(t, `select count(*) from users where id=$1`, uid) != 0 {
 		t.Fatal("user survived")
+	}
+	if launchCount(t, `select count(*) from users where google_sub='launch-delete-google-sub'`) != 0 {
+		t.Fatal("linked Google account survived")
 	}
 	for _, ref := range refs {
 		table := pgx.Identifier{ref.Schema, ref.Table}.Sanitize()

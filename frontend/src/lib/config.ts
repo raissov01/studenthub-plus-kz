@@ -13,6 +13,8 @@ export interface Config {
   marketSeason: { from: string; to: string; active: boolean } | null;
   /** email + password sign-in is offered (the server can deliver codes) */
   emailAuth: boolean;
+  /** «Sign in with Google» is offered (FEATURE_GOOGLE_LOGIN and the OAuth client on the server, docs/GOOGLE_LOGIN.md) */
+  googleLogin: boolean;
   /** Web Push (FEATURE_WEBPUSH + VAPID keys on the server): «Браузер хабарламалары» in settings, docs/PUSH.md */
   webPush: { enabled: boolean; publicKey: string };
   features: {
@@ -57,6 +59,7 @@ export const CONFIG: Config = {
   botUsername: '',
   marketSeason: null,
   emailAuth: false,
+  googleLogin: false,
   webPush: { enabled: false, publicKey: '' },
   features: { events: false, ambassador: false, mentors: false, market: false, portfolio: false, b2b: false, quiz: false, points: false, cafe: false, print: false, surveys: false, feedback: false, wellbeing: false, lostfound: false, courseqa: false, roommates: false, clubs: false, feeds: false, streak: false, fairs: false },
 };
@@ -115,6 +118,7 @@ export async function loadConfig(): Promise<void> {
       botUsername: str(j.botUsername, CONFIG.botUsername).replace(/^@/, ''),
       marketSeason: season(j.marketSeason),
       emailAuth: j.emailAuth === true,
+      googleLogin: j.googleLogin === true,
       webPush: webPush(j.webPush),
       features,
     });

@@ -17,6 +17,8 @@ export interface AccountUser {
   /** null until email sign-in is set up */
   email: string | null;
   emailVerified: boolean;
+  /** a Google account is linked («Sign in with Google», docs/GOOGLE_LOGIN.md); absent from old replies */
+  googleLinked?: boolean;
   username: string | null;
   name: string | null;
   lang: Lang;
@@ -246,6 +248,23 @@ export const linkEmail = (email: string, pw: { password: string } | { currentPas
 /** replacing an earlier address signs out other devices (the old Mini App token dies too); adding the first does not */
 export const confirmEmail = (code: string, lang: Lang) =>
   session('/api/me/email/confirm', { code }, lang, !!state.user?.email);
+
+/* ---------- Google (docs/GOOGLE_LOGIN.md) ----------
+   A full-page round trip through the server: GET /api/auth/google/start sends the browser to Google, the callback
+   sets the session cookie and comes back to `next` with ?google=<status> (see GOOGLE_STATUS in views/account.tsx). */
+/** where the «Google» button leads: back to this page afterwards; link = attach Google to the signed-in account */
+export function googleStartUrl(lang: Lang, link = false): string {
+  const q = new URLSearchParams();
+  q.set('next', typeof window === 'undefined' ? '/' : window.location.pathname + window.location.search);
+  q.set('lang', apiLang(lang));
+  if (link) q.set('link', '1');
+  else { const ref = refParam(); if (ref) q.set('ref', ref); }
+  return `/api/auth/google/start?${q}`;
+}
+/** DELETE /api/me/google: 409 last_method while Google is the only way in */
+export async function unlinkGoogle(lang: Lang): Promise<void> {
+  apply({ ...(await api<MeResp>('/api/me/google', { method: 'DELETE', lang })), needsConsent: state.needsConsent });
+}
 
 export async function signOut(all: boolean, lang: Lang): Promise<void> {
   await api('/api/auth/logout', { method: 'POST', body: { all }, lang });
