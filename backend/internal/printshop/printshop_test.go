@@ -924,3 +924,42 @@ func TestInspectHostilePDF(t *testing.T) {
 		}
 	}
 }
+
+// The poller gives up on a QR after PRINT_PAY_TIMEOUT_MIN («failed»), but Kaspi may still take it.
+func TestOldQRPaidAfterPickupSwitchOrPriceChange(t *testing.T) {
+	testdb.Need(t)
+	useFakes()
+	f := newShop(t, "both")
+	student := newUser(t)
+	open := func() (Job, string) {
+		up := uploaded(t, student, "a.pdf", makePDF(3))
+		j := place(t, f, student, "kaspi", map[string]any{"fileId": up.ID, "serviceId": f.print, "size": "A4", "copies": 1})
+		if w := do(t, "POST", fmt.Sprintf("/api/print/jobs/%d/pay", j.ID), student, nil); w.Code != 200 {
+			t.Fatalf("pay: %d %s", w.Code, w.Body)
+		}
+		exec(t, `update print_jobs set payment_status = 'failed' where id = $1`, j.ID)
+		return j, scalar[string](t, `select kaspi_operation_id from print_jobs where id = $1`, j.ID)
+	}
+	// 1. switched to pay at pickup, then the old QR is paid: Kaspi money on a «pay at the counter» job
+	j, op := open()
+	if w := do(t, "POST", fmt.Sprintf("/api/print/jobs/%d/pay", j.ID), student, map[string]any{"method": "pickup"}); w.Code != 200 {
+		t.Fatalf("switch: %d %s", w.Code, w.Body)
+	}
+	webhookCall(t, map[string]any{"event": "payment.success", "paymentId": op, "status": "Processed", "amount": float64(j.Total) / 100})
+	if st := scalar[string](t, `select payment_method || '/' || payment_status from print_jobs where id = $1`, j.ID); st != "kaspi/paid" {
+		t.Fatalf("old QR paid on a pickup job: %s", st)
+	}
+	// 2. the operator proposes a new price, then the old QR is paid at the old price: accepting it later
+	// would leave a workable job paid below its total, so the stale payment goes back instead
+	j, op = open()
+	if w := do(t, "POST", fmt.Sprintf("/api/print/staff/jobs/%d/price", j.ID), f.operator, map[string]any{"total": j.Total * 2, "reason": "екі жақты"}); w.Code != 200 {
+		t.Fatalf("propose: %d %s", w.Code, w.Body)
+	}
+	webhookCall(t, map[string]any{"event": "payment.success", "paymentId": op, "status": "Processed", "amount": float64(j.Total) / 100})
+	if st := scalar[string](t, `select payment_status from print_jobs where id = $1`, j.ID); st == "paid" {
+		t.Fatal("old price paid while a new one waits for the student")
+	}
+	eventually(t, "stale payment refunded", func() bool {
+		return scalar[int](t, `select count(*) from print_job_events where job_id = $1 and kind in ('refunded', 'refund_manual')`, j.ID) == 1
+	})
+}

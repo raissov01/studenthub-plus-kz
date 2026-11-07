@@ -830,3 +830,24 @@ func TestDemoCafeOnlyWhereAllowed(t *testing.T) {
 		t.Fatalf("demo menu: %+v", menu.Items)
 	}
 }
+
+// The poller gives up on a QR after CAFE_PAY_TIMEOUT_MIN, but Kaspi may still take it. If the student then
+// switches to pay-at-pickup and pays the old QR, the money must not land on a «pay at the counter» order
+// (charged twice at the counter, never refunded by a cancel): the order becomes a paid Kaspi order.
+func TestOldQRPaidAfterSwitchToPickup(t *testing.T) {
+	fk := useFakes(t)
+	f := newCafe(t, "both")
+	student := newUser(t, "student")
+	o := place(t, f, student, "kaspi")
+	w := do(t, "POST", fmt.Sprintf("/api/cafe/orders/%d/pay", o.ID), student, nil)
+	op := *decode[orderReply](t, w).Order.operationIDFromPay(t)
+	exec(t, `update cafe_orders set payment_status = 'failed' where id = $1`, o.ID) // the poller timed it out
+	if w := do(t, "POST", fmt.Sprintf("/api/cafe/orders/%d/pay", o.ID), student, map[string]any{"method": "pickup"}); w.Code != 200 {
+		t.Fatalf("switch: %d %s", w.Code, w.Body)
+	}
+	fk.set(func(f *fakeKaspi) { f.state = payments.StatePaid })
+	webhookCall(t, map[string]any{"event": "payment.success", "paymentId": op, "status": "Processed", "amount": float64(o.Total) / 100})
+	if st := scalar[string](t, `select payment_method || '/' || payment_status from cafe_orders where id = $1`, o.ID); st != "kaspi/paid" {
+		t.Fatalf("old QR paid on a pickup order: %s", st)
+	}
+}

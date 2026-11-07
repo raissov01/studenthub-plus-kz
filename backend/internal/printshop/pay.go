@@ -204,14 +204,14 @@ type effect struct {
 	alert     string
 }
 
-func findByOperation(ctx context.Context, tx pgx.Tx, op string) (id, shopID, total int64, status, pay string, cur *string, superseded bool, err error) {
-	err = tx.QueryRow(ctx, `select id, shop_id, total, status, payment_status, kaspi_operation_id from print_jobs where kaspi_operation_id = $1 for update`, op).
-		Scan(&id, &shopID, &total, &status, &pay, &cur)
+func findByOperation(ctx context.Context, tx pgx.Tx, op string) (id, shopID, total int64, status, pay, price string, cur *string, superseded bool, err error) {
+	err = tx.QueryRow(ctx, `select id, shop_id, total, status, payment_status, price_state, kaspi_operation_id from print_jobs where kaspi_operation_id = $1 for update`, op).
+		Scan(&id, &shopID, &total, &status, &pay, &price, &cur)
 	if errors.Is(err, pgx.ErrNoRows) {
 		// an earlier QR of the same job (replaced after it expired) can still report
-		err = tx.QueryRow(ctx, `select j.id, j.shop_id, j.total, j.status, j.payment_status, j.kaspi_operation_id from print_jobs j
+		err = tx.QueryRow(ctx, `select j.id, j.shop_id, j.total, j.status, j.payment_status, j.price_state, j.kaspi_operation_id from print_jobs j
 			where j.id = (select e.job_id from print_job_events e where e.kind = 'pay_started' and e.detail->>'operationId' = $1 order by e.id desc limit 1)
-			for update`, op).Scan(&id, &shopID, &total, &status, &pay, &cur)
+			for update`, op).Scan(&id, &shopID, &total, &status, &pay, &price, &cur)
 		superseded = true
 	}
 	return
@@ -220,7 +220,7 @@ func findByOperation(ctx context.Context, tx pgx.Tx, op string) (id, shopID, tot
 // applyTx reconciles one provider status with its job, under the job's row lock: «paid» exactly once.
 func applyTx(ctx context.Context, tx pgx.Tx, op string, st payments.State, raw string, amount int64, actor string) (string, effect, error) {
 	var eff effect
-	id, shopID, total, status, pay, cur, superseded, err := findByOperation(ctx, tx, op)
+	id, shopID, total, status, pay, price, cur, superseded, err := findByOperation(ctx, tx, op)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "unknown_operation", eff, nil
 	}
@@ -243,8 +243,14 @@ func applyTx(ctx context.Context, tx pgx.Tx, op string, st payments.State, raw s
 			eff.refundOp, eff.refundAmt = op, total
 			return "double_payment", eff, event(ctx, tx, id, nil, actor, "double_payment", detail)
 		}
-		// the queue position starts at the payment
-		if _, err := tx.Exec(ctx, `update print_jobs set payment_status = 'paid', paid_at = now(), paid_amount = $2, kaspi_operation_id = $3,
+		if price == "proposed" {
+			// an old QR paid at the old price while the student is asked about a new one: accepting later would
+			// leave the job paid below its total, rejecting would strand the money; it goes back
+			eff.refundOp, eff.refundAmt = op, total
+			return "paid_during_price_change", eff, event(ctx, tx, id, nil, actor, "paid_during_price_change", detail)
+		}
+		// the queue position starts at the payment; payment_method: an old QR paid after a switch to pickup is Kaspi money
+		if _, err := tx.Exec(ctx, `update print_jobs set payment_status = 'paid', payment_method = 'kaspi', paid_at = now(), paid_amount = $2, kaspi_operation_id = $3,
 			pay_claimed_at = null, queued_at = case when status = 'new' then now() else queued_at end, updated_at = now() where id = $1`, id, total, op); err != nil {
 			return "", eff, err
 		}

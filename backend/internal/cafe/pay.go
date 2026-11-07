@@ -285,8 +285,9 @@ func applyTx(ctx context.Context, tx pgx.Tx, op string, st payments.State, raw s
 			eff.refundOp, eff.refundAmt = op, total
 			return "double_payment", eff, event(ctx, tx, id, nil, actor, "double_payment", detail)
 		}
-		if _, err := tx.Exec(ctx, `update cafe_orders set payment_status = 'paid', paid_at = now(), paid_amount = $2, kaspi_operation_id = $3,
-			pay_claimed_at = null, updated_at = now() where id = $1`, id, total, op); err != nil {
+		// payment_method: an old QR paid after the student switched to pay-at-pickup is still Kaspi money
+		if _, err := tx.Exec(ctx, `update cafe_orders set payment_status = 'paid', payment_method = 'kaspi', paid_at = now(), paid_amount = $2,
+			kaspi_operation_id = $3, pay_claimed_at = null, updated_at = now() where id = $1`, id, total, op); err != nil {
 			return "", eff, err
 		}
 		if err := event(ctx, tx, id, nil, actor, "paid", detail); err != nil {
