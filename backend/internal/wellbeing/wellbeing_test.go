@@ -76,4 +76,9 @@ func TestContactsEmptyUntilFilledAndScoped(t *testing.T) {
 	if w := call(t, "PUT", "/api/staff/wellbeing/contacts", bad, staff); w.Code != 400 {
 		t.Fatalf("contact without phone/email/place: %d", w.Code)
 	}
+	// an address the pattern allows but the column (≤ 120) does not was a 500
+	long := map[string]any{"contacts": []map[string]any{{"name": "Психолог", "email": strings.Repeat("a", 64) + "@" + strings.Repeat("b", 90) + ".kz"}}}
+	if w := call(t, "PUT", "/api/staff/wellbeing/contacts", long, staff); w.Code != 400 {
+		t.Fatalf("157-character email: %d %s", w.Code, w.Body)
+	}
 }

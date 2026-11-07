@@ -150,7 +150,7 @@ func TestAnonymousTicketReplyLoop(t *testing.T) {
 	}
 	// stored without any author; only the hash of the token
 	if count(t, `select count(*) from feedback_tickets where id = $1 and author_id is null and token_hash is not null and anonymous
-		and created_at = date_trunc('hour', created_at)`, c.ID) != 1 {
+		and created_at = date_trunc('hour', created_at) and sla_due_at = date_trunc('hour', sla_due_at)`, c.ID) != 1 {
 		t.Fatal("anonymous ticket stored with an author or exact time")
 	}
 	if count(t, `select count(*) from feedback_tickets where token_hash = convert_to($1, 'UTF8')`, c.Token) != 0 {
