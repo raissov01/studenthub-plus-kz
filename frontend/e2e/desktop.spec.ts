@@ -203,3 +203,24 @@ test('clubs: search and filters in a left panel; the cart button is a solid prim
   const solid = await btn.evaluate(el => { const p = document.createElement('span'); p.style.color = 'var(--primary)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return getComputedStyle(el).backgroundColor === c; });
   expect(solid).toBe(true);
 });
+
+test('settings: a section list with deep links; edit profile: grouped fields, live card, save bar', async ({ page }) => {
+  await onboard(page, 'kk');
+  await page.goto('/settings?s=data');
+  const nav = page.getByRole('navigation', { name: 'Баптаулар бөлімдері' });
+  await expect(nav.getByRole('link', { name: 'Деректер' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#settingsPane')).toContainText('Барлық деректерді өшіру');
+  await nav.getByRole('link', { name: 'Тіл' }).click();
+  await expect(page).toHaveURL(/\/settings\?s=lang$/);
+  await expect(page.locator('#settingsPane #langSwitch')).toBeVisible();
+  await fits(page);
+
+  await page.goto('/edit');
+  await expect(page.locator('.edit-group')).toHaveCount(4);
+  await page.locator('#fName').fill('Дана Серікқызы');
+  await expect(page.locator('.edit-preview')).toContainText('Дана Серікқызы');
+  const bar = page.locator('.edit-bar');
+  await expect(bar.getByRole('button', { name: 'Сақтау' })).toBeInViewport();
+  await bar.getByRole('button', { name: 'Сақтау' }).click();
+  await expect.poll(async () => (await page.evaluate(() => JSON.parse(localStorage.getItem('studenthub.v1') || '{}'))).profile?.name).toBe('Дана Серікқызы');
+});

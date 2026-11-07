@@ -2,7 +2,9 @@
 /* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
 import { useDesktop } from '@/lib/desktop';
 import { DeskDetail } from '@/components/desk';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
+import type { IconName } from '@/lib/icons';
 import { useApp } from '@/components/app';
 import { ConfirmSheet, Empty, Icon, Note, Row, SectionHead, Seg } from '@/components/ui';
 import { StudentQrSheet } from '@/components/views/sheets';
@@ -25,44 +27,57 @@ import { useFeature } from '@/components/views/common';
 import { FillGpaButton } from '@/components/views/grades';
 
 /* ---------- profile form (edit page and onboarding) ---------- */
-function ProfileFields({ compact, blank }: { compact?: boolean; blank?: boolean }) {
+function ProfileFields({ compact, blank, grouped }: { compact?: boolean; blank?: boolean; grouped?: boolean }) {
   const { S, tt, L } = useApp();
   const p = S.profile;
   const [skills, setSkills] = useState<string[]>(p.skills);
-  return (
+  const name = <div className="field"><label htmlFor="fName">{tt('Аты-жөні', 'Имя и фамилия')}</label><input className="input" id="fName" defaultValue={blank ? '' : p.name} placeholder={tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')} autoComplete="name" required /></div>;
+  const spec = (
+    <div className="field"><label htmlFor="fSpec">{tt('Факультет / мамандық', 'Факультет / специальность')}</label>
+      <select className="input" id="fSpec" required defaultValue={blank ? '' : p.spec}>
+        {blank ? <option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option> : null}
+        {Object.entries(SPECS).map(([k, s]) => <option key={k} value={k}>{L(s)}</option>)}
+      </select></div>
+  );
+  const courseGpa = (
+    <div className="grid-2">
+      <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" required defaultValue={p.course ? String(p.course) : ''}><option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
+      <div className="field"><label htmlFor="fGpa">{tt("GPA (0–4, міндетті емес)", "GPA (0–4, необязательно)")}</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue={blank || p.gpa == null ? '' : String(p.gpa)} placeholder={tt('мысалы, 3.2', 'например, 3.2')} /></div>
+    </div>
+  );
+  const enCity = (
+    <div className="grid-2">
+      <div className="field"><label htmlFor="fEn">{tt('Ағылшын деңгейі', 'Уровень английского')}</label><select className="input" id="fEn" defaultValue={p.en}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
+      <div className="field"><label htmlFor="fCity">{tt('Қала', 'Город')}</label><select className="input" id="fCity" defaultValue={p.city}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{HOME_CITIES.map(c => <option key={c} value={c}>{L(CITIES[c])}</option>)}</select></div>
+    </div>
+  );
+  if (compact) return <>{name}{spec}{courseGpa}{enCity}</>;
+  const skillsEl = (
+    <div className="field"><span className="lbl">{tt('Дағдылар', 'Навыки')}</span>
+      <div className="chips wrap" id="fSkills">{Object.entries(SKILLS).map(([k, s]) => (
+        <button key={k} className="chip" type="button" aria-pressed={skills.includes(k)} data-skill={k}
+          onClick={() => setSkills(x => (x.includes(k) ? x.filter(y => y !== k) : [...x, k]))}>{L(s)}</button>
+      ))}</div></div>
+  );
+  const credits = <div className="field"><label htmlFor="fCredits">{tt('Жиналған кредиттер', 'Набрано кредитов')}</label><input className="input num" id="fCredits" type="number" min="0" max="300" defaultValue={p.credits} /></div>;
+  const exp = <div className="field"><label htmlFor="fExp">{tt('Тәжірибе (әр жолға бір)', 'Опыт (по одному на строку)')}</label><textarea className="input" id="fExp" defaultValue={p.exp}></textarea></div>;
+  const aboutEl = <div className="field"><label htmlFor="fAbout">{tt('Өзім туралы (түйіндеме үшін)', 'О себе (для резюме)')}</label><textarea className="input" id="fAbout" placeholder={tt('Бос қалса, үлгі мәтін қойылады', 'Если оставить пустым, подставим пример')} defaultValue={p.about}></textarea></div>;
+  const contacts = (
+    <div className="grid-2">
+      <div className="field"><label htmlFor="fPhone">{tt('Телефон (міндетті емес)', 'Телефон (необязательно)')}</label><input className="input" id="fPhone" type="tel" defaultValue={p.phone} placeholder="+7 7__ ___ __ __" /></div>
+      <div className="field"><label htmlFor="fEmail">Email</label><input className="input" id="fEmail" type="email" defaultValue={p.email} /></div>
+    </div>
+  );
+  // the laptop's edit page: the same fields, grouped (personal / study / contacts / résumé)
+  if (grouped) return (
     <>
-      <div className="field"><label htmlFor="fName">{tt('Аты-жөні', 'Имя и фамилия')}</label><input className="input" id="fName" defaultValue={blank ? '' : p.name} placeholder={tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')} autoComplete="name" required /></div>
-      <div className="field"><label htmlFor="fSpec">{tt('Факультет / мамандық', 'Факультет / специальность')}</label>
-        <select className="input" id="fSpec" required defaultValue={blank ? '' : p.spec}>
-          {blank ? <option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option> : null}
-          {Object.entries(SPECS).map(([k, s]) => <option key={k} value={k}>{L(s)}</option>)}
-        </select></div>
-      <div className="grid-2">
-        <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" required defaultValue={p.course ? String(p.course) : ''}><option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
-        <div className="field"><label htmlFor="fGpa">{tt("GPA (0–4, міндетті емес)", "GPA (0–4, необязательно)")}</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue={blank || p.gpa == null ? '' : String(p.gpa)} placeholder={tt('мысалы, 3.2', 'например, 3.2')} /></div>
-      </div>
-      <div className="grid-2">
-        <div className="field"><label htmlFor="fEn">{tt('Ағылшын деңгейі', 'Уровень английского')}</label><select className="input" id="fEn" defaultValue={p.en}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
-        <div className="field"><label htmlFor="fCity">{tt('Қала', 'Город')}</label><select className="input" id="fCity" defaultValue={p.city}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{HOME_CITIES.map(c => <option key={c} value={c}>{L(CITIES[c])}</option>)}</select></div>
-      </div>
-      {compact ? null : (
-        <>
-          <div className="field"><span className="lbl">{tt('Дағдылар', 'Навыки')}</span>
-            <div className="chips wrap" id="fSkills">{Object.entries(SKILLS).map(([k, s]) => (
-              <button key={k} className="chip" type="button" aria-pressed={skills.includes(k)} data-skill={k}
-                onClick={() => setSkills(x => (x.includes(k) ? x.filter(y => y !== k) : [...x, k]))}>{L(s)}</button>
-            ))}</div></div>
-          <div className="field"><label htmlFor="fCredits">{tt('Жиналған кредиттер', 'Набрано кредитов')}</label><input className="input num" id="fCredits" type="number" min="0" max="300" defaultValue={p.credits} /></div>
-          <div className="field"><label htmlFor="fExp">{tt('Тәжірибе (әр жолға бір)', 'Опыт (по одному на строку)')}</label><textarea className="input" id="fExp" defaultValue={p.exp}></textarea></div>
-          <div className="field"><label htmlFor="fAbout">{tt('Өзім туралы (түйіндеме үшін)', 'О себе (для резюме)')}</label><textarea className="input" id="fAbout" placeholder={tt('Бос қалса, үлгі мәтін қойылады', 'Если оставить пустым, подставим пример')} defaultValue={p.about}></textarea></div>
-          <div className="grid-2">
-            <div className="field"><label htmlFor="fPhone">{tt('Телефон (міндетті емес)', 'Телефон (необязательно)')}</label><input className="input" id="fPhone" type="tel" defaultValue={p.phone} placeholder="+7 7__ ___ __ __" /></div>
-            <div className="field"><label htmlFor="fEmail">Email</label><input className="input" id="fEmail" type="email" defaultValue={p.email} /></div>
-          </div>
-        </>
-      )}
+      <fieldset className="card edit-group"><legend className="edit-legend">{tt('Жеке деректер', 'Личные данные')}</legend>{name}{enCity}</fieldset>
+      <fieldset className="card edit-group"><legend className="edit-legend">{tt('Оқу', 'Учёба')}</legend>{spec}{courseGpa}{credits}{skillsEl}</fieldset>
+      <fieldset className="card edit-group"><legend className="edit-legend">{tt('Байланыс', 'Контакты')}</legend>{contacts}</fieldset>
+      <fieldset className="card edit-group"><legend className="edit-legend">{tt('Түйіндеме үшін', 'Для резюме')}</legend>{exp}{aboutEl}</fieldset>
     </>
   );
+  return <>{name}{spec}{courseGpa}{enCity}{skillsEl}{credits}{exp}{aboutEl}{contacts}</>;
 }
 
 /** read the form into the profile (legacy readProfileForm); marks the profile as the student's own */
@@ -90,13 +105,71 @@ function readProfileForm(root: HTMLElement) {
 }
 
 export function Edit() {
-  const { tt, toast, back } = useApp();
-  return (
-    <form className="form" id="profForm" onSubmit={e => { e.preventDefault(); readProfileForm(e.currentTarget); toast(tt('Профиль сақталды', 'Профиль сохранён')); back(); }}>
+  const { S, tt, L, toast, back } = useApp();
+  const desktop = useDesktop();
+  const p = S.profile;
+  const [pv, setPv] = useState({ name: p.name, spec: p.spec, course: String(p.course || ''), gpa: p.gpa == null ? '' : String(p.gpa), city: p.city });
+  const pickPhoto = usePhotoPicker();
+  const save = (f: HTMLFormElement) => { readProfileForm(f); toast(tt('Профиль сақталды', 'Профиль сохранён')); back(); };
+  if (!desktop) return (
+    <form className="form" id="profForm" onSubmit={e => { e.preventDefault(); save(e.currentTarget); }}>
       <ProfileFields />
       <button className="btn block" type="submit">{tt('Сақтау', 'Сохранить')}</button>
     </form>
   );
+  // a laptop: the fields in groups on the left; a live profile card (with the photo) on the right; saving stays in reach
+  const read = (f: HTMLFormElement) => {
+    const v = (id: string) => f.querySelector<HTMLInputElement | HTMLSelectElement>('#' + id)?.value ?? '';
+    setPv({ name: v('fName'), spec: v('fSpec'), course: v('fCourse'), gpa: v('fGpa'), city: v('fCity') });
+  };
+  const gpa = parseFloat(pv.gpa.replace(',', '.'));
+  return (
+    <form className="form edit-desk" id="profForm" onInput={e => read(e.currentTarget)} onChange={e => read(e.currentTarget)}
+      onSubmit={e => { e.preventDefault(); save(e.currentTarget); }}>
+      <div className="edit-main"><ProfileFields grouped /></div>
+      <aside className="edit-aside" aria-label={tt('Профиль қалай көрінеді', 'Как выглядит профиль')}>
+        <div className="card edit-preview" aria-live="polite">
+          <span className="eyebrow">{tt('Профиль қалай көрінеді', 'Как выглядит профиль')}</span>
+          <label className="me-photo" title={tt('Сурет қою', 'Поставить фото')}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL from this device */}
+            <span className="me-avatar">{S.photo ? <img src={S.photo} alt="" /> : (pv.name || 'S').trim().charAt(0).toUpperCase()}</span>
+            <span className="me-edit" aria-hidden="true"><Icon n="edit" s={16} /></span>
+            <input type="file" accept="image/*" aria-label={tt('Профиль суретін таңдау', 'Выбрать фото профиля')} onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          <b className="edit-name">{pv.name.trim() || tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')}</b>
+          <span className="small muted">{[SPECS[pv.spec] ? L(SPECS[pv.spec]) : '', pv.course ? tt(`${pv.course}-курс`, `${pv.course} курс`) : '', pv.city && CITIES[pv.city] ? L(CITIES[pv.city]) : ''].filter(Boolean).join(' · ')}</span>
+          <span className="small">GPA {Number.isFinite(gpa) ? Math.max(0, Math.min(4, gpa)).toFixed(2) : tt('көрсетілмеген', 'не указан')}</span>
+          <p className="tiny muted">{tt('Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Профиль, GPA и телефон хранятся на этом устройстве.')}</p>
+        </div>
+      </aside>
+      <div className="edit-bar">
+        <button className="btn ghost" type="button" onClick={back}>{tt('Болдырмау', 'Отмена')}</button>
+        <button className="btn" type="submit">{tt('Сақтау', 'Сохранить')}</button>
+      </div>
+    </form>
+  );
+}
+
+/** a square photo from a picked file, kept on this device (profile and the laptop edit page) */
+function usePhotoPicker() {
+  const { tt, toast } = useApp();
+  return (f: File | undefined) => {
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { toast(tt('Сурет файлын таңдаңыз', 'Выберите файл изображения')); return; }
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = () => {
+      const side = Math.min(img.naturalWidth, img.naturalHeight), size = 320;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      c.getContext('2d')?.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      const photo = c.toDataURL('image/jpeg', 0.85);
+      update(s => { s.photo = photo; });
+      toast(tt('Сурет сақталды', 'Фото сохранено'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); toast(tt('Суретті ашу мүмкін болмады', 'Не удалось открыть изображение')); };
+    img.src = url;
+  };
 }
 
 /** Қаз / Рус / Eng. Each button is marked with its own language (lang=…) and named in full for screen readers. */
@@ -134,23 +207,7 @@ export function Onboarding() {
 export function Profile() {
   const { S, tt, L, I, toast, go } = useApp();
   const p = S.profile, fill = profileFill(S, I);
-  const onPhoto = (f: File | undefined) => {
-    if (!f) return;
-    if (!/^image\//.test(f.type)) { toast(tt('Сурет файлын таңдаңыз', 'Выберите файл изображения')); return; }
-    const img = new Image(), url = URL.createObjectURL(f);
-    img.onload = () => {
-      const side = Math.min(img.naturalWidth, img.naturalHeight), size = 320;
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      c.getContext('2d')?.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
-      URL.revokeObjectURL(url);
-      const photo = c.toDataURL('image/jpeg', 0.85);
-      update(s => { s.photo = photo; });
-      toast(tt('Сурет сақталды', 'Фото сохранено'));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); toast(tt('Суретті ашу мүмкін болмады', 'Не удалось открыть изображение')); };
-    img.src = url;
-  };
+  const onPhoto = usePhotoPicker();
   return (
     <>
       <section className="me">
@@ -331,19 +388,48 @@ export function Admission() {
     and a way to keep one's own payment deadline in the calendar */
 export function Pay() {
   const { tt, openSheet } = useApp();
+  const desktop = useDesktop();
+  const remind = <button className="btn secondary" type="button" id="payDeadline" onClick={() => openSheet(<DeadlineSheet />)}><Icon n="bell" s={18} /> {tt('Төлем мерзімін күнтізбеге қосу', 'Добавить срок оплаты в календарь')}</button>;
+  const empty = tt('Оқу ақысының деректері әзірге қосылмаған. Сома, мерзім мен төлем тарихын университеттің ақпараттық жүйесінен немесе бухгалтериядан тексеріңіз.', 'Данные об оплате обучения пока не подключены. Сумму, сроки и историю платежей проверяйте в информационной системе университета или в бухгалтерии.');
+  const links = (
+    <div className="group">
+      <Row href="https://kazatu.edu.kz/ru/contacts" icon="globe" title={tt('Университет байланыстары', 'Контакты университета')} sub="kazatu.edu.kz" />
+    </div>
+  );
+  const safe = <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>;
+  if (desktop) {
+    // a laptop: what to check and where in the column; the summary (not connected yet: no invented sums), the
+    // reminder, the official contacts and safety in the rail
+    return (
+      <DeskDetail label={tt('Оқу ақысы', 'Оплата обучения')} main={<>
+        <section className="section">
+          <h2>{tt('Төлем туралы қайдан білуге болады', 'Где узнать об оплате')}</h2>
+          <p>{empty}</p>
+          <ol className="desk-tips">
+            <li>{tt('Сома мен мерзім — шартта және университеттің ақпараттық жүйесінде.', 'Сумма и сроки — в договоре и в информационной системе университета.')}</li>
+            <li>{tt('Төлем тарихы мен қарызды бухгалтерия растайды.', 'Историю платежей и задолженность подтверждает бухгалтерия.')}</li>
+            <li>{tt('Мерзімді күнтізбеге қосыңыз — Student Hub алдын ала еске салады.', 'Добавьте срок в календарь — Student Hub напомнит заранее.')}</li>
+          </ol>
+        </section>
+      </>} rail={<>
+        <div className="card">
+          <h2>{tt('Қысқаша', 'Кратко')}</h2>
+          <div className="group">
+            <Row icon="tenge" title={tt('Сома', 'Сумма')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
+            <Row icon="calendar" title={tt('Мерзім', 'Срок')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
+          </div>
+          {remind}
+        </div>
+        {links}
+        {safe}
+      </>} />
+    );
+  }
   return (
     <>
-      <Empty icon="tenge" action={
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button className="btn secondary" type="button" id="payDeadline" onClick={() => openSheet(<DeadlineSheet />)}><Icon n="bell" s={18} /> {tt('Төлем мерзімін күнтізбеге қосу', 'Добавить срок оплаты в календарь')}</button>
-        </div>
-      }>
-        {tt('Оқу ақысының деректері әзірге қосылмаған. Сома, мерзім мен төлем тарихын университеттің ақпараттық жүйесінен немесе бухгалтериядан тексеріңіз.', 'Данные об оплате обучения пока не подключены. Сумму, сроки и историю платежей проверяйте в информационной системе университета или в бухгалтерии.')}
-      </Empty>
-      <div className="group">
-        <Row href="https://kazatu.edu.kz/ru/contacts" icon="globe" title={tt('Университет байланыстары', 'Контакты университета')} sub="kazatu.edu.kz" />
-      </div>
-      <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>
+      <Empty icon="tenge" action={<div className="btn-row" style={{ justifyContent: 'center' }}>{remind}</div>}>{empty}</Empty>
+      {links}
+      {safe}
     </>
   );
 }
@@ -375,26 +461,73 @@ export function Portfolio() {
   );
 }
 
+type SettingsSection = 'lang' | 'theme' | 'account' | 'notify' | 'privacy' | 'data' | 'about';
+
 export function Settings() {
   const { S, tt, toast, setUi, openSheet, go } = useApp();
   const tg = useTelegram();
+  const desktop = useDesktop();
+  const lang = <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><LangSeg /></section>;
+  const theme = tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', <><Icon n="sun" s={16} /> {tt('Ашық', 'Светлая')}</>], ['dark', <><Icon n="moon" s={16} /> {tt('Қараңғы', 'Тёмная')}</>]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>;
+  const data = (
+    <section className="section"><h2>{tt('Деректер', 'Данные')}</h2>
+      <div className="group">
+        <Row onClick={() => { update(s => { s.chat = []; }); setUi({ chatErr: '' }); toast(tt('Чат тазаланды', 'Чат очищен')); }} icon="chat" title={tt('Чат тарихын тазалау', 'Очистить историю чата')} chev={false} />
+        <Row onClick={() => openSheet(<ConfirmSheet msg={tt('Барлық деректер өшіріледі. Жалғастыру керек пе?', 'Все данные будут удалены. Продолжить?')} yes={() => {
+          resetState();
+          go('home', { replace: true });
+          setTimeout(() => openSheet(<Onboarding />), 60);
+        }} />)} icon="trash" tone="bad" title={tt('Барлық деректерді өшіру', 'Удалить все данные')} sub={tt('Профиль, өтінімдер, жоспарлар, карточкалар', 'Профиль, отклики, планы, карточки')} chev={false} />
+      </div></section>
+  );
+  const privacy = <div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div>;
+  const about = <p className="note">Student Hub 1.2. {tt('Алғашқы нұсқа (MVP). Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Первая версия (MVP). Профиль, GPA и телефон хранятся на этом устройстве.')}</p>;
+  if (desktop) {
+    const sections: [SettingsSection, IconName, string, ReactNode][] = [
+      ['lang', 'globe', tt('Тіл', 'Язык'), lang],
+      ...(theme ? [['theme', 'sun', tt('Тақырып', 'Тема'), theme] as [SettingsSection, IconName, string, ReactNode]] : []),
+      ['account', 'user', tt('Аккаунт', 'Аккаунт'), <AccountSection key="a" />],
+      ['notify', 'bell', tt('Хабарламалар', 'Уведомления'), <NotifySection key="n" />],
+      ['privacy', 'shield', tt('Құпиялылық', 'Конфиденциальность'), <section className="section" key="p"><h2>{tt('Құпиялылық', 'Конфиденциальность')}</h2>{privacy}{about}</section>],
+      ['data', 'folder', tt('Деректер', 'Данные'), data],
+      ['about', 'spark', tt('Қосымша туралы', 'О приложении'), <section className="section" key="ab"><h2>{tt('Қосымша туралы', 'О приложении')}</h2>{about}</section>],
+    ];
+    return <SettingsDesk sections={sections} />;
+  }
   return (
     <>
-      <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><LangSeg /></section>
-      {tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', <><Icon n="sun" s={16} /> {tt('Ашық', 'Светлая')}</>], ['dark', <><Icon n="moon" s={16} /> {tt('Қараңғы', 'Тёмная')}</>]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>}
+      {lang}
+      {theme}
       <AccountSection />
       <NotifySection />
-      <section className="section"><h2>{tt('Деректер', 'Данные')}</h2>
-        <div className="group">
-          <Row onClick={() => { update(s => { s.chat = []; }); setUi({ chatErr: '' }); toast(tt('Чат тазаланды', 'Чат очищен')); }} icon="chat" title={tt('Чат тарихын тазалау', 'Очистить историю чата')} chev={false} />
-          <Row onClick={() => openSheet(<ConfirmSheet msg={tt('Барлық деректер өшіріледі. Жалғастыру керек пе?', 'Все данные будут удалены. Продолжить?')} yes={() => {
-            resetState();
-            go('home', { replace: true });
-            setTimeout(() => openSheet(<Onboarding />), 60);
-          }} />)} icon="trash" tone="bad" title={tt('Барлық деректерді өшіру', 'Удалить все данные')} sub={tt('Профиль, өтінімдер, жоспарлар, карточкалар', 'Профиль, отклики, планы, карточки')} chev={false} />
-        </div></section>
-      <div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div>
-      <p className="note">Student Hub 1.2. {tt('Алғашқы нұсқа (MVP). Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Первая версия (MVP). Профиль, GPA и телефон хранятся на этом устройстве.')}</p>
+      {data}
+      {privacy}
+      {about}
     </>
+  );
+}
+
+/** a laptop's settings page: the section list on the left, the chosen section on the right; /settings?s=notify opens one */
+function SettingsDesk({ sections }: { sections: [SettingsSection, IconName, string, ReactNode][] }) {
+  const { tt } = useApp();
+  const asked = useSearchParams().get('s');
+  const [cur, setCur] = useState<string>(() => (sections.some(x => x[0] === asked) ? asked! : sections[0][0]));
+  const pick = (id: string) => {
+    setCur(id);
+    try { window.history.replaceState(window.history.state, '', `${window.location.pathname}?s=${id}`); } catch { /* ignore */ }
+  };
+  const shown = sections.find(x => x[0] === cur) ?? sections[0];
+  return (
+    <div className="settings-desk">
+      <nav className="settings-nav" aria-label={tt('Баптаулар бөлімдері', 'Разделы настроек')}>
+        {sections.map(([id, icon, label]) => (
+          <a key={id} href={`?s=${id}`} className="side-item" aria-current={id === shown[0] ? 'page' : undefined}
+            onClick={e => { e.preventDefault(); pick(id); }}>
+            <Icon n={icon} s={18} /><span className="side-label">{label}</span>
+          </a>
+        ))}
+      </nav>
+      <div className="settings-pane" id="settingsPane">{shown[3]}</div>
+    </div>
   );
 }

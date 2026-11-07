@@ -250,6 +250,10 @@ export type LiveMessage =
         leaderboard: Leader[];
         last: boolean;
         you?: { isCorrect: boolean; points: number; score: number; rank: number };
+        /** the host's copy only: how many answered, how many were right, and the answers (JSON of the answer → count) */
+        answered?: number;
+        correctCount?: number;
+        distribution?: Record<string, number>;
       };
     }
   | { type: 'ended'; data: { reason: string; leaderboard: Leader[] } }

@@ -19,3 +19,13 @@ export const quizResult = {
     { position: 2, questionId: 12, type: 'mcq', prompt: quizPlay.questions[1].prompt, view: { options: quizPlay.questions[1].options }, given: 1, correct: 0, credit: 0, isCorrect: false, graded: true, timeSpent: 14 },
   ],
 };
+
+/* the editor's view of the same quiz (with the answers) */
+export const quizEdit = {
+  quiz: { ...quizMeta, isMine: true },
+  questions: [
+    { type: 'mcq', prompt: quizPlay.questions[0].prompt, options: quizPlay.questions[0].options, correctIndex: 0, correctIndexes: [0], explanation: 'Сұраныс заңы.' },
+    { type: 'mcq', prompt: quizPlay.questions[1].prompt, options: quizPlay.questions[1].options, correctIndex: 0, correctIndexes: [0] },
+    { type: 'true_false', prompt: 'Икемді сұраныста баға өзгерісі түсімді азайтуы мүмкін.', correctBool: true },
+  ],
+};

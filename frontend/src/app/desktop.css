@@ -187,6 +187,38 @@
   main[data-screen="quiz"]:has(.quiz-progress), main[data-screen="quiz"]:has(.quiz-score) { max-width: calc(820px + 2 * var(--page-pad)); }
   main[data-screen="quiz"] .quiz-answers:has(> .quiz-choice) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   main[data-screen="quiz"]:has(.quiz-progress) > .btn { align-self: flex-end; min-width: 220px; }
+  /* quiz editor: question list | the selected question | settings and save (components/quiz/editor.tsx) */
+  .qe-desk { display: grid; grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 24px; align-items: start; border: 0; padding: 0; margin: 0; min-width: 0; }
+  .qe-list, .qe-side { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow: auto; gap: 10px; }
+  .qe-list ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .qe-item { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left; font-size: .88rem; }
+  .qe-item:hover { background: var(--surface-2); }
+  .qe-item[aria-current="true"] { background: var(--p-violet); color: var(--p-violet-ink); border-color: var(--p-violet-ink); }
+  .qe-num { flex: none; width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); font-size: .78rem; font-weight: 700; }
+  .qe-txt { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+  .qe-main { min-width: 0; }
+  .qe-side .btn[type="submit"] { width: 100%; }
+  /* the host's projector: big question and options, a side panel with progress, the answer and the leaders */
+  :root:has(.quiz-projector) main { max-width: calc(1400px + 2 * var(--page-pad)); }
+  .qh-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
+  .qh-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .qh-count { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0; }
+  .qh-main h2 { font-size: 2.4rem; line-height: 1.2; }
+  .quiz-projector .quiz-host-options { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; counter-reset: opt; }
+  .quiz-projector .quiz-host-options li { counter-increment: opt; display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+  .quiz-projector .quiz-host-options li::before { content: counter(opt); font-weight: 700; color: var(--primary); }
+  .quiz-projector .quiz-host-options li.is-right { border-color: var(--p-mint-ink); background: var(--p-mint); }
+  .qh-bar { display: flex; align-items: center; gap: 10px; }
+  .qh-bar i { display: block; height: 10px; min-width: 2px; border-radius: 5px; background: var(--primary); }
+  .qh-side { position: sticky; top: 84px; gap: 12px; }
+  .qh-big { font-family: var(--font-display); font-size: 3.4rem; line-height: 1; margin: 0; }
+  .qh-leaders li { padding: 10px 14px; font-size: 1.1rem; }
+  .quiz-projector .quiz-live-code { font-size: clamp(4rem, 9vw, 8rem); }
+  .quiz-projector .qr { width: 320px; }
+  /* a player on a laptop: one centred column with large answers */
+  :root:has(.quiz-player) main, :root:has(.quiz-code-input) main { max-width: calc(640px + 2 * var(--page-pad)); }
+  .quiz-player .quiz-choice { min-height: 64px; font-size: 1.1rem; }
+  .quiz-player .btn { min-height: 56px; font-size: 1.05rem; }
   .desk-list .search-side .chips { flex-wrap: wrap; overflow: visible; }
   /* a segmented control is too narrow for three labels in the 280px panel: stack it */
   .desk-list .search-side .seg { flex-direction: column; }
@@ -245,9 +277,31 @@
   .cal-pick select.input { flex: 0 1 220px; }
 
   /* ----- profile and settings: two columns ----- */
-  main[data-screen="settings"], main[data-screen="profile"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
-  main[data-screen="settings"] > *, main[data-screen="profile"] > * { min-width: 0; }
-  main[data-screen="profile"] > .hero, main[data-screen="profile"] > .offline-bar, main[data-screen="settings"] > .offline-bar { grid-column: 1 / -1; }
+  main[data-screen="profile"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+  main[data-screen="profile"] > * { min-width: 0; }
+  main[data-screen="profile"] > .hero, main[data-screen="profile"] > .offline-bar { grid-column: 1 / -1; }
+  /* settings: a section list on the left, the chosen section on the right (views/profile.tsx SettingsDesk) */
+  .settings-desk { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; align-items: start; }
+  .settings-nav { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+  .settings-nav .side-item { text-decoration: none; }
+  .settings-nav .side-item[aria-current="page"] { background: var(--p-violet); color: var(--p-violet-ink); font-weight: 600; }
+  .settings-nav .side-item[aria-current="page"] svg { color: var(--p-violet-ink); }
+  .settings-pane { min-width: 0; max-width: 760px; display: flex; flex-direction: column; gap: 20px; }
+  /* edit profile: grouped fields | a live profile card; the save bar stays at the bottom of the window */
+  :root:has(main[data-screen="edit"]) { --page-w: 1100px; }
+  .edit-desk { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px 32px; align-items: start; }
+  .edit-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .edit-group { margin: 0; gap: 12px; min-width: 0; }
+  .edit-legend { float: left; width: 100%; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; padding: 0; margin-bottom: 4px; }
+  .edit-aside { position: sticky; top: 84px; }
+  .edit-preview { align-items: center; text-align: center; gap: 8px; }
+  .edit-preview .eyebrow { align-self: stretch; text-align: left; }
+  .edit-name { font-family: var(--font-display); font-size: 1.2rem; overflow-wrap: anywhere; }
+  .edit-bar {
+    grid-column: 1 / -1; position: sticky; bottom: 0; z-index: 5; display: flex; justify-content: flex-end; gap: 10px;
+    padding: 12px 0; background: var(--surface); border-top: 1px solid var(--line);
+  }
+  .edit-bar .btn { min-width: 160px; }
 
   /* ----- café, print: menu + cart side by side; the counter boards keep their own grid ----- */
   .cafe-board { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }

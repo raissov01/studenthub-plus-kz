@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
+import { useDesktop } from '@/lib/desktop';
 import { ApiError } from '@/lib/account';
 import { apiLang } from '@/lib/i18n';
 import { quizApi, type QuizInput, type QuestionType, type QuizLang } from '@/lib/quiz-api';
@@ -29,6 +30,8 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
     [loadError, setLoadError] = useState(''),
     [review, setReview] = useState(false),
     [dirty, setDirty] = useState(false);
+  const desktop = useDesktop();
+  const [sel, setSel] = useState(0);
   const [invalidQuestion, setInvalidQuestion] = useState(0),
     [conflict, setConflict] = useState(false);
   const [mode, setMode] = useState<'manual' | 'text' | 'files' | 'excel'>(notes ? 'files' : 'manual');
@@ -90,6 +93,49 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
     });
   if (loadError) return <ErrorText error={loadError} />;
   if (!loaded) return <Loading />;
+  const cur = Math.min(sel, Math.max(0, doc.questions.length - 1));
+  // one question's card: every question on a phone; the selected one in the middle column on a laptop
+  const questionSection = (q: QuizInput['questions'][number], i: number) => (
+              <section
+                className="card quiz-stack"
+                key={`${savedId || 'new'}-${i}`}
+                id={`quiz-question-${i + 1}`}
+                tabIndex={-1}
+                style={invalidQuestion === i + 1 ? { borderColor: 'var(--danger)' } : undefined}
+              >
+                <h2>
+                  {tt('Сұрақ', 'Вопрос')} {i + 1}
+                </h2>
+                <QuestionEditor
+                  index={i}
+                  review={review}
+                  q={q}
+                  change={(v) => patch({ questions: doc.questions.map((x, n) => (n === i ? v : x)) })}
+                />
+                <div className="quiz-actions">
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => patch({ questions: doc.questions.filter((_, n) => n !== i) })}
+                  >
+                    {tt('Сұрақты жою', 'Удалить вопрос')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={i === 0}
+                    onClick={() => {
+                      const qs = [...doc.questions];
+                      [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]];
+                      patch({ questions: qs });
+                    }}
+                  >
+                    {tt('Жоғары жылжыту', 'Выше')}
+                  </button>
+                </div>
+              </section>
+            
+  );
   return (
     <>
       <header className="quiz-stack">
@@ -307,9 +353,13 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
                   if (e.code === 'invalid_quiz') {
                     const n = Number(e.detail.question);
                     setInvalidQuestion(n);
-                    const section = document.getElementById(`quiz-question-${n}`);
-                    section?.focus();
-                    section?.scrollIntoView({ block: 'center' });
+                    if (n > 0) setSel(n - 1);
+                    // after the render that shows it (a laptop shows only the selected question)
+                    setTimeout(() => {
+                      const section = document.getElementById(`quiz-question-${n}`);
+                      section?.focus();
+                      section?.scrollIntoView({ block: 'center' });
+                    }, 0);
                   }
                 }
                 throw e;
@@ -317,7 +367,87 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
             });
           }}
         >
-          <fieldset disabled={task.busy} className="quiz-stack">
+          {desktop ? (
+            <fieldset disabled={task.busy} className="qe-desk">
+              <legend className="sr-only">{tt('Квиз баптаулары', 'Настройки квиза')}</legend>
+              <nav className="qe-list card" aria-label={tt('Сұрақтар', 'Вопросы')}>
+                <h2 className="rail-h">{tt('Сұрақтар', 'Вопросы')} <span className="badge b-line num">{doc.questions.length}</span></h2>
+                <ol>
+                  {doc.questions.map((q, i) => (
+                    <li key={i}>
+                      <button type="button" className="qe-item" aria-current={i === cur ? 'true' : undefined}
+                        style={invalidQuestion === i + 1 ? { borderColor: 'var(--danger)' } : undefined} onClick={() => setSel(i)}>
+                        <span className="qe-num num">{i + 1}</span>
+                        <span className="qe-txt">{q.prompt.trim() || tt('Сұрақ мәтіні жоқ', 'Нет текста вопроса')}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={doc.questions.length >= 200}
+              onClick={() => { patch({ questions: [...doc.questions, emptyQuestion()] }); setSel(doc.questions.length); }}
+            >
+              {tt('Сұрақ қосу', 'Добавить вопрос')}
+            </button>
+              </nav>
+              <div className="qe-main">{doc.questions[cur] ? questionSection(doc.questions[cur], cur) : null}</div>
+              <aside className="qe-side card" aria-label={tt('Квиз баптаулары', 'Настройки квиза')}>
+                <h2 className="rail-h">{tt('Квиз баптаулары', 'Настройки квиза')}</h2>
+            <Field
+              label={tt('Атауы', 'Название')}
+              value={doc.title}
+              required
+              maxLength={200}
+              onChange={(title) => patch({ title })}
+            />
+            <Field
+              label={tt('Сипаттама', 'Описание')}
+              value={doc.description}
+              multiline
+              maxLength={1000}
+              onChange={(description) => patch({ description })}
+            />
+            <Field
+              label={tt('Пән', 'Предмет')}
+              value={doc.subject}
+              maxLength={80}
+              onChange={(subject) => patch({ subject })}
+            />
+            <Select
+              label={tt('Кім көре алады', 'Кто может видеть')}
+              value={doc.visibility}
+              onChange={(v) => patch({ visibility: v as QuizInput['visibility'] })}
+            >
+              <option value="private">{tt('Тек өзім', 'Только я')}</option>
+              <option value="unlisted">{tt('Сілтеме арқылы', 'По ссылке')}</option>
+              <option value="public">{tt('Барлығына ашық', 'Для всех')}</option>
+            </Select>
+            <Field
+              label={tt('Бір сұраққа уақыт (секунд)', 'Время на вопрос (секунды)')}
+              type="number"
+              min={5}
+              max={300}
+              required
+              value={doc.timePerQuestion}
+              onChange={(v) => patch({ timePerQuestion: Number(v) })}
+            />
+            <label className="quiz-check">
+              <input
+                type="checkbox"
+                checked={doc.shuffle}
+                onChange={(e) => patch({ shuffle: e.target.checked })}
+              />
+              {tt('Жауап нұсқаларын араластыру', 'Перемешивать варианты ответов')}
+            </label>
+            <button className="btn" type="submit" disabled={!doc.questions.length}>
+              {tt('Сақтау', 'Сохранить')}
+            </button>
+              </aside>
+            </fieldset>
+          ) : (
+            <fieldset disabled={task.busy} className="quiz-stack">
             <legend>{tt('Квиз баптаулары', 'Настройки квиза')}</legend>
             <Field
               label={tt('Атауы', 'Название')}
@@ -365,46 +495,7 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
               />
               {tt('Жауап нұсқаларын араластыру', 'Перемешивать варианты ответов')}
             </label>
-            {doc.questions.map((q, i) => (
-              <section
-                className="card quiz-stack"
-                key={`${savedId || 'new'}-${i}`}
-                id={`quiz-question-${i + 1}`}
-                tabIndex={-1}
-                style={invalidQuestion === i + 1 ? { borderColor: 'var(--danger)' } : undefined}
-              >
-                <h2>
-                  {tt('Сұрақ', 'Вопрос')} {i + 1}
-                </h2>
-                <QuestionEditor
-                  index={i}
-                  review={review}
-                  q={q}
-                  change={(v) => patch({ questions: doc.questions.map((x, n) => (n === i ? v : x)) })}
-                />
-                <div className="quiz-actions">
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() => patch({ questions: doc.questions.filter((_, n) => n !== i) })}
-                  >
-                    {tt('Сұрақты жою', 'Удалить вопрос')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    disabled={i === 0}
-                    onClick={() => {
-                      const qs = [...doc.questions];
-                      [qs[i - 1], qs[i]] = [qs[i], qs[i - 1]];
-                      patch({ questions: qs });
-                    }}
-                  >
-                    {tt('Жоғары жылжыту', 'Выше')}
-                  </button>
-                </div>
-              </section>
-            ))}
+            {doc.questions.map((q, i) => questionSection(q, i))}
             <button
               type="button"
               className="btn ghost"
@@ -417,6 +508,7 @@ export function QuizEditor({ id, notes = false }: { id?: string; notes?: boolean
               {tt('Сақтау', 'Сохранить')}
             </button>
           </fieldset>
+          )}
         </form>
       )}
       {task.busy && (
