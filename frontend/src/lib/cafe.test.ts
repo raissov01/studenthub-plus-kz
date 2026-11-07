@@ -62,7 +62,7 @@ test('labels and polling', () => {
   assert.equal(shouldPoll({ status: 'picked_up', paymentStatus: 'paid' }), false);
   assert.equal(shouldPoll({ status: 'cancelled', paymentStatus: 'pending' }), true);
   assert.equal(paymentLabel({ paymentMethod: 'pickup', paymentStatus: 'unpaid', refundManual: false }, tt), 'Кассада төлейсіз');
-  assert.equal(paymentLabel({ paymentMethod: 'kaspi', paymentStatus: 'paid', refundManual: true }, tt), 'Ақшаны кофейня қайтарады');
+  assert.equal(paymentLabel({ paymentMethod: 'kaspi', paymentStatus: 'paid', refundManual: true }, tt), 'Ақшаны кофехана қайтарады');
   assert.equal(preferLink({ innerWidth: 390 }), true);
   assert.equal(preferLink({ innerWidth: 1280, matchMedia: () => ({ matches: false }) }), false);
   assert.deepEqual(newArrivals(null, [{ id: 1, status: 'new' }]), []);

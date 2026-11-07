@@ -122,7 +122,7 @@ function Roles() {
         <p className="tiny muted">{tt('id-ді «Қолданушылар» бетінен табыңыз.', 'id можно найти на странице «Пользователи».')}</p>
       </section>
       {section(tt('Әкімшілер', 'Администраторы'), 'admin:users', g.admins.map(p => person(p, tt('әкімші', 'администратор'))), tt('Әкімші жоқ', 'Администраторов нет'))}
-      {cafe ? section(tt('Кофейня қызметкерлері', 'Сотрудники кофеен'), 'admin:cafe', g.cafes.map(p => person(p, `${nm(p)} · ${p.role}`)), tt('Қызметкер жоқ', 'Сотрудников нет')) : null}
+      {cafe ? section(tt('Кофехана қызметкерлері', 'Сотрудники кофеен'), 'admin:cafe', g.cafes.map(p => person(p, `${nm(p)} · ${p.role}`)), tt('Қызметкер жоқ', 'Сотрудников нет')) : null}
       {print ? section(tt('Полиграфия қызметкерлері', 'Сотрудники полиграфий'), 'admin:print', g.printShops.map(p => person(p, `${nm(p)} · ${p.role}`)), tt('Қызметкер жоқ', 'Сотрудников нет')) : null}
       {clubs ? section(tt('Клуб әкімшілері', 'Админы клубов'), 'admin:clubs', g.clubs.map(p => person(p, nm(p))), tt('Клуб әкімшісі жоқ', 'Админов клубов нет')) : null}
       {b2b ? section(tt('Университет қызметкерлері', 'Сотрудники университетов'), 'admin:staff', g.universityStaff.map(p => person(p, p.university)), tt('Қызметкер жоқ', 'Сотрудников нет')) : null}
@@ -254,7 +254,7 @@ function Moderation() {
         <Row go="admin:reports" icon="bell" title={tt('Шағымдар', 'Жалобы')} sub={tt('Негізсіз шағымды жабу не жазбаны жасыру', 'Закрыть необоснованную или скрыть запись')} />
         <Row go="admin:content" icon="file" title={tt('Контент', 'Контент')} sub={tt('Мүмкіндіктер, жұмыстар, жеңілдіктер', 'Возможности, работа, скидки')} />
         {market ? <Row go="admin:market" icon="gift" title={tt('Тегін заттар', 'Отдам даром')} sub={tt('Жасыру, қайтару, жариялауды шектеу', 'Скрыть, вернуть, ограничить публикации')} /> : null}
-        {feeds ? <Row go="admin:feeds" icon="spark" title={tt('Мүмкіндіктер ағыны', 'Лента возможностей')} sub={tt('ИИ тапқан жазбаларды тексеру', 'Проверка записей, найденных ИИ')} /> : null}
+        {feeds ? <Row go="admin:feeds" icon="spark" title={tt('Мүмкіндіктер ағыны', 'Лента возможностей')} sub={tt('ЖИ тапқан жазбаларды тексеру', 'Проверка записей, найденных ИИ')} /> : null}
       </div>
     </div>
   );

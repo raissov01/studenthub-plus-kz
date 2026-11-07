@@ -27,8 +27,8 @@ export const isFeed = (o: Opportunity): o is Opportunity & { feed: FeedMeta } =>
 export function FeedBadge({ o }: { o: Opportunity }) {
   const { tt } = useApp();
   if (!isFeed(o)) return null;
-  return <span className="badge b-line feed-badge" title={tt('ИИ қорытындысы, түпнұсқасын тексеріңіз', 'Краткое изложение ИИ, проверьте оригинал')}>
-    <Icon n="spark" s={12} /> {tt('ИИ', 'ИИ')} · {o.feed.source_name}</span>;
+  return <span className="badge b-line feed-badge" title={tt('ЖИ қорытындысы, түпнұсқасын тексеріңіз', 'Краткое изложение ИИ, проверьте оригинал')}>
+    <Icon n="spark" s={12} /> {tt('ЖИ', 'ИИ')} · {o.feed.source_name}</span>;
 }
 
 /** the source block of a feed opportunity: AI note, original post, application link and the facts the post states */
@@ -100,7 +100,7 @@ function Usage({ o }: { o: Overview }) {
   const u = o.usage;
   return (
     <section className="section">
-      <SectionHead title={tt('ИИ бүгін', 'ИИ сегодня')} />
+      <SectionHead title={tt('ЖИ бүгін', 'ИИ сегодня')} />
       <div className="stat-grid">
         <div className="stat"><b className="num">{u.calls}</b><span className="tiny muted">{tt('сұраныс', 'запросов')}{u.failures ? ` · ${u.failures} ${tt('қате', 'ошибок')}` : ''}</span></div>
         <div className="stat"><b className="num">{u.tokens.toLocaleString('ru-RU')}</b><span className="tiny muted">{tt('токен', 'токенов')} / {u.limit.toLocaleString('ru-RU')}</span></div>
@@ -180,7 +180,7 @@ function Items({ status, onDone }: { status: string; onDone: () => void }) {
       <ErrorLine err={q.err} />
       {pending && all.length ? (
         <div className="card bulk-filters">
-          <div className="field"><span className="small muted" id="bfConf">{tt('ИИ сенімділігі кемінде', 'Уверенность ИИ не ниже')}</span>
+          <div className="field"><span className="small muted" id="bfConf">{tt('ЖИ сенімділігі кемінде', 'Уверенность ИИ не ниже')}</span>
             <div className="chips wrap" role="group" aria-labelledby="bfConf">
               {[0, 0.6, 0.8, 0.9].map(v => <Chip key={v} pressed={minConf === v} onClick={() => setMinConf(v)}>{v ? `${Math.round(v * 100)}%` : tt('Кез келген', 'Любая')}</Chip>)}
             </div></div>
@@ -374,5 +374,5 @@ export function FeedEditSheet({ id, payload, onDone }: { id: number; payload: Re
 /** the admin menu row */
 export function FeedsAdminRow() {
   const { tt } = useApp();
-  return <Row go="admin:feeds" icon="spark" title={tt('Мүмкіндіктер ағыны (ИИ)', 'Лента возможностей (ИИ)')} sub={tt('Telegram мен сайттардан, ИИ сүзгісі', 'Из Telegram и сайтов, фильтр ИИ')} />;
+  return <Row go="admin:feeds" icon="spark" title={tt('Мүмкіндіктер ағыны (ЖИ)', 'Лента возможностей (ИИ)')} sub={tt('Telegram мен сайттардан, ЖИ сүзгісі', 'Из Telegram и сайтов, фильтр ИИ')} />;
 }

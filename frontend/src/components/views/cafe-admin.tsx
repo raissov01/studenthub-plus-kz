@@ -20,9 +20,9 @@ function AdminCafeBody() {
   const [tab, setTab] = useState('cafes');
   return (
     <div className="cafe">
-      <p className="note">{tt('Ақша әрқашан кофейняның өз Kaspi Pay шотына түседі. Біз тек кассир сессиясымен QR жасап, төлем күйін оқимыз.',
+      <p className="note">{tt('Ақша әрқашан кофехананың өз Kaspi Pay шотына түседі. Біз тек кассир сессиясымен QR жасап, төлем күйін оқимыз.',
         'Деньги всегда идут на собственный Kaspi Pay-счёт кофейни. Мы только создаём QR через сессию кассира и читаем статус оплаты.')}</p>
-      <Seg items={[['cafes', tt('Кофейнялар', 'Кофейни')], ['orders', tt('Тапсырыстар', 'Заказы')]]} cur={tab} onPick={setTab} />
+      <Seg items={[['cafes', tt('Кофеханалар', 'Кофейни')], ['orders', tt('Тапсырыстар', 'Заказы')]]} cur={tab} onPick={setTab} />
       {tab === 'cafes' ? <Cafes /> : <Audit />}
     </div>
   );
@@ -38,7 +38,7 @@ function Cafes() {
   return (
     <section className="section">
       {!q.data.kaspiConfigured ? <p className="small muted">{tt('Kaspi байланысы бапталмаған (CAFE_KASPI_*): тек кассада төлеу жұмыс істейді.', 'Kaspi не настроен (CAFE_KASPI_*): работает только оплата на кассе.')}</p> : null}
-      <button className="btn secondary" type="button" onClick={() => openSheet(<CafeForm onDone={q.reload} />)}>{tt('Жаңа кофейня', 'Новая кофейня')}</button>
+      <button className="btn secondary" type="button" onClick={() => openSheet(<CafeForm onDone={q.reload} />)}>{tt('Жаңа кофехана', 'Новая кофейня')}</button>
       {q.data.cafes.map(c => (
         <article className="card" key={c.id}>
           <h3>{lang !== 'kk' ? c.nameRu : c.nameKk} <span className={`badge ${c.active ? 'b-ok' : 'b-line'}`}>{c.active ? tt('Белсенді', 'Активна') : tt('Өшірулі', 'Выключена')}</span></h3>
@@ -79,7 +79,7 @@ function CafeForm({ c, onDone }: { c?: Cafe; onDone: () => void }) {
         closeSheet(); toast(tt('Сақталды', 'Сохранено')); onDone();
       } catch (x) { setErr(errText(x)); }
     }}>
-      <h2>{c ? tt('Кофейняны баптау', 'Настройка кофейни') : tt('Жаңа кофейня', 'Новая кофейня')}</h2>
+      <h2>{c ? tt('Кофехананы баптау', 'Настройка кофейни') : tt('Жаңа кофехана', 'Новая кофейня')}</h2>
       {text('nameKk', tt('Атауы (қаз.)', 'Название (каз.)'), 80)}
       {text('nameRu', tt('Атауы (орыс.)', 'Название (рус.)'), 80)}
       {text('building', tt('Ғимарат', 'Корпус'))}

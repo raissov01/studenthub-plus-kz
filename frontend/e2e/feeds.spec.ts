@@ -23,7 +23,7 @@ test('feed opportunity: search and the grants list show the AI source label', as
   await onboard(page, lang);
   await page.goto('/search');
   await page.getByRole('searchbox').fill('Astana Code');
-  await expect(page.locator('main')).toContainText(`${label(lang, 'ИИ', 'ИИ')}: Example Channel`);
+  await expect(page.locator('main')).toContainText(`${label(lang, 'ЖИ', 'ИИ')}: Example Channel`);
   // the grants list renders the card with the «ИИ · source» badge (the page itself is server-routed: e2e/real-api/feeds.spec.ts)
   await page.goto('/internships?t=grants');
   const card = page.locator('.fav-card').filter({ hasText: label(lang, 'Astana Code хакатоны', 'Хакатон Astana Code') });

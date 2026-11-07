@@ -28,7 +28,7 @@ export function useNavGroups(): [string, Item[]][] {
     [tt('Мүмкіндіктер', 'Возможности'), SECTION_MENU.map(([id, icon]): Item => [SECTIONS[id].view, icon, tt(...SECTIONS[id].label)])],
     [tt('Оқу', 'Учёба'), [
       ['materials', 'book', tt('Оқу материалдары', 'Учебные материалы')],
-      ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
+      ['ai', 'spark', tt('ЖИ көмекші', 'AI-помощник')],
       ...(cfg.features.quiz ? [['quiz', 'cards', tt('Квиздер', 'Квизы')] as Item] : []),
       ['roadmap', 'target', tt('Даму жоспары', 'План развития')],
       ['timetable', 'timetable', tt('Сабақ кестесі', 'Расписание занятий')],
@@ -37,7 +37,7 @@ export function useNavGroups(): [string, Item[]][] {
     [tt('Университет', 'Университет'), [
       ['services', 'building', tt('Университет қызметтері', 'Услуги университета')],
       ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
-      ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as Item] : []),
+      ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофехана', 'Кофейня')] as Item] : []),
       ...(cfg.features.print ? [['print', 'printer', tt('Полиграфия', 'Полиграфия')] as Item] : []),
       ...(cfg.features.lostfound ? [['lostfound', 'lostfound', tt('Табылған заттар', 'Бюро находок')] as Item] : []),
     ]],

@@ -28,7 +28,7 @@ export function kindLabel(k: string, tt: (kk: string, ru: string) => string): st
     employer_job: ['Жұмыс берушінің вакансиясы', 'Вакансия работодателя'],
     employer_verification: ['Жұмыс берушіні тексеру', 'Проверка работодателя'], job_report: ['Вакансияға шағым', 'Жалоба на вакансию'],
     club_leader: ['Клуб жетекшісі', 'Руководитель клуба'], club_post: ['Клуб жаңалығы', 'Новость клуба'],
-    feed_item: ['Мүмкіндіктер ағыны (ИИ)', 'Лента возможностей (ИИ)'],
+    feed_item: ['Мүмкіндіктер ағыны (ЖИ)', 'Лента возможностей (ИИ)'],
   };
   return m[k] ? tt(m[k][0], m[k][1]) : k;
 }
@@ -354,7 +354,7 @@ export function ModerationLinks() {
         {clubs ? <Row go="admin:clubs" icon="users" title={tt('Клубтар', 'Клубы')} sub={tt('Клубтар, жетекшілер, архив', 'Клубы, руководители, архив')} /> : null}
         {feeds ? <FeedsAdminRow /> : null}
         {points ? <Row go="admin:points" icon="trophy" title={tt('Ұпайлар мен сыйлықтар', 'Баллы и награды')} sub={tt('Өтінімдер кезегі, каталог, есепшот', 'Очередь заявок, каталог, счета')} /> : null}
-        {cafe ? <Row go="admin:cafe" icon="cup" title={tt('Кофейнялар', 'Кофейни')} sub={tt('Мәзір, қызметкерлер, Kaspi, тапсырыстар журналы', 'Меню, сотрудники, Kaspi, журнал заказов')} /> : null}
+        {cafe ? <Row go="admin:cafe" icon="cup" title={tt('Кофеханалар', 'Кофейни')} sub={tt('Мәзір, қызметкерлер, Kaspi, тапсырыстар журналы', 'Меню, сотрудники, Kaspi, журнал заказов')} /> : null}
         {print ? <Row go="admin:print" icon="printer" title={tt('Полиграфиялар', 'Полиграфии')} sub={tt('Прайс, қызметкерлер, Kaspi, тапсырыстар журналы', 'Прайс, сотрудники, Kaspi, журнал заказов')} /> : null}
       </div>
     </section>

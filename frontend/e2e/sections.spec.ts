@@ -18,7 +18,7 @@ test('each section opens from the menu with its own sub-tabs and no generic chip
   await withData(page);
   await onboard(page, lang);
   const sections: [string, RegExp, string[]][] = [
-    [t('Жұмыс', 'Работа'), /\/jobs$/, [t('Подработка', 'Подработка'), t('Жастар практикасы', 'Молодёжная практика')]],
+    [t('Жұмыс', 'Работа'), /\/jobs$/, [t('Қосымша жұмыс', 'Подработка'), t('Жастар практикасы', 'Молодёжная практика')]],
     [t('Тағылымдама', 'Стажировки'), /\/internships$/, [t('Компаниядағы тағылымдама', 'Стажировки в компаниях'), t('Академиялық ұтқырлық', 'Академическая мобильность'),
       'Work & Travel', t('Алмасу және саяхат', 'Обмены и поездки'), t('Гранттар мен стипендиялар', 'Гранты и стипендии')]],
     [t('Іс-шаралар', 'Мероприятия'), /\/events$/, [t('Барлығы', 'Все'), t('Байқаулар', 'Конкурсы'), t('Хакатондар', 'Хакатоны'), t('Конференциялар мен форумдар', 'Конференции и форумы')]],
@@ -54,17 +54,17 @@ test('old URLs land on the right section and sub-tab', async ({ page, lang }) =>
   await withData(page);
   await onboard(page, lang);
   const cases: [string, RegExp, string][] = [
-    ['/jobs', /\/jobs$/, t('Подработка', 'Подработка')],
+    ['/jobs', /\/jobs$/, t('Қосымша жұмыс', 'Подработка')],
     ['/jobs?t=youth', /\/jobs\?t=youth$/, t('Жастар практикасы', 'Молодёжная практика')],
     ['/internships', /\/internships$/, t('Компаниядағы тағылымдама', 'Стажировки в компаниях')],
     ['/internships?t=wat', /\/internships\?t=wat$/, 'Work & Travel'],
     ['/events?t=hackathons', /\/events\?t=hackathons$/, t('Хакатондар', 'Хакатоны')],
-    ['/search?k=jobs', /\/jobs$/, t('Подработка', 'Подработка')],
+    ['/search?k=jobs', /\/jobs$/, t('Қосымша жұмыс', 'Подработка')],
     ['/search?k=mobility', /\/internships\?t=mobility$/, t('Академиялық ұтқырлық', 'Академическая мобильность')],
     ['/search?k=grant', /\/internships\?t=grants$/, t('Гранттар мен стипендиялар', 'Гранты и стипендии')],
     ['/search?k=intern', /\/internships$/, t('Компаниядағы тағылымдама', 'Стажировки в компаниях')],
     ['/search?k=events', /\/events$/, t('Барлығы', 'Все')],
-    ['/jobs?t=nonsense', /\/jobs\?t=nonsense$/, t('Подработка', 'Подработка')],
+    ['/jobs?t=nonsense', /\/jobs\?t=nonsense$/, t('Қосымша жұмыс', 'Подработка')],
   ];
   for (const [from, url, tab] of cases) {
     await page.goto(from);
@@ -83,11 +83,11 @@ test('sub-tabs: items sort by subtype, arrow keys move, the tab is in the URL an
   await withData(page);
   await onboard(page, lang);
   await page.goto('/jobs');
-  await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toBeVisible();
   await expect(page.getByRole('button', { name: new RegExp(youthJob.title[lang]) })).toHaveCount(0);
   await page.getByRole('tab', { name: t('Жастар практикасы', 'Молодёжная практика'), exact: true }).click();
   await expect(page).toHaveURL(/\/jobs\?t=youth$/);
-  await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toHaveCount(0);
   await page.getByRole('button', { name: new RegExp(youthJob.title[lang]) }).click();
   await expect(page).toHaveURL(/\/job\/e2e-youth$/);
   await page.goBack();

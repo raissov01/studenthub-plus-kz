@@ -137,7 +137,7 @@ export function statusLabel(s: OrderStatus, tt: TT): string {
 }
 
 export function paymentLabel(o: Pick<Order, 'paymentMethod' | 'paymentStatus' | 'refundManual'>, tt: TT): string {
-  if (o.refundManual) return tt('Ақшаны кофейня қайтарады', 'Деньги вернёт кофейня');
+  if (o.refundManual) return tt('Ақшаны кофехана қайтарады', 'Деньги вернёт кофейня');
   if (o.paymentMethod === 'pickup') return o.paymentStatus === 'paid' ? tt('Кассада төленді', 'Оплачено на кассе') : tt('Кассада төлейсіз', 'Оплата на кассе');
   return ({
     unpaid: tt('Kaspi: төленбеген', 'Kaspi: не оплачен'), pending: tt('Kaspi: төлем күтілуде', 'Kaspi: ждём оплату'),

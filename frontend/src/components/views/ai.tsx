@@ -41,7 +41,7 @@ export async function sendChat(text: string, lang: Lang) {
     const data: { text?: string; error?: { code?: string; message?: string } } = await r.json().catch(() => ({}));
     if (!r.ok) {
       err = data?.error?.message ? data.error.message
-        : r.status === 503 ? tt('AI чат уақытша қолжетімсіз.', 'AI-чат временно недоступен.')
+        : r.status === 503 ? tt('ЖИ чат уақытша қолжетімсіз.', 'AI-чат временно недоступен.')
           : tt('Қате: ', 'Ошибка: ') + 'HTTP ' + r.status;
     } else {
       const txt = (data.text || '').trim();
@@ -87,7 +87,7 @@ export function Ai() {
       <section className="section"><h2>{tt('Құралдар', 'Инструменты')}</h2>
         {cfg.features.quiz && <Row go="quiz" icon="cards" title={tt('Квиздер', 'Квизы')} sub={tt('Конспектіден тест, жаттығу және тікелей ойын', 'Тест из конспекта, тренировка и игра в прямом эфире')} />}
         <div className="group">{tools.map(([g, i, t, s]) => <Row key={g} go={g} icon={i} title={t} sub={s} />)}</div>
-        <p className="tiny muted">{cfg.features.quiz ? tt('Карточкалар интернетсіз жұмыс істейді. Квиздер мен AI чатқа интернет керек.', 'Карточки работают без интернета. Для квизов и AI-чата нужен интернет.') : tt('Құралдар интернетсіз жұмыс істейді. AI чатқа интернет керек.', 'Инструменты работают без интернета. AI-чату нужен интернет.')}</p>
+        <p className="tiny muted">{cfg.features.quiz ? tt('Карточкалар интернетсіз жұмыс істейді. Квиздер мен ЖИ чатқа интернет керек.', 'Карточки работают без интернета. Для квизов и AI-чата нужен интернет.') : tt('Құралдар интернетсіз жұмыс істейді. ЖИ чатқа интернет керек.', 'Инструменты работают без интернета. AI-чату нужен интернет.')}</p>
       </section>
     </>
   );
@@ -148,7 +148,7 @@ export function Resume() {
         <button className="btn ghost" type="button" onClick={() => go('edit')}><Icon n="edit" s={18} /> {tt('Профильді түзету', 'Изменить профиль')}</button>
       </div>
       <button className="btn secondary block" type="button" onClick={() => toChat(app, tt('Мына түйіндемені жұмыс берушіге тартымды етіп жақсартып бер, құрылымын сақта:\n\n', 'Улучши это резюме, чтобы оно было убедительнее для работодателя, сохрани структуру:\n\n') + text)}>
-        <Icon n="spark" s={18} /> {tt('AI арқылы жақсарту', 'Улучшить с помощью AI')}
+        <Icon n="spark" s={18} /> {tt('ЖИ арқылы жақсарту', 'Улучшить с помощью AI')}
       </button>
     </>
   );
@@ -206,7 +206,7 @@ export function Interview() {
         <button className="link-btn" type="button" onClick={() => {
           const a = (ans.current?.value || '').trim();
           toChat(app, tt(`Сұхбат сұрағы: «${L(q.q)}»\nМенің жауабым: «${a || '…'}»\nЖауабымды 10 балдық шкаламен бағалап, қалай жақсартуға болатынын айт.`, `Вопрос собеседования: «${L(q.q)}»\nМой ответ: «${a || '…'}»\nОцени мой ответ по 10-балльной шкале и подскажи, как его улучшить.`));
-        }}><Icon n="spark" s={15} /> {tt('AI-дан баға алу', 'Получить оценку от AI')}</button>
+        }}><Icon n="spark" s={15} /> {tt('ЖИ-ден баға алу', 'Получить оценку от AI')}</button>
       </div>
       <section className="section"><h2>{tt('Барлық сұрақтар мен кеңестер', 'Все вопросы и советы')}</h2>
         <div className="group">{INTERVIEW.map((x, k) => (
@@ -320,7 +320,7 @@ export function Cards() {
           <button className="btn" type="submit"><Icon n="plus" s={18} /> {tt('Жиын құру', 'Создать набор')}</button>
         </form>
         <button className="link-btn" type="button" onClick={() => toChat(app, tt('Төмендегі дәріс мәтінінен 10 тест сұрағын (4 нұсқа, дұрыс жауабы белгіленген) және 10 карточка «термин — анықтама» түрінде құрастыр:\n\n', 'По тексту лекции ниже составь 10 тестовых вопросов (4 варианта, правильный отмечен) и 10 карточек вида «термин — определение»:\n\n'))}>
-          <Icon n="spark" s={15} /> {tt('Ұзын дәрістен AI арқылы тест құрастыру', 'Составить тест из длинной лекции с AI')}
+          <Icon n="spark" s={15} /> {tt('Ұзын дәрістен ЖИ арқылы тест құрастыру', 'Составить тест из длинной лекции с AI')}
         </button>
       </section>
     </>

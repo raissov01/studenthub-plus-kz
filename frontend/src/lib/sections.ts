@@ -15,7 +15,7 @@ export const SECTIONS: Record<SectionId, Section> = {
   jobs: {
     id: 'jobs', view: 'opps:jobs', label: ['Жұмыс', 'Работа'],
     tabs: [
-      { id: 'parttime', label: ['Подработка', 'Подработка'] },
+      { id: 'parttime', label: ['Қосымша жұмыс', 'Подработка'] },
       { id: 'youth', label: ['Жастар практикасы', 'Молодёжная практика'] },
       { id: 'fulltime', label: ['Тұрақты жұмыс', 'Постоянная работа'] },
     ],
@@ -89,7 +89,7 @@ export function pickTab(tabs: SectionTab[], t: string | null | undefined): strin
 export const JOB_SUBTYPES = ['parttime', 'youthpractice', 'fulltime'] as const;
 export const OPP_SUBTYPES = ['exchange', 'workandtravel', 'scholarship', 'competition'] as const;
 
-/** Job.subtype: 'youthpractice' -> «Жастар практикасы», 'fulltime' -> «Тұрақты жұмыс», anything else (or none) -> «Подработка» */
+/** Job.subtype: 'youthpractice' -> «Жастар практикасы», 'fulltime' -> «Тұрақты жұмыс», anything else (or none) -> «Қосымша жұмыс» */
 export function jobTab(j: Pick<Job, 'subtype'>): 'parttime' | 'youth' | 'fulltime' {
   return j.subtype === 'youthpractice' ? 'youth' : j.subtype === 'fulltime' ? 'fulltime' : 'parttime';
 }

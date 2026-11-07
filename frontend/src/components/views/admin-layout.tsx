@@ -45,7 +45,7 @@ function useNav(): [string, Item[]][] {
   if (admin) {
     groups.push([tt('Бөлімдер', 'Разделы'), [
       ...(voice ? [{ view: 'admin:voice', icon: 'chat' as IconName, label: tt('Студент дауысы', 'Голос студентов') }] : []),
-      ...(f.cafe ? [{ view: 'admin:cafe', icon: 'cup' as IconName, label: tt('Кофейнялар', 'Кофейни') }] : []),
+      ...(f.cafe ? [{ view: 'admin:cafe', icon: 'cup' as IconName, label: tt('Кофеханалар', 'Кофейни') }] : []),
       ...(f.print ? [{ view: 'admin:print', icon: 'file' as IconName, label: tt('Полиграфиялар', 'Полиграфии') }] : []),
       ...(f.clubs ? [{ view: 'admin:clubs', icon: 'user' as IconName, label: tt('Клубтар', 'Клубы') }] : []),
       ...(f.b2b ? [{ view: 'admin:employers', icon: 'briefcase' as IconName, label: tt('Жұмыс берушілер', 'Работодатели') },

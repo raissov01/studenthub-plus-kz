@@ -46,7 +46,7 @@ test('cafe: everything is hidden while FEATURE_CAFE is off', async ({ page, lang
   await onboard(page, lang);
   await expect(page.locator('#cafeShortcut')).toHaveCount(0);
   await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-  await expect(page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: 'Кофе / Кофейня' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Кофехана', 'Кофейня'), exact: true })).toHaveCount(0);
   await page.goto('/cafe');
   await expect(page.getByText(t('Мұндай бет жоқ.', 'Такой страницы нет.'))).toBeVisible();
 });
@@ -71,7 +71,7 @@ test('cafe: menu with options → cart → slot → pay at pickup → status wit
   await expect(page.locator('#cafeShortcut')).toBeVisible();
   expect((await page.locator('#cafeShortcut').boundingBox())!.height).toBeLessThanOrEqual(80);
   await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
-  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: 'Кофе / Кофейня' }).click();
+  await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Кофехана', 'Кофейня'), exact: true }).click();
   await expect(page).toHaveURL(/\/cafe$/);
   await page.getByRole('button', { name: /Тест кофейня/ }).click();
   await expect(page).toHaveURL(/\/cafe\?id=3$/);

@@ -232,7 +232,7 @@ function UserDetail({ id }: { id: number }) {
     closeSheet(); toast(done); r.reload();
   };
   const memberRows: [string, ReactNode][] = [
-    ...m.cafes.map(c => [tt('Кофейня', 'Кофейня'), `${nm(c)} · ${c.role}`] as [string, ReactNode]),
+    ...m.cafes.map(c => [tt('Кофехана', 'Кофейня'), `${nm(c)} · ${c.role}`] as [string, ReactNode]),
     ...m.printShops.map(c => [tt('Полиграфия', 'Полиграфия'), `${nm(c)} · ${c.role}`] as [string, ReactNode]),
     ...m.clubs.map(c => [tt('Клуб әкімшісі', 'Админ клуба'), nm(c)] as [string, ReactNode]),
     ...(m.university ? [[tt('Университет қызметкері', 'Сотрудник университета'), m.university] as [string, ReactNode]] : []),

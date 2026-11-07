@@ -431,11 +431,11 @@ async function askAi(prompt: string, lang: 'kk' | 'ru', tt: Tt): Promise<{ text:
     });
     const data: { text?: string; error?: { message?: string } } = await r.json().catch(() => ({}));
     if (!r.ok) {
-      return { error: data?.error?.message || (r.status === 503 ? tt('AI уақытша қолжетімсіз.', 'AI временно недоступен.') : tt('AI жауап бермеді (HTTP ', 'AI не ответил (HTTP ') + r.status + ').') };
+      return { error: data?.error?.message || (r.status === 503 ? tt('ЖИ уақытша қолжетімсіз.', 'AI временно недоступен.') : tt('ЖИ жауап бермеді (HTTP ', 'AI не ответил (HTTP ') + r.status + ').') };
     }
     return { text: String(data.text || '') };
   } catch {
-    return { error: tt('AI-мен байланыс болмады. Интернетті тексеріп, қайталаңыз.', 'Нет связи с AI. Проверьте интернет и повторите.') };
+    return { error: tt('ЖИ-мен байланыс болмады. Интернетті тексеріп, қайталаңыз.', 'Нет связи с AI. Проверьте интернет и повторите.') };
   }
 }
 
@@ -449,8 +449,8 @@ function AiCards({ note, subjectName, onSummary }: { note: Note; subjectName: st
   const [savedDeck, setSavedDeck] = useState<{ id: string; n: number } | null>(null);
   const text = plainText(note);
   const tooShort = text.replace(/\s+/g, '').length < AI_NOTE_MIN;
-  const reason = tooShort ? tt(`AI-ға жіберу үшін конспектіге кемінде ${AI_NOTE_MIN} таңба жазыңыз.`, `Чтобы отправить AI, напишите в конспекте хотя бы ${AI_NOTE_MIN} символов.`)
-    : !online ? tt('AI-ға интернет керек. Конспект құрылғыда сақталды — интернет қосылғанда қайталаңыз.', 'AI нужен интернет. Конспект сохранён на устройстве — повторите, когда появится сеть.') : '';
+  const reason = tooShort ? tt(`ЖИ-ге жіберу үшін конспектіге кемінде ${AI_NOTE_MIN} таңба жазыңыз.`, `Чтобы отправить AI, напишите в конспекте хотя бы ${AI_NOTE_MIN} символов.`)
+    : !online ? tt('ЖИ-ге интернет керек. Конспект құрылғыда сақталды — интернет қосылғанда қайталаңыз.', 'AI нужен интернет. Конспект сохранён на устройстве — повторите, когда появится сеть.') : '';
   const deckName = `${subjectName ? subjectName + ': ' : ''}${noteTitle(note, lang)}`.slice(0, 120);
   const fill = (summary: string, cards: { q: string; a: string }[], cut: boolean, ai: boolean) =>
     setDraft({ summary, addSummary: !!summary, name: deckName, cards: cards.map(c => ({ k: newId('c'), ...c })), cut, ai });
@@ -463,7 +463,7 @@ function AiCards({ note, subjectName, onSummary }: { note: Note; subjectName: st
     setBusy(false);
     if ('error' in res) { setErr(res.error); return; }
     const parsed = parseAiResult(res.text);
-    if (!parsed.summary && !parsed.cards.length) { setErr(tt('AI түсінікті жауап бермеді. Қайталаңыз немесе карточканы қолмен жасаңыз.', 'AI ответил непонятно. Повторите или создайте карточки вручную.')); return; }
+    if (!parsed.summary && !parsed.cards.length) { setErr(tt('ЖИ түсінікті жауап бермеді. Қайталаңыз немесе карточканы қолмен жасаңыз.', 'AI ответил непонятно. Повторите или создайте карточки вручную.')); return; }
     fill(parsed.summary, parsed.cards, cut, true);
   };
   const fromTerms = () => {
@@ -489,15 +489,15 @@ function AiCards({ note, subjectName, onSummary }: { note: Note; subjectName: st
   return (
     <section className="card ai-note" aria-labelledby="aiNoteTitle">
       <h2 id="aiNoteTitle">{tt('Қорытып, карточка жаса', 'Итог и карточки')}</h2>
-      <p className="small muted" id="aiNoteWhy">{reason || tt('Конспект мәтіні (суретсіз) AI-ға жіберіледі. Нәтижені сақтамас бұрын түзете аласыз.', 'Текст конспекта (без фото) отправится AI. Результат можно поправить перед сохранением.')}</p>
+      <p className="small muted" id="aiNoteWhy">{reason || tt('Конспект мәтіні (суретсіз) ЖИ-ге жіберіледі. Нәтижені сақтамас бұрын түзете аласыз.', 'Текст конспекта (без фото) отправится AI. Результат можно поправить перед сохранением.')}</p>
       <button className="btn" type="button" id="aiNoteBtn" disabled={!!reason || busy} aria-describedby="aiNoteWhy" onClick={() => void run()}>
-        <Icon n="spark" s={18} /> {busy ? tt('AI ойлануда…', 'AI думает…') : tt('Қорытып, карточка жаса', 'Итог и карточки')}
+        <Icon n="spark" s={18} /> {busy ? tt('ЖИ ойлануда…', 'AI думает…') : tt('Қорытып, карточка жаса', 'Итог и карточки')}
       </button>
-      <button className="link-btn" type="button" onClick={fromTerms}>{tt('AI-сыз: «термин — анықтама» жолдарынан карточка', 'Без AI: карточки из строк «термин — определение»')}</button>
+      <button className="link-btn" type="button" onClick={fromTerms}>{tt('ЖИ-сіз: «термин — анықтама» жолдарынан карточка', 'Без AI: карточки из строк «термин — определение»')}</button>
       {err ? <p className="small ai-err" role="alert">{err}</p> : null}
       {savedDeck ? <Row go={'deck:' + savedDeck.id} icon="cards" title={tt('Жиынды ашу', 'Открыть набор')} sub={tt(`${savedDeck.n} карточка`, `карточек: ${savedDeck.n}`)} /> : null}
       {draft ? (
-        <div className="form ai-draft" aria-label={tt('AI нәтижесі', 'Результат AI')} role="group">
+        <div className="form ai-draft" aria-label={tt('ЖИ нәтижесі', 'Результат AI')} role="group">
           {draft.cut ? <p className="tiny muted">{tt('Конспект ұзын болғандықтан, оның басы ғана жіберілді.', 'Конспект длинный, поэтому отправлено только начало.')}</p> : null}
           {draft.ai ? (
             <>
