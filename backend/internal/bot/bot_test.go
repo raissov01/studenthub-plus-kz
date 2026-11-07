@@ -549,6 +549,11 @@ func TestCron403MarksInactive(t *testing.T) {
 
 func TestCronPausedAndResume(t *testing.T) {
 	h := newHarness(t)
+	// /resume releases held messages "now"; runCron flushes at Almaty noon, so pin the same clock (the test used to
+	// fail every afternoon: the released row was due at the real time, after the noon flush)
+	prev := notify.Now
+	notify.Now = func() time.Time { return almatyNoon(time.Now()) }
+	t.Cleanup(func() { notify.Now = prev })
 	h.say(203, "/start remind_o20")
 	h.say(203, "/pause")
 	if p := pauseISO(h.getUser(203).PausedUntil); !(p > h.today) {

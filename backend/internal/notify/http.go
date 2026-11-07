@@ -182,7 +182,9 @@ func putPrefs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 // Reschedule makes the student's held-back messages due now, so the next outbox run
 // re-checks them against changed settings. Runs as the connection owner.
 func Reschedule(ctx context.Context, q Querier, userID int64) error {
-	_, err := q.Exec(ctx, `update notify_outbox set not_before = now() where user_id = $1 and state = 'pending' and not_before > now()`, userID)
+	// Now(), not the database clock, so a test that pins the clock (bot cron at Almaty noon) sees the same "now"
+	now := Now()
+	_, err := q.Exec(ctx, `update notify_outbox set not_before = $2 where user_id = $1 and state = 'pending' and not_before > $2`, userID, now)
 	return err
 }
 

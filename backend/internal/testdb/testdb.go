@@ -45,6 +45,16 @@ func Main(m *testing.M, name string) int {
 		log.Printf("testdb: create database: %v", err)
 		return m.Run()
 	}
+	// app_user is a cluster-wide role that the first migration creates "if not exists"; packages run in parallel
+	// (go test ./...) and two of them could both pass that check and collide on pg_authid. Create it here first,
+	// tolerating the race, so the migration finds it.
+	for i := 0; i < 5; i++ {
+		_, err = admin.Exec(ctx, `do $$ begin if not exists (select 1 from pg_roles where rolname = 'app_user') then create role app_user nologin; end if; end $$`)
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	u, _ := url.Parse(base)
 	u.Path = "/" + dbName
 	if err := migrate(u.String()); err != nil {
