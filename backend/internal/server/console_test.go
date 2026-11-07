@@ -268,3 +268,42 @@ func TestShopWorkspaceScope(t *testing.T) {
 		t.Fatalf("console me: %d %s", w.Code, w.Body)
 	}
 }
+
+// A moderator does not judge their own case: their own submission (a hidden-by-reports post files one in the
+// author's name), their own market ban, or an admin's final hide; nor bans an admin.
+func TestModeratorCannotJudgeOwnCaseOrUndoAdmins(t *testing.T) {
+	allFeatures(t)
+	testdb.Need(t)
+	mod := launchUser(t, "student")
+	launchExec(t, `insert into admin_grants (user_id, scope, reason) values ($1, 'moderator', 'test grant')`, mod)
+	admin := launchUser(t, "admin")
+	own := int64(launchCount(t, `with s as (insert into submissions (kind, payload, submitted_by) values ('opportunity', '{"title":"Own fixture"}', $1) returning id) select id from s`, mod))
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/queue/%d/approve", own), `{}`, mod); w.Code != 403 {
+		t.Fatalf("moderator approved their own submission: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "PATCH", fmt.Sprintf("/api/admin/queue/%d", own), `{"payload":{"title":"Edited own"}}`, mod); w.Code != 403 {
+		t.Fatalf("moderator edited their own submission: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "POST", fmt.Sprintf("/api/admin/queue/%d/approve", own), `{}`, admin); w.Code != 200 {
+		t.Fatalf("admin decides it: %d %s", w.Code, w.Body)
+	}
+	// banned by an admin, the moderator cannot lift their own ban
+	if w := consoleRequest(t, "POST", "/api/admin/market/bans", fmt.Sprintf(`{"userId":%d,"days":30,"reason":"spam listings"}`, mod), admin); w.Code != 200 {
+		t.Fatalf("admin ban: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "DELETE", fmt.Sprintf("/api/admin/market/bans/%d", mod), `{"reason":"my own ban"}`, mod); w.Code != 403 {
+		t.Fatalf("moderator lifted their own ban: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "POST", "/api/admin/market/bans", fmt.Sprintf(`{"userId":%d,"days":30,"reason":"revenge ban"}`, admin), mod); w.Code != 403 {
+		t.Fatalf("moderator banned an admin: %d %s", w.Code, w.Body)
+	}
+	// an admin's final hide stays for moderators
+	q := int64(launchCount(t, `with q as (insert into qa_questions (user_id, university, subject_key, subject_name, title, status, hidden_reason)
+		values ($1, 'KazATU', 'math', 'Math', 'Upheld abusive question', 'hidden', 'admin') returning id) select id from q`, mod))
+	if w := consoleRequest(t, "POST", "/api/admin/qa/moderate", fmt.Sprintf(`{"kind":"question","id":%d,"hidden":false,"reason":"bring it back"}`, q), mod); w.Code != 403 {
+		t.Fatalf("moderator restored an admin hide: %d %s", w.Code, w.Body)
+	}
+	if w := consoleRequest(t, "POST", "/api/admin/qa/moderate", fmt.Sprintf(`{"kind":"question","id":%d,"hidden":false,"reason":"appeal upheld"}`, q), admin); w.Code != 200 {
+		t.Fatalf("admin restores: %d %s", w.Code, w.Body)
+	}
+}
