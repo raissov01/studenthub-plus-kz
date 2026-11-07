@@ -14,12 +14,12 @@ test('eight core paths: onboarding → search → opportunity → roadmap → AI
     await expect(page.locator('.search-cats')).toHaveCount(0);
     await page.getByRole('button', { name: t('Мәзір', 'Меню'), exact: true }).click();
     await page.getByRole('dialog', { name: t('Мәзір', 'Меню') }).getByRole('button', { name: t('Жұмыс', 'Работа'), exact: true }).click();
-    await expect(page.getByRole('tab', { name: t('Подработка', 'Подработка'), exact: true })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toBeVisible();
-    await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: t('Қосымша жұмыс', 'Подработка'), exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toHaveCount(0);
     await expect(page.getByText(job.apply![lang], { exact: false })).toBeVisible();
     await page.getByRole('searchbox').fill(t('кітапхана', 'библиотеки'));
-    await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toBeVisible();
     await page.getByRole('searchbox').fill('no-such-job');
     await expect(page.getByText(t('Сәйкес вакансия жоқ. Сүзгіні азайтып көріңіз.', 'Подходящих вакансий нет. Попробуйте убрать фильтры.'))).toBeVisible();
     await page.getByRole('searchbox').fill('');
@@ -30,9 +30,9 @@ test('eight core paths: onboarding → search → opportunity → roadmap → AI
     await noexp.click();
     await dialog.getByRole('button', { name: t('Көрсету', 'Показать'), exact: true }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
     expect((await deviceState(page)).jobNoExperience).toBe(false);
     await fits(page);
   });

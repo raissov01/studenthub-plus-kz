@@ -5,7 +5,7 @@
    server recomputes the order from its own menu. Flat: solid fills, 1px borders. */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail, PlaceCard, openFirst, payLine } from '@/components/desk';
+import { DeskDetail, PlaceCard, PlaceRow, openFirst, payLine } from '@/components/desk';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useFeature, useLoad, useNeedAccount } from '@/components/views/common';
 import { KaspiPay, beep } from '@/components/views/shop-common';
@@ -83,7 +83,7 @@ function CafeList() {
       </div>
     </section>
   ) : null;
-  const note = <p className="note">{tt('Төлем тікелей кофейняның Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.',
+  const note = <p className="note">{tt('Төлем тікелей кофехананың Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.',
     'Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. Student Hub деньги не держит.')}</p>;
   // a laptop with one café: no lonely card in a wide page, the café itself (menu on the left, the cart on the right)
   if (desktop && cafes.length === 1) {
@@ -99,9 +99,9 @@ function CafeList() {
     <div className="cafe">
       {orders}
       <section className="section">
-        <SectionHead title={tt('Кофейнялар', 'Кофейни')} more={history} />
+        <SectionHead title={tt('Кофеханалар', 'Кофейни')} more={history} />
         <ErrorLine err={list.err} />
-        {!list.data ? <Loading /> : !cafes.length ? <Empty icon="cup">{tt('Әзірге кофейня қосылмаған.', 'Кофейни пока не подключены.')}</Empty> : desktop ? (
+        {!list.data ? <Loading /> : !cafes.length ? <Empty icon="cup">{tt('Әзірге кофехана қосылмаған.', 'Кофейни пока не подключены.')}</Empty> : desktop ? (
           <div className="desk-grid place-grid" id="cafeGrid">
             {openFirst(cafes, c => nameOf(c, lang)).map(c => (
               <PlaceCard key={c.id} go={`cafe:${c.id}`} icon="cup" name={nameOf(c, lang)} open={c.openNow}
@@ -118,10 +118,10 @@ function CafeList() {
         ) : (
           <div className="group">
             {cafes.map(c => (
-              <Row key={c.id} go={`cafe:${c.id}`} icon="cup" tone={c.openNow ? 'nico-2' : ''}
-                title={<>{nameOf(c, lang)} {c.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : null}</>}
-                sub={`${[c.building, lang !== 'kk' ? c.placeRu : c.placeKk].filter(Boolean).join(', ')}${c.building || c.placeKk ? ' · ' : ''}${hoursLabel(c, lang)}`}
-                end={<span className={`badge ${c.openNow ? 'b-ok' : 'b-line'}`}>{c.openNow ? tt('Қабылдап жатыр', 'Принимает') : tt('Жабық', 'Закрыто')}</span>} />
+              <PlaceRow key={c.id} go={`cafe:${c.id}`} icon="cup" name={nameOf(c, lang)} open={c.openNow}
+                openLabel={tt('Қабылдап жатыр', 'Принимает')} closedLabel={tt('Жабық', 'Закрыто')}
+                place={[c.building, lang !== 'kk' ? c.placeRu : c.placeKk].filter(Boolean).join(', ')} hours={hoursLabel(c, lang)}
+                demo={c.isDemo ? <span className="badge b-line b-demo">{tt('үлгі', 'пример')}</span> : undefined} />
             ))}
           </div>
         )}
@@ -370,7 +370,7 @@ function CheckoutSheet({ menu, cart, setCart }: { menu: Menu; cart: CartLine[]; 
         <legend className="lbl">{tt('Төлем', 'Оплата')}</legend>
         {menu.cafe.payments.includes('kaspi') ? (
           <label className="cafe-radio"><input type="radio" name="cafePay" value="kaspi" checked={pay === 'kaspi'} onChange={() => setPay('kaspi')} />
-            <span><b>{tt('Қазір Kaspi арқылы', 'Сейчас через Kaspi')}</b><span className="tiny muted">{tt('Ақша тікелей кофейняға түседі', 'Деньги сразу уходят кофейне')}</span></span></label>
+            <span><b>{tt('Қазір Kaspi арқылы', 'Сейчас через Kaspi')}</b><span className="tiny muted">{tt('Ақша тікелей кофеханаға түседі', 'Деньги сразу уходят кофейне')}</span></span></label>
         ) : null}
         {menu.cafe.payments.includes('pickup') ? (
           <label className="cafe-radio"><input type="radio" name="cafePay" value="pickup" checked={pay === 'pickup'} onChange={() => setPay('pickup')} />
@@ -472,7 +472,7 @@ function OrderView({ id }: { id: number }) {
             {!o.pay || o.paymentStatus === 'failed' ? <button className="btn" type="button" disabled={busy} onClick={() => void pay()}>{tt('Kaspi QR алу', 'Получить Kaspi QR')}</button> : null}
             <button className="btn ghost" type="button" disabled={busy} onClick={() => void pay('pickup')}>{tt('Кассада төлеймін', 'Оплачу на кассе')}</button>
           </div>
-          <p className="tiny muted">{tt('Төлем кофейняның Kaspi шотына тікелей түседі. Бұл бет өзі жаңарады.', 'Оплата идёт прямо на Kaspi-счёт кофейни. Страница обновится сама.')}</p>
+          <p className="tiny muted">{tt('Төлем кофехананың Kaspi шотына тікелей түседі. Бұл бет өзі жаңарады.', 'Оплата идёт прямо на Kaspi-счёт кофейни. Страница обновится сама.')}</p>
         </div>
       ) : null}
       <div className="card">
@@ -557,7 +557,7 @@ function StaffBoard() {
     return () => { clearTimeout(first); clearInterval(t); };
   }, [signed, load]);
   if (!acc.loaded) return <Loading />;
-  if (!signed) return <SignInCard text={tt('Кофейня қызметкері ретінде кіріңіз.', 'Войдите как сотрудник кофейни.')} />;
+  if (!signed) return <SignInCard text={tt('Кофехана қызметкері ретінде кіріңіз.', 'Войдите как сотрудник кофейни.')} />;
   if (code === 'not_staff' || code === 'forbidden') return <NotFound />;
   if (!board) return <><ErrorLine err={err} />{err ? null : <Loading />}</>;
   const me = board.cafes.find(c => c.id === board.cafeId);
@@ -581,7 +581,7 @@ function StaffBoard() {
     <div className="cafe cafe-staff">
       <div className="cafe-staff-head">
         {board.cafes.length > 1 ? (
-          <select className="input" aria-label={tt('Кофейня', 'Кофейня')} value={board.cafeId} onChange={e => { seen.current = null; setCafe(Number(e.target.value)); }}>
+          <select className="input" aria-label={tt('Кофехана', 'Кофейня')} value={board.cafeId} onChange={e => { seen.current = null; setCafe(Number(e.target.value)); }}>
             {board.cafes.map(c => <option key={c.id} value={c.id}>{nameOf(c, lang)}</option>)}
           </select>
         ) : <h2>{me ? nameOf(me, lang) : ''}</h2>}

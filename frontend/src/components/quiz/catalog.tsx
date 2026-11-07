@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
-import { Qr } from '@/components/ui';
+import { Empty, Icon, Qr } from '@/components/ui';
 import { useAccount } from '@/lib/account';
 import { locale } from '@/lib/i18n';
 import { quizApi, type AttemptSummary, type QuizMeta } from '@/lib/quiz-api';
-import { AccountGate, ErrorText, Field, Loading, Modal, useTask } from './common';
+import { AccountGate, ErrorText, Loading, Modal, useTask } from './common';
 export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }) {
   const { tt, lang } = useApp();
   const acc = useAccount();
@@ -68,7 +68,7 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
               </Link>
             ))
           ) : (
-            <p>{tt('Әзірге нәтижелер жоқ.', 'Пока нет результатов.')}</p>
+            <Empty icon="history">{tt('Әзірге нәтижелер жоқ.', 'Пока нет результатов.')}</Empty>
           )}
         </>
       ) : (
@@ -96,7 +96,7 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
             ))}
           </div>
           {!quizzes.length && (
-            <p>{tt('Квиз табылмады. Жаңасын жасаңыз.', 'Квизы не найдены. Создайте новый.')}</p>
+            <Empty icon="cards">{search ? tt('Квиз табылмады. Басқа сөзбен іздеп көріңіз.', 'Квизы не найдены. Попробуйте другое слово.') : tt('Квиз табылмады. Жаңасын жасаңыз.', 'Квизы не найдены. Создайте новый.')}</Empty>
           )}
           {tab === 'discover' && (
             <div className="quiz-actions">
@@ -131,7 +131,7 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
   return (
     <>
       <header className="quiz-stack">
-        <h1>{tt('Біліміңді тексер', 'Проверь свои знания')}</h1>
+        <h2 className="quiz-hero-h">{tt('Біліміңді тексер', 'Проверь свои знания')}</h2>
         <p className="muted">
           {tt(
             'Өз қарқыныңмен жаттық немесе достарыңмен бірге ойна.',
@@ -147,15 +147,18 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
           </Link>
         </div>
       </header>
-      <div className="quiz-actions">
+      {/* the same sub-tabs and search box as the sections (Жұмыс, Іс-шаралар…) */}
+      <div className="subtabs" role="tablist" aria-label={tt('Квиздер', 'Квизы')}>
         {[
           ['discover', 'Шолу', 'Обзор'],
           ['mine', 'Менің квиздерім', 'Мои квизы'],
           ['history', 'Тарих', 'История'],
         ].map(([v, kk, ru]) => (
           <button
-            className="chip"
-            aria-pressed={tab === v}
+            type="button"
+            role="tab"
+            className="subtab"
+            aria-selected={tab === v}
             key={v}
             onClick={() => {
               if (v === tab) return;
@@ -171,7 +174,8 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
       </div>
       {tab === 'discover' && (
         <form
-          className="quiz-inline"
+          className="search"
+          role="search"
           onSubmit={(e) => {
             e.preventDefault();
             setBusy(true);
@@ -181,8 +185,9 @@ export function QuizCatalog({ initialTab = 'discover' }: { initialTab?: string }
             if (query === search && page === 0) setBusy(false);
           }}
         >
-          <Field label={tt('Квиз іздеу', 'Поиск квиза')} value={query} maxLength={100} onChange={setQuery} />
-          <button className="btn ghost">{tt('Іздеу', 'Найти')}</button>
+          <Icon n="search" s={18} />
+          <input className="input" type="search" enterKeyHint="search" autoComplete="off" maxLength={100} value={query}
+            onChange={(e) => setQuery(e.target.value)} placeholder={tt('Квиз, пән…', 'Квиз, предмет…')} aria-label={tt('Квиз іздеу', 'Поиск квиза')} />
         </form>
       )}
       {tab !== 'discover' ? <AccountGate>{body}</AccountGate> : body}

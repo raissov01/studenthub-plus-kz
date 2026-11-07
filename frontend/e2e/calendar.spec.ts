@@ -254,7 +254,8 @@ test('year view: 12 months with marked days, a month opens in the month view; th
   await expect(title).toHaveText(monthTitle(y, 3));
   await expect(page.getByRole('grid').locator(`button[data-ymd="${y}-04-01"]`)).toHaveAttribute('aria-pressed', 'true');
 
-  // the picker after the filter chips
+  // the picker: a popover under the month title
+  await title.getByRole('button').click();
   const picker = page.getByRole('group', { name: t('Айды таңдау', 'Выбрать месяц') });
   await picker.getByRole('combobox', { name: t('Ай', 'Месяц'), exact: true }).selectOption({ label: MONTHS[lang][1] });
   await expect(title).toHaveText(monthTitle(y, 1));

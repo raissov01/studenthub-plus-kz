@@ -19,9 +19,25 @@ function WeekPreview() {
   const items: CalItem[] = [...classItems(S.timetable, from, to), ...calItems(S, I, content).filter(it => it.date >= from && it.date <= to && !it.done)];
   const days = byDay(items);
   const open = (d: string) => { setUi({ calSel: d, calMonth: '', calView: 'month' }); go('calendar'); };
+  const head = <SectionHead title={tt('Осы апта', 'Эта неделя')} more={<button className="link-btn" type="button" onClick={() => go('calendar')}>{tt('Күнтізбе', 'Календарь')}</button>} />;
+  // an empty week is one line with the next step, not seven empty boxes
+  if (!items.length) {
+    return (
+      <section className="section home-week" id="homeWeek">
+        {head}
+        <div className="card hw-empty">
+          <span className="hq-ico"><Icon n="calendar" s={20} /></span>
+          <span className="hw-empty-txt">{tt('Осы аптада сабақ та, мерзім де жоқ.', 'На этой неделе нет ни пар, ни сроков.')}</span>
+          <button className="btn ghost" type="button" onClick={() => go(S.timetable.length ? 'calendar' : 'timetable')}>
+            {S.timetable.length ? tt('Күнтізбені ашу', 'Открыть календарь') : tt('Кестені қосу', 'Добавить расписание')}
+          </button>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="section home-week" id="homeWeek">
-      <SectionHead title={tt('Осы апта', 'Эта неделя')} more={<button className="link-btn" type="button" onClick={() => go('calendar')}>{tt('Күнтізбе', 'Календарь')}</button>} />
+      {head}
       {/* a day shows up to three items (time + a two-line name); the rest is «+N». Seven columns from 1360px, a strip that
           scrolls sideways below that (app/desktop.css) so a name never shrinks to a few letters */}
       <div className="hw-grid" role="list">
@@ -51,15 +67,16 @@ function WeekPreview() {
   );
 }
 
-function QuickActions() {
+/** the shortcuts: a 2×4 launcher on a phone, a card grid on the laptop dashboard */
+export function QuickActions() {
   const { tt, go } = useApp();
   const cfg = useConfig();
   const acts: [string, IconName, string][] = [
     ['timetable', 'timetable', tt('Сабақ кестесі', 'Расписание занятий')],
-    ['ai', 'spark', tt('AI көмекші', 'AI-помощник')],
+    ['ai', 'spark', tt('ЖИ көмекші', 'AI-помощник')],
     ['opps:jobs', 'briefcase', tt('Жұмыс', 'Работа')],
     ['opps:intern', 'globe', tt('Тағылымдама', 'Стажировки')],
-    ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофе / Кофейня', 'Кофе / Кофейня')] as [string, IconName, string]] : []),
+    ...(cfg.features.cafe ? [['cafe', 'cup', tt('Кофехана', 'Кофейня')] as [string, IconName, string]] : []),
     ...(cfg.features.print ? [['print', 'file', tt('Полиграфия', 'Полиграфия')] as [string, IconName, string]] : []),
     ['map', 'map', tt('Кампус картасы', 'Карта кампуса')],
     ['saved', 'bookmark', tt('Сақталғандар', 'Сохранённое')],

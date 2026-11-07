@@ -6,7 +6,7 @@
    1px borders. */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
-import { DeskDetail, PlaceCard, openFirst, payLine } from '@/components/desk';
+import { DeskDetail, PlaceCard, PlaceRow, openFirst, payLine } from '@/components/desk';
 import { Empty, Icon, Row, SectionHead, Seg } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, ReasonSheet, SignInCard, errCode, errText, hasAccount, hhmm, useLoad, useNeedAccount } from '@/components/views/common';
 import { DayReport, PriceCalc } from '@/components/views/print-extras';
@@ -98,9 +98,8 @@ function ShopList() {
         ) : (
           <div className="group">
             {shops.map(s => (
-              <Row key={s.id} go={`print:${s.id}`} icon="printer" tone={s.openNow ? 'nico-2' : ''} title={nameOf(s, lang)}
-                sub={`${placeOf(s, lang)}${placeOf(s, lang) ? ' · ' : ''}${hoursLabel(s, lang)}`}
-                end={<span className={`badge ${s.openNow ? 'b-ok' : 'b-line'}`}>{s.openNow ? tt('Ашық', 'Открыто') : tt('Жабық', 'Закрыто')}</span>} />
+              <PlaceRow key={s.id} go={`print:${s.id}`} icon="printer" name={nameOf(s, lang)} open={s.openNow}
+                openLabel={tt('Ашық', 'Открыто')} closedLabel={tt('Жабық', 'Закрыто')} place={placeOf(s, lang)} hours={hoursLabel(s, lang)} />
             ))}
           </div>
         )}

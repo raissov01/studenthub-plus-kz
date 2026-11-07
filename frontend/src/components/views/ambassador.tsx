@@ -361,10 +361,11 @@ export function SuggestSheet({ kind, onDone }: { kind: 'opportunity' | 'place'; 
 }
 
 /** «Мүмкіндік білесің бе? Ұсын»: the site's own form /suggest (it asks for sign-in and consent itself) */
-export function SuggestButton() {
+/** «Мүмкіндік білесің бе? Ұсын»; `quiet` = a plain link under an empty state, which already has its one button */
+export function SuggestButton({ quiet = false }: { quiet?: boolean }) {
   const { tt, go } = useApp();
   return (
-    <button className="btn ghost block suggest" type="button" onClick={() => go('suggest')}>
+    <button className={quiet ? 'link-btn suggest suggest-quiet' : 'btn ghost block suggest'} type="button" onClick={() => go('suggest')}>
       <Icon n="plus" s={18} /> {tt('Мүмкіндік білесің бе? Ұсын', 'Знаешь возможность? Предложи')}
     </button>
   );

@@ -1,9 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { useApp } from '@/components/app';
 import { Empty } from '@/components/ui';
-import { LANG_NAMES } from '@/lib/i18n';
 import { useAccount } from '@/lib/account';
 import { useConfig, useConfigReady } from '@/lib/config';
 import { NotFound } from '@/components/views/common';
@@ -24,34 +22,13 @@ export const TYPE_NAMES: Record<QuestionType, [string, string]> = {
   comprehension: ['Мәтінді түсіну', 'Понимание текста'],
 };
 export function QuizGate({ children, account = false }: { children: ReactNode; account?: boolean }) {
-  const { tt, update, lang } = useApp();
   const config = useConfig(),
     ready = useConfigReady();
   if (!ready) return <Loading />;
   if (!config.features.quiz) return <NotFound />;
+  // the app header already has «back» and the title, and the language lives in Settings: no second navigation bar here
   return (
     <div className="quiz">
-      <nav className="quiz-nav" aria-label={tt('Квиз навигациясы', 'Навигация квиза')}>
-        <Link href="/quiz">{tt('Квиздер', 'Квизы')}</Link>
-        <div className="quiz-actions">
-          {(['kk', 'ru', 'en'] as const).map((l) => (
-            <button
-              type="button"
-              className="chip"
-              key={l}
-              aria-pressed={lang === l}
-              lang={l}
-              onClick={() =>
-                update((s) => {
-                  s.lang = l;
-                })
-              }
-            >
-              {LANG_NAMES[l]}
-            </button>
-          ))}
-        </div>
-      </nav>
       {account ? <AccountGate>{children}</AccountGate> : children}
     </div>
   );

@@ -84,11 +84,11 @@ test('sub-tabs: items sort by subtype, arrow keys move, the tab is in the URL an
   await onboard(page, lang);
   await page.goto('/jobs');
   await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toBeVisible();
-  await expect(page.getByRole('button', { name: new RegExp(youthJob.title[lang]) })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: new RegExp(youthJob.title[lang]) })).toHaveCount(0);
   await page.getByRole('tab', { name: t('Жастар практикасы', 'Молодёжная практика'), exact: true }).click();
   await expect(page).toHaveURL(/\/jobs\?t=youth$/);
   await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toHaveCount(0);
-  await page.getByRole('button', { name: new RegExp(youthJob.title[lang]) }).click();
+  await page.getByRole('link', { name: new RegExp(youthJob.title[lang]) }).click();
   await expect(page).toHaveURL(/\/job\/e2e-youth$/);
   await page.goBack();
   await expect(page).toHaveURL(/\/jobs\?t=youth$/);

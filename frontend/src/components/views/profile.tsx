@@ -1,8 +1,8 @@
 'use client';
 /* Profile and its sub-pages, the student card of the discounts category, settings and onboarding. The profile and photo stay on this device only. */
 import { useDesktop } from '@/lib/desktop';
-import { DeskDetail } from '@/components/desk';
-import { useState, type ReactNode } from 'react';
+import { DeskDetail, DeskPage } from '@/components/desk';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { IconName } from '@/lib/icons';
 import { useApp } from '@/components/app';
@@ -16,6 +16,7 @@ import { getState, resetState, update } from '@/lib/store';
 import { DeadlineSheet } from '@/components/views/calendar';
 import { track } from '@/features/analytics/track';
 import { useTelegram } from '@/lib/telegram';
+import { initialOf } from '@/lib/format';
 import { AccountSection } from '@/components/views/account';
 import { NotifySection } from '@/components/views/notify';
 import { RoadmapProgress } from '@/components/views/roadmap';
@@ -31,17 +32,18 @@ function ProfileFields({ compact, blank, grouped }: { compact?: boolean; blank?:
   const { S, tt, L } = useApp();
   const p = S.profile;
   const [skills, setSkills] = useState<string[]>(p.skills);
-  const name = <div className="field"><label htmlFor="fName">{tt('Аты-жөні', 'Имя и фамилия')}</label><input className="input" id="fName" defaultValue={blank ? '' : p.name} placeholder={tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')} autoComplete="name" required /></div>;
+  const name = <div className="field"><label htmlFor="fName">{tt('Аты-жөні', 'Имя и фамилия')}</label><input className="input" id="fName" defaultValue={blank ? '' : p.name} placeholder={tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')} autoComplete="name" required={!blank} /></div>;
   const spec = (
     <div className="field"><label htmlFor="fSpec">{tt('Факультет / мамандық', 'Факультет / специальность')}</label>
-      <select className="input" id="fSpec" required defaultValue={blank ? '' : p.spec}>
-        {blank ? <option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option> : null}
+      <select className="input" id="fSpec" defaultValue={blank ? '' : p.spec}>
+        {/* optional: nothing is preselected for a profile without a faculty */}
+        <option value="">{tt('Таңдаңыз', 'Выберите')}</option>
         {Object.entries(SPECS).map(([k, s]) => <option key={k} value={k}>{L(s)}</option>)}
       </select></div>
   );
   const courseGpa = (
     <div className="grid-2">
-      <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" required defaultValue={p.course ? String(p.course) : ''}><option value="" disabled>{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
+      <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" defaultValue={p.course ? String(p.course) : ''}><option value="">{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>
       <div className="field"><label htmlFor="fGpa">{tt("GPA (0–4, міндетті емес)", "GPA (0–4, необязательно)")}</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue={blank || p.gpa == null ? '' : String(p.gpa)} placeholder={tt('мысалы, 3.2', 'например, 3.2')} /></div>
     </div>
   );
@@ -51,7 +53,22 @@ function ProfileFields({ compact, blank, grouped }: { compact?: boolean; blank?:
       <div className="field"><label htmlFor="fCity">{tt('Қала', 'Город')}</label><select className="input" id="fCity" defaultValue={p.city}><option value="">{tt('Көрсетілмеген', 'Не указано')}</option>{HOME_CITIES.map(c => <option key={c} value={c}>{L(CITIES[c])}</option>)}</select></div>
     </div>
   );
-  if (compact) return <>{name}{spec}{courseGpa}{enCity}</>;
+  // onboarding: faculty and course are the two taps that matter; the name and the rest are optional, folded away
+  if (compact) {
+    const gpa = <div className="field"><label htmlFor="fGpa">{tt("GPA (0–4, міндетті емес)", "GPA (0–4, необязательно)")}</label><input className="input num" id="fGpa" type="text" inputMode="decimal" defaultValue="" placeholder={tt('мысалы, 3.2', 'например, 3.2')} /></div>;
+    const course = <div className="field"><label htmlFor="fCourse">{tt('Курс', 'Курс')}</label><select className="input" id="fCourse" defaultValue=""><option value="">{tt('Таңдаңыз', 'Выберите')}</option>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></div>;
+    return (
+      <>
+        <div className="grid-2 ob-two">{spec}{course}</div>
+        {name}
+        <details className="ob-more">
+          <summary>{tt('Тағы: GPA, ағылшын деңгейі, қала', 'Ещё: GPA, английский, город')}</summary>
+          {gpa}
+          {enCity}
+        </details>
+      </>
+    );
+  }
   const skillsEl = (
     <div className="field"><span className="lbl">{tt('Дағдылар', 'Навыки')}</span>
       <div className="chips wrap" id="fSkills">{Object.entries(SKILLS).map(([k, s]) => (
@@ -132,11 +149,11 @@ export function Edit() {
           <span className="eyebrow">{tt('Профиль қалай көрінеді', 'Как выглядит профиль')}</span>
           <label className="me-photo" title={tt('Сурет қою', 'Поставить фото')}>
             {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL from this device */}
-            <span className="me-avatar">{S.photo ? <img src={S.photo} alt="" /> : (pv.name || 'S').trim().charAt(0).toUpperCase()}</span>
+            <span className="me-avatar">{S.photo ? <img src={S.photo} alt="" /> : initialOf(pv.name, tt('Студент', 'Студент'))}</span>
             <span className="me-edit" aria-hidden="true"><Icon n="edit" s={16} /></span>
             <input type="file" accept="image/*" aria-label={tt('Профиль суретін таңдау', 'Выбрать фото профиля')} onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
-          <b className="edit-name">{pv.name.trim() || tt('Атыңыз бен тегіңіз', 'Ваше имя и фамилия')}</b>
+          {pv.name.trim() ? <b className="edit-name">{pv.name}</b> : <b className="edit-name muted">{tt('Аты көрсетілмеген', 'Имя не указано')}</b>}
           <span className="small muted">{[SPECS[pv.spec] ? L(SPECS[pv.spec]) : '', pv.course ? tt(`${pv.course}-курс`, `${pv.course} курс`) : '', pv.city && CITIES[pv.city] ? L(CITIES[pv.city]) : ''].filter(Boolean).join(' · ')}</span>
           <span className="small">GPA {Number.isFinite(gpa) ? Math.max(0, Math.min(4, gpa)).toFixed(2) : tt('көрсетілмеген', 'не указан')}</span>
           <p className="tiny muted">{tt('Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Профиль, GPA и телефон хранятся на этом устройстве.')}</p>
@@ -185,11 +202,13 @@ function LangSeg() {
 
 export function Onboarding() {
   const { tt, closeSheet } = useApp();
+  // shown once: opening it counts as seen, so closing or putting it off never brings it back on another page
+  useEffect(() => { if (!getState().onboarded) update(s => { s.onboarded = true; }); }, []);
   return (
     <>
       <LangSeg />
       <h1>{tt('Қош келдіңіз!', 'Добро пожаловать!')}</h1>
-      <p className="small muted">{tt('Мамандығыңыз бен курсыңызды көрсетіңіз. Жұмыс, тағылымдама, курстар мен жеңілдіктерді соған қарай іріктейміз. Кейін профильден өзгертуге болады.', 'Укажите специальность и курс — подберём работу, стажировки, курсы и скидки под вас. Потом это можно изменить в профиле.')}</p>
+      <p className="small muted">{tt('Факультет пен курсты көрсетсеңіз, жұмыс, тағылымдама, курстар мен жеңілдіктерді соған қарай іріктейміз. Бәрі міндетті емес, кейін профильден өзгертуге болады.', 'Укажите факультет и курс — подберём работу, стажировки, курсы и скидки под вас. Всё необязательно, потом можно изменить в профиле.')}</p>
       <form className="form" id="obForm" onSubmit={e => {
         e.preventDefault(); readProfileForm(e.currentTarget); update(s => { s.onboarded = true; }); closeSheet();
         // category keys only: never the name, GPA or phone
@@ -198,6 +217,7 @@ export function Onboarding() {
       }}>
         <ProfileFields compact blank />
         <button className="btn" type="submit">{tt('Бастау', 'Начать')}</button>
+        <button className="link-btn ob-later" type="button" onClick={closeSheet}>{tt('Кейінірек', 'Позже')}</button>
       </form>
     </>
   );
@@ -213,13 +233,17 @@ export function Profile() {
       <section className="me">
         <label className="me-photo" title={tt('Сурет қою', 'Поставить фото')}>
           {/* eslint-disable-next-line @next/next/no-img-element -- a local data: URL from this device */}
-          <span className="me-avatar">{S.photo ? <img src={S.photo} alt="" /> : (p.name || 'S').trim().charAt(0).toUpperCase()}</span>
+          <span className="me-avatar">{S.photo ? <img src={S.photo} alt="" /> : initialOf(p.name, tt('Студент', 'Студент'))}</span>
           <span className="me-edit" aria-hidden="true"><Icon n="edit" s={16} /></span>
           <input type="file" id="photoIn" accept="image/*" aria-label={tt('Профиль суретін таңдау', 'Выбрать фото профиля')} onChange={e => { onPhoto(e.target.files?.[0]); e.target.value = ''; }} />
         </label>
-        <h1>{p.name}</h1>
+        {p.name.trim() ? <h2 className="me-name">{p.name}</h2> : <h2 className="me-name me-noname">{tt('Аты көрсетілмеген', 'Имя не указано')}</h2>}
         <p className="muted">{tt('Студент · Сейфуллин университеті', 'Студент · Университет им. С. Сейфуллина')}</p>
-        <p className="muted small">{L(SPECS[p.spec])}, {tt(`${p.course}-курс`, `${p.course} курс`)}, GPA {(p.gpa == null ? tt('көрсетілмеген', 'не указан') : p.gpa.toFixed(2))}</p>
+        <p className="muted small">{[
+          SPECS[p.spec] ? L(SPECS[p.spec]) : '',
+          p.course ? tt(`${p.course}-курс`, `${p.course} курс`) : '',
+          p.gpa == null ? '' : `GPA ${p.gpa.toFixed(2)}`,
+        ].filter(Boolean).join(' · ') || <button className="link-btn" type="button" onClick={() => go('edit')}>{tt('Факультет пен курсты көрсету', 'Указать факультет и курс')}</button>}</p>
         {S.photo ? <button className="link-btn" type="button" onClick={() => { update(s => { delete s.photo; }); toast(tt('Сурет өшірілді', 'Фото удалено')); }}>{tt('Суретті өшіру', 'Удалить фото')}</button> : null}
       </section>
       <button className="card fill" type="button" onClick={() => go('edit')}>
@@ -251,7 +275,7 @@ export function StudentCardHero() {
     <>
       <button className="hero" type="button" onClick={() => openSheet(<StudentQrSheet />)} style={{ border: 0, textAlign: 'left', width: '100%' }}>
         <div className="hero-top" style={{ justifyContent: 'space-between' }}>
-          <div style={{ minWidth: 0 }}><span className="eyebrow" style={{ color: 'var(--head-muted)' }}>{tt('Цифрлық студенттік', 'Цифровой студенческий')}</span><h2>{p.name}</h2><p className="small muted">{L(SPECS[p.spec])} · {tt(`${p.course}-курс`, `${p.course} курс`)}</p></div>
+          <div style={{ minWidth: 0 }}><span className="eyebrow" style={{ color: 'var(--head-muted)' }}>{tt('Цифрлық студенттік', 'Цифровой студенческий')}</span><h2>{p.name || tt('Аты көрсетілмеген', 'Имя не указано')}</h2><p className="small muted">{[SPECS[p.spec] ? L(SPECS[p.spec]) : '', p.course ? tt(`${p.course}-курс`, `${p.course} курс`) : ''].filter(Boolean).join(' · ')}</p></div>
           <span className="avatar" style={{ borderRadius: 14 }}><Icon n="qr" s={26} /></span>
         </div>
         <span className="code">{studentCode(p)}</span>
@@ -388,49 +412,35 @@ export function Admission() {
     and a way to keep one's own payment deadline in the calendar */
 export function Pay() {
   const { tt, openSheet } = useApp();
-  const desktop = useDesktop();
   const remind = <button className="btn secondary" type="button" id="payDeadline" onClick={() => openSheet(<DeadlineSheet />)}><Icon n="bell" s={18} /> {tt('Төлем мерзімін күнтізбеге қосу', 'Добавить срок оплаты в календарь')}</button>;
   const empty = tt('Оқу ақысының деректері әзірге қосылмаған. Сома, мерзім мен төлем тарихын университеттің ақпараттық жүйесінен немесе бухгалтериядан тексеріңіз.', 'Данные об оплате обучения пока не подключены. Сумму, сроки и историю платежей проверяйте в информационной системе университета или в бухгалтерии.');
-  const links = (
-    <div className="group">
-      <Row href="https://kazatu.edu.kz/ru/contacts" icon="globe" title={tt('Университет байланыстары', 'Контакты университета')} sub="kazatu.edu.kz" />
-    </div>
-  );
-  const safe = <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>;
-  if (desktop) {
-    // a laptop: what to check and where in the column; the summary (not connected yet: no invented sums), the
-    // reminder, the official contacts and safety in the rail
-    return (
-      <DeskDetail label={tt('Оқу ақысы', 'Оплата обучения')} main={<>
-        <section className="section">
-          <h2>{tt('Төлем туралы қайдан білуге болады', 'Где узнать об оплате')}</h2>
-          <p>{empty}</p>
-          <ol className="desk-tips">
-            <li>{tt('Сома мен мерзім — шартта және университеттің ақпараттық жүйесінде.', 'Сумма и сроки — в договоре и в информационной системе университета.')}</li>
-            <li>{tt('Төлем тарихы мен қарызды бухгалтерия растайды.', 'Историю платежей и задолженность подтверждает бухгалтерия.')}</li>
-            <li>{tt('Мерзімді күнтізбеге қосыңыз — Student Hub алдын ала еске салады.', 'Добавьте срок в календарь — Student Hub напомнит заранее.')}</li>
-          </ol>
-        </section>
-      </>} rail={<>
-        <div className="card">
-          <h2>{tt('Қысқаша', 'Кратко')}</h2>
-          <div className="group">
-            <Row icon="tenge" title={tt('Сома', 'Сумма')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
-            <Row icon="calendar" title={tt('Мерзім', 'Срок')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
-          </div>
-          {remind}
-        </div>
-        {links}
-        {safe}
-      </>} />
-    );
-  }
+  // the same blocks on a phone and a laptop (stacked / column + rail): what to check and where; the summary
+  // (not connected yet: no invented sums) with the reminder; the official contacts and safety
   return (
-    <>
-      <Empty icon="tenge" action={<div className="btn-row" style={{ justifyContent: 'center' }}>{remind}</div>}>{empty}</Empty>
-      {links}
-      {safe}
-    </>
+    <DeskPage railLabel={tt('Оқу ақысы', 'Оплата обучения')} rail={<>
+      <div className="card">
+        <h2>{tt('Қысқаша', 'Кратко')}</h2>
+        <div className="group">
+          <Row icon="tenge" title={tt('Сома', 'Сумма')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
+          <Row icon="calendar" title={tt('Мерзім', 'Срок')} sub={tt('Әзірге қосылмаған', 'Пока не подключено')} chev={false} />
+        </div>
+        {remind}
+      </div>
+      <div className="group">
+        <Row href="https://kazatu.edu.kz/ru/contacts" icon="globe" title={tt('Университет байланыстары', 'Контакты университета')} sub="kazatu.edu.kz" />
+      </div>
+      <p className="tiny muted">{tt('Төлемді тек университет бекіткен ресми тәсілдермен жасаңыз. Қосымша карта деректерін сақтамайды.', 'Оплачивайте только официальными способами, утверждёнными университетом. Приложение не хранит данные карт.')}</p>
+    </>}>
+      <section className="section">
+        <h2>{tt('Төлем туралы қайдан білуге болады', 'Где узнать об оплате')}</h2>
+        <p>{empty}</p>
+        <ol className="desk-tips">
+          <li>{tt('Сома мен мерзім — шартта және университеттің ақпараттық жүйесінде.', 'Сумма и сроки — в договоре и в информационной системе университета.')}</li>
+          <li>{tt('Төлем тарихы мен қарызды бухгалтерия растайды.', 'Историю платежей и задолженность подтверждает бухгалтерия.')}</li>
+          <li>{tt('Мерзімді күнтізбеге қосыңыз — Student Hub алдын ала еске салады.', 'Добавьте срок в календарь — Student Hub напомнит заранее.')}</li>
+        </ol>
+      </section>
+    </DeskPage>
   );
 }
 
@@ -466,7 +476,6 @@ type SettingsSection = 'lang' | 'theme' | 'account' | 'notify' | 'privacy' | 'da
 export function Settings() {
   const { S, tt, toast, setUi, openSheet, go } = useApp();
   const tg = useTelegram();
-  const desktop = useDesktop();
   const lang = <section className="section"><h2>{tt('Тіл', 'Язык')}</h2><LangSeg /></section>;
   const theme = tg.app ? null : <section className="section"><h2>{tt('Тақырып', 'Тема')}</h2><Seg items={[['light', <><Icon n="sun" s={16} /> {tt('Ашық', 'Светлая')}</>], ['dark', <><Icon n="moon" s={16} /> {tt('Қараңғы', 'Тёмная')}</>]]} cur={S.theme === 'dark' ? 'dark' : 'light'} onPick={v => update(s => { s.theme = v; })} /></section>;
   const data = (
@@ -480,54 +489,67 @@ export function Settings() {
         }} />)} icon="trash" tone="bad" title={tt('Барлық деректерді өшіру', 'Удалить все данные')} sub={tt('Профиль, өтінімдер, жоспарлар, карточкалар', 'Профиль, отклики, планы, карточки')} chev={false} />
       </div></section>
   );
-  const privacy = <div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div>;
   const about = <p className="note">Student Hub 1.2. {tt('Алғашқы нұсқа (MVP). Профиль, GPA мен телефон осы құрылғыда сақталады.', 'Первая версия (MVP). Профиль, GPA и телефон хранятся на этом устройстве.')}</p>;
-  if (desktop) {
-    const sections: [SettingsSection, IconName, string, ReactNode][] = [
-      ['lang', 'globe', tt('Тіл', 'Язык'), lang],
-      ...(theme ? [['theme', 'sun', tt('Тақырып', 'Тема'), theme] as [SettingsSection, IconName, string, ReactNode]] : []),
-      ['account', 'user', tt('Аккаунт', 'Аккаунт'), <AccountSection key="a" />],
-      ['notify', 'bell', tt('Хабарламалар', 'Уведомления'), <NotifySection key="n" />],
-      ['privacy', 'shield', tt('Құпиялылық', 'Конфиденциальность'), <section className="section" key="p"><h2>{tt('Құпиялылық', 'Конфиденциальность')}</h2>{privacy}{about}</section>],
-      ['data', 'folder', tt('Деректер', 'Данные'), data],
-      ['about', 'spark', tt('Қосымша туралы', 'О приложении'), <section className="section" key="ab"><h2>{tt('Қосымша туралы', 'О приложении')}</h2>{about}</section>],
-    ];
-    return <SettingsDesk sections={sections} />;
-  }
-  return (
-    <>
-      {lang}
-      {theme}
-      <AccountSection />
-      <NotifySection />
-      {data}
-      {privacy}
-      {about}
-    </>
-  );
+  const sections: [SettingsSection, IconName, string, ReactNode][] = [
+    ['lang', 'globe', tt('Тіл', 'Язык'), lang],
+    ...(theme ? [['theme', 'sun', tt('Тақырып', 'Тема'), theme] as [SettingsSection, IconName, string, ReactNode]] : []),
+    ['account', 'user', tt('Аккаунт', 'Аккаунт'), <AccountSection key="a" />],
+    ['notify', 'bell', tt('Хабарламалар', 'Уведомления'), <NotifySection key="n" />],
+    ['data', 'folder', tt('Деректер', 'Данные'), data],
+    ['privacy', 'shield', tt('Құпиялылық', 'Конфиденциальность'), <section className="section" key="p"><h2>{tt('Құпиялылық', 'Конфиденциальность')}</h2><div className="group"><Row go="privacy" icon="shield" title={tt('Құпиялылық саясаты', 'Политика конфиденциальности')} /></div></section>],
+    ['about', 'spark', tt('Қосымша туралы', 'О приложении'), <section className="section" key="ab"><h2>{tt('Қосымша туралы', 'О приложении')}</h2>{about}</section>],
+  ];
+  return <SettingsPage sections={sections} />;
 }
 
-/** a laptop's settings page: the section list on the left, the chosen section on the right; /settings?s=notify opens one */
-function SettingsDesk({ sections }: { sections: [SettingsSection, IconName, string, ReactNode][] }) {
+/** settings: every section stacked (the same on a phone and a laptop); a laptop adds the section list on the left,
+    which follows the scroll (scroll-spy) and jumps to a section; /settings?s=notify opens at one */
+function SettingsPage({ sections }: { sections: [SettingsSection, IconName, string, ReactNode][] }) {
   const { tt } = useApp();
+  const desktop = useDesktop();
   const asked = useSearchParams().get('s');
   const [cur, setCur] = useState<string>(() => (sections.some(x => x[0] === asked) ? asked! : sections[0][0]));
+  // a jump (a click or the ?s= link) holds its section until the student scrolls it out of view
+  const pinned = useRef<string | null>(sections.some(x => x[0] === asked) ? asked : null);
+  const ids = sections.map(x => x[0]).join(',');
+  useEffect(() => {
+    if (pinned.current) document.getElementById('set-' + pinned.current)?.scrollIntoView({ block: 'start' });
+  }, []);
+  useEffect(() => {
+    if (!desktop) return;
+    const list = ids.split(',');
+    const on = () => {
+      const p = pinned.current && document.getElementById('set-' + pinned.current);
+      if (p) {
+        const r = p.getBoundingClientRect();
+        if (r.bottom > 80 && r.top < window.innerHeight - 40) return;
+        pinned.current = null;
+      }
+      let at = list[0];
+      for (const id of list) { const el = document.getElementById('set-' + id); if (el && el.getBoundingClientRect().top <= 140) at = id; }
+      setCur(at);
+    };
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, [desktop, ids]);
   const pick = (id: string) => {
     setCur(id);
+    pinned.current = id;
+    document.getElementById('set-' + id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     try { window.history.replaceState(window.history.state, '', `${window.location.pathname}?s=${id}`); } catch { /* ignore */ }
   };
-  const shown = sections.find(x => x[0] === cur) ?? sections[0];
+  const body = <div className="settings-pane" id="settingsPane">{sections.map(([id, , , node]) => <div key={id} id={'set-' + id} className="settings-sec">{node}</div>)}</div>;
+  if (!desktop) return body;
   return (
-    <div className="settings-desk">
+    <DeskPage panelLabel={tt('Баптаулар бөлімдері', 'Разделы настроек')} panel={
       <nav className="settings-nav" aria-label={tt('Баптаулар бөлімдері', 'Разделы настроек')}>
         {sections.map(([id, icon, label]) => (
-          <a key={id} href={`?s=${id}`} className="side-item" aria-current={id === shown[0] ? 'page' : undefined}
+          <a key={id} href={`?s=${id}`} className="side-item" aria-current={id === cur ? 'page' : undefined}
             onClick={e => { e.preventDefault(); pick(id); }}>
             <Icon n={icon} s={18} /><span className="side-label">{label}</span>
           </a>
         ))}
       </nav>
-      <div className="settings-pane" id="settingsPane">{shown[3]}</div>
-    </div>
+    }>{body}</DeskPage>
   );
 }

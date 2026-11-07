@@ -75,7 +75,7 @@ function Catalogue() {
         <input className="input" id="clubQ" type="search" autoComplete="off" value={f.q} onChange={e => setF({ ...f, q: e.target.value })}
           placeholder={tt('Клуб атауы не тақырып', 'Название клуба или тема')} aria-label={tt('Клуб іздеу', 'Поиск клуба')} />
       </div>
-      <div className="chips wrap" role="group" aria-label={tt('Бағыты', 'Направление')}>
+      <div className="chips club-dirs" role="group" aria-label={tt('Бағыты', 'Направление')}>
         <Chip pressed={f.direction === 'all'} onClick={() => setF({ ...f, direction: 'all' })}>{tt('Барлығы', 'Все')}</Chip>
         {dirs.map(d => <Chip key={d.id} pressed={f.direction === d.id} onClick={() => setF({ ...f, direction: d.id })}>{L(d.label)}</Chip>)}
         <Chip pressed={!!f.recruiting} onClick={() => setF({ ...f, recruiting: !f.recruiting })}>{tt('Мүше қабылдап жатыр', 'Идёт набор')}</Chip>
@@ -121,11 +121,11 @@ function ClubCard({ c }: { c: Club }) {
         {c.my?.status === 'pending' ? <span className="badge b-line">{tt('Өтінім жіберілді', 'Заявка отправлена')}</span> : null}</span>
       {clubSummary(c, lang) ? <span className="small">{clubSummary(c, lang)}</span> : null}
       {where || when ? <span className="row-sub">{[where, when].filter(Boolean).join(' · ')}</span> : null}
-      <span className="tiny muted">
-        {clubLeader(c, lang) ? clubLeader(c, lang) + ' · ' : ''}
-        {c.members ? tt(`${c.members} мүше`, `Участников: ${c.members}`) : null}
-        {safeSocial(c.telegram_url) ? ' · Telegram' : ''}{safeSocial(c.instagram_url) ? ' · Instagram' : ''}
-      </span>
+      {(() => {
+        const foot = [clubLeader(c, lang), c.members ? tt(`${c.members} мүше`, `Участников: ${c.members}`) : '',
+          safeSocial(c.telegram_url) ? 'Telegram' : '', safeSocial(c.instagram_url) ? 'Instagram' : ''].filter(Boolean).join(' · ');
+        return foot ? <span className="tiny muted">{foot}</span> : null;
+      })()}
     </button>
   );
 }

@@ -17,10 +17,11 @@ import { classWhere } from '@/lib/campus';
 import { classesOn, nextClass, weekdayOf } from '@/lib/timetable';
 import { hue, notifs, OPP_KINDS, oppLeft, plainOrg, searchItems, type Notif, type SearchItem } from '@/lib/domain';
 import { dOff } from '@/lib/format';
+import { pathOf } from '@/lib/routes';
 import { buildScheduleIcs } from '@/lib/ics';
 import type { ClassItem, IconName } from '@/lib/types';
 import { HomeReviewDue } from '@/components/views/review';
-import { HomeDesk } from '@/components/views/home-desk';
+import { HomeDesk, QuickActions } from '@/components/views/home-desk';
 import { useDesktop } from '@/lib/desktop';
 
 const Mark = ({ id, label }: { id: string; label: string }) => (
@@ -166,7 +167,7 @@ export function Home() {
       </section>
 
       <PointsChip />
-      {desktop ? <HomeDesk /> : null}
+      {desktop ? <HomeDesk /> : <QuickActions />}
     </>
   );
 }
@@ -174,19 +175,29 @@ export function Home() {
 /* ---------- search ---------- */
 export function SearchRow({ it }: { it: SearchItem }) {
   const { go, openSheet } = useApp();
-  const open = () => (it.go ? go(it.go) : openSheet(it.act === 'course' ? <CourseSheet id={it.id} /> : <DealSheet id={it.id} />));
+  const inner = (
+    <>
+      <Mark id={it.id} label={it.org} />
+      <span className="row-main">
+        <span className="row-title">{it.org}</span>
+        <span className="sr-role">{it.title}</span>
+        <span className="row-sub">{it.meta}</span>
+        {it.detail ? <span className={`row-sub card-detail${it.truncateDetail ? " card-detail-truncate" : ""}`} title={it.detail}>{it.detail}</span> : null}
+        {it.badge ? <span className={`tag tag-${it.badge[1]} tag-inline`}>{it.badge[0]}</span> : null}
+      </span>
+    </>
+  );
   return (
     <div className="sr">
-      <button className="sr-main" type="button" onClick={open}>
-        <Mark id={it.id} label={it.org} />
-        <span className="row-main">
-          <span className="row-title">{it.org}</span>
-          <span className="sr-role">{it.title}</span>
-          <span className="row-sub">{it.meta}</span>
-          {it.detail ? <span className={`row-sub card-detail${it.truncateDetail ? " card-detail-truncate" : ""}`} title={it.detail}>{it.detail}</span> : null}
-          {it.badge ? <span className={`tag tag-${it.badge[1]} tag-inline`}>{it.badge[0]}</span> : null}
-        </span>
-      </button>
+      {/* a page is a real link (open in a new tab, copy the address); a course or discount opens its sheet */}
+      {it.go ? (
+        <a className="sr-main" href={pathOf(it.go)} onClick={e => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault(); go(it.go!);
+        }}>{inner}</a>
+      ) : (
+        <button className="sr-main" type="button" onClick={() => openSheet(it.act === 'course' ? <CourseSheet id={it.id} /> : <DealSheet id={it.id} />)}>{inner}</button>
+      )}
       <span className="sr-end">
         {it.badge ? <span className={`tag tag-${it.badge[1]}`}>{it.badge[0]}</span> : null}
         {it.noFav ? null : <Heart id={it.id} opp={OPP_KINDS.includes(it.k)} />}

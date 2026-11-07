@@ -55,16 +55,16 @@ test('legacy storage migrates without losing personal data; GPA and phone can be
 test('course default and explicit no-experience choice survive profile changes and reloads', async ({ page, lang }) => {
   await onboard(page, lang, '3');
   await page.goto('/jobs');
-  await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
   await page.goto('/edit');
   await page.locator('#fCourse').selectOption('1');
   await page.getByRole('button', { name: label(lang, 'Сақтау', 'Сохранить'), exact: true }).click();
   await page.goto('/jobs');
-  await expect(page.getByRole('button', { name: new RegExp(job.title[lang]) })).toBeVisible();
-  await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: new RegExp(job.title[lang]) })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toHaveCount(0);
   await page.getByRole('button', { name: new RegExp(label(lang, '^Сүзгіні алып тастау:', '^Убрать фильтр:')) }).click();
   await page.reload();
-  await expect(page.getByRole('button', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(experiencedJob.title[lang]) })).toBeVisible();
   expect((await deviceState(page)).jobNoExperience).toBe(false);
 });
 

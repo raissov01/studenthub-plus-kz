@@ -20,6 +20,7 @@ import { CourseSheet, DealSheet } from '@/components/views/sheets';
 import { useAccount } from '@/lib/account';
 import { useConfig } from '@/lib/config';
 import { useDesktop } from '@/lib/desktop';
+import { DeskPage } from '@/components/desk';
 import { CITIES, COURSES, DEAL_CATS, EVENT_CATS, JOB_TAGS } from '@/lib/data/static';
 import { hourly, oppLeft, searchItems, type SearchItem } from '@/lib/domain';
 import { ALL_EVENT_CATS, canCreateEvents, evTitle, evDesc } from '@/lib/events';
@@ -30,6 +31,9 @@ import { eventInTab, jobTab, oppPlace, pickTab, SECTIONS, sectionView, viewOfSea
 import type { App } from '@/components/app';
 import type { UiState } from '@/lib/defaults';
 import type { Discount } from '@/lib/types';
+
+/** event categories that are sub-tabs of «Іс-шаралар» (lib/sections.ts), so the filter panel does not repeat them */
+const TAB_CATS = new Set(['contest', 'hackathon', 'conf']);
 
 /** label of one active filter chip */
 function filterLabel(key: string, app: App): string {
@@ -93,9 +97,10 @@ function FilterSheet({ cat, panel }: { cat: FilterCat; panel?: boolean }) {
       </>
     );
   } else if (cat === 'events') {
-    const src = eventsOn ? ALL_EVENT_CATS : EVENT_CATS;
+    // the kinds that have their own sub-tab (contests, hackathons, conferences) stay in the tabs: the panel is topics only
+    const src = Object.fromEntries(Object.entries(eventsOn ? ALL_EVENT_CATS : EVENT_CATS).filter(([k]) => !TAB_CATS.has(k)));
     body = (
-      <div className="field"><span className="lbl">{tt('Санат', 'Категория')}</span>
+      <div className="field"><span className="lbl">{tt('Тақырып', 'Тема')}</span>
         <div className="chips wrap">
           {[['all', tt('Барлығы', 'Все')] as [string, string], ...Object.entries(src).map(([k, c]): [string, string] => [k, L(c)])]
             .map(([k, l]) => <Chip key={k} pressed={ui.evCat === k} onClick={() => set({ evCat: k })}>{l}</Chip>)}
@@ -181,9 +186,10 @@ function JobsResults({ tab }: { tab: string }) {
   if (!content.jobs.length) {
     return (
       <>
+        <Count n={0} />
         <NothingYet icon="briefcase" msg={tt('Әзірге вакансия жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Вакансий пока нет — сообщим, когда появятся новые.')}
           notify={['jobs', ['Жаңа вакансиялар туралы хабарлау', 'Сообщать о новых вакансиях']]} />
-        <SuggestLink />
+        <SuggestLink quiet />
       </>
     );
   }
@@ -195,7 +201,7 @@ function JobsResults({ tab }: { tab: string }) {
       <Count n={list.length} />
       {list.length ? <div className="group">{list.map(j => <JobRow key={j.id} j={j} heart />)}</div>
         : <NoResults icon="search" cat="jobs" msg={msg} />}
-      <SuggestLink />
+      <SuggestLink quiet={!list.length} />
     </>
   );
 }
@@ -215,9 +221,10 @@ function OppResults({ tab }: { tab: string }) {
   if (!any) {
     return (
       <>
+        <Count n={0} />
         <NothingYet icon="globe" msg={tt('Әзірге бағдарлама жоқ — жаңалары жарияланғанда хабарлаймыз.', 'Программ пока нет — сообщим, когда появятся новые.')}
           notify={['digest', ['Апталық жаңа мүмкіндіктер топтамасы', 'Подборка новых возможностей раз в неделю']]} />
-        <SuggestLink />
+        <SuggestLink quiet />
       </>
     );
   }
@@ -226,7 +233,7 @@ function OppResults({ tab }: { tab: string }) {
       <Count n={list.length} />
       {list.length ? <div className="list">{list.map(o => <OppCard key={o.id} o={o} />)}</div>
         : <NoResults icon="globe" cat="intern" msg={tt('Бұл бөлімде бағдарлама әзірге жоқ.', 'В этом разделе программ пока нет.')} />}
-      <SuggestLink />
+      <SuggestLink quiet={!list.length} />
     </>
   );
 }
@@ -318,7 +325,8 @@ function DealsResults() {
   return (
     <>
       <StudentCardHero />
-      {!content.discounts.length ? <NothingYet icon="tag" msg={tt('Әзірге серіктес жеңілдігі жоқ. Келісімдер жасалғанда осында шығады.', 'Скидок партнёров пока нет. Появятся здесь, когда будут заключены соглашения.')} /> : <Count n={list.length} />}
+      <Count n={list.length} />
+      {!content.discounts.length ? <NothingYet icon="tag" msg={tt('Әзірге серіктес жеңілдігі жоқ. Келісімдер жасалғанда осында шығады.', 'Скидок партнёров пока нет. Появятся здесь, когда будут заключены соглашения.')} /> : null}
       {!content.discounts.length ? null : list.length ? (
         <div className="deals">{list.map(d => <DealCard key={d.id} d={d} />)}</div>
       ) : <NoResults icon="tag" cat="deals" msg={tt('Жеңілдік табылмады.', 'Скидки не найдены.')} />}
@@ -455,13 +463,13 @@ function Filtered({ cat, children }: { cat: FilterCat; children: (panel: boolean
   const { tt } = useApp();
   const desktop = useDesktop();
   if (!desktop) return <>{children(false)}</>;
-  // «Тағылымдама» and «Тегін беремін» have no filters beyond their tabs: no empty panel
-  if (cat === 'intern' || cat === 'market') return <>{children(true)}</>;
+  // «Тегін беремін» is a grid of its own; every other section keeps the same panel | list geometry (an internship panel
+  // says that its kinds are the tabs above), so the list starts at the same place in sibling sections
+  if (cat === 'market') return <>{children(true)}</>;
   return (
-    <div className="search-layout">
-      <aside className="search-side" aria-label={tt('Сүзгілер', 'Фильтры')}><FilterSheet cat={cat} panel /></aside>
+    <DeskPage wide className="search-layout" panelLabel={tt('Сүзгілер', 'Фильтры')} panel={<div className="search-side"><FilterSheet cat={cat} panel /></div>}>
       <div className="search-main">{children(true)}</div>
-    </div>
+    </DeskPage>
   );
 }
 

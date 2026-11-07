@@ -1,10 +1,11 @@
 'use client';
 /* Small building blocks with the exact legacy markup (row, chip, seg, section head, notes, share row, QR). */
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import qrcode from 'qrcode-generator';
 import { IC, type IconName } from '@/lib/icons';
 import { useApp, copyText } from '@/components/app';
 import { track, withShareRef } from '@/features/analytics/track';
+import { pathOf } from '@/lib/routes';
 
 export function Icon({ n, s = 22, className }: { n: IconName; s?: number; className?: string }) {
   return (
@@ -37,6 +38,17 @@ export function Row({ go, onClick, icon, tone = '', title, sub, end, chev = true
   if (href) return <a className="row" href={href} target="_blank" rel="noopener">{inner}</a>;
   if (!go && !onClick) return <div className="row">{inner}</div>;
   return <button className="row" type="button" onClick={() => (onClick ? onClick() : app.go(go!))}>{inner}</button>;
+}
+
+/** a result that opens a page: a real link (new tab, copy the address, «open in…»), navigated in-app on a plain click */
+export function ViewLink({ to, className, style, children }: { to: string; className?: string; style?: CSSProperties; children: ReactNode }) {
+  const { go } = useApp();
+  return (
+    <a className={className} style={style} href={pathOf(to)} onClick={e => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault(); go(to);
+    }}>{children}</a>
+  );
 }
 
 export function Chip({ pressed, onClick, children }: { pressed?: boolean; onClick: () => void; children: ReactNode }) {

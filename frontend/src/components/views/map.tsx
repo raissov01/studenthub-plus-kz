@@ -244,7 +244,7 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
     return (
       <a key={i} className={`np np-${p.c}`} href={`${twoGis(p.n)}?m=${p.lon}%2C${p.lat}%2F18`} target="_blank" rel="noopener" aria-label={`${p.n}, ${tt(c[0], c[1])}`}>
         <title>{p.n}</title>
-        <circle cx={x.toFixed(0)} cy={y.toFixed(0)} r="21" />
+        <circle className="pin-hit" cx={x.toFixed(0)} cy={y.toFixed(0)} r="70" /><circle cx={x.toFixed(0)} cy={y.toFixed(0)} r="21" />
         <svg x={(x - 11).toFixed(0)} y={(y - 11).toFixed(0)} viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: IC[c[2]] }} />
       </a>
     );
@@ -268,6 +268,8 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
     return (
       <g key={b.id} className={`pin pin-${b.kind}${on ? ' on' : ''}${hl.length && !on ? ' dim' : ''}`} role="button" tabIndex={0} aria-label={`${b.n}. ${L(b.name)}`}
         onClick={() => pick(b.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(b.id); } }}>
+        {/* an invisible 44px (at phone scale) hit area around the 14px dot */}
+        <circle className="pin-hit" cx={x} cy={y} r="96" />
         {on ? <circle className="pin-halo" cx={x} cy={y} r="52" /> : null}<circle cx={x} cy={y} r="32" /><text x={x} y={y + 11}>{b.n}</text>
       </g>
     );
@@ -340,7 +342,7 @@ export function MapView({ tab }: { tab: 'campus' | 'near' }) {
   return (
     <>
       {tabs}
-      <div className="search"><Icon n="search" s={18} /><input className="input" id="mapQ" type="search" placeholder={tt('Аудитория (4-214), нысан не мекенжай', 'Аудитория (4-214), здание или адрес')} value={ui.mapQ} onChange={e => setUi({ mapQ: e.target.value, mapSel: null })} autoComplete="off" /></div>
+      <div className="search"><Icon n="search" s={18} /><input className="input" id="mapQ" type="search" aria-label={tt('Картадан іздеу', 'Поиск по карте')} placeholder={tt('Аудитория (4-214), нысан не мекенжай', 'Аудитория (4-214), здание или адрес')} value={ui.mapQ} onChange={e => setUi({ mapQ: e.target.value, mapSel: null })} autoComplete="off" /></div>
       <div className="chips">{([['study', tt('Оқу корпустары', 'Учебные корпуса')], ['dorm', tt('Жатақханалар', 'Общежития')], ['other', tt('Басқа', 'Другое')]] as const).map(([k, l]) => (
         <button key={k} className={`chip legend lg-${k}`} type="button" onClick={() => setUi({ mapQ: tp(KIND_L[k]), mapSel: null })}><i></i>{l}</button>
       ))}</div>

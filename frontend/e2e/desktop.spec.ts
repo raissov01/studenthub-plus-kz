@@ -21,8 +21,8 @@ test('sidebar: every destination, active state, collapse to icons remembered', a
   await expect(page).toHaveURL(/\/internships$/);
   await expect(side.getByRole('button', { name: 'Тағылымдама', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(side.getByRole('button', { name: 'Басты бет', exact: true })).not.toHaveAttribute('aria-current', 'page');
-  // «Тағылымдама» has no filters beyond its tabs: no panel, no filter button
-  await expect(page.getByRole('complementary', { name: 'Сүзгілер' })).toHaveCount(0);
+  // «Тағылымдама» keeps the same panel | list geometry as its sibling sections; its kinds are the tabs, said in the panel
+  await expect(page.getByRole('complementary', { name: 'Сүзгілер' })).toContainText('Бұл бөлімде қосымша сүзгі жоқ');
   await expect(page.locator('.filter-btn')).toHaveCount(0);
   // «Жұмыс»: the filters in a side panel instead of a sheet
   await side.getByRole('button', { name: 'Жұмыс', exact: true }).click();

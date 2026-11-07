@@ -603,7 +603,7 @@ function DayAgenda({ d, items, heading, onAdd }: { d: Ymd; items: CalItem[]; hea
   return (
     <section className="section cal-day" aria-label={dayLabel(d, I, true)}>
       <div className="cal-day-head">
-        <H className="cal-day-h">{dayLabel(d, I)}{d === todayYmd() ? <span className="badge b-sky cal-today-badge">{tt('Бүгін', 'Сегодня')}</span> : null}</H>
+        <H className="cal-day-h">{dayLabel(d, I)}{d === todayYmd() ? <>{' '}<span className="badge b-sky cal-today-badge">{tt('Бүгін', 'Сегодня')}</span></> : null}</H>
         <span className="tiny muted num">{countTxt(list.length, I)}</span>
       </div>
       {list.length ? <ol className="group cal-tl">{list.map(it => <AgendaRow key={it.key} it={it} />)}</ol>
@@ -688,6 +688,8 @@ export function CalendarView() {
   const month = /^\d{4}-\d{2}$/.test(ui.calMonth) ? { y: +ui.calMonth.slice(0, 4), m: +ui.calMonth.slice(5, 7) - 1 } : monthOf(sel);
   const view: CalViewKind = ui.calView === 'week' || ui.calView === 'tasks' || ui.calView === 'year' ? ui.calView : 'month';
   const week = view === 'week', year = view === 'year';
+  // the month/year picker: a small popover under the title (it used to sit as a fourth way to move in time)
+  const [pickOpen, setPickOpen] = useState(false);
   // the «Сабақтар» layer: by default off in the month grid (too noisy), on in the week list; the chip sets it for both
   const classesOn = ui.calClasses === 'auto' ? week : ui.calClasses === 'on';
   const all = calItems(S, I, content).filter(i => !ui.calSaved || i.saved);
@@ -788,17 +790,25 @@ export function CalendarView() {
                 </button>
               )}
             </div>
-            {week ? null : (
-              <MonthPicker month={month} onPick={(y, m) => (year ? setUi({ calMonth: monthKey({ y, m }) }) : openMonth(y, m))} onMonth={m => openMonth(month.y, m)} />
-            )}
           </div>
 
+          {/* one place to move in time: ‹ title › and «Бүгін»; the title opens the month/year picker (not in the week view) */}
           <div className="cal-nav">
             <button className="icon-btn" type="button" onClick={() => nav(-1)} aria-label={navLabel(-1)}><Icon n="back" s={20} /></button>
-            <h2 className="cal-title" id="calTitle" aria-live="polite">{week ? weekTitle : year ? String(month.y) : monthTitle}</h2>
+            <h2 className="cal-title" id="calTitle" aria-live="polite">{week ? weekTitle : (
+              <button type="button" className="cal-title-btn" aria-expanded={pickOpen} aria-controls="calPick"
+                aria-label={`${year ? String(month.y) : monthTitle}, ${tt('айды таңдау', 'выбрать месяц')}`} onClick={() => setPickOpen(o => !o)}>
+                {year ? String(month.y) : monthTitle}<Icon n="chev" s={16} className="cal-title-chev" />
+              </button>
+            )}</h2>
             <button className="icon-btn" type="button" onClick={() => nav(1)} aria-label={navLabel(1)}><Icon n="chev" s={20} /></button>
             <button className="chip cal-today-chip" type="button" onClick={year ? () => setUi({ calSel: today, calMonth: today.slice(0, 7) }) : goToday}>{tt('Бүгін', 'Сегодня')}</button>
           </div>
+          {!week && pickOpen ? (
+            <div className="cal-pop" id="calPick">
+              <MonthPicker month={month} onPick={(y, m) => (year ? setUi({ calMonth: monthKey({ y, m }) }) : openMonth(y, m))} onMonth={m => openMonth(month.y, m)} />
+            </div>
+          ) : null}
 
           {year ? (
             <YearView y={month.y} dates={days} onOpen={m => openMonth(month.y, m)} />
@@ -810,7 +820,7 @@ export function CalendarView() {
               </div>
             </>
           ) : (
-            <>
+            <div className="cal-month">
               <div className="cal-grid" role="grid" aria-labelledby="calTitle" ref={gridRef} onKeyDown={onGridKey}>
                 <div className="cal-row" role="row">
                   {WEEK_SHORT[lang].map((w, i) => (
@@ -837,9 +847,12 @@ export function CalendarView() {
                   </div>
                 ))}
               </div>
-              {addBtn}
-              <DayAgenda d={sel} items={withClasses(sel, days.get(sel) ?? [], classesOn)} onAdd={() => addOn(sel)} />
-            </>
+              {/* a laptop: the chosen day's agenda is a rail beside the month */}
+              <div className="cal-agenda">
+                {addBtn}
+                <DayAgenda d={sel} items={withClasses(sel, days.get(sel) ?? [], classesOn)} onAdd={() => addOn(sel)} />
+              </div>
+            </div>
           )}
           {year ? null : <Legend classes={classesOn} />}
           {all.length === 0 && year ? (

@@ -78,7 +78,7 @@ export function StudentQrSheet() {
     <>
       <span className="eyebrow">{tt('Цифрлық студенттік', 'Цифровой студенческий')}</span>
       <h2>{p.name}</h2>
-      <p className="muted small">{tt('Сейфуллин университеті', 'Университет им. С. Сейфуллина')} · {L(SPECS[p.spec])} · {tt(`${p.course}-курс`, `${p.course} курс`)}</p>
+      <p className="muted small">{[tt('Сейфуллин университеті', 'Университет им. С. Сейфуллина'), SPECS[p.spec] ? L(SPECS[p.spec]) : '', p.course ? tt(`${p.course}-курс`, `${p.course} курс`) : ''].filter(Boolean).join(' · ')}</p>
       <Qr text={`STUDENTHUB-STUDENT|${studentCode(p)}|${p.name}|${p.spec}|${p.course}`} />
       <p style={{ textAlign: 'center' }}><span className="code">{studentCode(p)}</span></p>
       <p className="tiny muted">{tt('Прототипте QR-код студент мәртебесін көрсету үшін ғана. Ресми растау университет жүйесі қосылғанда іске қосылады.', 'В прототипе QR-код только демонстрирует статус студента. Официальная проверка появится после подключения системы университета.')}</p>

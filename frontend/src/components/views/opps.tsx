@@ -5,7 +5,7 @@ import { FeedBadge } from '@/components/views/feeds';
 import { SuggestButton } from '@/components/views/ambassador';
 import { MyDbEvents } from '@/components/views/events';
 import { EmployerJobBits, MyApplications, OfficialBadge } from '@/components/views/jobs-b2b';
-import { Empty, Heart, Icon, Row, SectionHead } from '@/components/ui';
+import { Empty, Heart, Icon, Row, SectionHead, ViewLink } from '@/components/ui';
 import { PinButton } from '@/components/views/calendar';
 import { CITIES, JOB_TAGS } from '@/lib/data/static';
 import { deadlineText, jobApplyText, oppLeft, payText, qualify, typeLabel } from '@/lib/domain';
@@ -14,12 +14,12 @@ import type { Job, Opportunity, Plan } from '@/lib/types';
 
 /** a vacancy row; `heart` = the search list's variant with ♥ in place of the chevron */
 export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
-  const { S, tt, tp, L, I, go } = useApp();
+  const { S, tt, tp, L, I } = useApp();
   const pt = payText(j, I);
   const tags = j.tags.slice(0, 2).filter(k => JOB_TAGS[k]);
   const applied = !!S.applied[j.id];
   const row = (
-    <button className="row" type="button" onClick={() => go('job:' + j.id)} style={{ alignItems: 'flex-start' }}>
+    <ViewLink className="row" to={'job:' + j.id} style={{ alignItems: 'flex-start' }}>
       <span className={`ico ${j.today ? 'ok' : ''}`}><Icon n="briefcase" /></span>
       <span className="row-main">
         <span className="row-title">{L(j.title)}</span>
@@ -35,23 +35,23 @@ export function JobRow({ j, heart }: { j: Job; heart?: boolean }) {
         ) : null}
       </span>
       {heart ? null : <span className="chev" style={{ alignSelf: 'center' }}><Icon n="chev" s={18} /></span>}
-    </button>
+    </ViewLink>
   );
   return heart ? <div className="sr">{row}<span className="sr-end sr-heart"><Heart id={j.id} opp={false} /><PinButton item={'job:' + j.id} /></span></div> : row;
 }
 
 /** «Мүмкіндік білесің бе? Ұсын» at the end of job/opportunity lists: the site's form, whatever the switches say */
-export function SuggestLink() {
-  return <SuggestButton />;
+export function SuggestLink({ quiet = false }: { quiet?: boolean }) {
+  return <SuggestButton quiet={quiet} />;
 }
 
 /** an internship / grant / mobility card: type, funding, deadline and «Сізге сәйкес» match badge, with ♥ */
 export function OppCard({ o }: { o: Opportunity }) {
-  const { S, tt, L, I, go } = useApp();
+  const { S, tt, L, I } = useApp();
   const q = qualify(o, S.profile, I), left = oppLeft(o);
   return (
     <div className="fav-card">
-      <button className="card" type="button" onClick={() => go('opp:' + o.id)}>
+      <ViewLink className="card" to={'opp:' + o.id}>
         <div className="badges">
           <span className="badge b-sky">{typeLabel(o.type, I)}</span>
           {o.funded ? <span className="badge b-line">{tt('Қаржыландырылады', 'Финансируется')}</span> : null}
@@ -65,7 +65,7 @@ export function OppCard({ o }: { o: Opportunity }) {
           <span className={`tiny ${left <= 14 ? 'urgent' : 'muted'}`}><Icon n="clock" s={13} /> {deadlineText(o, I)}</span>
           <span className={`badge ${q.ok ? 'b-ok' : 'b-line'}`}>{q.ok ? <><Icon n="check" s={12} /> {tt('Сізге сәйкес', 'Подходите')}</> : tt('Талаптарды тексеріңіз', 'Проверьте требования')}</span>
         </div>
-      </button>
+      </ViewLink>
       <Heart id={o.id} opp />
       <PinButton item={'opp:' + o.id} />
     </div>
