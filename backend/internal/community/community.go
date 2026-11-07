@@ -524,6 +524,16 @@ func adminModerate(kinds ...string) auth.Handler {
 		err := db.Tx(r.Context(), func(tx pgx.Tx) error {
 			var tag interface{ RowsAffected() int64 }
 			var err error
+			if !body.Hidden && u.Role != "admin" {
+				// an upheld hide (hidden_reason 'admin') is an admin decision: a moderator cannot undo it
+				var final bool
+				if err := tx.QueryRow(r.Context(), `select hidden_reason = 'admin' from `+t.table+` where id = $1 and status = 'hidden'`, body.ID).Scan(&final); err != nil {
+					return err
+				}
+				if final {
+					return refuse("forbidden", http.StatusForbidden)
+				}
+			}
 			if body.Hidden {
 				tag, err = tx.Exec(r.Context(), `update `+t.table+` set status = 'hidden', hidden_reason = 'admin' where id = $1 and status in ('active', 'hidden')`, body.ID)
 			} else {

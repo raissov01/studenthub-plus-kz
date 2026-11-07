@@ -33,3 +33,14 @@ func TestHandlerBuildsAndSwitchesHide(t *testing.T) {
 		}
 	}
 }
+
+func TestNULIsBadRequest(t *testing.T) {
+	h := Handler()
+	for _, p := range []string{"/api/quiz/s/%00", "/api/market/items?q=%00", "/api/qa/questions?q=a%00b"} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, p, nil))
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("GET %s: %d, want 400", p, w.Code)
+		}
+	}
+}

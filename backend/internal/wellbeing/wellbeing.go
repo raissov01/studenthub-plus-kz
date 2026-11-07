@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
@@ -38,6 +39,7 @@ type Contact struct {
 
 var (
 	rePhone = regexp.MustCompile(`^\+?[0-9 ()-]{3,24}$`)
+	// the column CHECK is ≤ 120 characters: a longer address that matched used to be a 500
 	reEmail = regexp.MustCompile(`^[^@\s]{1,64}@[^@\s]{1,100}\.[^@\s]{2,20}$`)
 )
 
@@ -135,7 +137,7 @@ func replace(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if c.Email != nil && *c.Email == "" {
 			c.Email = nil
 		}
-		if !a || !b || !d || !e || (c.Phone != nil && !rePhone.MatchString(*c.Phone)) || (c.Email != nil && !reEmail.MatchString(*c.Email)) ||
+		if !a || !b || !d || !e || (c.Phone != nil && !rePhone.MatchString(*c.Phone)) || (c.Email != nil && (!reEmail.MatchString(*c.Email) || utf8.RuneCountInString(*c.Email) > 120)) ||
 			(c.Phone == nil && c.Email == nil && c.Place == "") {
 			httpx.JSON(w, http.StatusBadRequest, map[string]any{"error": map[string]any{"code": "invalid", "index": i,
 				"message": map[bool]string{true: "Проверьте контакт", false: "Байланысты тексеріңіз"}[httpx.Lang(r) == "ru"]}})

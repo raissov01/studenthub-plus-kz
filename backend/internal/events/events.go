@@ -541,12 +541,12 @@ func manageList(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
 		return
 	}
-	univ := ""
+	// "" = every university (admin); nil = none of them, only club events (CanManage filters them below).
+	// (The old "\x00" placeholder for nil was refused by Postgres: a 500.)
+	empty := ""
+	univ := &empty
 	if u.Role != "admin" {
-		univ = "\x00" // no university: only club events (CanManage filters them below)
-		if u.University != nil {
-			univ = *u.University
-		}
+		univ = u.University
 	}
 	out := []*Event{}
 	err := db.Tx(ctx, func(tx pgx.Tx) error {

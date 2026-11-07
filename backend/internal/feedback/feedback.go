@@ -516,7 +516,7 @@ func create(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		if err := tx.QueryRow(r.Context(), `insert into feedback_tickets (recipient_id, category, body, photo, anonymous, author_id, token_hash, status, flag,
 			sla_due_at, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11) returning id`,
 			rec.ID, in.Category, body, photoName, in.Anonymous, author, tokHash, status, flagCol,
-			now.Add(time.Duration(rec.SLAHours)*time.Hour), created).Scan(&id); err != nil {
+			created.Add(time.Duration(rec.SLAHours)*time.Hour), created).Scan(&id); err != nil { // from created: an exact SLA gave away the send time
 			return err
 		}
 		if flag != "" {
@@ -672,7 +672,7 @@ func studentMessage(w http.ResponseWriter, r *http.Request) {
 		// the ball is back with staff: a new SLA window
 		_, err = tx.Exec(r.Context(), `update feedback_tickets set status = case when status = 'answered' then 'in_progress' else status end,
 			sla_due_at = $2, sla_reminded_at = null, updated_at = $3 where id = $1`,
-			t.ID, Now().Add(time.Duration(t.Recipient.SLAHours)*time.Hour), at)
+			t.ID, at.Add(time.Duration(t.Recipient.SLAHours)*time.Hour), at) // from at: hour-truncated when anonymous
 		rec = t.Recipient.ID
 		return err
 	})

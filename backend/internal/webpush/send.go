@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -43,10 +45,36 @@ func Default() *Sender {
 	if key != cacheKey {
 		cacheKey, cached = key, nil
 		if v, err := ParseVAPID(pub, priv, sub); err == nil {
-			cached = &Sender{VAPID: v, Client: &http.Client{Timeout: 10 * time.Second}}
+			cached = &Sender{VAPID: v, Client: pushClient()}
 		}
 	}
 	return cached
+}
+
+// pushClient posts only to public addresses and never follows a redirect: the endpoint is chosen by the
+// browser, so without this a subscription could make the API call kaspi-pos, itself, other services on the
+// host or cloud metadata (directly or through a 30x from an attacker's https server).
+func pushClient() *http.Client {
+	d := &net.Dialer{Timeout: 5 * time.Second, Control: func(_, address string, _ syscall.RawConn) error {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil || !publicIP(net.ParseIP(host)) {
+			return errors.New("webpush: endpoint is not a public address")
+		}
+		return nil
+	}}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.Proxy = nil
+	tr.DialContext = d.DialContext
+	return &http.Client{Timeout: 10 * time.Second, Transport: tr,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+}
+
+// cgnat is 100.64.0.0/10 (shared address space), not covered by net.IP.IsPrivate.
+var cgnat = &net.IPNet{IP: net.IPv4(100, 64, 0, 0), Mask: net.CIDRMask(10, 32)}
+
+func publicIP(ip net.IP) bool {
+	return ip != nil && ip.IsGlobalUnicast() && !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() &&
+		!cgnat.Contains(ip)
 }
 
 // PublicConfig is the "webPush" object of GET /api/config.

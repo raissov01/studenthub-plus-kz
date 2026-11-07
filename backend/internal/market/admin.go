@@ -197,6 +197,12 @@ func adminBan(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	ctx := r.Context()
 	var until time.Time
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
+		if u.Role != "admin" { // a moderator never bans an admin
+			var target string
+			if err := tx.QueryRow(ctx, `select role from users where id = $1`, in.UserID).Scan(&target); err == nil && target == "admin" {
+				return errForbidden
+			}
+		}
 		err := tx.QueryRow(ctx, `insert into market_bans (user_id, until, reason, created_by)
 			select id, now() + make_interval(days => $2), $3, $4 from users where id = $1 and deleted_at is null
 			on conflict (user_id) do update set until = excluded.until, reason = excluded.reason,
@@ -209,6 +215,10 @@ func adminBan(w http.ResponseWriter, r *http.Request, u *auth.User) {
 			values ($1, 'market_ban', $2, $3, jsonb_build_object('days', $4::int))`, u.ID, in.UserID, reason, in.Days)
 		return err
 	})
+	if errors.Is(err, errForbidden) {
+		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
+		return
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		fail(w, r, "user_not_found", http.StatusNotFound)
 		return
@@ -219,6 +229,9 @@ func adminBan(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"userId": in.UserID, "until": until})
 }
+
+// errForbidden: a moderator acting on an admin.
+var errForbidden = errors.New("market: forbidden")
 
 // adminUnban: DELETE /api/admin/market/bans/{userId} {reason}
 func adminUnban(w http.ResponseWriter, r *http.Request, u *auth.User) {
@@ -233,6 +246,10 @@ func adminUnban(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	reason, ok := reasonOK(in.Reason)
 	if !ok {
 		fail(w, r, "reason_required", http.StatusBadRequest)
+		return
+	}
+	if uid == u.ID && u.Role != "admin" { // a banned moderator does not lift their own ban
+		httpx.Error(w, r, http.StatusForbidden, "forbidden", httpx.MsgForbid)
 		return
 	}
 	ctx := r.Context()

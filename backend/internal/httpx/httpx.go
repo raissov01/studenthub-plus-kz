@@ -2,7 +2,10 @@
 package httpx
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -47,10 +50,25 @@ var (
 	MsgSlow     = Msg{"Сұраныс тым жиі жіберілді. Сәл күтіп, қайталаңыз.", "Слишком частые запросы. Подождите и повторите."}
 )
 
-// Decode reads a JSON body of at most maxBytes into v.
+// ErrNUL: a JSON string held U+0000, which Postgres text and jsonb refuse (it was a 500).
+var ErrNUL = errors.New("httpx: NUL character in JSON")
+
+// Decode reads a JSON body of at most maxBytes into v. A "\u0000" anywhere is refused.
 func Decode(r *http.Request, v any, maxBytes int64) error {
-	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, maxBytes))
-	return dec.Decode(v)
+	raw, err := io.ReadAll(http.MaxBytesReader(nil, r.Body, maxBytes))
+	if err != nil {
+		return err
+	}
+	if bytes.Contains(raw, []byte(`\u0000`)) {
+		return ErrNUL
+	}
+	return json.NewDecoder(bytes.NewReader(raw)).Decode(v)
+}
+
+// HasNUL reports a NUL byte in the decoded path or query: Postgres refuses it in text parameters.
+func HasNUL(r *http.Request) bool {
+	return strings.ContainsRune(r.URL.Path, 0) || strings.Contains(r.URL.RawQuery, "%00") ||
+		strings.ContainsRune(r.URL.RawQuery, 0)
 }
 
 // ClientIP returns the caller's IP as Vercel reports it.

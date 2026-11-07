@@ -112,20 +112,28 @@ func hiddenKinds(u *auth.User) []string {
 
 var MsgAdminKind = httpx.Msg{KK: "Бұл өтінімді тек әкімші қарайды.", RU: "Эту заявку рассматривает только администратор."}
 
-// kindAllowed answers 403 when the submission's kind is admin-only and the caller is not an admin.
+var MsgOwnItem = httpx.Msg{KK: "Өз өтініміңізді басқа модератор не әкімші қарайды.", RU: "Свою заявку рассматривает другой модератор или администратор."}
+
+// kindAllowed answers 403 when the submission's kind is admin-only and the caller is not an admin, or when a
+// moderator would decide their own submission (e.g. their own post hidden by reports).
 func kindAllowed(ctx context.Context, w http.ResponseWriter, r *http.Request, u *auth.User, id int64) bool {
 	if u.Role == "admin" {
 		return true
 	}
 	var kind string
+	var by *int64
 	err := db.Tx(ctx, func(tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `select kind from submissions where id = $1`, id).Scan(&kind)
+		return tx.QueryRow(ctx, `select kind, submitted_by from submissions where id = $1`, id).Scan(&kind, &by)
 	})
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		return true // the handler answers 404 / 409 as before
 	case err != nil:
 		fail(w, r, "queue kind", err)
+		return false
+	}
+	if by != nil && *by == u.ID {
+		httpx.Error(w, r, http.StatusForbidden, "own_submission", MsgOwnItem)
 		return false
 	}
 	for _, k := range AdminOnlyKinds {
