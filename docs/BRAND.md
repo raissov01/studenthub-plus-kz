@@ -64,8 +64,10 @@
 3. **Контент дерегі**: Google Sheets-тегі және әкімші контентіндегі `verified_by` бағаны «Student Hub» болса,
    `SIVA` деп өзгерт. Әкімші контенті үшін бір рет:
    `update admin_content set record = jsonb_set(record, '{verified_by}', '"SIVA"') where record->>'verified_by' = 'Student Hub';`
-4. **Kaspi / Google**: Kaspi шоттары кофейня мен полиграфияның өз аттарымен (бізде мерчант аты жоқ), Google
-   OAuth қолданылмайды — өзгертетін ештеңе жоқ. Resend-те домен аты өзгермейді.
+4. **Kaspi**: Kaspi шоттары кофейня мен полиграфияның өз аттарымен (бізде мерчант аты жоқ) — өзгертетін ештеңе
+   жоқ. Resend-те домен аты өзгермейді.
+   **Google кіру** (`FEATURE_GOOGLE_LOGIN`, [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md)): Google Cloud Console → OAuth
+   consent screen (Branding) → App name `SIVA` (жоба бұрын «Student Hub» деп жасалған болса); қалғаны өзгермейді.
 5. **Орнатылған PWA**: Android Chrome манифест атауын өзі жаңартады (бірнеше күнде); iOS-та «Басты экранға
    қосылған» белгі ескі атпен қалады — қайта қосу керек.
 6. Іздеу жүйелері мен Telegram сілтеме алдын ала көрінісі (OG кэші) біраз уақыттан кейін жаңарады; Telegram үшін
