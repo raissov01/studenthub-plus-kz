@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
@@ -172,17 +173,18 @@ func putPrefs(w http.ResponseWriter, r *http.Request, u *auth.User) {
 	// Held-back messages are re-checked on the next hourly run with the new settings
 	// (quiet hours shortened or switched off -> they may go out now).
 	if pool, err := db.Pool(ctx); err == nil {
-		if err := Reschedule(ctx, pool, u.ID); err != nil {
+		if err := Reschedule(ctx, pool, u.ID, Now()); err != nil {
 			log.Printf("notify: reschedule %d: %v", u.ID, err)
 		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"prefs": p.JSON()})
 }
 
-// Reschedule makes the student's held-back messages due now, so the next outbox run
-// re-checks them against changed settings. Runs as the connection owner.
-func Reschedule(ctx context.Context, q Querier, userID int64) error {
-	_, err := q.Exec(ctx, `update notify_outbox set not_before = now() where user_id = $1 and state = 'pending' and not_before > now()`, userID)
+// Reschedule makes the student's held-back messages due at now, so the next outbox run
+// re-checks them against changed settings. Runs as the connection owner. now is the app clock
+// (Now() / the bot's clock), not the database's: a Flush run with that same clock must see them due.
+func Reschedule(ctx context.Context, q Querier, userID int64, now time.Time) error {
+	_, err := q.Exec(ctx, `update notify_outbox set not_before = $2 where user_id = $1 and state = 'pending' and not_before > $2`, userID, now)
 	return err
 }
 
