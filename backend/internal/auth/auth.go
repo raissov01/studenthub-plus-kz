@@ -32,6 +32,7 @@ type User struct {
 	TelegramID     *int64     `json:"telegramId"` // null for an email-only account
 	Email          *string    `json:"email"`      // null until an email sign-in is set up
 	EmailVerified  bool       `json:"emailVerified"`
+	GoogleLinked   bool       `json:"googleLinked"` // a Google account is linked (users.google_sub); the sub itself stays server-side
 	Username       *string    `json:"username"`
 	Name           *string    `json:"name"`
 	Lang           string     `json:"lang"`
@@ -64,13 +65,13 @@ func (u *User) NeedsConsent() bool { return u.ConsentAt == nil }
 
 // UserColumns matches ScanUser.
 const UserColumns = `id, telegram_id, email, email_verified_at is not null, tg_username, name, lang,
-	university, faculty, course, city, role::text, consent_at, is_adult, created_at, session_version, deleted_at`
+	university, faculty, course, city, role::text, consent_at, is_adult, created_at, session_version, deleted_at, google_sub is not null`
 
 // ScanUser reads one row selected with UserColumns.
 func ScanUser(row pgx.Row) (*User, error) {
 	var u User
 	err := row.Scan(&u.ID, &u.TelegramID, &u.Email, &u.EmailVerified, &u.Username, &u.Name, &u.Lang, &u.University, &u.Faculty,
-		&u.Course, &u.City, &u.Role, &u.ConsentAt, &u.IsAdult, &u.CreatedAt, &u.SessionVersion, &u.DeletedAt)
+		&u.Course, &u.City, &u.Role, &u.ConsentAt, &u.IsAdult, &u.CreatedAt, &u.SessionVersion, &u.DeletedAt, &u.GoogleLinked)
 	if err != nil {
 		return nil, err
 	}
@@ -288,13 +289,14 @@ func OriginAllowed(r *http.Request) bool {
 	return false
 }
 
-// Routes wires the login and logout endpoints (Telegram and email) and the signed-in
-// password/email settings.
+// Routes wires the login and logout endpoints (Telegram, email and Google) and the signed-in
+// password/email/Google settings.
 func Routes(mux httpx.Router) {
 	mux.HandleFunc("POST /api/auth/telegram/webapp", Write(webappLogin))
 	mux.HandleFunc("POST /api/auth/telegram/widget", Write(widgetLogin))
 	mux.HandleFunc("POST /api/auth/logout", Write(logout))
 	emailRoutes(mux)
+	googleRoutes(mux)
 }
 
 func webappLogin(w http.ResponseWriter, r *http.Request) {

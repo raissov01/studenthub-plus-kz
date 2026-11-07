@@ -33,6 +33,10 @@ func allFeatures(t *testing.T) {
 	t.Setenv("VAPID_PUBLIC_KEY", pub)
 	t.Setenv("VAPID_PRIVATE_KEY", priv)
 	t.Setenv("VAPID_SUBJECT", "mailto:test@example.com")
+	// Google sign-in is a switch outside features.Names too: it also needs the OAuth client.
+	t.Setenv("FEATURE_GOOGLE_LOGIN", "true")
+	t.Setenv("GOOGLE_CLIENT_ID", "test-client.apps.googleusercontent.com")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test-secret")
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)
@@ -124,6 +128,7 @@ func TestRouterAuthenticationAndSwitches(t *testing.T) {
 		t.Setenv("FEATURE_"+strings.ToUpper(f), "false")
 	}
 	t.Setenv("FEATURE_WEBPUSH", "false")
+	t.Setenv("FEATURE_GOOGLE_LOGIN", "false")
 	for _, route := range Inventory() {
 		if route.Policy.Feature == "—" {
 			continue

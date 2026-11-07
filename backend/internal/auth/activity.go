@@ -83,12 +83,12 @@ func recordActive(ctx context.Context, userID int64, now time.Time) {
 	}
 }
 
-// blockExempt: the writes a blocked account keeps: signing in and out, password/email settings, deleting the
+// blockExempt: the writes a blocked account keeps: signing in and out, password/email/Google settings, deleting the
 // account, and the anonymous usage/error beacons (no content).
 func blockExempt(r *http.Request) bool {
 	p := r.URL.Path
 	switch {
-	case strings.HasPrefix(p, "/api/auth/"), p == "/api/me/password", p == "/api/me/email", p == "/api/me/email/confirm":
+	case strings.HasPrefix(p, "/api/auth/"), p == "/api/me/password", p == "/api/me/email", p == "/api/me/email/confirm", p == "/api/me/google":
 		return true
 	case r.Method == http.MethodDelete && p == "/api/me":
 		return true

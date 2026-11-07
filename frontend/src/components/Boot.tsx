@@ -10,6 +10,7 @@ import { cleanMissing, emptyFeedback, FEEDBACK_KEY, FEEDBACK_TEXT, markAsked, MA
 import { almatyDate } from '@/features/roadmap/logic';
 import { bindBackButton, startParam } from '@/features/telegram/webapp';
 import { CHECKIN_KEY } from '@/lib/events';
+import { useGoogleReturn } from '@/components/views/account';
 import { getAccount, loadMe, signInWebApp } from '@/lib/account';
 import { loadConfig } from '@/lib/config';
 import { initTelegram, useTelegram } from '@/lib/telegram';
@@ -31,6 +32,7 @@ let booted = false;
 export function Boot({ root }: { root: boolean }) {
   const { S, sheet, back, openSheet, go } = useApp();
   const tg = useTelegram();
+  useGoogleReturn(); // back from «Sign in with Google»: ?google=<status>
 
   useEffect(() => {
     if (booted) return;

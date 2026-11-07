@@ -80,4 +80,6 @@ export const AUDIT_ACTIONS: Record<string, [string, string]> = {
   moderation_approve: ['Модерация: бекітілді', 'Модерация: одобрено'],
   moderation_reject: ['Модерация: қайтарылды', 'Модерация: отклонено'],
   telegram_link: ['Telegram байланысты', 'Привязан Telegram'],
+  google_link: ['Google байланысты', 'Привязан Google'],
+  google_unlink: ['Google ажыратылды', 'Отвязан Google'],
 };

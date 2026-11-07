@@ -51,14 +51,14 @@ test('feeds: admin approves a pending feed item → it appears in search and on 
   await p.getByRole('searchbox').fill(title);
   const row = p.locator('main').getByText(title, { exact: true }).first();
   await expect(row).toBeVisible();
-  await expect(p.locator('main')).toContainText(`${label(lang, 'ИИ', 'ИИ')}: E2E Channel`);
+  await expect(p.locator('main')).toContainText(`${label(lang, 'ЖИ', 'ИИ')}: E2E Channel`);
 
   // its page: AI note, original post link, application link, deadline
   await p.goto(`/opportunity/${item.id}`);
   await expect(p.getByRole('heading', { name: title, exact: true })).toBeVisible();
   await expect(p.locator('.feed-badge')).toContainText('E2E Channel');
   const note = p.locator('.feed-note');
-  await expect(note).toContainText(label(lang, 'ИИ қорытындысы, түпнұсқасын тексеріңіз', 'Краткое изложение ИИ, проверьте оригинал'));
+  await expect(note).toContainText(label(lang, 'ЖИ қорытындысы, түпнұсқасын тексеріңіз', 'Краткое изложение ИИ, проверьте оригинал'));
   await expect(note.getByRole('link', { name: 'E2E Channel', exact: true })).toHaveAttribute('href', data.source_url);
   await expect(note.getByRole('link', { name: 'example.org', exact: true })).toHaveAttribute('href', data.apply_url);
 });

@@ -992,11 +992,132 @@
   ]
  },
  {
+  "kk": "Google ажыратылды",
+  "ru": "Google отвязан",
+  "en": "Google unlinked",
+  "files": [
+   "src/components/views/account.tsx",
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Google аккаунтыңыз арқылы да кіру үшін",
+  "ru": "Чтобы входить и через аккаунт Google",
+  "en": "To also sign in with your Google account",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google аккаунтыңыз арқылы кіре аласыз",
+  "ru": "Можно входить через аккаунт Google",
+  "en": "You can sign in with your Google account",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google аккаунтыңыздағы email расталмаған. Оны Google-да растап, қайта көріңіз.",
+  "ru": "Email в вашем аккаунте Google не подтверждён. Подтвердите его в Google и попробуйте снова.",
+  "en": "The email in your Google account is not verified. Verify it with Google and try again.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google аккаунтыңыздың тұрақты идентификаторы, расталған email және аты: Google-дан тек осылар алынады, кіру Google серверлері (АҚШ) арқылы өтеді.",
+  "ru": "Постоянный идентификатор вашего аккаунта Google, подтверждённый email и имя: от Google берутся только они, вход идёт через серверы Google (США).",
+  "en": "Your Google account's permanent ID, verified email and name: that is all we get from Google; sign-in goes through Google's servers (USA).",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google арқылы кіру",
+  "ru": "Войти через Google",
+  "en": "Continue with Google",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google арқылы кіру тоқтатылды",
+  "ru": "Вход через Google отменён",
+  "en": "Google sign-in canceled",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google арқылы кіру қазір істемей тұр. Кейінірек көріңіз.",
+  "ru": "Вход через Google сейчас не работает. Попробуйте позже.",
+  "en": "Google sign-in is not working right now. Try again later.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google арқылы кіру үзілді немесе тым ұзаққа созылды. Қайта көріңіз.",
+  "ru": "Вход через Google прервался или занял слишком долго. Попробуйте ещё раз.",
+  "en": "Google sign-in was interrupted or took too long. Try again.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google байланысты",
+  "ru": "Привязан Google",
+  "en": "Google linked",
+  "files": [
+   "src/lib/console.ts"
+  ]
+ },
+ {
+  "kk": "Google байланыстырылды",
+  "ru": "Google привязан",
+  "en": "Google linked",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google байланысқан",
+  "ru": "Google привязан",
+  "en": "Google linked",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google жауабын тексере алмадық. Қайта көріңіз.",
+  "ru": "Не удалось проверить ответ Google. Попробуйте ещё раз.",
+  "en": "We could not verify Google's response. Try again.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
   "kk": "Google картасынан ашу",
   "ru": "Открыть в Google Картах",
   "en": "Open in Google Maps",
   "files": [
    "src/components/views/map.tsx"
+  ]
+ },
+ {
+  "kk": "Google-ды байланыстыру",
+  "ru": "Привязать Google",
+  "en": "Link Google",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Google-ды байланыстыру үшін алдымен аккаунтқа кіріңіз.",
+  "ru": "Чтобы привязать Google, сначала войдите в аккаунт.",
+  "en": "Sign in to your account first to link Google.",
+  "files": [
+   "src/components/views/account.tsx"
   ]
  },
  {
@@ -1576,6 +1697,14 @@
   ]
  },
  {
+  "kk": "Telegram немесе Google арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.",
+  "ru": "Через Telegram или Google. Необязательно: профиль работает на этом устройстве и без входа.",
+  "en": "With Telegram or Google. Optional: your profile works on this device without signing in.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
   "kk": "Telegram немесе email арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.",
   "ru": "Через Telegram или email. Необязательно: профиль работает на этом устройстве и без входа.",
   "en": "Via Telegram or email. Optional: profile works on this device without signing in.",
@@ -1611,6 +1740,14 @@
   "kk": "Telegram қосылса, бот мерзімдерді еске салып, хабарламалар жібере алады, ал Telegram арқылы да кіре аласыз. Аккаунттар біріктірілмейді: Telegram басқа аккаунтта болса, байланыстыру болмайды.",
   "ru": "С привязанным Telegram бот сможет напоминать о сроках и присылать уведомления, а входить можно будет и через Telegram. Аккаунты не объединяются: если этот Telegram уже в другом аккаунте, привязать не получится.",
   "en": "With Telegram linked, the bot can remind you of deadlines and send notifications, and you can sign in via Telegram. Accounts are not merged: if this Telegram is linked to another account, linking won’t work.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Telegram, Google немесе email арқылы. Міндетті емес: профиль осы құрылғыда кірмей-ақ жұмыс істейді.",
+  "ru": "Через Telegram, Google или email. Необязательно: профиль работает на этом устройстве и без входа.",
+  "en": "With Telegram, Google or email. Optional: your profile works on this device without signing in.",
   "files": [
    "src/components/views/account.tsx"
   ]
@@ -3313,6 +3450,7 @@
   "ru": "Отвязать",
   "en": "Unlink",
   "files": [
+   "src/components/views/account.tsx",
    "src/components/views/employer.tsx",
    "src/components/views/mentors.tsx",
    "src/components/views/shop-common.tsx"
@@ -6167,8 +6305,7 @@
   "en": "Home",
   "files": [
    "src/components/Shell.tsx",
-   "src/components/SideNav.tsx",
-   "src/components/views/admin-layout.tsx"
+   "src/components/SideNav.tsx"
   ]
  },
  {
@@ -6373,6 +6510,14 @@
   "en": "Manage",
   "files": [
    "src/components/views/admin-console.tsx",
+   "src/components/views/admin-layout.tsx"
+  ]
+ },
+ {
+  "kk": "Басқару басты беті",
+  "ru": "Главная управления",
+  "en": "Admin home",
+  "files": [
    "src/components/views/admin-layout.tsx"
   ]
  },
@@ -7867,6 +8012,22 @@
   ]
  },
  {
+  "kk": "Бұл Google аккаунты басқа SIVA аккаунтына байланған. Аккаунттар біріктірілмейді.",
+  "ru": "Этот аккаунт Google уже привязан к другому аккаунту SIVA. Аккаунты не объединяются.",
+  "en": "This Google account is already linked to another SIVA account. Accounts are not merged.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Бұл email басқа, расталмаған аккаунтта тұр. Email мен құпиясөз арқылы кіріп, оны растаңыз.",
+  "ru": "Этот email указан в другом, неподтверждённом аккаунте. Войдите по email и паролю и подтвердите его.",
+  "en": "This email belongs to another, unverified account. Sign in with email and password and verify it.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
   "kk": "Бұл адам әлі келісім бермеген.",
   "ru": "Этот человек ещё не дал согласие.",
   "en": "This person has not given consent yet.",
@@ -7880,6 +8041,22 @@
   "en": "Take a group photo with friends this month",
   "files": [
    "src/features/roadmap/items.ts"
+  ]
+ },
+ {
+  "kk": "Бұл аккаунт бұғатталған.",
+  "ru": "Этот аккаунт заблокирован.",
+  "en": "This account is blocked.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
+  "kk": "Бұл аккаунтқа басқа Google аккаунты байланған. Сол Google арқылы кіріңіз.",
+  "ru": "К этому аккаунту привязан другой аккаунт Google. Войдите через него.",
+  "en": "A different Google account is linked to this account. Sign in with that one.",
+  "files": [
+   "src/components/views/account.tsx"
   ]
  },
  {
@@ -15887,7 +16064,6 @@
   "files": [
    "src/components/views/admin-content.tsx",
    "src/components/views/admin-schedule.tsx",
-   "src/components/views/admin-users.tsx",
    "src/components/views/cafe-admin.tsx",
    "src/components/views/print-admin.tsx"
   ]
@@ -25372,6 +25548,14 @@
   ]
  },
  {
+  "kk": "Тым көп әрекет. Біраздан кейін қайталаңыз.",
+  "ru": "Слишком много попыток. Повторите чуть позже.",
+  "en": "Too many attempts. Try again a bit later.",
+  "files": [
+   "src/components/views/account.tsx"
+  ]
+ },
+ {
   "kk": "Тым оңай емес (12345678, password сияқты емес)",
   "ru": "Не слишком простой (не 12345678, не password)",
   "en": "Not too simple (not 12345678, not password)",
@@ -28903,6 +29087,14 @@
   "en": "archived",
   "files": [
    "src/components/views/points.tsx"
+  ]
+ },
+ {
+  "kk": "немесе",
+  "ru": "или",
+  "en": "or",
+  "files": [
+   "src/components/views/account.tsx"
   ]
  },
  {
