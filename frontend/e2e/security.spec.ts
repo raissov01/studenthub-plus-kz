@@ -99,16 +99,21 @@ test('QR scanner opens camera and submits a decoded ticket with API mocked', asy
   await expect(scanner).not.toBeVisible();
 });
 
-test('only the exact Telegram Web origin may frame student pages', async ({ page, baseURL, lang }) => {
-  await onboard(page, lang);
-  const parentHtml = `<iframe id="mini" src="${baseURL}/settings" width="320" height="700"></iframe>`;
-  await page.route('https://web.telegram.org/k/', route => route.fulfill({ contentType: 'text/html', body: parentHtml }));
-  await page.goto('https://web.telegram.org/k/');
-  await expect(page.frameLocator('#mini').getByRole('navigation')).toBeVisible();
-  // A different Telegram subdomain must not inherit the permission.
-  await page.route('https://untrusted.telegram.org/e2e-frame-host', route => route.fulfill({ contentType: 'text/html', body: parentHtml }));
-  const denied = page.waitForEvent('console', { predicate: m => /frame-ancestors/.test(m.text()) });
-  await page.goto('https://untrusted.telegram.org/e2e-frame-host');
-  await denied;
-  await expect(page.frameLocator('#mini').getByRole('navigation')).toHaveCount(0);
+// The service worker is not under test here: while it installs (precaching the build) it can fail the iframe's
+// navigation on a busy CI runner (chrome-error, no response), which reads like a CSP refusal.
+test.describe('framing', () => {
+  test.use({ serviceWorkers: 'block' });
+  test('only the exact Telegram Web origin may frame student pages', async ({ page, baseURL, lang }) => {
+    await onboard(page, lang);
+    const parentHtml = `<iframe id="mini" src="${baseURL}/settings" width="320" height="700"></iframe>`;
+    await page.route('https://web.telegram.org/k/', route => route.fulfill({ contentType: 'text/html', body: parentHtml }));
+    await page.goto('https://web.telegram.org/k/');
+    await expect(page.frameLocator('#mini').getByRole('navigation')).toBeVisible();
+    // A different Telegram subdomain must not inherit the permission.
+    await page.route('https://untrusted.telegram.org/e2e-frame-host', route => route.fulfill({ contentType: 'text/html', body: parentHtml }));
+    const denied = page.waitForEvent('console', { predicate: m => /frame-ancestors/.test(m.text()) });
+    await page.goto('https://untrusted.telegram.org/e2e-frame-host');
+    await denied;
+    await expect(page.frameLocator('#mini').getByRole('navigation')).toHaveCount(0);
+  });
 });
