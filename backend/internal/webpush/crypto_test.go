@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"io"
 	"math/big"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -335,5 +336,40 @@ func TestSendAgainstFakePushService(t *testing.T) {
 	dead := Subscription{Endpoint: "https://127.0.0.1:1/secret-endpoint", Keys: newBrowser(t).keys}
 	if out, err := s.Send(context.Background(), dead, []byte("{}"), ""); out != Retry || err == nil || strings.Contains(err.Error(), "secret-endpoint") {
 		t.Fatalf("dead host: %v %v", out, err)
+	}
+}
+
+// The endpoint comes from the browser: the server must not POST to its own network (kaspi-pos, the API,
+// other services on the host, cloud metadata) directly or through a redirect.
+func TestDefaultClientStaysOnPublicHosts(t *testing.T) {
+	pub, priv, _ := GenerateVAPID()
+	t.Setenv("FEATURE_WEBPUSH", "true")
+	t.Setenv("VAPID_PUBLIC_KEY", pub)
+	t.Setenv("VAPID_PRIVATE_KEY", priv)
+	t.Setenv("VAPID_SUBJECT", "mailto:ssrf@example.com")
+	c := Default().Client
+	if c.CheckRedirect == nil || c.CheckRedirect(nil, nil) != http.ErrUseLastResponse {
+		t.Fatal("redirects are followed")
+	}
+	inner := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(201) }))
+	defer inner.Close()
+	tr, ok := c.Transport.(*http.Transport)
+	if !ok || tr.DialContext == nil {
+		t.Fatal("default transport dials anywhere")
+	}
+	if conn, err := tr.DialContext(context.Background(), "tcp", inner.Listener.Addr().String()); err == nil {
+		conn.Close()
+		t.Fatal("dialled a loopback address")
+	}
+	if conn, err := tr.DialContext(context.Background(), "tcp", "localhost:"+strings.Split(inner.Listener.Addr().String(), ":")[1]); err == nil {
+		conn.Close()
+		t.Fatal("dialled localhost by name")
+	}
+	for ip, want := range map[string]bool{"127.0.0.1": false, "10.1.2.3": false, "172.18.0.5": false, "192.168.0.11": false,
+		"169.254.169.254": false, "100.64.0.1": false, "0.0.0.0": false, "::1": false, "fd00::1": false, "fe80::1": false,
+		"::ffff:127.0.0.1": false, "142.250.74.10": true, "2a00:1450:4001::200a": true} {
+		if got := publicIP(net.ParseIP(ip)); got != want {
+			t.Errorf("%s: %v", ip, got)
+		}
 	}
 }
