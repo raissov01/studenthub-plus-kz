@@ -24,8 +24,8 @@ test('hamburger menu: opens from the header, reaches every section, closes with 
   await expect(page).toHaveURL(/\/roadmap$/);
   await expect(menu).toHaveCount(0);
 
-  // signed out: «Тіркелу» sits in the header and opens the sign-in sheet
+  // signed out: «Кіру» sits in the header and opens the sign-in sheet
   await page.goto('/');
-  await page.getByRole('button', { name: t('Тіркелу', 'Вход'), exact: true }).click();
+  await page.getByRole('button', { name: t('Кіру', 'Вход'), exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
 });

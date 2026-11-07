@@ -1,7 +1,7 @@
 'use client';
 /* Page frame: sticky header (back / title / bell or gear), the screen, the four-tab bar, the bottom sheet and the toast.
    Screens render only after hydration: they depend on the device's data, date and clock, which the server cannot know. */
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/components/app';
 import { Logo } from '@/components/Logo';
@@ -22,7 +22,7 @@ import { IC, type IconName } from '@/lib/icons';
 import { CHECKIN_KEY } from '@/lib/events';
 import { ROOTS, viewOfLegacyHash, viewOfPath } from '@/lib/routes';
 import { screenMeta } from '@/lib/screens';
-import { useHydrated } from '@/lib/store';
+import { getState, useHydrated } from '@/lib/store';
 import { useTelegram } from '@/lib/telegram';
 
 const TAB_OF: Record<string, string> = { opps: 'search', bonus: 'search', ai: 'home' };
@@ -89,6 +89,18 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => watch.disconnect();
   }, [name, meta.title]);
 
+  // the header title is the page's <h1>, unless the screen has its own (a job, an event, a club…): one h1 per page
+  const [pageH1, setPageH1] = useState(false);
+  useEffect(() => {
+    const m = document.getElementById('main');
+    if (!m) return;
+    const on = () => setPageH1(!!m.querySelector('h1'));
+    on();
+    const watch = new MutationObserver(on);
+    watch.observe(m, { subtree: true, childList: true });
+    return () => watch.disconnect();
+  }, []);
+
   // header border once the page scrolls
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -107,14 +119,16 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(OPEN_MENU, on);
   }, []);
 
-  // first visit: onboarding sheet
+  // first visit: the onboarding sheet, only on the home screen (never over a deep link) and only once a load;
+  // it can be closed or put off («Кейінірек»), and that counts as seen, so it never comes back on its own
+  const asked = useRef(false);
   useEffect(() => {
-    if (!hydrated || S.onboarded) return;
-    const id = setTimeout(() => openSheet(<Onboarding />), 300);
+    if (!hydrated || S.onboarded || asked.current || name !== 'home') return;
+    const id = setTimeout(() => { asked.current = true; if (!getState().onboarded && !document.querySelector('.sheet')) openSheet(<Onboarding />); }, 300);
     return () => clearTimeout(id);
-    // only on first load; later resets open it themselves
+    // later resets open it themselves
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, [hydrated, name]);
 
   // laptop: «/» focuses the screen's search box (or opens «Іздеу»), like most web apps
   const desktop = useDesktop();
@@ -155,6 +169,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <>
+      <a className="skip-link" href="#main" onClick={e => { e.preventDefault(); document.getElementById('main')?.focus(); }}>{tt('Негізгі мазмұнға өту', 'Перейти к содержимому')}</a>
       <header className={`top${scrolled ? ' scrolled' : ''}`} id="top">
         <div className="top-row">
           <button className="icon-btn" id="back" type="button" onClick={back} aria-label={tt('Артқа', 'Назад')} hidden={root || !!tg.app}>
@@ -164,14 +179,20 @@ export function Shell({ children }: { children: ReactNode }) {
             aria-label={tt('Мәзір', 'Меню')} aria-haspopup="dialog" aria-expanded={menu} aria-controls="nav-drawer">
             <Icon n="menu" s={24} />
           </button>
-          <div className="top-title" id="title">
-            {name === 'home'
-              ? desktop && hydrated ? tt('Басты бет', 'Главная') : <span className="brand"><Logo />Student Hub</span>
-              : meta.title}
-          </div>
-          {hydrated && acc.loaded && !hasAccount(acc) && root ? (
+          {(() => {
+            const Title = pageH1 ? 'div' : 'h1';
+            return (
+              <Title className="top-title" id="title">
+                {name === 'home'
+                  ? desktop && hydrated ? tt('Басты бет', 'Главная') : <span className="brand"><Logo />Student Hub</span>
+                  : meta.title}
+              </Title>
+            );
+          })()}
+          {/* signed out: one «Кіру» (it opens the sign-in sheet); on a laptop it lives in the sidebar instead */}
+          {hydrated && acc.loaded && !hasAccount(acc) && root && !desktop ? (
             <button className="btn top-signin" id="signin-btn" type="button" onClick={() => openSheet(acc.user ? <ConsentSheet /> : <SignInSheet />)}>
-              {tt('Тіркелу', 'Вход')}
+              {tt('Кіру', 'Вход')}
             </button>
           ) : null}
           <button className="icon-btn" id="mine-btn" type="button" hidden={!root}
@@ -189,22 +210,18 @@ export function Shell({ children }: { children: ReactNode }) {
             onSignIn={acc.loaded && !hasAccount(acc) ? () => openSheet(acc.user ? <ConsentSheet /> : <SignInSheet />) : undefined} />
         ) : null}
       </aside>
-      <main id="main" data-screen={name} className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? <><OfflineBanner />{children}</> : null}</main>
+      <main id="main" tabIndex={-1} data-screen={name} className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? <><OfflineBanner />{children}</> : null}</main>
       {hydrated ? <Boot root={root} /> : null}
       <nav className="tabbar" aria-label="Student Hub">
         <div className="tabbar-in">
           {tabs.map(([k, i, l]) => (
-            <button key={k} className="tab" type="button" aria-current={k === tabRoot ? 'page' : undefined} onClick={() => go(k)}>
+            <button key={k} className="tab" type="button" aria-current={k === tabRoot && (k !== 'home' || name === 'home') ? 'page' : undefined} onClick={() => go(k)}>
               <span className="pill"><Icon n={i} s={22} /></span><span>{l}</span>
             </button>
           ))}
         </div>
       </nav>
-      {sheet ? (
-        <div className="sheet-back" onClick={e => { if (e.target === e.currentTarget) closeSheet(); }}>
-          <div className="sheet" role="dialog" aria-modal="true"><div className="grab"></div>{sheet}</div>
-        </div>
-      ) : null}
+      {sheet ? <SheetDialog onClose={closeSheet} closeLabel={tt('Жабу', 'Закрыть')} fallbackLabel={tt('Терезе', 'Окно')}>{sheet}</SheetDialog> : null}
       <NavDrawer open={menu} onClose={closeMenu} />
       <UpdateBar />
       {toastMsg ? (
@@ -214,5 +231,55 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
     </>
+  );
+}
+
+const CLOSE_NAMES = new Set(['Жабу', 'Закрыть', 'Close']);
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** the bottom sheet (a centred dialog on a laptop): named by its first heading, focus moves in on open, stays inside
+    while it is open (Tab wraps) and goes back to whatever opened it on close; a 44px close button in the corner */
+function SheetDialog({ children, onClose, closeLabel, fallbackLabel }: { children: ReactNode; onClose: () => void; closeLabel: string; fallbackLabel: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [labelId, setLabelId] = useState<string | undefined>(undefined);
+  const [ownClose, setOwnClose] = useState(false);
+  // focus in once, back out on unmount
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    const el = box.current;
+    if (el) {
+      const first = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].find(x => !x.classList.contains('sheet-x') && x.offsetParent !== null);
+      (first && !/^(INPUT|TEXTAREA|SELECT)$/.test(first.tagName) ? first : el).focus({ preventScroll: true });
+    }
+    return () => { if (opener && document.contains(opener)) opener.focus({ preventScroll: true }); };
+  }, []);
+  // the accessible name follows the content (sheets replace each other in place)
+  useEffect(() => {
+    // a sheet that has its own «Жабу» button keeps it; the corner one would only repeat it
+    const own = [...(box.current?.querySelectorAll<HTMLElement>('button:not(.sheet-x)') ?? [])]
+      .some(b => CLOSE_NAMES.has((b.getAttribute('aria-label') || b.textContent || '').trim()));
+    setOwnClose(own);
+    const h = box.current?.querySelector<HTMLElement>('h1, h2, h3');
+    if (!h) { setLabelId(undefined); return; }
+    if (!h.id) h.id = 'sheet-title';
+    setLabelId(h.id);
+  }, [children]);
+  const onKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab' || !box.current) return;
+    const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(x => x.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === box.current)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  return (
+    <div className="sheet-back" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={labelId} aria-label={labelId ? undefined : fallbackLabel}
+        ref={box} tabIndex={-1} onKeyDown={onKey}>
+        <div className="grab"></div>
+        {ownClose ? null : <button type="button" className="icon-btn sheet-x" onClick={onClose} aria-label={closeLabel}><Icon n="x" s={22} /></button>}
+        {children}
+      </div>
+    </div>
   );
 }

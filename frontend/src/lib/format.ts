@@ -52,3 +52,7 @@ export function i18n(lang: Lang, dictVersion = 0) {
   return { lang, tt, L, tp, fDate, fDateY, daysLeftTxt, monS: MON_S[lang], wd: WD[lang], money: (n: number) => money(n, lang) };
 }
 export type I18n = ReturnType<typeof i18n>;
+
+/** the avatar letter: the first letter of the name, or of the fallback («Студент») while the name is empty;
+    the sidebar, the profile and the edit page's preview all show the same letter */
+export const initialOf = (name: string, fallback = 'Студент') => ((name || '').trim() || fallback).charAt(0).toUpperCase();

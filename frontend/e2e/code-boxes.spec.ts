@@ -12,7 +12,7 @@ test('email code boxes move on their own', async ({ page, lang }) => {
   const sent: string[] = [];
   await page.route('**/api/auth/email/verify', route => { sent.push(JSON.parse(route.request().postData() || '{}').code); });
   await onboard(page, lang);
-  await page.getByRole('button', { name: t('Тіркелу', 'Вход'), exact: true }).click();
+  await page.getByRole('button', { name: t('Кіру', 'Вход'), exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('tab', { name: 'Email', exact: true }).click();
   await dialog.getByRole('button', { name: t('Аккаунт ашу', 'Создать аккаунт') }).last().click();

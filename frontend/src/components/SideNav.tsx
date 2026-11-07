@@ -10,6 +10,7 @@ import { useNavGroups } from '@/components/NavDrawer';
 import { useAccount } from '@/lib/account';
 import { useSideMini } from '@/lib/desktop';
 import { parseView } from '@/lib/routes';
+import { initialOf } from '@/lib/format';
 import { sectionOfView } from '@/lib/sections';
 import type { IconName } from '@/lib/icons';
 
@@ -34,8 +35,10 @@ export function SideNav({ v, tabRoot, unread, badge, onSignIn }: { v: string; ta
   const inTabs = new Set(tabs.map(t => t[0]));
   const inGroup = groups.some(([, items]) => items.some(([to]) => !inTabs.has(to) && sameView(to, v)));
   const name = S.profile.name || acc.user?.name || tt('Студент', 'Студент');
-  const initial = name.trim().charAt(0).toUpperCase() || 'S';
-  const onProfile = ['profile', 'edit', 'portfolio', 'gpa', 'docs'].includes(parseView(v)[0]);
+  const initial = initialOf(name, tt('Студент', 'Студент'));
+  const here = parseView(v)[0];
+  const onProfile = ['profile', 'edit', 'portfolio', 'gpa', 'docs'].includes(here);
+  const onNotif = here === 'notif';
   const item = (to: string, icon: IconName, label: string, current: boolean, extra?: ReactNode) => (
     <button key={to} type="button" className="side-item" aria-current={current ? 'page' : undefined} onClick={() => go(to)} title={mini ? label : undefined}>
       <Icon n={icon} s={20} /><span className="side-label">{label}</span>{extra}
@@ -52,18 +55,18 @@ export function SideNav({ v, tabRoot, unread, badge, onSignIn }: { v: string; ta
       </div>
       <nav className="side-nav" aria-label="Student Hub">
         <div className="side-group">
-          {tabs.map(([k, i, l]) => item(k, i, l, !inGroup && k === tabRoot && !onProfile))}
-          {item('notif', 'bell', tt('Хабарламалар', 'Уведомления'), parseView(v)[0] === 'notif',
+          {tabs.map(([k, i, l]) => item(k, i, l, !inGroup && !onNotif && !onProfile && k === tabRoot && (k !== 'home' || here === 'home')))}
+          {item('notif', 'bell', tt('Хабарламалар', 'Уведомления'), onNotif,
             badge ? <span className="side-count" aria-label={tt(`${unread} оқылмаған`, `${unread} непрочитанных`)}>{badge}</span> : null)}
         </div>
         {groups.map(([title, items]) => {
           const rest = items.filter(([to]) => !inTabs.has(to));
           if (!rest.length) return null;
           return (
-            <section key={title} className="side-group">
-              <h2 className="side-title"><span className="side-label">{title}</span></h2>
+            <div key={title} className="side-group" role="group" aria-label={title}>
+              <p className="side-title" aria-hidden="true"><span className="side-label">{title}</span></p>
               {rest.map(([to, icon, label]) => item(to, icon, label, sameView(to, v)))}
-            </section>
+            </div>
           );
         })}
       </nav>
@@ -72,7 +75,7 @@ export function SideNav({ v, tabRoot, unread, badge, onSignIn }: { v: string; ta
           <span className="side-avatar" aria-hidden="true">{initial}</span>
           <span className="side-label side-me-txt"><b>{name}</b><span>{S.profile.course ? tt(`${S.profile.course}-курс`, `${S.profile.course} курс`) : tt('Профиль', 'Профиль')}</span></span>
         </button>
-        {onSignIn ? <button type="button" className="btn side-signin" onClick={onSignIn} title={mini ? tt('Тіркелу', 'Вход') : undefined}><Icon n="user" s={18} /><span className="side-label">{tt('Тіркелу', 'Вход')}</span></button> : null}
+        {onSignIn ? <button type="button" className="btn ghost side-signin" onClick={onSignIn} title={mini ? tt('Кіру', 'Вход') : undefined}><Icon n="user" s={18} /><span className="side-label">{tt('Кіру', 'Вход')}</span></button> : null}
       </div>
     </div>
   );
