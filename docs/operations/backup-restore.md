@@ -7,7 +7,7 @@
 
 ### Не бар
 
-- Серверде `/root/backup-dbs.sh` күн сайын **сервер уақытымен 03:30**-да (cron) іске қосылады. Student Hub
+- Серверде `/root/backup-dbs.sh` күн сайын **сервер уақытымен 03:30**-да (cron) іске қосылады. SIVA
   базасын `docker exec studenthub-postgres pg_dump -U studenthub studenthub | gzip` арқылы `/root/backups/`
   ішіне жазады, файлдың бүтіндігін (`gzip -t` және соңындағы «dump complete» белгісі) тексереді, 7 күннен
   ескісін өшіреді. Журнал: `/var/log/db-backup.log`.

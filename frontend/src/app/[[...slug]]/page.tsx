@@ -23,11 +23,11 @@ export async function generateMetadata({ params }: PageProps<'/[[...slug]]'>): P
   const v = viewOf(slug);
   if (!v) return {};
   const path = '/' + (slug || []).join('/');
-  if (v === 'home') return { ...pageMeta({ title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION, path: '/' }), title: { absolute: 'Student Hub' } };
+  if (v === 'home') return { ...pageMeta({ title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION, path: '/' }), title: { absolute: 'SIVA' } };
   const kk = i18n('kk');
   const { title } = screenMeta(v, { I: kk, S: defaults('kk'), ui: UI_INIT });
   const robots = /^(admin|organize|checkin|ambassador|mentors:me|mentors:become|employer|university|cafe:staff|cafe:orders|print:staff|print:jobs|voice)/.test(v) ? { robots: { index: false, follow: false } } : {};
-  return { ...pageMeta({ title: `${title} — Student Hub`, description: DEFAULT_DESCRIPTION, path }), title, ...robots };
+  return { ...pageMeta({ title: `${title} — SIVA`, description: DEFAULT_DESCRIPTION, path }), title, ...robots };
 }
 
 export default async function Page({ params }: PageProps<'/[[...slug]]'>) {

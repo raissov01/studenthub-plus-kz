@@ -23,7 +23,7 @@
 | `docker/vps-apply.sh` | серверде орындалатын бөлігі | VPS (ssh арқылы) |
 | `docker/docker-compose.local.yml` | бүкіл стек бастапқы кодтан | ноутбук |
 | `docker/docker-compose.override.yml` + `nginx.local.conf` | бір origin, nginx контейнері `:8088` | ноутбук |
-| `docker/stack.yml` + `nginx.conf` + `swarm-init.sh` + `swarm-deploy.sh` | Swarm нұсқасы, өз nginx контейнері 80/443-те | **тек** Student Hub 80/443-ті иеленетін сервер |
+| `docker/stack.yml` + `nginx.conf` + `swarm-init.sh` + `swarm-deploy.sh` | Swarm нұсқасы, өз nginx контейнері 80/443-те | **тек** SIVA 80/443-ті иеленетін сервер |
 | `.github/workflows/deploy.yml` | CI-дан smart deploy (қолмен іске қосу) | GitHub Actions, secrets әлі қосылмаған |
 | `.github/workflows/ci.yml` | go vet/test, tsc, eslint, unit, build | әр push |
 
@@ -57,8 +57,8 @@ cd frontend && npx tsc --noEmit && npx eslint . && npm run test:ts && npm run bu
 
 ## Swarm нұсқасы (міндетті емес)
 
-StudyWithRaissov Swarm-да жүреді; Student Hub-та да сол нұсқа бар, бірақ ортақ VPS үшін **әдепкі емес**: онда
-хосттағы nginx 80/443-ті ұстап тұр және Swarm өшік. Student Hub жеке серверге көшсе:
+StudyWithRaissov Swarm-да жүреді; SIVA-да да сол нұсқа бар, бірақ ортақ VPS үшін **әдепкі емес**: онда
+хосттағы nginx 80/443-ті ұстап тұр және Swarm өшік. SIVA жеке серверге көшсе:
 
 ```bash
 ssh root@<server> 'bash -s' < docker/swarm-init.sh   # swarm init, Postgres құпия сөзі secret ретінде

@@ -46,12 +46,12 @@ export async function generateMetadata({ params }: PageProps<'/p/[slug]'>): Prom
   const r = await load(slug);
   if (!('page' in r)) return { robots: NOINDEX };
   const og = r.page.og;
-  const description = og.description || 'Student Hub';
+  const description = og.description || 'SIVA';
   return {
     title: { absolute: og.title },
     description,
     robots: NOINDEX,
-    openGraph: { type: 'profile', siteName: 'Student Hub', title: og.title, description, url: og.url, images: [{ url: og.image, width: 1200, height: 630 }], locale: 'kk_KZ' },
+    openGraph: { type: 'profile', siteName: 'SIVA', title: og.title, description, url: og.url, images: [{ url: og.image, width: 1200, height: 630 }], locale: 'kk_KZ' },
     twitter: { card: 'summary_large_image', title: og.title, description, images: [og.image] },
   };
 }
@@ -72,7 +72,7 @@ export default async function Public({ params, searchParams }: PageProps<'/p/[sl
   return (
     <>
       <nav className="pf-bar no-print" aria-label={lang === 'ru' ? 'Язык' : 'Тіл'}>
-        <Link className="pf-brand" href="/">Student Hub</Link>
+        <Link className="pf-brand" href="/">SIVA</Link>
         <Link className="chip" href={`/p/${slug}?lang=${other}`} hrefLang={other} lang={other} prefetch={false}>{other === 'ru' ? 'Русский' : 'Қазақша'}</Link>
       </nav>
       <PortfolioPage page={r.page} lang={lang} />

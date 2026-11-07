@@ -112,7 +112,7 @@ answer exactly `404 {"error":{"code":"not_found","message":"Мұндай бет 
     "events": [{"title": {"kk": "Хакатон", "ru": ""}, "date": "…", "organizer": "ENU", "verifyUrl": "https://…/#/event/12", "verified": true}],
     "certificates": [
       {"kind": "event", "title": {"kk": "Хакатон", "ru": ""}, "issuer": "ENU", "issuedAt": "…", "verifyUrl": "https://…/#/event/12", "verified": true},
-      {"kind": "ambassador", "title": {"kk": "Student Hub амбассадоры", "ru": "Амбассадор Student Hub"}, "issuer": "ENU", "issuedAt": "…", "verifyUrl": "https://…/#/certificate/abcd…", "verified": true}
+      {"kind": "ambassador", "title": {"kk": "SIVA амбассадоры", "ru": "Амбассадор SIVA"}, "issuer": "ENU", "issuedAt": "…", "verifyUrl": "https://…/#/certificate/abcd…", "verified": true}
     ],
     "badges": [{"badge": "mentor", "awardedAt": "…", "verified": true}]
   },
@@ -125,7 +125,7 @@ answer exactly `404 {"error":{"code":"not_found","message":"Мұндай бет 
     "badges": [{"badge": "generous", "awardedAt": "…", "verified": false}]
   },
   "contact": {"telegramUrl": "https://t.me/aigerim"},
-  "og": {"title": "Айгерім — Student Hub портфолиосы", "description": "Backend стажер", "image": "https://…/og.png", "url": "https://…/p/k3m9x2p7qa"},
+  "og": {"title": "Айгерім — SIVA портфолиосы", "description": "Backend стажер", "image": "https://…/og.png", "url": "https://…/p/k3m9x2p7qa"},
   "site": "https://…"
 }
 ```
@@ -190,8 +190,8 @@ with the account by a delete hook).
       `og:title` / `og:description` / `og:image` / `og:url` from `og`.
 - [ ] Page layout top → bottom: name, headline, university + course, bio; «Расталған жетістіктер ✓» (events with date and
       organizer, certificates, ambassador certificate, «Ментор 🎓») each with its `verifyUrl`; «Өзі көрсеткен» (certificates,
-      experience, skills, community badges such as «Жомарт»); legend «✓ — Student Hub жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен»;
-      «Telegram арқылы жазу» only when `contact` is not null; footer «Student Hub — Сейфуллин университеті студенттеріне арналған» + site link.
+      experience, skills, community badges such as «Жомарт»); legend «✓ — SIVA жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен»;
+      «Telegram арқылы жазу» only when `contact` is not null; footer «SIVA — Сейфуллин университеті студенттеріне арналған» + site link.
 - [ ] Print CSS (Ctrl+P → 1–2 clean pages, buttons hidden, links printed as text); mobile + desktop.
 - [ ] `VIEWS.resume`: checkbox «Түйіндемеге портфолио сілтемесін қосу» (uses `settings.url`; only offer it while `enabled`).
 - [ ] Never send or display GPA / phone / email in this feature.

@@ -1,7 +1,7 @@
 {
-  "name": "Student Hub",
-  "short_name": "Student Hub",
-  "description": "Жұмыс, тағылымдама, гранттар, жеңілдіктер және AI-көмекші — студенттерге бір жерде.",
+  "name": "SIVA",
+  "short_name": "SIVA",
+  "description": "SIVA — студенттің бір цифрлық кеңістігі: оқу, мансап, іс-шаралар, жеңілдіктер және AI-көмекші.",
   "lang": "kk",
   "start_url": "/",
   "scope": "/",

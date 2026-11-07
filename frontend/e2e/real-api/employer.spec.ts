@@ -17,7 +17,7 @@ test('11-013: company verification → job moderation → application → invite
   await p.getByRole('checkbox').check();
   await response(p, '/api/employer/rules/accept', () => p.getByRole('button', { name: label(lang, 'Жалғастыру', 'Продолжить'), exact: true }).click());
   const title = `Campus assistant ${lang}`;
-  const fields = { titleKk: title, titleRu: title, descKk: 'Help students find books and organise the campus library.', pay: '10000', hours: '4', schedKk: 'Saturday afternoon', address: 'Campus library', applyKk: 'Apply through Student Hub' };
+  const fields = { titleKk: title, titleRu: title, descKk: 'Help students find books and organise the campus library.', pay: '10000', hours: '4', schedKk: 'Saturday afternoon', address: 'Campus library', applyKk: 'Apply through SIVA' };
   for (const [id, value] of Object.entries(fields)) await p.locator(`#jf_${id}`).fill(value);
   await p.getByRole('radio', { name: label(lang, 'Иә, сай', 'Да, подходит'), exact: true }).check();
   const created = await response(p, '/api/employer/jobs', () => p.getByRole('button', { name: label(lang, 'Жариялау', 'Опубликовать'), exact: true }).click());

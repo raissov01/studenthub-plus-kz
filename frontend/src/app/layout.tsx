@@ -10,8 +10,8 @@ import './desktop.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_NAME, template: '%s — Student Hub' },
-  description: 'Student Hub — студентке арналған бәрі бір қосымшада: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.',
+  title: { default: SITE_NAME, template: '%s — SIVA' },
+  description: 'SIVA — студенттің бір цифрлық кеңістігі: жұмыс, тағылымдама, іс-шаралар, жеңілдіктер, құжаттар, AI-көмекші.',
   applicationName: SITE_NAME,
   manifest: '/manifest.webmanifest',
   icons: {

@@ -226,7 +226,7 @@ function Stats() {
           <Breakdown title={tt('Курс бойынша', 'По курсам')} rows={s.data.byCourse} label={k => (/^\d+$/.test(k) ? tt(`${k}-курс`, `${k} курс`) : k || tt('Көрсетілмеген', 'Не указан'))} />
           <button className="btn ghost" type="button" disabled={busy} onClick={async () => {
             setBusy(true);
-            try { await apiDownload('/api/university/stats.csv', 'studenthub-stats.csv', lang); } catch (e) { toast(errCode(e) ? errText(e) : tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл')); } finally { setBusy(false); }
+            try { await apiDownload('/api/university/stats.csv', 'siva-stats.csv', lang); } catch (e) { toast(errCode(e) ? errText(e) : tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл')); } finally { setBusy(false); }
           }}><Icon n="file" s={18} /> {tt('CSV жүктеу', 'Скачать CSV')}</button>
         </>
       )}

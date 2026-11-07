@@ -1,4 +1,4 @@
-// One short in-app question on the 3rd visit day: «Student Hub саған пайдалы ма?» (1–5) +
+// One short in-app question on the 3rd visit day: «SIVA саған пайдалы ма?» (1–5) +
 // optional «Не жетіспейді?». Shown once; closing it counts as answered. Answers go to our
 // analytics as a `feedback` event (no personal data is asked for).
 
@@ -23,7 +23,7 @@ export function cleanMissing(text: string): string {
 }
 
 export const FEEDBACK_TEXT = {
-  question: { kk: "Student Hub саған пайдалы ма?", ru: "Student Hub вам полезен?" },
+  question: { kk: "SIVA саған пайдалы ма?", ru: "SIVA вам полезен?" },
   missing: { kk: "Не жетіспейді? (міндетті емес)", ru: "Чего не хватает? (необязательно)" },
   hint: { kk: "Аты-жөніңді немесе телефоныңды жазба — жауап анонимді.", ru: "Не пишите имя или телефон — ответ анонимный." },
   send: { kk: "Жіберу", ru: "Отправить" },

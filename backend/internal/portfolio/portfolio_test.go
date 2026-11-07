@@ -182,7 +182,7 @@ func TestPublicPage(t *testing.T) {
 	if p.Contact == nil || !strings.HasPrefix(p.Contact.TelegramURL, "https://t.me/user") {
 		t.Fatalf("contact: %+v", p.Contact)
 	}
-	if !strings.Contains(p.OG.Title, "Student Hub портфолиосы") {
+	if !strings.Contains(p.OG.Title, "SIVA портфолиосы") {
 		t.Fatalf("og: %+v", p.OG)
 	}
 	// XSS: the raw response never carries markup, and no ids / hidden fields leak

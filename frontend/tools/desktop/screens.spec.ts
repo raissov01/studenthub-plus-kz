@@ -111,7 +111,7 @@ async function mockApi(page: Page) {
     if (p === '/api/quiz/quizzes/1/attempts') return json(quizResult);
     if (p === '/api/portfolio/me') return json({
       settings: { enabled: true, slug: 'aruzhan-t', url: 'https://studenthub.example/p/aruzhan-t', displayName: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: 'Деректерді талдауға қызығамын.', showUniversity: true, showCourse: true, showEvents: true, showCerts: true, showExperience: true, showSkills: true, showBadges: true, showContact: false, syncConsentAt: '2026-11-01T05:00:00Z', slugRotatedAt: null, updatedAt: '2026-11-01T05:00:00Z' },
-      items: [], preview: { noindex: true, profile: { name: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: null, university: 'Сейфуллин университеті', course: 2 }, verified: { events: [], certificates: [], badges: [] }, selfReported: { certificates: [], experience: [], skills: [], badges: [] }, contact: null, og: { title: 'Аружан Тест', description: null, image: '', url: '' }, site: 'Student Hub' },
+      items: [], preview: { noindex: true, profile: { name: 'Аружан Тест', headline: 'Экономика, 2-курс', bio: null, university: 'Сейфуллин университеті', course: 2 }, verified: { events: [], certificates: [], badges: [] }, selfReported: { certificates: [], experience: [], skills: [], badges: [] }, contact: null, og: { title: 'Аружан Тест', description: null, image: '', url: '' }, site: 'SIVA' },
     });
     if (p === '/api/admin/dashboard') return json({
       users: { total: 1240, accounts: 980, new7: 64, new30: 210, blocked: 2, moderators: 4, byRole: { student: 1200, admin: 3, ambassador: 25, employer: 12 } },

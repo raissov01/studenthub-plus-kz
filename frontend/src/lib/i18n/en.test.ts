@@ -50,7 +50,7 @@ test('tt: dictionary, templates with plurals, Russian fallback', () => {
     assert.equal(tr('en', '12 күн қалды', 'Осталось 12 дней'), '12 days left');
     assert.equal(tr('en', '2-курс, экономика', '2 курс, экономика'), 'Year 2, экономика');
     assert.equal(tr('en', 'Жоқ кілт', 'Нет ключа'), 'Нет ключа', 'missing key -> Russian');
-    assert.equal(tr('en', 'Student Hub', 'Студент Хаб'), 'Student Hub', 'no Cyrillic in kk -> kk as is');
+    assert.equal(tr('en', 'SIVA', 'Студент Хаб'), 'SIVA', 'no Cyrillic in kk -> kk as is');
     assert.equal(english('Басқа'), null);
     // L(): content from the API has no English -> Russian; our own LText goes through the dictionary
     assert.equal(lt('en', { kk: 'Сақтау', ru: 'Сохранить' }), 'Save');

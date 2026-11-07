@@ -2,7 +2,7 @@
 // Provider; today that is the unofficial kaspi-pos sidecar (kaspi.go, services/kaspi-pos) or pay-at-pickup
 // (pickup.go). Moving to an official Kaspi API later means writing one more Provider, nothing else.
 //
-// Money never passes through Student Hub: a Kaspi invoice is issued in the café's own name with the
+// Money never passes through SIVA: a Kaspi invoice is issued in the café's own name with the
 // café's cashier session, the student pays the café, and we only read the payment status.
 package payments
 

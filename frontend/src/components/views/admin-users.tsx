@@ -78,7 +78,7 @@ function UsersList({ current }: { current: number }) {
       </details>
       <div className="section-head">
         <span className="small muted num" role="status">{r.data ? tt(`Табылды: ${r.data.total}`, `Найдено: ${r.data.total}`) : ''}</span>
-        <button className="link-btn" type="button" disabled={!r.data?.total} onClick={() => apiDownload('/api/admin/export/users.csv' + query(f), 'studenthub-users.csv', lang)
+        <button className="link-btn" type="button" disabled={!r.data?.total} onClick={() => apiDownload('/api/admin/export/users.csv' + query(f), 'siva-users.csv', lang)
           .catch(e => toast(errText(e, tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл'))))}>CSV</button>
       </div>
       <ErrorLine err={r.err} />

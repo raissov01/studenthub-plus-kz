@@ -143,7 +143,7 @@ func Build(ctx context.Context, userID int64, preview bool) (*Page, error) {
 		if !s.Enabled && !preview {
 			return errHidden
 		}
-		p.Profile.Name = "Student Hub"
+		p.Profile.Name = "SIVA"
 		if s.DisplayName != nil {
 			p.Profile.Name = *s.DisplayName
 		} else if name != nil && *name != "" {
@@ -159,7 +159,7 @@ func Build(ctx context.Context, userID int64, preview bool) (*Page, error) {
 		if s.ShowContact && username != nil && *username != "" {
 			p.Contact = &Contact{TelegramURL: "https://t.me/" + *username}
 		}
-		p.OG = OG{Title: p.Profile.Name + " — Student Hub портфолиосы", Description: s.Headline,
+		p.OG = OG{Title: p.Profile.Name + " — SIVA портфолиосы", Description: s.Headline,
 			Image: siteURL() + "/og.png", URL: URL(siteURL(), s.Slug)}
 
 		if s.ShowEvents {
@@ -206,9 +206,9 @@ func Build(ctx context.Context, userID int64, preview bool) (*Page, error) {
 				var code, role string
 				err := row.Scan(&code, &c.Issuer, &role, &c.IssuedAt)
 				c.Kind, c.VerifyURL, c.Verified = "ambassador", ambassador.CertificateURL(code), true
-				c.Title = Bi{KK: "Student Hub амбассадоры", RU: "Амбассадор Student Hub"}
+				c.Title = Bi{KK: "SIVA амбассадоры", RU: "Амбассадор SIVA"}
 				if role == "lead" {
-					c.Title = Bi{KK: "Student Hub амбассадорлар жетекшісі", RU: "Лидер амбассадоров Student Hub"}
+					c.Title = Bi{KK: "SIVA амбассадорлар жетекшісі", RU: "Лидер амбассадоров SIVA"}
 				}
 				return c, err
 			})

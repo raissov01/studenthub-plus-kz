@@ -13,7 +13,7 @@ const t = (kk: string, ru: string) => ({ I }: Ctx) => I.tt(kk, ru);
 
 const META: Record<string, Meta> = {
   quiz: { title: (_, x) => t('Квиздер', 'Квизы')(x), tab: 'home' },
-  home: { title: () => 'Student Hub' },
+  home: { title: () => 'SIVA' },
   search: { title: (_, x) => t('Іздеу', 'Поиск')(x) },
   notif: { title: (_, x) => t('Хабарламалар', 'Уведомления')(x), tab: 'home' },
   services: { title: (_, x) => t('Университет қызметтері', 'Услуги университета')(x), tab: 'home' },
@@ -73,7 +73,7 @@ const META: Record<string, Meta> = {
       exports: t('CSV экспорт', 'Экспорт CSV')(x), voice: t('Студент дауысы: барлық университет', 'Голос студентов: все вузы')(x),
       moderation: t('Модерация', 'Модерация')(x), shop: t('Дүкен панелі', 'Панель магазина')(x),
     } as Record<string, string>)[prm.replace(/\?.*$/, '')]
-      ?? (/^content\/new(\?|$)/.test(prm) ? t('Жаңа жазба', 'Новая запись')(x) : prm.startsWith('content/') ? t('Жазбаны өзгерту', 'Изменить запись')(x) : 'Student Hub'),
+      ?? (/^content\/new(\?|$)/.test(prm) ? t('Жаңа жазба', 'Новая запись')(x) : prm.startsWith('content/') ? t('Жазбаны өзгерту', 'Изменить запись')(x) : 'SIVA'),
     tab: 'profile',
   },
   market: {

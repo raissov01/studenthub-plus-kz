@@ -47,13 +47,13 @@ export function SideNav({ v, tabRoot, unread, badge, onSignIn }: { v: string; ta
   return (
     <div className="side-in">
       <div className="side-head">
-        <span className="brand side-brand"><Logo /><span className="side-label">Student Hub</span></span>
+        <span className="brand side-brand"><Logo /><span className="side-label">SIVA</span></span>
         <button type="button" className="icon-btn side-toggle" onClick={() => setMini(!mini)} aria-pressed={mini}
           aria-label={mini ? tt('Мәзірді ашу', 'Развернуть меню') : tt('Мәзірді жию', 'Свернуть меню')} title={mini ? tt('Мәзірді ашу', 'Развернуть меню') : tt('Мәзірді жию', 'Свернуть меню')}>
           <Icon n="menu" s={20} />
         </button>
       </div>
-      <nav className="side-nav" aria-label="Student Hub">
+      <nav className="side-nav" aria-label="SIVA">
         <div className="side-group">
           {tabs.map(([k, i, l]) => item(k, i, l, !inGroup && !onNotif && !onProfile && k === tabRoot && (k !== 'home' || here === 'home')))}
           {item('notif', 'bell', tt('Хабарламалар', 'Уведомления'), onNotif,

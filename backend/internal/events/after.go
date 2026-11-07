@@ -341,7 +341,7 @@ func ics(w http.ResponseWriter, r *http.Request) {
 	}
 	f := "20060102T150405Z"
 	lines := []string{
-		"BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Student Hub//Events//KK", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+		"BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SIVA//Events//KK", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
 		"BEGIN:VEVENT",
 		fmt.Sprintf("UID:event-%d@studenthub", ev.ID),
 		"DTSTAMP:" + Now().UTC().Format(f),

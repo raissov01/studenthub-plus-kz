@@ -68,12 +68,12 @@ test("cleanDeadlines keeps valid entries and drops garbage (old saved state)", (
 });
 
 test("Google Calendar link: all-day spans to the next day; timed is one hour in Asia/Almaty", () => {
-  const all = new URL(googleCalendarUrl({ title: "Өтінім мерзімі", date: "2026-12-31", details: "Student Hub" }));
+  const all = new URL(googleCalendarUrl({ title: "Өтінім мерзімі", date: "2026-12-31", details: "SIVA" }));
   assert.equal(all.origin + all.pathname, "https://calendar.google.com/calendar/render");
   assert.equal(all.searchParams.get("action"), "TEMPLATE");
   assert.equal(all.searchParams.get("text"), "Өтінім мерзімі");
   assert.equal(all.searchParams.get("dates"), "20261231/20270101");
-  assert.equal(all.searchParams.get("details"), "Student Hub");
+  assert.equal(all.searchParams.get("details"), "SIVA");
   assert.equal(all.searchParams.get("ctz"), null);
   const timed = new URL(googleCalendarUrl({ title: "Емтихан", date: "2026-11-05", time: "23:30" }));
   assert.equal(timed.searchParams.get("dates"), "20261105T233000/20261106T003000");

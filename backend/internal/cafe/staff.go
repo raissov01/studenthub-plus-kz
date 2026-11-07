@@ -238,7 +238,7 @@ func Act(ctx context.Context, u *auth.User, orderID int64, action, reason string
 			set += ", accepted_at = now()"
 		}
 		if action == "picked-up" && method == "pickup" {
-			// paid at the counter: the café took the money, Student Hub never saw it
+			// paid at the counter: the café took the money, SIVA never saw it
 			set += ", payment_status = 'paid'"
 		}
 		args := []any{orderID, t.to}

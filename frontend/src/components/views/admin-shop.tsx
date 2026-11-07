@@ -92,7 +92,7 @@ function Shop({ kind, id }: { kind: 'cafe' | 'print'; id: number }) {
             <p className="small">{!s.kaspi.connected ? tt('Kaspi кассир сессиясы қосылмаған: тек кассада төлеу.', 'Сессия кассира Kaspi не подключена: только оплата на кассе.')
               : s.kaspi.broken ? tt(`Kaspi сессиясы үзілді (${s.kaspi.phoneMasked}): әкімші қайта кіруі керек.`, `Сессия Kaspi прервана (${s.kaspi.phoneMasked}): администратору нужно войти снова.`)
                 : tt(`Қосулы: ${s.kaspi.orgName || '—'} · ${s.kaspi.phoneMasked}`, `Подключено: ${s.kaspi.orgName || '—'} · ${s.kaspi.phoneMasked}`)}</p>
-            <p className="tiny muted">{tt('Kaspi-ге қосуды (SMS коды) Student Hub әкімшісі жасайды. Ақша әрқашан дүкеннің өз шотына түседі.', 'Подключение к Kaspi (код из SMS) делает администратор Student Hub. Деньги всегда идут на счёт самого магазина.')}</p>
+            <p className="tiny muted">{tt('Kaspi-ге қосуды (SMS коды) SIVA әкімшісі жасайды. Ақша әрқашан дүкеннің өз шотына түседі.', 'Подключение к Kaspi (код из SMS) делает администратор SIVA. Деньги всегда идут на счёт самого магазина.')}</p>
           </div>
         </section>
       ) : null}

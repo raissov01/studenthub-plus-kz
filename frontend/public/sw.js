@@ -1,4 +1,4 @@
-/* Student Hub service worker. Hand-written, no libraries, no build step: read it top to bottom.
+/* SIVA service worker. Hand-written, no libraries, no build step: read it top to bottom.
    What it does and the rules it follows are described in docs/PWA.md. In short:
    - pages (the app shell; no personal data is in the HTML, screens fill in from localStorage): network first,
      the saved copy when there is no network, the server is slow (> NETWORK_TIMEOUT_MS) or answers 5xx;
@@ -11,7 +11,7 @@
    everything else. Old caches are deleted when a new worker activates. A new worker waits until the student
    taps «Жаңарту» (message SKIP_WAITING); it never takes over a page on its own.
    Web Push (docs/PUSH.md): «push» shows the notification the server sent ({title, body, url, icon, tag});
-   «notificationclick» focuses an open Student Hub window on that url, or opens one. */
+   «notificationclick» focuses an open SIVA window on that url, or opens one. */
 'use strict';
 
 const VERSION = 'v4';
@@ -91,7 +91,7 @@ const pushUrl = u => (typeof u === 'string' && /^\/(?![/\\])/.test(u) ? u : '/no
 self.addEventListener('push', event => {
   let m = {};
   try { m = event.data ? event.data.json() : {}; } catch { m = { body: event.data ? event.data.text() : '' }; }
-  const title = typeof m.title === 'string' && m.title ? m.title : 'Student Hub';
+  const title = typeof m.title === 'string' && m.title ? m.title : 'SIVA';
   const options = {
     body: typeof m.body === 'string' ? m.body : '',
     icon: pushUrl(m.icon) === m.icon ? m.icon : '/icons/icon-192.png',

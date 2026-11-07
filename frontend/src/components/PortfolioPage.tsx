@@ -89,7 +89,7 @@ export function PortfolioPage({ page, lang, preview }: { page: Page; lang: Lang;
   return (
     <article className={`pf${preview ? ' pf-preview' : ''}`} lang={lang}>
       <header className="pf-head">
-        <span className="eyebrow">{tt('Student Hub портфолиосы', 'Портфолио Student Hub')}</span>
+        <span className="eyebrow">{tt('SIVA портфолиосы', 'Портфолио SIVA')}</span>
         <h1 className="pf-name">{p.name}</h1>
         {p.headline ? <p className="pf-headline">{p.headline}</p> : null}
         {where ? <p className="pf-where">{where}</p> : null}
@@ -137,9 +137,9 @@ export function PortfolioPage({ page, lang, preview }: { page: Page; lang: Lang;
         </section>
       ) : null}
 
-      <p className="pf-legend"><Ico n="check" s={14} /> <span>{tt('— Student Hub жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен.', '— подтверждено системой Student Hub. Остальное указал сам студент.')}</span></p>
+      <p className="pf-legend"><Ico n="check" s={14} /> <span>{tt('— SIVA жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен.', '— подтверждено системой SIVA. Остальное указал сам студент.')}</span></p>
       <footer className="pf-foot">
-        <span>{tt('Student Hub — Сейфуллин университеті студенттеріне арналған', 'Student Hub — для студентов Университета им. С. Сейфуллина')}</span>
+        <span>{tt('SIVA — Сейфуллин университеті студенттеріне арналған', 'SIVA — для студентов Университета им. С. Сейфуллина')}</span>
         <a href={page.site} target="_blank" rel="noopener">{hostPath(page.site)}</a>
       </footer>
     </article>

@@ -86,7 +86,7 @@ func TestConfigEmailAuth(t *testing.T) {
 	if read() {
 		t.Fatal("emailAuth true without MAIL_FROM")
 	}
-	t.Setenv("MAIL_FROM", "Student Hub <noreply@x.kz>")
+	t.Setenv("MAIL_FROM", "SIVA <noreply@x.kz>")
 	if !read() {
 		t.Fatal("emailAuth false with Resend configured")
 	}

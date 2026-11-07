@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://studenthub.studywithraissov.com').replace(/\/+$/, '');
-export const SITE_NAME = 'Student Hub';
-export const DEFAULT_TITLE = 'Student Hub — студентке бәрі бір жерде';
+export const SITE_NAME = 'SIVA';
+export const DEFAULT_TITLE = 'SIVA — студенттің бір цифрлық кеңістігі';
 export const DEFAULT_DESCRIPTION = 'Жұмыс, тағылымдама, гранттар, жеңілдіктер және AI-көмекші — Сейфуллин университетінің студенттеріне бір жерде.';
 const OG_IMAGE = { url: '/og.png', width: 1200, height: 630 };
 

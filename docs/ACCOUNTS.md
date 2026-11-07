@@ -159,7 +159,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `RATE_WRITE_PER_MIN` | жазу сұраныстарының шегі, әдепкі 30 (IP бойынша да, қолданушы бойынша да) |
 | `REPORT_URL`, `SUGGEST_FORM_URL` | `/api/config` арқылы фронтқа |
 | `RESEND_API_KEY` | Resend API кілті (`re_...`); жоқ болса email арқылы кіру өшік (`emailAuth:false`) |
-| `MAIL_FROM` | жіберуші, мысалы `Student Hub <noreply@mail.studenthub.kz>` — Resend-те расталған доменнен |
+| `MAIL_FROM` | жіберуші, мысалы `SIVA <noreply@mail.studenthub.kz>` — Resend-те расталған доменнен |
 | `MAIL_DEV_LOG` | `true` — кілт жоқта хатты (кодымен!) сервер логына жазады. **Тек локалды әзірлеу**, әдепкі `false` |
 | `RESEND_API_BASE` | тесттерге арналған; әдепкі `https://api.resend.com` |
 | `FEATURE_CLUBS`, `CLUBS_SEED`, `CLUBS_UNIVERSITY` | клубтар бөлімі, ресми клубтарды бір рет жүктеу, клуб университеті — [clubs.md](clubs.md) |
@@ -278,7 +278,7 @@ Widget тек BotFather-де тіркелген доменде жұмыс іст
    мысалы `v=DMARC1; p=none;`). **Verify** басып, статус `Verified` болғанша күт.
 3. **API Keys → Create**: рұқсаты `Sending access`, домені — сол домен. Кілтті тек серверде сақта.
 4. Серверде (VPS `studenthub-api.service` environment файлы):
-   `RESEND_API_KEY=re_...`, `MAIL_FROM="Student Hub <noreply@mail.studenthub.kz>"`.
+   `RESEND_API_KEY=re_...`, `MAIL_FROM="SIVA <noreply@mail.studenthub.kz>"`.
    `MAIL_DEV_LOG` қойма (не `false`). API-ді қайта іске қос.
 5. Тексеру: `GET /api/config` → `"emailAuth": true`; өз адресіңмен тіркеліп, хат келгенін көр.
    Тегін деңгей шектеулерін resend.com/pricing-тен тексер.

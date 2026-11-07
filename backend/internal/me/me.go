@@ -285,7 +285,7 @@ func export(w http.ResponseWriter, r *http.Request, u *auth.User) {
 		fail(w, r, "export", err)
 		return
 	}
-	w.Header().Set("Content-Disposition", `attachment; filename="studenthub-data.json"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="siva-data.json"`)
 	httpx.JSON(w, http.StatusOK, out)
 }
 

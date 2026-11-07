@@ -96,7 +96,7 @@ export function Qr({ text, big }: { text: string; big?: boolean }) {
 export function ShareRow({ path, title, kind, id }: { path: string; title: string; kind: string; id: string }) {
   const { tt, toast } = useApp();
   const url = typeof window !== 'undefined' ? withShareRef(window.location.origin + path) : path;
-  const text = title + ' — Student Hub';
+  const text = title + ' — SIVA';
   const tg = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
   const share = () => {
     if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {

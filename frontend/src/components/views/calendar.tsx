@@ -285,7 +285,7 @@ function exportOf(x: { key: string; title: string; date: Ymd; time: string; end?
   const link = x.go && typeof window !== 'undefined' ? window.location.origin + pathOf(x.go) : '';
   return {
     key: x.key, title: x.title, date: x.date, time: x.time, end: x.end ?? '', place: x.place ?? '',
-    details: [x.note, link, 'Student Hub'].filter(Boolean).join('\n'),
+    details: [x.note, link, 'SIVA'].filter(Boolean).join('\n'),
   };
 }
 function itemExport(it: CalItem, I: I18n): Exp {
@@ -303,7 +303,7 @@ function ExportButtons({ ex }: { ex: Exp }) {
   const ics = () => {
     const minutes = ex.time && ex.end > ex.time ? minutesOf(ex.end) - minutesOf(ex.time) : undefined;
     saveFile(buildOneIcs({ key: ex.key, date: ex.date, time: ex.time, minutes, summary: ex.title, description: ex.details, location: ex.place }, { now: new Date(), lang }),
-      `studenthub-${ex.date}.ics`);
+      `siva-${ex.date}.ics`);
     toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
   };
   return (

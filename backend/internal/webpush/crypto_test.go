@@ -115,7 +115,7 @@ func newBrowser(t *testing.T) browserKeys {
 
 func TestEncryptRoundTripAndLimits(t *testing.T) {
 	b := newBrowser(t)
-	msg := []byte(`{"title":"Student Hub","body":"Сәлем 👋"}`)
+	msg := []byte(`{"title":"SIVA","body":"Сәлем 👋"}`)
 	out, err := Encrypt(msg, b.keys)
 	if err != nil {
 		t.Fatal(err)

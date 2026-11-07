@@ -272,7 +272,7 @@ export async function downloadExport(lang: Lang): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'studenthub-data.json';
+  a.download = 'siva-data.json';
   document.body.appendChild(a);
   a.click();
   a.remove();

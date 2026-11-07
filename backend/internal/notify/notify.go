@@ -143,7 +143,7 @@ func (d *Dispatcher) deliver(ctx context.Context, m delivery) (telegramResult, s
 		if url == "" {
 			url = "/notifications"
 		}
-		payload, err := webpush.Message{Title: "Student Hub", Body: PlainText(m.text), URL: url, Tag: fmt.Sprintf("notify-%d", m.ids[0])}.Payload()
+		payload, err := webpush.Message{Title: "SIVA", Body: PlainText(m.text), URL: url, Tag: fmt.Sprintf("notify-%d", m.ids[0])}.Payload()
 		if err == nil {
 			res := m.push.SendAll(ctx, d.Pool, m.subs, payload, "normal")
 			if res.Delivered > 0 {

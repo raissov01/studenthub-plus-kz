@@ -50,7 +50,7 @@ change is a coin_ledger row written by the server in the same transaction as the
 balance (wallet row locked FOR UPDATE, CHECK coins >= 0, append-only trigger); one action pays
 once (unique user/reason/ref), with per-reason and daily caps. Client-sent amounts do not exist:
 the API takes only an action id, a reward id and an idempotency key.
-Café (FEATURE_CAFE): money never passes through Student Hub. A Kaspi QR is issued in the café's own
+Café (FEATURE_CAFE): money never passes through SIVA. A Kaspi QR is issued in the café's own
 name through the café's cashier session (kaspi-pos sidecar, internal network, X-Internal-Api-Key);
 the session is stored AES-256-GCM encrypted and app_user cannot read it. Order totals are recomputed
 from cafe_menu_items; a client total is ignored. Students read only their own orders and staff only

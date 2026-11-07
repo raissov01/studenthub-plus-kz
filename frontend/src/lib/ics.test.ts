@@ -4,7 +4,7 @@ import { buildScheduleIcs, escText, foldLine, semesterRange } from "./ics";
 
 const cls = (over: Partial<Parameters<typeof buildScheduleIcs>[0][0]> = {}) => ({
   key: "Микроэкономика|09:00|4-214", start: "09:00", end: "09:50", summary: "Микроэкономика (Дәріс)",
-  location: "4-корпус, 2-қабат, 4-214 аудитория", description: "Student Hub; менің кестем", ...over,
+  location: "4-корпус, 2-қабат, 4-214 аудитория", description: "SIVA; менің кестем", ...over,
 });
 
 test("CRLF only, every line at most 75 octets, unfolds back", () => {

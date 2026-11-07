@@ -132,11 +132,11 @@ func unsubscribe(w http.ResponseWriter, r *http.Request, u *auth.User) {
 func testText(r *http.Request) (title, body string) {
 	switch {
 	case r.URL.Query().Get("lang") == "en" || strings.HasPrefix(strings.ToLower(r.Header.Get("Accept-Language")), "en"):
-		return "Student Hub", "Browser notifications are on. This is a test."
+		return "SIVA", "Browser notifications are on. This is a test."
 	case httpx.Lang(r) == "ru":
-		return "Student Hub", "Уведомления в браузере включены. Это проверка."
+		return "SIVA", "Уведомления в браузере включены. Это проверка."
 	default:
-		return "Student Hub", "Браузер хабарламалары қосулы. Бұл — тексеру."
+		return "SIVA", "Браузер хабарламалары қосулы. Бұл — тексеру."
 	}
 }
 

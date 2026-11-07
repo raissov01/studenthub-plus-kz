@@ -1,4 +1,4 @@
-# Student Hub еске салу боты
+# SIVA еске салу боты
 
 Боттың бір ғана міндеті бар: студент сайтта сақтаған мүмкіндіктің мерзімін өткізіп алмауы керек.
 Сайт `https://t.me/<BOT_USERNAME>?start=remind_<id>` сілтемесін береді, бот мерзімге 7, 3 және 1 күн
@@ -27,7 +27,7 @@
 ## 1. BotFather-де бот жасау
 
 1. Telegram-да [@BotFather](https://t.me/BotFather) ашып, `/newbot` жаз.
-2. Атауын (мысалы, `Student Hub`) және username-ін (мысалы, `studenthub_kz_bot`, соңы `bot` болуы шарт) бер.
+2. Атауын (мысалы, `SIVA`) және username-ін (мысалы, `studenthub_kz_bot`, соңы `bot` болуы шарт) бер.
 3. BotFather берген токенді сақта — бұл `BOT_TOKEN`. Оны ешкімге көрсетпе, репозиторийге салма.
 4. Қосымша (міндетті емес): `/setdescription`, `/setabouttext`, `/setuserpic`.
 5. Сайттағы «Еске салу» батырмасы `https://t.me/<BOT_USERNAME>?start=remind_<id>` сілтемесіне апаруы керек

@@ -81,7 +81,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [S.lang, S.theme, tg.app]);
   useEffect(() => {
     // the prerendered <title> is Kazakh and Next may put it back after hydration (streamed metadata): keep ours
-    const want = name === 'home' ? 'Student Hub' : `${meta.title} — Student Hub`;
+    const want = name === 'home' ? 'SIVA' : `${meta.title} — SIVA`;
     const apply = () => { if (document.title !== want) document.title = want; };
     apply();
     const watch = new MutationObserver(apply);
@@ -184,7 +184,7 @@ export function Shell({ children }: { children: ReactNode }) {
             return (
               <Title className="top-title" id="title">
                 {name === 'home'
-                  ? desktop && hydrated ? tt('Басты бет', 'Главная') : <span className="brand"><Logo />Student Hub</span>
+                  ? desktop && hydrated ? tt('Басты бет', 'Главная') : <span className="brand"><Logo />SIVA</span>
                   : meta.title}
               </Title>
             );
@@ -212,7 +212,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </aside>
       <main id="main" tabIndex={-1} data-screen={name} className={/^\/quiz\/[^/]+\/host$/.test(pathname) ? 'quiz-host-main' : undefined} aria-live={name === 'quiz' ? undefined : 'polite'}>{hydrated ? <><OfflineBanner />{children}</> : null}</main>
       {hydrated ? <Boot root={root} /> : null}
-      <nav className="tabbar" aria-label="Student Hub">
+      <nav className="tabbar" aria-label="SIVA">
         <div className="tabbar-in">
           {tabs.map(([k, i, l]) => (
             <button key={k} className="tab" type="button" aria-current={k === tabRoot && (k !== 'home' || name === 'home') ? 'page' : undefined} onClick={() => go(k)}>

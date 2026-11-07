@@ -269,7 +269,7 @@ func act(ctx context.Context, u *auth.User, jobID int64, action, reason, proof s
 			set += ", printing_at = now()"
 		}
 		if action == "picked-up" && cur.PaymentMethod == "pickup" {
-			set += ", payment_status = 'paid'" // paid at the counter: Student Hub never saw the money
+			set += ", payment_status = 'paid'" // paid at the counter: SIVA never saw the money
 		}
 		args := []any{jobID, t.to}
 		if action == "decline" {

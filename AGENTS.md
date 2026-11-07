@@ -1,4 +1,4 @@
-# Student Hub — agent notes
+# SIVA — agent notes
 
 - `frontend/` — Next.js 16 app (sources in `frontend/src/`, `@/` = `frontend/src/`). **Read `frontend/AGENTS.md`
   first**: this Next.js differs from training data; its docs are in `frontend/node_modules/next/dist/docs/`.

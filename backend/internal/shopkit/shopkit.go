@@ -4,7 +4,7 @@
 // Telegram button markup, the kaspi-pos webhook signature, the shop's Kaspi cashier session store and its admin
 // login screens (kaspi.go).
 //
-// Money never passes through Student Hub: a Kaspi invoice is issued in the shop's own name with the shop's own
+// Money never passes through SIVA: a Kaspi invoice is issued in the shop's own name with the shop's own
 // cashier session (internal/cafe/payments); pay-at-the-counter needs no money flow at all.
 package shopkit
 

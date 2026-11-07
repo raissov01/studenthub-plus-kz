@@ -1,6 +1,6 @@
 /* Three UI languages without rewriting the tt(kk, ru) calls: English is a dictionary keyed by the Kazakh text
    (./en.ts, drafted by tools/i18n-translate.mjs). tt() in English: the dictionary entry, else Russian (else the Kazakh
-   text itself when it has no Cyrillic letters, e.g. "Student Hub"). The dictionary is a separate chunk, loaded only
+   text itself when it has no Cyrillic letters, e.g. "SIVA"). The dictionary is a separate chunk, loaded only
    when the language is English; until it arrives English falls back to Russian.
    Template strings: tt(`${n} күн қалды`, …) is extracted as the key "{0} күн қалды"; at run time the Kazakh string is
    matched against such keys and the holes are copied into the English text ("{0} {0|day|days} left").

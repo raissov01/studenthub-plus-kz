@@ -1,7 +1,7 @@
 // Package mail sends transactional email (sign-in codes) through the Resend HTTPS API.
 //
 //	RESEND_API_KEY   Resend API key (re_...); without it nothing is sent
-//	MAIL_FROM        sender, e.g. "Student Hub <noreply@mail.example.kz>" (a domain verified in Resend)
+//	MAIL_FROM        sender, e.g. "SIVA <noreply@mail.example.kz>" (a domain verified in Resend)
 //	MAIL_DEV_LOG     true = with no key, print messages (and so the codes) to the server log;
 //	                 for local development only, default false
 //	RESEND_API_BASE  API origin, default https://api.resend.com (tests point it at a fake)

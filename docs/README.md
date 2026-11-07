@@ -1,6 +1,6 @@
-# Student Hub — құжаттар
+# SIVA — құжаттар
 
-Student Hub үш бөліктен тұрады: Next.js фронтенд (`frontend/`), Go API (`backend/`) және Docker деплой қабаты
+SIVA үш бөліктен тұрады: Next.js фронтенд (`frontend/`), Go API (`backend/`) және Docker деплой қабаты
 (`docker/`). Production — ортақ VPS (`85.137.91.47`), хосттағы nginx артында Docker Compose.
 
 ## Түбірлік құрылым
@@ -81,6 +81,7 @@ Student Hub үш бөліктен тұрады: Next.js фронтенд (`front
 | PWA, офлайн | [PWA.md](./PWA.md) |
 | Браузер хабарламалары (Web Push) | [PUSH.md](./PUSH.md) |
 | Тілдер (kk / ru / en), ағылшын сөздігі | [I18N.md](./I18N.md) |
+| Атау (SIVA), неге ішкі атаулар `studenthub`, иесінің қолмен қадамдары | [BRAND.md](./BRAND.md) |
 | Қауіпсіздік тақырыптары | [HEADERS.md](./HEADERS.md) |
 | API маршруттарының аудиті (генерацияланады) | [SECURITY.md](./SECURITY.md) |
 | Аналитика | [ANALYTICS.md](./ANALYTICS.md) |

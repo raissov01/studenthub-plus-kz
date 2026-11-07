@@ -845,7 +845,7 @@ func liveJobs(ctx context.Context, adultOK bool, onlyID int64) ([]PublicJob, err
 			Org: content.Bi{KK: x.ename, RU: x.ename}, City: j.City, Pay: j.Pay, Per: j.Per,
 			Sched: content.Bi{KK: j.SchedKK, RU: j.SchedRU}, Tags: j.Tags, Skills: j.Skills, Spec: j.Spec,
 			Desc: content.Bi{KK: j.DescKK, RU: j.DescRU}, Req: j.Req, SourceURL: x.site,
-			PostedAt: day(j.PublishedAt), VerifiedAt: day(x.verified), VerifiedBy: "Student Hub",
+			PostedAt: day(j.PublishedAt), VerifiedAt: day(x.verified), VerifiedBy: "SIVA",
 			Contact: content.Contact{}, Deadline: day(j.ExpiresAt),
 		}
 		if j.Hours != nil {

@@ -81,9 +81,9 @@ export function ScheduleIcsButton() {
     const text = buildScheduleIcs(S.timetable.map(c => ({
       key: `${c.id}|${c.wd}|${c.t}|${c.room}`, start: c.t, end: c.end, days: [c.wd],
       summary: c.kind ? `${c.name} (${c.kind})` : c.name, location: classWhere(c, I),
-      description: tt('Student Hub: менің сабақ кестем.', 'Student Hub: моё расписание.'),
-    })), { now: new Date(), calName: tt('Сабақ кестесі — Student Hub', 'Расписание — Student Hub'), lang });
-    saveFile(text, 'studenthub-schedule.ics');
+      description: tt('SIVA: менің сабақ кестем.', 'SIVA: моё расписание.'),
+    })), { now: new Date(), calName: tt('Сабақ кестесі — SIVA', 'Расписание — SIVA'), lang });
+    saveFile(text, 'siva-schedule.ics');
     toast(tt('Файл жүктелді — оны күнтізбемен ашыңыз', 'Файл скачан — откройте его календарём'));
   };
   return (

@@ -106,7 +106,7 @@ test('calendar: menu entry, month navigation, a seeded deadline, own deadline su
     page.waitForEvent('download'),
     sheet.getByRole('button', { name: t('.ics жүктеу', 'Скачать .ics') }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe(`studenthub-${mine}.ics`);
+  expect(download.suggestedFilename()).toBe(`siva-${mine}.ics`);
 
   // delete it
   await sheet.getByRole('button', { name: t('Жою', 'Удалить'), exact: true }).click();
@@ -268,7 +268,7 @@ test('year view: 12 months with marked days, a month opens in the month view; th
 test('tab bar: «Күнтізбе» replaces notifications, which open from the header bell on every root screen', async ({ page, lang }) => {
   const t = (kk: string, ru: string) => label(lang, kk, ru);
   await onboard(page, lang);
-  const tabs = page.getByRole('navigation', { name: 'Student Hub' });
+  const tabs = page.getByRole('navigation', { name: 'SIVA' });
   await expect(tabs.getByRole('button')).toHaveCount(4);
   await expect(tabs.getByRole('button', { name: t('Хабарлар', 'Уведомления') })).toHaveCount(0);
   const bell = page.locator('#mine-btn');

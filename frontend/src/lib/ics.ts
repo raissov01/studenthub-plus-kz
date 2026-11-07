@@ -115,7 +115,7 @@ export function buildScheduleIcs(classes: IcsClass[], o: { now: Date; calName: s
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    `PRODID:-//Student Hub//Schedule//${o.lang.toUpperCase()}`,
+    `PRODID:-//SIVA//Schedule//${o.lang.toUpperCase()}`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escText(o.calName)}`,
@@ -163,7 +163,7 @@ export function buildOneIcs(e: IcsOne, o: { now: Date; lang: 'kk' | 'ru' | 'en' 
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    `PRODID:-//Student Hub//Calendar//${o.lang.toUpperCase()}`,
+    `PRODID:-//SIVA//Calendar//${o.lang.toUpperCase()}`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
   ];

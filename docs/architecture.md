@@ -56,7 +56,7 @@ flowchart LR
   фидтің соңғы көшірмесі localStorage-та (`studenthub.content.v1`).
 - **Тура `/api`.** nginx `/api/` пен WebSocket-ті Go-ға өзі жібереді: Next арқылы қосымша hop жоқ, cookie
   first-party, CSP `connect-src 'self' wss://<сайт>`.
-- **Хосттағы nginx.** VPS-те nginx басқа сайттарға да қызмет етеді, сондықтан Student Hub nginx контейнерін
+- **Хосттағы nginx.** VPS-те nginx басқа сайттарға да қызмет етеді, сондықтан SIVA nginx контейнерін
   қоспайды; сервистер тек `127.0.0.1`-ге байланған.
 - **Postgres сол томда.** Compose бұрынғы `docker run` контейнерінің атын (`studenthub-postgres`), image-ін,
   портын және `studenthub-pg` томын (`external: true`) қолданады — дерек көшірілмейді, жоғалмайды.

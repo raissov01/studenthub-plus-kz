@@ -83,8 +83,8 @@ function CafeList() {
       </div>
     </section>
   ) : null;
-  const note = <p className="note">{tt('Төлем тікелей кофехананың Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.',
-    'Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. Student Hub деньги не держит.')}</p>;
+  const note = <p className="note">{tt('Төлем тікелей кофехананың Kaspi шотына түседі не кассада төлейсіз. SIVA ақшаны ұстамайды.',
+    'Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. SIVA деньги не держит.')}</p>;
   // a laptop with one café: no lonely card in a wide page, the café itself (menu on the left, the cart on the right)
   if (desktop && cafes.length === 1) {
     return (

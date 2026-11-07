@@ -76,7 +76,7 @@ export function Ai() {
     <>
       <section className="hero">
         <div className="hero-top"><span className="avatar"><Icon n="spark" s={26} /></span>
-          <div style={{ minWidth: 0 }}><h1>Student Hub AI</h1><p className="muted small">{tt('Чат қосулы', 'Чат подключён')}</p></div></div>
+          <div style={{ minWidth: 0 }}><h1>SIVA AI</h1><p className="muted small">{tt('Чат қосулы', 'Чат подключён')}</p></div></div>
         <p className="small" style={{ color: 'var(--head-muted)' }}>{tt('Түйіндеме, сұхбат, дәріс конспектісі және емтиханға дайындық — бір жерде.', 'Резюме, собеседование, конспекты лекций и подготовка к экзамену — в одном месте.')}</p>
         <button className="btn sun" type="button" onClick={() => go('chat')}><Icon n="chat" s={18} /> {tt('Чатты ашу', 'Открыть чат')}</button>
       </section>
@@ -115,7 +115,7 @@ export function Chat() {
   return (
     <>
       <div className="chat" id="chat">
-        {msgs.length ? null : <div className="msg ai">{tt(`Сәлем, ${S.profile.name}! Мен Student Hub AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.`, `Привет, ${S.profile.name}! Я Student Hub AI. Спрашивай про резюме, собеседование, учёбу или карьеру.`)}</div>}
+        {msgs.length ? null : <div className="msg ai">{tt(`Сәлем, ${S.profile.name}! Мен SIVA AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.`, `Привет, ${S.profile.name}! Я SIVA AI. Спрашивай про резюме, собеседование, учёбу или карьеру.`)}</div>}
         {msgs.map((m, i) => <div key={i} className={`msg ${m.role === 'user' ? 'me' : 'ai'}`}>{m.role === 'user' ? m.content : <MdLite s={m.content} />}</div>)}
         {ui.chatBusy ? <div className="msg ai"><span className="typing"><i></i><i></i><i></i></span></div> : null}
         {ui.chatErr ? <div className="msg err">{ui.chatErr}</div> : null}

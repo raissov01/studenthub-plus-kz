@@ -125,7 +125,7 @@ func TestChat(t *testing.T) {
 		}
 		sys := msgs[0].(map[string]any)
 		prompt := sys["content"].(string)
-		if sys["role"] != "system" || !strings.HasPrefix(prompt, "You are Student Hub AI") {
+		if sys["role"] != "system" || !strings.HasPrefix(prompt, "You are SIVA AI") {
 			t.Fatalf("system %v", sys)
 		}
 		for _, want := range []string{"Reply in Russian", "specialty Information Systems", "year 3;",

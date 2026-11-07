@@ -516,7 +516,7 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 
-/* ---------- Student Hub layer ----------
+/* ---------- SIVA layer ----------
    Palette taken straight from the "In color balance" swatches: sage, mauve, taupe, mist, ice.
    Swatch colours are used as solid fills (tiles, stats, the brand mark); dark sage ink is the
    only action colour. Flat: solid fills + 1px lines, no shadows, no gradients. */
@@ -564,7 +564,7 @@ button.hero-stat:active { background: var(--sw-mist); }
 .msg.me { border-bottom-right-radius: 4px; }
 .sheet-back { background: rgba(34, 37, 42, .4); }
 
-/* ---------- Student Hub screens (client layout: home, search, notifications, profile) ---------- */
+/* ---------- SIVA screens (client layout: home, search, notifications, profile) ---------- */
 
 .greet { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
 .greet h1 { font-size: 2.1rem; }
@@ -697,7 +697,7 @@ button.hero-stat:active { background: var(--sw-mist); }
 @media (max-width: 374px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 340px) { :root { --fs-title: 1.125rem; } .tab { font-size: var(--fs-micro); } .tab span:last-child { letter-spacing: -.02em; } }
 
-/* ---------- client palette (from the Student Hub mockup): light blue page, royal-blue actions,
+/* ---------- client palette (from the SIVA mockup): light blue page, royal-blue actions,
    one tinted tile colour per service. Overrides the earlier pastel layer. ---------- */
 h1, h2, h3 { font-weight: 700; letter-spacing: -.01em; }
 h1 { font-size: var(--fs-2xl); line-height: 1.2; }

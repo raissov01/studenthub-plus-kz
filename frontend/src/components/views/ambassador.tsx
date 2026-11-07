@@ -448,7 +448,7 @@ function Certificate_({ code }: { code: string }) {
   if (!data) return <Loading />;
   const article = (
       <article className="cert">
-        <span className="eyebrow">Student Hub</span>
+        <span className="eyebrow">SIVA</span>
         <h1>{tt('Амбассадор сертификаты', 'Сертификат амбассадора')}</h1>
         <p className="cert-name">{data.name}</p>
         <p>{tt(`${data.university} университетінің амбассадор командасында ${data.role_in_team === 'lead' ? 'жетекші' : 'мүше'} болды.`, `Был(а) ${data.role_in_team === 'lead' ? 'лидером' : 'участником'} команды амбассадоров: ${data.university}.`)}</p>

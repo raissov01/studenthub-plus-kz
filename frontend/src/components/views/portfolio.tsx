@@ -210,7 +210,7 @@ function LinkActions({ s, onRotated }: { s: PortfolioSettings; onRotated: () => 
   const { tt, toast, openSheet } = useApp();
   const url = s.url;
   const share = () => {
-    const text = tt('Менің портфолиом — Student Hub', 'Моё портфолио — Student Hub');
+    const text = tt('Менің портфолиом — SIVA', 'Моё портфолио — SIVA');
     if (navigator.share && window.matchMedia('(pointer: coarse)').matches) navigator.share({ title: text, url }).catch(() => { /* cancelled */ });
     else window.open('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text), '_blank', 'noopener');
   };

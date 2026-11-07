@@ -78,7 +78,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
     <div className="drawer-back" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="drawer" ref={panel} role="dialog" aria-modal="true" aria-label={tt('Мәзір', 'Меню')} id="nav-drawer">
         <div className="drawer-head">
-          <span className="brand"><Logo />Student Hub</span>
+          <span className="brand"><Logo />SIVA</span>
           <button className="icon-btn" type="button" onClick={onClose} aria-label={tt('Жабу', 'Закрыть')}><Icon n="x" s={22} /></button>
         </div>
         <nav aria-label={tt('Бөлімдер', 'Разделы')}>

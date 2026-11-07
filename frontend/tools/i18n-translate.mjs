@@ -23,12 +23,12 @@ function apiKey() {
   return m[1].trim().replace(/^["']|["']$/g, '');
 }
 
-const SYSTEM = `You translate the user interface of "Student Hub", a mobile web app for students of Seifullin University
+const SYSTEM = `You translate the user interface of "SIVA", a mobile web app for students of Seifullin University
 (Astana, Kazakhstan): jobs, internships, events, discounts, calendar, notes, quizzes, an AI helper, a Telegram bot.
 For each item you get the Kazakh text (kk) and the Russian text (ru) of the same UI string. Write the English UI text.
 Rules:
 - Concise, natural app English (buttons: short imperative, e.g. "Save", "Sign in"). Sentence case. No added words.
-- Keep product and proper names: Student Hub, Telegram, Kaspi, Google, Seifullin, AI, CV, QR, XP, ENT, GPA, city names.
+- Keep product and proper names: SIVA, Telegram, Kaspi, Google, Seifullin, AI, CV, QR, XP, ENT, GPA, city names.
 - Keep emoji, symbols (₸, %, →, ·, —), numbers, line breaks, and leading/trailing spaces exactly.
 - Guillemets «…» become “…”.
 - Placeholders {0}, {1}, … are values filled in at run time and refer to the Kazakh text's holes. Every placeholder

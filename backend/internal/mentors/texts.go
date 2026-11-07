@@ -40,7 +40,7 @@ func loadPerson(ctx context.Context, q interface {
 	}
 	p.IsAdult = adult != nil && *adult
 	if p.Name == "" {
-		p.Name = "Student Hub"
+		p.Name = "SIVA"
 	}
 	return p, err
 }

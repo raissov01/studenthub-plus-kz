@@ -62,7 +62,7 @@ the 14-day «no answer» message). Everything is free for students; no payments.
 
 **Public job** (`/api/jobs`, `/api/jobs/{id}` and `/api/content` → `jobs`): the exact `backend/data/jobs.json` shape
 (`id` = `"job-<id>"`, `org` = company name, `contact` = empty, `is_demo` = false, `deadline` = expiry date,
-`verified_by` = "Student Hub") plus:
+`verified_by` = "SIVA") plus:
 
 ```json
 {

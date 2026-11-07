@@ -4,7 +4,7 @@ import { quizServerInfo } from '@/lib/quiz-api';
 type Props = { params: Promise<{ code: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { quiz } = await quizServerInfo(undefined, (await params).code);
-  if (!quiz) return { title: 'Student Hub', robots: { index: false, follow: false } };
+  if (!quiz) return { title: 'SIVA', robots: { index: false, follow: false } };
   return {
     title: quiz.title,
     description: quiz.description,

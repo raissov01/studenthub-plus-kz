@@ -1,4 +1,4 @@
-// Student Hub fork of github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 (BSD, see LICENSE).
+// SIVA fork of github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 (BSD, see LICENSE).
 //
 // Student uploads (print shop files, quiz notes) are parsed by this package, so hostile files must end.
 // Changes from upstream, each marked "studenthub:" in the code:

@@ -1169,7 +1169,7 @@ func leaderNotice(s moderation.Submission, approved bool, lang string) string {
 	}
 	link := config.SiteURL() + clubLink(id)
 	if lang == "ru" {
-		return "✅ Вы — руководитель клуба на Student Hub. Заполните страницу клуба:\n" + link
+		return "✅ Вы — руководитель клуба на SIVA. Заполните страницу клуба:\n" + link
 	}
-	return "✅ Сіз Student Hub-та клуб жетекшісісіз. Клуб бетін толтырыңыз:\n" + link
+	return "✅ Сіз SIVA-да клуб жетекшісісіз. Клуб бетін толтырыңыз:\n" + link
 }

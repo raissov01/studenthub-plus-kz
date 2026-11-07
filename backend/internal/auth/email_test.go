@@ -50,7 +50,7 @@ func fakeResend(t *testing.T) *inbox {
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("RESEND_API_KEY", "re_test_key")
-	t.Setenv("MAIL_FROM", "Student Hub <noreply@test.kz>")
+	t.Setenv("MAIL_FROM", "SIVA <noreply@test.kz>")
 	t.Setenv("RESEND_API_BASE", srv.URL)
 	t.Setenv("MAIL_DEV_LOG", "false")
 	return in
@@ -144,7 +144,7 @@ func TestEmailRegisterVerifySession(t *testing.T) {
 		t.Fatal("register must not sign in before the code")
 	}
 	msgs := in.to(norm)
-	if len(msgs) != 1 || !strings.Contains(msgs[0].Subject, "подтвердите") || msgs[0].From != "Student Hub <noreply@test.kz>" {
+	if len(msgs) != 1 || !strings.Contains(msgs[0].Subject, "подтвердите") || msgs[0].From != "SIVA <noreply@test.kz>" {
 		t.Fatalf("mail: %+v", msgs)
 	}
 	if in.auth[len(in.auth)-1] != "Bearer re_test_key" {

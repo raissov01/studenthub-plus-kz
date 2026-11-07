@@ -46,7 +46,7 @@ function Audit() {
       </div>
       <div className="section-head">
         <span className="small muted">{before.length ? tt(`${before.length + 1}-бет`, `Стр. ${before.length + 1}`) : tt('Ең жаңасы', 'Самые новые')}</span>
-        <button className="link-btn" type="button" onClick={() => apiDownload('/api/admin/export/audit.csv' + query(f), 'studenthub-audit.csv', lang)
+        <button className="link-btn" type="button" onClick={() => apiDownload('/api/admin/export/audit.csv' + query(f), 'siva-audit.csv', lang)
           .catch(e => toast(errText(e, tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл'))))}>CSV</button>
       </div>
       <ErrorLine err={r.err} />
@@ -152,7 +152,7 @@ function Exports() {
   ] as [string, string, string, boolean][]);
   const run = async (k: string, period: boolean) => {
     setBusy(k); setErr('');
-    try { await apiDownload(`/api/admin/export/${k}.csv` + (period ? query({ from, to }) : ''), `studenthub-${k}.csv`, lang); }
+    try { await apiDownload(`/api/admin/export/${k}.csv` + (period ? query({ from, to }) : ''), `siva-${k}.csv`, lang); }
     catch (e) { setErr(errText(e, tt('Файлды жүктеу мүмкін болмады', 'Не удалось скачать файл'))); } finally { setBusy(''); }
   };
   return (

@@ -739,9 +739,9 @@
   ]
  },
  {
-  "kk": "AI-чат: хабарламаңыз бен профильдің бір бөлігі (мамандық, курс, GPA, ағылшын деңгейі, дағдылар, тәжірибе) біздің сервер арқылы AI провайдеріне (OpenAI, АҚШ) жауап алу үшін жіберіледі. Student Hub серверінде сақталмайды.",
-  "ru": "AI-чат: сообщение и часть профиля (специальность, курс, GPA, уровень английского, навыки, опыт) через наш сервер отправляются AI-провайдеру (OpenAI, США) для ответа. На сервере Student Hub не сохраняются.",
-  "en": "AI chat: your message and part of your profile (major, year, GPA, English level, skills, experience) are sent via our server to the AI provider (OpenAI, USA) for a response. Not stored on Student Hub server.",
+  "kk": "AI-чат: хабарламаңыз бен профильдің бір бөлігі (мамандық, курс, GPA, ағылшын деңгейі, дағдылар, тәжірибе) біздің сервер арқылы AI провайдеріне (OpenAI, АҚШ) жауап алу үшін жіберіледі. SIVA серверінде сақталмайды.",
+  "ru": "AI-чат: сообщение и часть профиля (специальность, курс, GPA, уровень английского, навыки, опыт) через наш сервер отправляются AI-провайдеру (OpenAI, США) для ответа. На сервере SIVA не сохраняются.",
+  "en": "AI chat: your message and part of your profile (major, year, GPA, English level, skills, experience) are sent via our server to the AI provider (OpenAI, USA) for a response. Not stored on SIVA server.",
   "files": [
    "src/components/views/privacy.tsx"
   ]
@@ -1208,9 +1208,9 @@
   ]
  },
  {
-  "kk": "Kaspi-ге қосуды (SMS коды) Student Hub әкімшісі жасайды. Ақша әрқашан дүкеннің өз шотына түседі.",
-  "ru": "Подключение к Kaspi (код из SMS) делает администратор Student Hub. Деньги всегда идут на счёт самого магазина.",
-  "en": "Connecting Kaspi (SMS code) is done by a Student Hub administrator. Money always goes to the shop's own account.",
+  "kk": "Kaspi-ге қосуды (SMS коды) SIVA әкімшісі жасайды. Ақша әрқашан дүкеннің өз шотына түседі.",
+  "ru": "Подключение к Kaspi (код из SMS) делает администратор SIVA. Деньги всегда идут на счёт самого магазина.",
+  "en": "Connecting Kaspi (SMS code) is done by a SIVA administrator. Money always goes to the shop's own account.",
   "files": [
    "src/components/views/admin-shop.tsx"
   ]
@@ -1380,65 +1380,65 @@
   ]
  },
  {
-  "kk": "Student Hub анықтама бермейді, тек қайдан алуға болатынын көрсетеді",
-  "ru": "Student Hub не выдаёт справки, а подсказывает, где их получить",
-  "en": "Student Hub does not issue certificates, only shows where to get them",
+  "kk": "SIVA анықтама бермейді, тек қайдан алуға болатынын көрсетеді",
+  "ru": "SIVA не выдаёт справки, а подсказывает, где их получить",
+  "en": "SIVA does not issue certificates, only shows where to get them",
   "files": [
    "src/lib/data/static.ts"
   ]
  },
  {
-  "kk": "Student Hub дерекқоры жалға алынған серверде (VPS) тұрады; сервердің елі заңгер тексеруінде нақтыланып, осында жазылады",
-  "ru": "База данных Student Hub находится на арендованном сервере (VPS); страна сервера будет уточнена при проверке юристом и указана здесь",
-  "en": "Student Hub database is on a rented server (VPS); server country will be confirmed by legal review and shown here",
+  "kk": "SIVA дерекқоры жалға алынған серверде (VPS) тұрады; сервердің елі заңгер тексеруінде нақтыланып, осында жазылады",
+  "ru": "База данных SIVA находится на арендованном сервере (VPS); страна сервера будет уточнена при проверке юристом и указана здесь",
+  "en": "SIVA database is on a rented server (VPS); server country will be confirmed by legal review and shown here",
   "files": [
    "src/components/views/privacy.tsx"
   ]
  },
  {
-  "kk": "Student Hub портфолиосы",
-  "ru": "Портфолио Student Hub",
-  "en": "Student Hub portfolio",
+  "kk": "SIVA портфолиосы",
+  "ru": "Портфолио SIVA",
+  "en": "SIVA portfolio",
   "files": [
    "src/components/PortfolioPage.tsx"
   ]
  },
  {
-  "kk": "Student Hub саған пайдалы ма?",
-  "ru": "Student Hub вам полезен?",
-  "en": "Is Student Hub useful to you?",
+  "kk": "SIVA саған пайдалы ма?",
+  "ru": "SIVA вам полезен?",
+  "en": "Is SIVA useful to you?",
   "files": [
    "src/features/feedback/logic.ts"
   ]
  },
  {
-  "kk": "Student Hub сервері мен оның дерекқоры: аккаунт, еске салулар, аналитика",
-  "ru": "Сервер Student Hub и его база данных: аккаунт, напоминания, аналитика",
-  "en": "Student Hub server and database: account, reminders, analytics",
+  "kk": "SIVA сервері мен оның дерекқоры: аккаунт, еске салулар, аналитика",
+  "ru": "Сервер SIVA и его база данных: аккаунт, напоминания, аналитика",
+  "en": "SIVA server and database: account, reminders, analytics",
   "files": [
    "src/components/views/privacy.tsx"
   ]
  },
  {
-  "kk": "Student Hub — Сейфуллин университеті студенттеріне арналған",
-  "ru": "Student Hub — для студентов Университета им. С. Сейфуллина",
-  "en": "Student Hub — for Seifullin University students",
+  "kk": "SIVA — Сейфуллин университеті студенттеріне арналған",
+  "ru": "SIVA — для студентов Университета им. С. Сейфуллина",
+  "en": "SIVA — for Seifullin University students",
   "files": [
    "src/components/PortfolioPage.tsx"
   ]
  },
  {
-  "kk": "Student Hub-ты кірмей-ақ толық қолдануға болады. Бұл жағдайда профиліңіз бен жоспарларыңыз тек осы құрылғыда (браузердің localStorage-інде) сақталады.",
-  "ru": "Student Hub можно полностью использовать без входа. Тогда профиль и планы хранятся только на этом устройстве (в localStorage браузера).",
-  "en": "Student Hub can be fully used without signing in. Then profile and plans are stored only on this device (in browser localStorage).",
+  "kk": "SIVA-ны кірмей-ақ толық қолдануға болады. Бұл жағдайда профиліңіз бен жоспарларыңыз тек осы құрылғыда (браузердің localStorage-інде) сақталады.",
+  "ru": "SIVA можно полностью использовать без входа. Тогда профиль и планы хранятся только на этом устройстве (в localStorage браузера).",
+  "en": "SIVA can be fully used without signing in. Then profile and plans are stored only on this device (in browser localStorage).",
   "files": [
    "src/components/views/privacy.tsx"
   ]
  },
  {
-  "kk": "Student Hub: менің сабақ кестем.",
-  "ru": "Student Hub: моё расписание.",
-  "en": "Student Hub: my schedule.",
+  "kk": "SIVA: менің сабақ кестем.",
+  "ru": "SIVA: моё расписание.",
+  "en": "SIVA: my schedule.",
   "files": [
    "src/components/views/home.tsx"
   ]
@@ -1565,9 +1565,9 @@
   ]
  },
  {
-  "kk": "Telegram не email арқылы кірсеңіз ғана Student Hub серверіндегі дерекқорда аккаунт жазбасы пайда болады. GPA мен телефон аккаунтта ешқашан сақталмайды.",
-  "ru": "Запись аккаунта в базе на сервере Student Hub появляется, только если вы войдёте через Telegram или email. GPA и телефон в аккаунте не хранятся никогда.",
-  "en": "Account record appears in Student Hub server database only if you sign in via Telegram or email. GPA and phone are never stored in account.",
+  "kk": "Telegram не email арқылы кірсеңіз ғана SIVA серверіндегі дерекқорда аккаунт жазбасы пайда болады. GPA мен телефон аккаунтта ешқашан сақталмайды.",
+  "ru": "Запись аккаунта в базе на сервере SIVA появляется, только если вы войдёте через Telegram или email. GPA и телефон в аккаунте не хранятся никогда.",
+  "en": "Account record appears in SIVA server database only if you sign in via Telegram or email. GPA and phone are never stored in account.",
   "files": [
    "src/components/views/privacy.tsx"
   ]
@@ -3215,17 +3215,17 @@
   ]
  },
  {
-  "kk": "Аккаунт деректері Student Hub-тың жалға алынған серверіндегі (VPS) дерекқорда сақталады, күн сайын резервтік көшірмесі алынады (7 күн сақталады); сервер елі заңгер тексеруінде нақтыланады. Кіру Telegram не email арқылы өтеді; email кодтары бар хаттар Resend (АҚШ) поштасы арқылы жіберіледі. AI-чатты қолдансаңыз, хабарламаңыз бен профильдің бір бөлігі (мамандық, курс, GPA, ағылшын деңгейі, дағдылар, тәжірибе) жауап алу үшін AI провайдеріне (OpenAI, АҚШ) жіберіледі, бізде сақталмайды. Аналитика анонимді, Student Hub серверінде.",
-  "ru": "Данные аккаунта хранятся в базе на арендованном сервере Student Hub (VPS), ежедневно делается резервная копия (хранится 7 дней); страна сервера уточняется при проверке юристом. Вход идёт через Telegram или email; письма с кодами отправляются через почтовый сервис Resend (США). Если вы пользуетесь AI-чатом, сообщение и часть профиля (специальность, курс, GPA, уровень английского, навыки, опыт) отправляются AI-провайдеру (OpenAI, США) для ответа и у нас не хранятся. Аналитика анонимная, на сервере Student Hub.",
-  "en": "Account data is stored in Student Hub’s rented server (VPS) database, backed up daily (kept 7 days); server country is verified by legal review. Login via Telegram or email; code emails sent via Resend (USA). Using AI chat sends your message and part of your profile (major, course, GPA, English level, skills, experience) to AI provider (OpenAI, USA) for response; we do not store it. Analytics are anonymous on Student Hub server.",
+  "kk": "Аккаунт деректері SIVA-ның жалға алынған серверіндегі (VPS) дерекқорда сақталады, күн сайын резервтік көшірмесі алынады (7 күн сақталады); сервер елі заңгер тексеруінде нақтыланады. Кіру Telegram не email арқылы өтеді; email кодтары бар хаттар Resend (АҚШ) поштасы арқылы жіберіледі. AI-чатты қолдансаңыз, хабарламаңыз бен профильдің бір бөлігі (мамандық, курс, GPA, ағылшын деңгейі, дағдылар, тәжірибе) жауап алу үшін AI провайдеріне (OpenAI, АҚШ) жіберіледі, бізде сақталмайды. Аналитика анонимді, SIVA серверінде.",
+  "ru": "Данные аккаунта хранятся в базе на арендованном сервере SIVA (VPS), ежедневно делается резервная копия (хранится 7 дней); страна сервера уточняется при проверке юристом. Вход идёт через Telegram или email; письма с кодами отправляются через почтовый сервис Resend (США). Если вы пользуетесь AI-чатом, сообщение и часть профиля (специальность, курс, GPA, уровень английского, навыки, опыт) отправляются AI-провайдеру (OpenAI, США) для ответа и у нас не хранятся. Аналитика анонимная, на сервере SIVA.",
+  "en": "Account data is stored in SIVA’s rented server (VPS) database, backed up daily (kept 7 days); server country is verified by legal review. Login via Telegram or email; code emails sent via Resend (USA). Using AI chat sends your message and part of your profile (major, course, GPA, English level, skills, experience) to AI provider (OpenAI, USA) for response; we do not store it. Analytics are anonymous on SIVA server.",
   "files": [
    "src/components/views/account.tsx"
   ]
  },
  {
-  "kk": "Аккаунт деректерін сіз және Student Hub әкімшілері ғана көреді. Деректер сатылмайды, жарнамаға берілмейді. GPA мен телефон ешкімге көрсетілмейді.",
-  "ru": "Данные аккаунта видите только вы и администраторы Student Hub. Данные не продаются и не передаются для рекламы. GPA и телефон никому не показываются.",
-  "en": "Only you and Student Hub admins see account data. Data is not sold or used for ads. GPA and phone are never shown.",
+  "kk": "Аккаунт деректерін сіз және SIVA әкімшілері ғана көреді. Деректер сатылмайды, жарнамаға берілмейді. GPA мен телефон ешкімге көрсетілмейді.",
+  "ru": "Данные аккаунта видите только вы и администраторы SIVA. Данные не продаются и не передаются для рекламы. GPA и телефон никому не показываются.",
+  "en": "Only you and SIVA admins see account data. Data is not sold or used for ads. GPA and phone are never shown.",
   "files": [
    "src/components/views/privacy.tsx"
   ]
@@ -3894,9 +3894,9 @@
   ]
  },
  {
-  "kk": "Аналитикаға ешқашан жіберілмейді: аты, GPA, телефон, email, AI-чат мәтіні. Аналитика аккаунтпен байланыстырылмайды және Student Hub серверінде ғана сақталады.",
-  "ru": "В аналитику никогда не отправляются: имя, GPA, телефон, email, текст AI-чата. Аналитика не связывается с аккаунтом и хранится только на сервере Student Hub.",
-  "en": "Never sent to analytics: name, GPA, phone, email, AI chat text. Analytics is not linked to accounts and stored only on Student Hub servers.",
+  "kk": "Аналитикаға ешқашан жіберілмейді: аты, GPA, телефон, email, AI-чат мәтіні. Аналитика аккаунтпен байланыстырылмайды және SIVA серверінде ғана сақталады.",
+  "ru": "В аналитику никогда не отправляются: имя, GPA, телефон, email, текст AI-чата. Аналитика не связывается с аккаунтом и хранится только на сервере SIVA.",
+  "en": "Never sent to analytics: name, GPA, phone, email, AI chat text. Analytics is not linked to accounts and stored only on SIVA servers.",
   "files": [
    "src/components/views/privacy.tsx"
   ]
@@ -15894,9 +15894,9 @@
   ]
  },
  {
-  "kk": "Менің портфолиом — Student Hub",
-  "ru": "Моё портфолио — Student Hub",
-  "en": "My portfolio — Student Hub",
+  "kk": "Менің портфолиом — SIVA",
+  "ru": "Моё портфолио — SIVA",
+  "en": "My portfolio — SIVA",
   "files": [
    "src/components/views/portfolio.tsx"
   ]
@@ -18949,9 +18949,9 @@
   ]
  },
  {
-  "kk": "Сабақ кестесі — Student Hub",
-  "ru": "Расписание — Student Hub",
-  "en": "Schedule — Student Hub",
+  "kk": "Сабақ кестесі — SIVA",
+  "ru": "Расписание — SIVA",
+  "en": "Schedule — SIVA",
   "files": [
    "src/components/views/home.tsx"
   ]
@@ -19095,9 +19095,9 @@
   ]
  },
  {
-  "kk": "Сайт беттері Student Hub серверінен (VPS), кейбір шрифттер Google Fonts-тан жүктеледі: Google браузеріңіздің IP-мекенжайын көреді",
-  "ru": "Страницы сайта загружаются с сервера Student Hub (VPS), часть шрифтов — с Google Fonts: Google видит IP-адрес вашего браузера",
-  "en": "Site pages load from Student Hub server (VPS), some fonts from Google Fonts: Google sees your browser IP",
+  "kk": "Сайт беттері SIVA серверінен (VPS), кейбір шрифттер Google Fonts-тан жүктеледі: Google браузеріңіздің IP-мекенжайын көреді",
+  "ru": "Страницы сайта загружаются с сервера SIVA (VPS), часть шрифтов — с Google Fonts: Google видит IP-адрес вашего браузера",
+  "en": "Site pages load from SIVA server (VPS), some fonts from Google Fonts: Google sees your browser IP",
   "files": [
    "src/components/views/privacy.tsx"
   ]
@@ -21179,9 +21179,9 @@
   ]
  },
  {
-  "kk": "Сіз және Student Hub әкімшілері ғана. Деректер сатылмайды және жарнамаға берілмейді.",
-  "ru": "Только вы и администраторы Student Hub. Данные не продаются и не передаются для рекламы.",
-  "en": "Only you and Student Hub admins. Data is not sold or used for advertising.",
+  "kk": "Сіз және SIVA әкімшілері ғана. Деректер сатылмайды және жарнамаға берілмейді.",
+  "ru": "Только вы и администраторы SIVA. Данные не продаются и не передаются для рекламы.",
+  "en": "Only you and SIVA admins. Data is not sold or used for advertising.",
   "files": [
    "src/components/views/account.tsx"
   ]
@@ -21899,9 +21899,9 @@
   ]
  },
  {
-  "kk": "Сәлем, {0}! Мен Student Hub AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.",
-  "ru": "Привет, {0}! Я Student Hub AI. Спрашивай про резюме, собеседование, учёбу или карьеру.",
-  "en": "Hi, {0}! I’m Student Hub AI. Ask about CVs, interviews, study, or career.",
+  "kk": "Сәлем, {0}! Мен SIVA AI-мын. Түйіндеме, сұхбат, оқу немесе мансап туралы сұраңыз.",
+  "ru": "Привет, {0}! Я SIVA AI. Спрашивай про резюме, собеседование, учёбу или карьеру.",
+  "en": "Hi, {0}! I’m SIVA AI. Ask about CVs, interviews, study, or career.",
   "files": [
    "src/components/views/ai.tsx"
   ]
@@ -24178,9 +24178,9 @@
   ]
  },
  {
-  "kk": "Төлем тікелей кофейняның Kaspi шотына түседі не кассада төлейсіз. Student Hub ақшаны ұстамайды.",
-  "ru": "Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. Student Hub деньги не держит.",
-  "en": "Payment goes directly to the coffee shop’s Kaspi account or pay at the cash desk. Student Hub does not hold money.",
+  "kk": "Төлем тікелей кофейняның Kaspi шотына түседі не кассада төлейсіз. SIVA ақшаны ұстамайды.",
+  "ru": "Оплата идёт прямо на Kaspi-счёт кофейни или на кассе. SIVA деньги не держит.",
+  "en": "Payment goes directly to the coffee shop’s Kaspi account or pay at the cash desk. SIVA does not hold money.",
   "files": [
    "src/components/views/cafe.tsx"
   ]
@@ -31103,9 +31103,9 @@
   ]
  },
  {
-  "kk": "— Student Hub жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен.",
-  "ru": "— подтверждено системой Student Hub. Остальное указал сам студент.",
-  "en": "— confirmed by Student Hub. Rest provided by student.",
+  "kk": "— SIVA жүйесі арқылы расталған. Қалғанын студенттің өзі көрсеткен.",
+  "ru": "— подтверждено системой SIVA. Остальное указал сам студент.",
+  "en": "— confirmed by SIVA. Rest provided by student.",
   "files": [
    "src/components/PortfolioPage.tsx"
   ]

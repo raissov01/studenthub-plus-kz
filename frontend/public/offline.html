@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FFFFFF">
-<title>Student Hub — интернет жоқ</title>
+<title>SIVA — интернет жоқ</title>
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <!-- Shown by public/sw.js when a page that was never opened before is requested without internet (docs/PWA.md).
      Self-contained: no build files, no fonts from the network. -->
@@ -36,7 +36,7 @@
   <h1 data-kk="Интернет жоқ" data-ru="Нет интернета" data-en="No internet">Интернет жоқ</h1>
   <p data-kk="Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде." data-ru="Эта страница ещё не сохранена и без интернета не откроется. Сохранённые разделы — ниже." data-en="This page has not been saved yet, so it does not open offline. Saved sections are below.">Бұл бет әлі сақталмаған, сондықтан интернетсіз ашылмайды. Сақталған бөлімдер төменде.</p>
   <button class="btn" type="button" id="retry" data-kk="Қайталау" data-ru="Повторить" data-en="Retry">Қайталау</button>
-  <nav class="group" aria-label="Student Hub">
+  <nav class="group" aria-label="SIVA">
     <a href="/" data-kk="Басты бет және сабақ кестесі" data-ru="Главная и расписание" data-en="Home and class schedule">Басты бет және сабақ кестесі</a>
     <a href="/map" data-kk="Кампус картасы" data-ru="Карта кампуса" data-en="Campus map">Кампус картасы</a>
     <a href="/mine" data-kk="Менің тізімім және билеттер" data-ru="Мой список и билеты" data-en="My list and tickets">Менің тізімім және билеттер</a>
@@ -48,7 +48,7 @@
   (function () {
     var lang = document.documentElement.lang;
     if (lang === 'ru' || lang === 'en') {
-      document.title = lang === 'ru' ? 'Student Hub — нет интернета' : 'Student Hub — no internet';
+      document.title = lang === 'ru' ? 'SIVA — нет интернета' : 'SIVA — no internet';
       var els = document.querySelectorAll('[data-' + lang + ']');
       for (var i = 0; i < els.length; i++) els[i].textContent = els[i].getAttribute('data-' + lang);
     }

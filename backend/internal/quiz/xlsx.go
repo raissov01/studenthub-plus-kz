@@ -491,7 +491,7 @@ func template(w http.ResponseWriter, r *http.Request) {
 	}
 	h := w.Header()
 	h.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	h.Set("Content-Disposition", `attachment; filename="studenthub-quiz-template.xlsx"`)
+	h.Set("Content-Disposition", `attachment; filename="siva-quiz-template.xlsx"`)
 	h.Set("Cache-Control", "public, max-age=3600")
 	w.Write(b)
 }

@@ -40,7 +40,7 @@ test('icon review sheet: every icon at 20 and 32 px, light and dark', async ({ p
       .row { display: flex; align-items: center; gap: 14px; height: 40px; }
       .chip { width: 40px; height: 40px; border-radius: 10px; background: ${c.tint}; color: ${c.ink}; display: grid; place-items: center; }
       .name { color: ${c.muted}; font-family: ui-monospace, monospace; font-size: 12px; }
-    </style></head><body><h1>Student Hub icons — ${names.length} — ${theme}</h1><div class="grid">${names.map(n =>
+    </style></head><body><h1>SIVA icons — ${names.length} — ${theme}</h1><div class="grid">${names.map(n =>
       `<div class="cell"><div class="row">${svg(n, 20)}<span class="chip">${svg(n, 20)}</span>${svg(n, 32)}</div><div class="name">${n}</div></div>`).join('')}</div></body></html>`);
     await page.screenshot({ path: `${DIR}/sheet-${theme}.png`, fullPage: true });
   }
