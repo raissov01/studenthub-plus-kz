@@ -99,14 +99,14 @@ function UsersList({ current }: { current: number }) {
         <div className="group table-wrap adm-users-table">
           <table>
             <thead><tr><th scope="col">{tt('Аты', 'Имя')}</th><th scope="col">Email</th><th scope="col">{tt('Рөлі', 'Роль')}</th>
-              <th scope="col">{tt('Соңғы кірген', 'Последний вход')}</th><th scope="col">{tt('Күйі', 'Статус')}</th><th scope="col"><span className="sr-only">{tt('Әрекет', 'Действие')}</span></th></tr></thead>
+              <th scope="col">{tt('Соңғы кірген', 'Последний вход')}</th><th scope="col"><span className="sr-only">{tt('Әрекет', 'Действие')}</span></th></tr></thead>
             <tbody>{r.data.users.map(u => (
               <tr key={u.id} className={current === u.id ? 'is-current' : ''}>
                 <td><button className="link-btn" type="button" onClick={() => go('admin:users?id=' + u.id)}>{who(u)}</button>
-                  {u.username ? <span className="tiny muted"> @{u.username}</span> : null}</td>
+                  {u.username ? <span className="tiny muted adm-handle">@{u.username}</span> : null}</td>
                 <td className="adm-email">{u.email || <span className="muted">—</span>}</td>
-                <td><span className="badges"><AccessBadges role={u.role} scopes={u.scopes} places={u.places} /></span></td>
-                <td className="num">{last(u)}</td><td>{status(u)}</td>
+                <td><span className="badges"><AccessBadges role={u.role} scopes={u.scopes} places={u.places} />{u.blocked || !u.consentAt ? status(u) : null}</span></td>
+                <td className="num">{last(u)}</td>
                 <td><button className="btn secondary adm-give" type="button" onClick={() => give(u.id)}>{tt('Рөл беру', 'Выдать роль')}</button></td>
               </tr>
             ))}</tbody>

@@ -30,6 +30,7 @@ export const test = base.extend<{ lang: E2ELang }>({
         if (path === '/api/config') json = config;
         else if (path === '/api/content') json = content;
         else if (path === '/api/me') json = { user: null, needsConsent: false };
+        else if (path === '/api/support') json = { support: {} }; // the settings page's «Қолдау қызметі» (nothing published)
         else if (path === '/api/chat') {
           const body = route.request().postDataJSON();
           expect(body.messages.at(-1)?.role).toBe('user');
