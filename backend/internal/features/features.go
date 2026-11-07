@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/raissov01/studenthub-plus-kz/backend/internal/auth"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/config"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/httpx"
 	"github.com/raissov01/studenthub-plus-kz/backend/internal/mail"
@@ -62,6 +63,8 @@ func Routes(mux httpx.Router) {
 			"suggestFormUrl": config.Str("SUGGEST_FORM_URL", ""),
 			// email + password sign-in is offered only when codes can actually be delivered
 			"emailAuth": mail.Enabled(),
+			// «Sign in with Google» (FEATURE_GOOGLE_LOGIN + GOOGLE_CLIENT_ID/SECRET): only this boolean, never the ids
+			"googleLogin": auth.GoogleEnabled(),
 			// null unless MARKET_SEASON is set and the range is current or upcoming
 			"marketSeason": MarketSeason(time.Now()),
 			// {"enabled":false} unless FEATURE_WEBPUSH and the VAPID keys are set

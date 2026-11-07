@@ -162,6 +162,7 @@ Mini App (Telegram Web iframe-де cookie жетпеуі мүмкін) кірг�
 | `MAIL_FROM` | жіберуші, мысалы `Student Hub <noreply@mail.studenthub.kz>` — Resend-те расталған доменнен |
 | `MAIL_DEV_LOG` | `true` — кілт жоқта хатты (кодымен!) сервер логына жазады. **Тек локалды әзірлеу**, әдепкі `false` |
 | `RESEND_API_BASE` | тесттерге арналған; әдепкі `https://api.resend.com` |
+| `FEATURE_GOOGLE_LOGIN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL` | Google арқылы кіру, әдепкі өшік; үшеуі де болмаса 404 — [GOOGLE_LOGIN.md](GOOGLE_LOGIN.md) |
 | `FEATURE_CLUBS`, `CLUBS_SEED`, `CLUBS_UNIVERSITY` | клубтар бөлімі, ресми клубтарды бір рет жүктеу, клуб университеті — [clubs.md](clubs.md) |
 
 ## Supabase жобасын қосу
