@@ -211,3 +211,23 @@ test('clubs: empty catalogue invites club leaders to apply', async ({ page, lang
   await expect(page.locator('#laProof')).toBeVisible();
   await fits(page);
 });
+
+test('events: an admin picks the university from the list and is told what blocks Publish', async ({ page, lang }) => {
+  const t = (kk: string, ru: string) => label(lang, kk, ru);
+  const m = await setup(page, lang);
+  m.s.user = { ...m.STUDENT, id: 900, role: 'admin', university: null as unknown as string };
+  await onboard(page, lang);
+  await page.goto('/organize/new');
+  const uni = page.locator('#efUni');
+  await expect(uni).toHaveValue('Сейфуллин университеті'); // an admin without a profile university starts at the pilot one
+  expect(await uni.locator('option').count()).toBeGreaterThan(100);
+  const publish = page.getByRole('button', { name: t('Жариялау', 'Опубликовать'), exact: true });
+  await expect(publish).toBeDisabled();
+  await expect(page.getByRole('status').filter({ hasText: t('Толтыру керек', 'Нужно заполнить') })).toBeVisible();
+  await page.locator('#efTitleKk').fill('Карьера күні');
+  await expect(publish).toBeEnabled();
+  await uni.selectOption('Назарбаев Университет');
+  await expect(publish).toBeEnabled();
+  await page.screenshot({ path: `test-results/event-form-admin-${lang}.png`, fullPage: true });
+  await fits(page);
+});

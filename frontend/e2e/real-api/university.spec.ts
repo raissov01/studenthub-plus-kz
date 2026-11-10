@@ -4,7 +4,7 @@ test('11-014: university staff → official content → privacy-safe aggregates 
   const staff = await actor(`Staff ${lang}`);
   const admin = await actor(`University admin ${lang}`, { admin: true });
   const visitor = await actor(`Visitor ${lang}`);
-  const university = `Privacy university ${lang}`;
+  const university = lang === 'kk' ? 'Astana IT University' : 'Назарбаев Университет'; // must be on the picker list
   const p = staff.page;
   // Grant through the real administrator UI, including the university binding.
   await admin.page.goto('/admin/staff');
@@ -12,7 +12,7 @@ test('11-014: university staff → official content → privacy-safe aggregates 
   await search.fill(String(staff.telegramID));
   await search.press('Enter');
   await admin.page.getByRole('button', { name: new RegExp(staff.name) }).click();
-  await admin.page.locator('#stUniv').fill(university);
+  await admin.page.locator('#stUniv').selectOption(university);
   await response(admin.page, '/api/admin/university-staff', () => admin.page.getByRole('dialog').getByRole('button', { name: label(lang, 'Байлау', 'Привязать'), exact: true }).click());
   // Seed only aggregate population, deliberately on both sides of the privacy floor.
   sql(`insert into users (name, email, university, faculty, course, consent_at, last_seen_at)

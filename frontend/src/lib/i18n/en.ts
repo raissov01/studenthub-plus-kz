@@ -3935,4 +3935,9 @@ export const EN: Record<string, string> = {
   "Бұл аккаунтқа басқа Google аккаунты байланған. Сол Google арқылы кіріңіз.": "A different Google account is linked to this account. Sign in with that one.",
   "Тым көп әрекет. Біраздан кейін қайталаңыз.": "Too many attempts. Try again a bit later.",
   "немесе": "or",
+  "Профильдегі университет": "University from profile",
+  "Профильдегі: {0}": "From profile: {0}",
+  "Толтыру керек: ": "Still needed: ",
+  "Университетті таңдаңыз": "Choose a university",
+  "қазақша атауы (кемінде 3 әріп)": "Kazakh title (3+ letters)",
 };

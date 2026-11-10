@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '@/components/app';
 import { DeskDetail } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
-import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow } from '@/components/ui';
+import { Chip, Empty, Icon, Qr, Row, SectionHead, ShareRow, UniversitySelect } from '@/components/ui';
+import { isUniversity, SEIFULLIN } from '@/lib/universities';
 import {
   AdminOnly, almatyWall, ErrorLine, errCode, errText, Feature, fromLocalInput, hasAccount, hhmm, Loading, NotFound, SignInCard,
   toLocalInput, useFeature, useLoad, useNeedAccount,
@@ -467,12 +468,16 @@ function initForm(e?: DbEvent): FormState {
 export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?: () => void; clubId?: number }) {
   const { tt, lang, L, toast, go } = useApp();
   const acc = useAccount();
-  const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), university: edit?.university ?? acc.user?.university ?? '' }));
+  const [f, setF] = useState<FormState>(() => ({ ...initForm(edit), university: edit?.university ?? acc.user?.university ?? SEIFULLIN }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF(x => ({ ...x, [k]: v }));
   const admin = acc.user?.role === 'admin' && !clubId;
-  const titleOk = f.title_kk.trim().length >= 3 && (!admin || !!edit || f.university.trim().length >= 2);
+  const uniOk = !admin || !!edit || isUniversity(f.university);
+  const titleOk = f.title_kk.trim().length >= 3 && uniOk;
+  // why the buttons are off: they used to just turn grey with no word (an admin left «Университет» empty)
+  const missing = [f.title_kk.trim().length < 3 ? tt('қазақша атауы (кемінде 3 әріп)', 'название на казахском (от 3 букв)') : '',
+    !uniOk ? tt('университет', 'университет') : ''].filter(Boolean).join(', ');
   const save = async (status?: 'draft' | 'published') => {
     if (!titleOk || busy) return;
     const cap = f.capacity.trim();
@@ -525,7 +530,7 @@ export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?:
       <div className="field"><label htmlFor="efCap">{tt('Орын саны (бос = шектелмеген)', 'Количество мест (пусто = без ограничения)')}</label>
         <input className="input" id="efCap" type="number" inputMode="numeric" min={1} max={100000} value={f.capacity} onChange={e => set('capacity', e.target.value)} /></div>
       {!edit && admin ? <div className="field"><label htmlFor="efUni">{tt('Университет', 'Университет')}</label>
-        <input className="input" id="efUni" maxLength={120} value={f.university} onChange={e => set('university', e.target.value)} required /></div> : null}
+        <UniversitySelect id="efUni" value={f.university} onChange={v => set('university', v)} required /></div> : null}
       <label className="check"><input type="checkbox" checked={f.walk_in_allowed} onChange={e => set('walk_in_allowed', e.target.checked)} /><span className="small">{tt('Тіркелмегендер де сол жерде келе алады', 'Можно прийти без записи')}</span></label>
       <label className="check"><input type="checkbox" checked={f.gives_cert} onChange={e => set('gives_cert', e.target.checked)} /><span className="small">{tt('Келгендерге сертификат беріледі', 'Пришедшим выдаётся сертификат')}</span></label>
       <label className="check"><input type="checkbox" checked={f.teams_enabled} onChange={e => set('teams_enabled', e.target.checked)} /><span className="small">{tt('Командаларға бөлу (4–6 адам, әртүрлі факультет)', 'Делить на команды (4–6 человек, разные факультеты)')}</span></label>
@@ -534,6 +539,7 @@ export function EventForm({ edit, onSaved, clubId }: { edit?: DbEvent; onSaved?:
       <div className="field"><label htmlFor="efDescRu">{tt('Сипаттама (орысша)', 'Описание (на русском)')}</label>
         <textarea className="input" id="efDescRu" maxLength={3000} value={f.desc_ru} onChange={e => set('desc_ru', e.target.value)} /></div>
       <ErrorLine err={err} />
+      {missing ? <p className="tiny muted" role="status">{tt('Толтыру керек: ', 'Нужно заполнить: ')}{missing}</p> : null}
       {edit
         ? <button className="btn block" type="submit" disabled={!titleOk || busy}>{tt('Сақтау', 'Сохранить')}</button>
         : <div className="btn-row">

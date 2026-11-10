@@ -14,6 +14,7 @@ import {
 import { useConfig } from '@/lib/config';
 import { CITIES, SPECS } from '@/lib/data/static';
 import { requestWriteAccess, useTelegram } from '@/lib/telegram';
+import { SEIFULLIN } from '@/lib/universities';
 
 declare global { interface Window { onTelegramAuth?: (user: Record<string, unknown>) => void } }
 
@@ -354,7 +355,7 @@ export function AccountSection() {
   }
   const p = S.profile;
   const sync = () => run('sync', () => syncProfile({
-    name: p.name.trim(), lang: S.lang, university: tt('Сейфуллин университеті', 'Университет им. С. Сейфуллина'),
+    name: p.name.trim(), lang: S.lang, university: SEIFULLIN,
     faculty: SPECS[p.spec] ? L(SPECS[p.spec]) : '', course: p.course, city: CITIES[p.city] ? L(CITIES[p.city]) : '',
   }, S.lang), tt('Аккаунтпен синхрондалды', 'Синхронизировано с аккаунтом'));
   return (

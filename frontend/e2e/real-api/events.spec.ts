@@ -14,7 +14,7 @@ test('11-009: create → register → rotating QR → organizer check-in → pub
   await p.locator('#efStart').fill(wallTime(5));
   await p.locator('#efEnd').fill(wallTime(65));
   await p.locator('#efPlace').fill('Campus hall');
-  await p.locator('#efUni').fill(`Event university ${lang}`);
+  await p.locator('#efUni').selectOption(lang === 'kk' ? 'Alikhan Bokeikhan University' : 'Coventry University Kazakhstan');
   const created = await response(p, '/api/events/create', () => p.getByRole('button', { name: label(lang, 'Жариялау', 'Опубликовать'), exact: true }).click());
   const id = created.event.id;
   await student.page.goto(`/event/${id}`);

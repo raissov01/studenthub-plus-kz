@@ -7,7 +7,7 @@ import { DeskDetail } from '@/components/desk';
 import { useDesktop } from '@/lib/desktop';
 import { useState } from 'react';
 import { copyText, useApp } from '@/components/app';
-import { Chip, Empty, Icon, Row, Seg, SectionHead } from '@/components/ui';
+import { Chip, Empty, Icon, Row, Seg, SectionHead, UniversitySelect } from '@/components/ui';
 import { ErrorLine, errText, Feature, hasAccount, Loading, NotFound, SignInCard, useFeature, useLoad, useNeedAccount, ymd } from '@/components/views/common';
 import { api, useAccount } from '@/lib/account';
 import { BUILDINGS } from '@/lib/data/campus';
@@ -83,7 +83,7 @@ function Apply() {
           } catch (e2) { setErr(errText(e2)); } finally { setBusy(false); }
         }}>
           <div className="field"><label htmlFor="apUni">{tt('Университет', 'Университет')}</label>
-            <input className="input" id="apUni" maxLength={120} placeholder={acc.user?.university || tt('Университет атауы', 'Название университета')} value={uni} onChange={e => setUni(e.target.value)} />
+            <UniversitySelect id="apUni" value={uni} onChange={setUni} empty={acc.user?.university ? tt(`Профильдегі: ${acc.user.university}`, `Из профиля: ${acc.user.university}`) : tt('Профильдегі университет', 'Университет из профиля')} />
             <span className="tiny muted">{tt('Бос қалдырсаңыз — профильдегі университет.', 'Если оставить пустым — университет из профиля.')}</span></div>
           <div className="field"><label htmlFor="apWhy">{tt('Неге амбассадор болғыңыз келеді?', 'Почему хотите стать амбассадором?')}</label>
             <textarea className="input" id="apWhy" maxLength={300} value={motivation} onChange={e => setMotivation(e.target.value)} />

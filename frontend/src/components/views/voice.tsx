@@ -4,7 +4,7 @@
    results, feedback inbox, recipients and psychologist contacts). */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { copyText, useApp } from '@/components/app';
-import { Empty, Icon, Seg } from '@/components/ui';
+import { Empty, Icon, Seg, UniversitySelect } from '@/components/ui';
 import { ErrorLine, Feature, Loading, NotFound, SignInCard, errCode, errText, hasAccount, useLoad } from '@/components/views/common';
 import { useQueryId } from '@/components/views/subjects';
 import { api, apiDownload, apiUpload, ApiError, useAccount } from '@/lib/account';
@@ -705,7 +705,7 @@ function SurveyEditor({ s, admin, done }: { s: Survey | null; admin: boolean; do
         </div>
       ) : null}
       <div className="card form">
-        {admin ? <div className="field"><label htmlFor="svU">{tt('Университет', 'Университет')}</label><input className="input" id="svU" value={univ} onChange={e => setUniv(e.target.value)} /></div> : null}
+        {admin ? <div className="field"><label htmlFor="svU">{tt('Университет', 'Университет')}</label><UniversitySelect id="svU" value={univ} onChange={setUniv} /></div> : null}
         <div className="field"><label htmlFor="svT">{tt('Атауы', 'Название')}</label><input className="input" id="svT" maxLength={160} value={title} onChange={e => setTitle(e.target.value)} /></div>
         <div className="field"><label htmlFor="svI">{tt('Кіріспе (міндетті емес)', 'Вступление (необязательно)')}</label><textarea className="input" id="svI" rows={3} maxLength={1000} value={intro} onChange={e => setIntro(e.target.value)} /></div>
         <label className="check"><input type="checkbox" checked={anon} onChange={e => setAnon(e.target.checked)} /><span className="small">{tt('Анонимді (ұсынылады): жауаптар атсыз сақталады', 'Анонимный (рекомендуется): ответы хранятся без имени')}</span></label>
@@ -910,7 +910,7 @@ function RecipientsAdmin() {
   return (
     <section className="card" aria-labelledby="rcpH">
       <h2 id="rcpH">{tt('Өтініш алушылар', 'Получатели обращений')}</h2>
-      <div className="field"><label htmlFor="rcpU">{tt('Университет', 'Университет')}</label><input className="input" id="rcpU" value={univ} onChange={e => setUniv(e.target.value)} /></div>
+      <div className="field"><label htmlFor="rcpU">{tt('Университет', 'Университет')}</label><UniversitySelect id="rcpU" value={univ} onChange={setUniv} /></div>
       <button className="btn secondary" type="button" disabled={!univ.trim()} onClick={() => void run(() => api('/api/admin/feedback/recipients', { method: 'POST', body: { university: univ.trim(), defaults: true }, lang }))}>
         {tt('Әдепкі тізімді қосу (Деканат, Ректорат, …)', 'Добавить стандартный список (Деканат, Ректорат, …)')}</button>
       <ErrorLine err={err || msg} />
@@ -967,7 +967,7 @@ function ContactsEditor() {
     <section className="card form" aria-labelledby="wcH">
       <h2 id="wcH">{tt('Психолог байланыстары', 'Контакты психолога')}</h2>
       <p className="tiny muted">{tt('Тек нақты, тексерілген байланыстарды енгізіңіз. Бос болса, студенттер «әлі қосылмаған» деп көреді.', 'Вносите только реальные проверенные контакты. Пока пусто, студенты видят «ещё не добавлены».')}</p>
-      {admin ? <div className="field"><label htmlFor="wcU">{tt('Университет', 'Университет')}</label><input className="input" id="wcU" value={univ} onChange={e => { setUniv(e.target.value); setList(null); }} /></div> : null}
+      {admin ? <div className="field"><label htmlFor="wcU">{tt('Университет', 'Университет')}</label><UniversitySelect id="wcU" value={univ} onChange={v => { setUniv(v); setList(null); }} /></div> : null}
       {shown.map((_, i) => (
         <fieldset key={i} className="uv-contact">
           <legend className="small"><b>#{i + 1}</b></legend>

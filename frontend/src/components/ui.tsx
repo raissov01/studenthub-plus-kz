@@ -6,6 +6,7 @@ import { IC, type IconName } from '@/lib/icons';
 import { useApp, copyText } from '@/components/app';
 import { track, withShareRef } from '@/features/analytics/track';
 import { pathOf } from '@/lib/routes';
+import { isUniversity, UNIVERSITIES } from '@/lib/universities';
 
 export function Icon({ n, s = 22, className }: { n: IconName; s?: number; className?: string }) {
   return (
@@ -144,5 +145,19 @@ export function Heart({ id, opp }: { id: string; opp: boolean }) {
     <button className="heart" type="button" onClick={flip} aria-pressed={on} aria-label={on ? tt('Сақталғаннан алу', 'Убрать из сохранённых') : tt('Сақтау', 'Сохранить')}>
       <Icon n="bookmark" s={20} />
     </button>
+  );
+}
+
+/** University picker over lib/universities (the stored value is the exact name). `empty` adds a first "" option;
+ *  a saved value that is not in the list (older free text) stays selectable so it is never lost silently. */
+export function UniversitySelect({ id, value, onChange, empty, required }: { id: string; value: string; onChange: (v: string) => void; empty?: string; required?: boolean }) {
+  const { tt } = useApp();
+  const v = value.trim();
+  return (
+    <select className="input" id={id} value={v} onChange={e => onChange(e.target.value)} required={required}>
+      {empty != null || !v ? <option value="">{empty ?? tt('Университетті таңдаңыз', 'Выберите университет')}</option> : null}
+      {v && !isUniversity(v) ? <option value={v}>{v}</option> : null}
+      {UNIVERSITIES.map(u => <option key={u.name} value={u.name}>{u.city ? `${u.name} · ${u.city}` : u.name}</option>)}
+    </select>
   );
 }

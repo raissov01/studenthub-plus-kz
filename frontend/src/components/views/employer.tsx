@@ -7,7 +7,7 @@
    not-found screen or a sign-in prompt. */
 import { useState, type ReactNode } from 'react';
 import { copyText, useApp } from '@/components/app';
-import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead } from '@/components/ui';
+import { Chip, ConfirmSheet, Empty, Icon, Row, SectionHead, UniversitySelect } from '@/components/ui';
 import { AdminOnly, ErrorLine, errText, Feature, hasAccount, Loading, NotFound, ReasonSheet, SignInCard, useLoad, ymd } from '@/components/views/common';
 import { AppStatusBadge, SharedList } from '@/components/views/jobs-b2b';
 import { roleLabel } from '@/components/views/account';
@@ -706,7 +706,7 @@ function BindSheet({ u, onDone }: { u: UserRow; onDone: () => void }) {
       <h2 style={{ overflowWrap: 'anywhere' }}>{u.name || (u.username ? '@' + u.username : `#${u.id}`)}</h2>
       {!u.consentAt ? <p className="small urgent">{tt('Бұл адам әлі келісім бермеген.', 'Этот человек ещё не дал согласие.')}</p> : null}
       <div className="field"><label htmlFor="stUniv">{tt('Университет (профильдер мен іс-шаралардағы атаумен дәл)', 'Университет (точно как в профилях и мероприятиях)')}</label>
-        <input className="input" id="stUniv" maxLength={120} value={univ} onChange={e => setUniv(e.target.value)} /></div>
+        <UniversitySelect id="stUniv" value={univ} onChange={setUniv} required /></div>
       <ErrorLine err={err} />
       <div className="btn-row">
         <button className="btn ghost" type="button" onClick={closeSheet}>{tt('Бас тарту', 'Отмена')}</button>
